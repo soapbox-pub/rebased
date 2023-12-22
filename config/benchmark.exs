@@ -14,7 +14,7 @@ config :pleroma, Pleroma.Captcha,
   method: Pleroma.Captcha.Mock
 
 # Print only warnings and errors during test
-config :logger, level: :warn
+config :logger, level: :warning
 
 config :pleroma, :auth, oauth_consumer_strategies: []
 
@@ -40,6 +40,7 @@ config :pleroma, Pleroma.Repo,
   password: "postgres",
   database: "pleroma_benchmark",
   hostname: System.get_env("DB_HOST") || "localhost",
+  port: System.get_env("DB_PORT") || "5432",
   pool_size: 10
 
 # Reduce hash rounds for testing

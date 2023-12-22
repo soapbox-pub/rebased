@@ -1,17 +1,14 @@
 <author>
-  <id><%= @user.ap_id %></id>
-  <activity:object>http://activitystrea.ms/schema/1.0/person</activity:object>
   <uri><%= @user.ap_id %></uri>
+  <name><%= @user.nickname %></name>
+  <activity:object>http://activitystrea.ms/schema/1.0/person</activity:object>
+  <activity:displayName><%= @user.name %></activity:displayName>
+  <activity:image><%= User.avatar_url(@user) %></activity:image>
+  <activity:id><%= @user.ap_id %></activity:id>
+  <activity:published><%= to_rfc3339(@user.inserted_at) %></activity:published>
+  <activity:updated><%= to_rfc3339(@user.updated_at) %></activity:updated>
+  <activity:url><%= @user.ap_id %></activity:url>
   <poco:preferredUsername><%= @user.nickname %></poco:preferredUsername>
   <poco:displayName><%= @user.name %></poco:displayName>
   <poco:note><%= escape(@user.bio) %></poco:note>
-  <summary><%= escape(@user.bio) %></summary>
-  <name><%= @user.nickname %></name>
-  <link rel="avatar" href="<%= User.avatar_url(@user) %>"/>
-  <%= if User.banner_url(@user) do %>
-    <link rel="header" href="<%= User.banner_url(@user) %>"/>
-  <% end %>
-  <%= if @user.local do %>
-    <ap_enabled>true</ap_enabled>
-  <% end %>
 </author>

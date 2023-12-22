@@ -23,21 +23,21 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   require Logger
   require Pleroma.Constants
 
-  def attachments_from_ids(%{media_ids: ids, descriptions: desc}) do
-    attachments_from_ids_descs(ids, desc)
+  def attachments_from_ids(%{media_ids: ids, descriptions: desc}, user) do
+    attachments_from_ids_descs(ids, desc, user)
   end
 
-  def attachments_from_ids(%{media_ids: ids}) do
-    attachments_from_ids_no_descs(ids)
+  def attachments_from_ids(%{media_ids: ids}, user) do
+    attachments_from_ids_no_descs(ids, user)
   end
 
-  def attachments_from_ids(_), do: []
+  def attachments_from_ids(_, _), do: []
 
-  def attachments_from_ids_no_descs([]), do: []
+  def attachments_from_ids_no_descs([], _), do: []
 
-  def attachments_from_ids_no_descs(ids) do
+  def attachments_from_ids_no_descs(ids, user) do
     Enum.map(ids, fn media_id ->
-      case Repo.get(Object, media_id) do
+      case get_attachment(media_id, user) do
         %Object{data: data} -> data
         _ -> nil
       end
@@ -45,17 +45,27 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Enum.reject(&is_nil/1)
   end
 
-  def attachments_from_ids_descs([], _), do: []
+  def attachments_from_ids_descs([], _, _), do: []
 
-  def attachments_from_ids_descs(ids, descs_str) do
+  def attachments_from_ids_descs(ids, descs_str, user) do
     {_, descs} = Jason.decode(descs_str)
 
     Enum.map(ids, fn media_id ->
-      with %Object{data: data} <- Repo.get(Object, media_id) do
+      with %Object{data: data} <- get_attachment(media_id, user) do
         Map.put(data, "name", descs[media_id])
       end
     end)
     |> Enum.reject(&is_nil/1)
+  end
+
+  defp get_attachment(media_id, user) do
+    with %Object{data: data} = object <- Repo.get(Object, media_id),
+         %{"type" => type} when type in Pleroma.Constants.upload_object_types() <- data,
+         :ok <- Object.authorize_access(object, user) do
+      object
+    else
+      _ -> nil
+    end
   end
 
   @spec get_to_and_cc(ActivityDraft.t()) :: {list(String.t()), list(String.t())}
@@ -141,6 +151,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       when is_list(options) do
     limits = Config.get([:instance, :poll_limits])
 
+    options = options |> Enum.uniq()
+
     with :ok <- validate_poll_expiration(expires_in, limits),
          :ok <- validate_poll_options_amount(options, limits),
          :ok <- validate_poll_options_length(options, limits) do
@@ -176,10 +188,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   defp validate_poll_options_amount(options, %{max_options: max_options}) do
-    if Enum.count(options) > max_options do
-      {:error, "Poll can't contain more than #{max_options} options"}
-    else
-      :ok
+    cond do
+      Enum.count(options) < 2 ->
+        {:error, "Poll must contain at least 2 options"}
+
+      Enum.count(options) > max_options ->
+        {:error, "Poll can't contain more than #{max_options} options"}
+
+      true ->
+        :ok
     end
   end
 
@@ -219,7 +236,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> maybe_add_attachments(draft.attachments, attachment_links)
   end
 
-  defp get_content_type(content_type) do
+  def get_content_type(content_type) do
     if Enum.member?(Config.get([:instance, :allowed_post_formats]), content_type) do
       content_type
     else
@@ -304,13 +321,13 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       format_asctime(date)
     else
       _e ->
-        Logger.warn("Date #{date} in wrong format, must be ISO 8601")
+        Logger.warning("Date #{date} in wrong format, must be ISO 8601")
         ""
     end
   end
 
   def date_to_asctime(date) do
-    Logger.warn("Date #{date} in wrong format, must be ISO 8601")
+    Logger.warning("Date #{date} in wrong format, must be ISO 8601")
     ""
   end
 
@@ -448,35 +465,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def get_report_statuses(_, _), do: {:ok, nil}
-
-  # DEPRECATED mostly, context objects are now created at insertion time.
-  def context_to_conversation_id(context) do
-    with %Object{id: id} <- Object.get_cached_by_ap_id(context) do
-      id
-    else
-      _e ->
-        changeset = Object.context_mapping(context)
-
-        case Repo.insert(changeset) do
-          {:ok, %{id: id}} ->
-            id
-
-          # This should be solved by an upsert, but it seems ecto
-          # has problems accessing the constraint inside the jsonb.
-          {:error, _} ->
-            Object.get_cached_by_ap_id(context).id
-        end
-    end
-  end
-
-  def conversation_id_to_context(id) do
-    with %Object{data: %{"id" => context}} <- Repo.get(Object, id) do
-      context
-    else
-      _e ->
-        {:error, dgettext("errors", "No such conversation")}
-    end
-  end
 
   def validate_character_limit("" = _full_payload, [] = _attachments) do
     {:error, dgettext("errors", "Cannot post an empty status without attachments")}

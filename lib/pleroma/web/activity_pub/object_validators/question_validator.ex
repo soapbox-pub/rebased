@@ -62,6 +62,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     data
     |> CommonFixes.fix_actor()
     |> CommonFixes.fix_object_defaults()
+    |> CommonFixes.fix_quote_url()
     |> Transmogrifier.fix_emoji()
     |> fix_closed()
   end
@@ -80,7 +81,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
   defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Question"])
-    |> validate_required([:id, :actor, :attributedTo, :type, :context, :context_id])
+    |> validate_required([:id, :actor, :attributedTo, :type, :context])
     |> CommonValidations.validate_any_presence([:cc, :to])
     |> CommonValidations.validate_fields_match([:actor, :attributedTo])
     |> CommonValidations.validate_actor_presence()

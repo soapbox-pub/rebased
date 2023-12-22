@@ -57,6 +57,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
     end
+
+    test "works with Updates" do
+      clear_config([:mrf_simple, :media_removal], [{"remote.instance", "Some reason"}])
+      media_message = build_media_message(type: "Update")
+
+      assert SimplePolicy.filter(media_message) ==
+               {:ok,
+                media_message
+                |> Map.put("object", Map.delete(media_message["object"], "attachment"))}
+    end
   end
 
   describe "when :media_nsfw" do
@@ -90,12 +100,20 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
     end
+
+    test "works with Updates" do
+      clear_config([:mrf_simple, :media_nsfw], [{"remote.instance", "Whetever"}])
+      media_message = build_media_message(type: "Update")
+
+      assert SimplePolicy.filter(media_message) ==
+               {:ok, put_in(media_message, ["object", "sensitive"], true)}
+    end
   end
 
-  defp build_media_message do
+  defp build_media_message(opts \\ []) do
     %{
       "actor" => "https://remote.instance/users/bob",
-      "type" => "Create",
+      "type" => opts[:type] || "Create",
       "object" => %{
         "attachment" => [%{}],
         "tag" => ["foo"],

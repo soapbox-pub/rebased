@@ -1,0 +1,264 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"PO-Revision-Date: 2023-05-02 17:02-0400\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin"
+msgstr "All admin access"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:read"
+msgstr "Read all using admin API"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:write"
+msgstr "Write all using admin API"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "follow"
+msgstr "Read and write user relationships"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "push"
+msgstr "Push notifications"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read"
+msgstr "Read everything"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:accounts"
+msgstr "Read information of all accounts"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:backups"
+msgstr "Read your backups"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:blocks"
+msgstr "Read block relationships"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:bookmarks"
+msgstr "Read your bookmarks"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:chats"
+msgstr "Read your chats"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:favourites"
+msgstr "Read your favourites"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:filters"
+msgstr "Read your filtering settings"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:follows"
+msgstr "Read follow relationships"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:lists"
+msgstr "Read your lists"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:notifications"
+msgstr "Read your notifications"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:reports"
+msgstr "Read your reports"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:search"
+msgstr "Perform searches"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:statuses"
+msgstr "Read all statuses you can see"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write"
+msgstr "Write everything"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:accounts"
+msgstr "Change your account information"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:blocks"
+msgstr "Block or unblock someone"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:bookmarks"
+msgstr "Add to or remove from your bookmarks"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:chats"
+msgstr "Create or delete chats or chat messages, or mark them as read"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:conversations"
+msgstr "Change recipients of, mark as read, or delete conversations"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:favourites"
+msgstr "Favourite or unfavourite statuses"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:filters"
+msgstr "Change your filtering settings"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:follow"
+msgstr "Follow or unfollow someone"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:follows"
+msgstr "Follow or unfollow someone"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:lists"
+msgstr "Create, change or delete your lists"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:media"
+msgstr "Upload media files or modify those you uploaded"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:mutes"
+msgstr "Mute or unmute someone"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:notifications"
+msgstr "Mark notifications as read"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:reports"
+msgstr "Submit reports"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:statuses"
+msgstr "Post, edit, reblog or react to statuses"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:read:accounts"
+msgstr "Read all accounts using admin API"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:read:chats"
+msgstr "Read all chats using admin API"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:read:invites"
+msgstr "Read all invites using admin API"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:read:media_proxy_caches"
+msgstr "Read media proxy caches using admin API"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:read:reports"
+msgstr "Read all reports using admin API"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:read:statuses"
+msgstr "Read all statuses using admin API"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:write:accounts"
+msgstr "Change all accounts using admin API"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:write:chats"
+msgstr "Change all chats using admin API"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:write:follows"
+msgstr "Change follow relationships using admin API"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:write:invites"
+msgstr "Invite or revoke an invite using admin API"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:write:media_proxy_caches"
+msgstr "Change media proxy caches using admin API"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:write:reports"
+msgstr "Handle reports using admin API"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:write:statuses"
+msgstr "Delete, change scope of, or mark as sensitive statuses using admin API"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:media"
+msgstr "Read media attachments"
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:mutes"
+msgstr "Read mute relationships"

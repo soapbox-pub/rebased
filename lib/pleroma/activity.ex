@@ -53,7 +53,7 @@ defmodule Pleroma.Activity do
     #
     # ```
     # |> join(:inner, [activity], o in Object,
-    #      on: fragment("(?->>'id') = COALESCE((?)->'object'->> 'id', (?)->>'object')",
+    #      on: fragment("(?->>'id') = associated_object_id((?))",
     #        o.data, activity.data, activity.data))
     # |> preload([activity, object], [object: object])
     # ```
@@ -69,9 +69,8 @@ defmodule Pleroma.Activity do
     join(query, join_type, [activity], o in Object,
       on:
         fragment(
-          "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
+          "(?->>'id') = associated_object_id(?)",
           o.data,
-          activity.data,
           activity.data
         ),
       as: :object
@@ -362,12 +361,14 @@ defmodule Pleroma.Activity do
   end
 
   def restrict_deactivated_users(query) do
-    deactivated_users_query = from(u in User.Query.build(%{deactivated: true}), select: u.ap_id)
-
-    from(activity in query, where: activity.actor not in subquery(deactivated_users_query))
+    query
+    |> join(:inner, [activity], user in User,
+      as: :user,
+      on: activity.actor == user.ap_id and user.is_active == true
+    )
   end
 
-  defdelegate search(user, query, options \\ []), to: Pleroma.Activity.Search
+  defdelegate search(user, query, options \\ []), to: Pleroma.Search.DatabaseSearch
 
   def direct_conversation_id(activity, for_user) do
     alias Pleroma.Conversation.Participation

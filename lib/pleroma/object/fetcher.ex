@@ -4,46 +4,34 @@
 
 defmodule Pleroma.Object.Fetcher do
   alias Pleroma.HTTP
+  alias Pleroma.Instances
   alias Pleroma.Maps
   alias Pleroma.Object
   alias Pleroma.Object.Containment
-  alias Pleroma.Repo
   alias Pleroma.Signature
   alias Pleroma.Web.ActivityPub.InternalFetchActor
+  alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.ObjectValidator
+  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.Federator
 
   require Logger
   require Pleroma.Constants
 
-  defp touch_changeset(changeset) do
-    updated_at =
-      NaiveDateTime.utc_now()
-      |> NaiveDateTime.truncate(:second)
-
-    Ecto.Changeset.put_change(changeset, :updated_at, updated_at)
-  end
-
-  defp maybe_reinject_internal_fields(%{data: %{} = old_data}, new_data) do
-    internal_fields = Map.take(old_data, Pleroma.Constants.object_internal_fields())
-
-    Map.merge(new_data, internal_fields)
-  end
-
-  defp maybe_reinject_internal_fields(_, new_data), do: new_data
-
   @spec reinject_object(struct(), map()) :: {:ok, Object.t()} | {:error, any()}
-  defp reinject_object(%Object{data: %{"type" => "Question"}} = object, new_data) do
+  defp reinject_object(%Object{data: %{}} = object, new_data) do
     Logger.debug("Reinjecting object #{new_data["id"]}")
 
-    with data <- maybe_reinject_internal_fields(object, new_data),
-         {:ok, data, _} <- ObjectValidator.validate(data, %{}),
-         changeset <- Object.change(object, %{data: data}),
-         changeset <- touch_changeset(changeset),
-         {:ok, object} <- Repo.insert_or_update(changeset),
-         {:ok, object} <- Object.set_cache(object) do
-      {:ok, object}
+    with {:ok, new_data, _} <- ObjectValidator.validate(new_data, %{}),
+         {:ok, new_data} <- MRF.filter(new_data),
+         {:ok, new_object, _} <-
+           Object.Updater.do_update_and_invalidate_cache(
+             object,
+             new_data,
+             _touch_changeset? = true
+           ) do
+      {:ok, new_object}
     else
       e ->
         Logger.error("Error while processing object: #{inspect(e)}")
@@ -51,20 +39,11 @@ defmodule Pleroma.Object.Fetcher do
     end
   end
 
-  defp reinject_object(%Object{} = object, new_data) do
-    Logger.debug("Reinjecting object #{new_data["id"]}")
-
-    with new_data <- Transmogrifier.fix_object(new_data),
-         data <- maybe_reinject_internal_fields(object, new_data),
-         changeset <- Object.change(object, %{data: data}),
-         changeset <- touch_changeset(changeset),
-         {:ok, object} <- Repo.insert_or_update(changeset),
-         {:ok, object} <- Object.set_cache(object) do
+  defp reinject_object(_, new_data) do
+    with {:ok, object, _} <- Pipeline.common_pipeline(new_data, local: false) do
       {:ok, object}
     else
-      e ->
-        Logger.error("Error while processing object: #{inspect(e)}")
-        {:error, e}
+      e -> e
     end
   end
 
@@ -200,6 +179,10 @@ defmodule Pleroma.Object.Fetcher do
          {:ok, body} <- get_object(id),
          {:ok, data} <- safe_json_decode(body),
          :ok <- Containment.contain_origin_from_id(id, data) do
+      if not Instances.reachable?(id) do
+        Instances.set_reachable(id)
+      end
+
       {:ok, data}
     else
       {:scheme, _} ->

@@ -25,6 +25,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.Streamer
   alias Pleroma.Workers.PollWorker
 
+  require Pleroma.Constants
   require Logger
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
@@ -153,23 +154,26 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
   # Tasks this handles:
   # - Update the user
+  # - Update a non-user object (Note, Question, etc.)
   #
   # For a local user, we also get a changeset with the full information, so we
   # can update non-federating, non-activitypub settings as well.
   @impl true
   def handle(%{data: %{"type" => "Update", "object" => updated_object}} = object, meta) do
-    if changeset = Keyword.get(meta, :user_update_changeset) do
-      changeset
-      |> User.update_and_set_cache()
+    updated_object_id = updated_object["id"]
+
+    with {_, true} <- {:has_id, is_binary(updated_object_id)},
+         %{"type" => type} <- updated_object,
+         {_, is_user} <- {:is_user, type in Pleroma.Constants.actor_types()} do
+      if is_user do
+        handle_update_user(object, meta)
+      else
+        handle_update_object(object, meta)
+      end
     else
-      {:ok, new_user_data} = ActivityPub.user_data_from_user_object(updated_object)
-
-      User.get_by_ap_id(updated_object["id"])
-      |> User.remote_user_changeset(new_user_data)
-      |> User.update_and_set_cache()
+      _ ->
+        {:ok, object, meta}
     end
-
-    {:ok, object, meta}
   end
 
   # Tasks this handles:
@@ -193,6 +197,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Increase replies count
   # - Set up ActivityExpiration
   # - Set up notifications
+  # - Index incoming posts for search (if needed)
   @impl true
   def handle(%{data: %{"type" => "Create"}} = activity, meta) do
     with {:ok, object, meta} <- handle_object_creation(meta[:object_data], activity, meta),
@@ -203,6 +208,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
       if in_reply_to = object.data["type"] != "Answer" && object.data["inReplyTo"] do
         Object.increase_replies_count(in_reply_to)
+      end
+
+      if quote_url = object.data["quoteUrl"] do
+        Object.increase_quotes_count(quote_url)
       end
 
       reply_depth = (meta[:depth] || 0) + 1
@@ -221,6 +230,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       ConcurrentLimiter.limit(Pleroma.Web.RichMedia.Helpers, fn ->
         Task.start(fn -> Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) end)
       end)
+
+      Pleroma.Search.add_to_index(Map.put(activity, :object, object))
 
       meta =
         meta
@@ -278,10 +289,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # Tasks this handles:
   # - Delete and unpins the create activity
   # - Replace object with Tombstone
-  # - Set up notification
   # - Reduce the user note count
   # - Reduce the reply count
   # - Stream out the activity
+  # - Removes posts from search index (if needed)
   @impl true
   def handle(%{data: %{"type" => "Delete", "object" => deleted_object}} = object, meta) do
     deleted_object =
@@ -302,6 +313,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
               Object.decrease_replies_count(in_reply_to)
             end
 
+            if quote_url = deleted_object.data["quoteUrl"] do
+              Object.decrease_quotes_count(quote_url)
+            end
+
             MessageReference.delete_for_object(deleted_object)
 
             ap_streamer().stream_out(object)
@@ -320,7 +335,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       end
 
     if result == :ok do
-      Notification.create_notifications(object)
+      # Only remove from index when deleting actual objects, not users or anything else
+      with %Pleroma.Object{} <- deleted_object do
+        Pleroma.Search.remove_from_index(deleted_object)
+      end
+
       {:ok, object, meta}
     else
       {:error, result}
@@ -390,6 +409,55 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     {:ok, object, meta}
   end
 
+  defp handle_update_user(
+         %{data: %{"type" => "Update", "object" => updated_object}} = object,
+         meta
+       ) do
+    if changeset = Keyword.get(meta, :user_update_changeset) do
+      changeset
+      |> User.update_and_set_cache()
+    else
+      {:ok, new_user_data} = ActivityPub.user_data_from_user_object(updated_object)
+
+      User.get_by_ap_id(updated_object["id"])
+      |> User.remote_user_changeset(new_user_data)
+      |> User.update_and_set_cache()
+    end
+
+    {:ok, object, meta}
+  end
+
+  defp handle_update_object(
+         %{data: %{"type" => "Update", "object" => updated_object}} = object,
+         meta
+       ) do
+    orig_object_ap_id = updated_object["id"]
+    orig_object = Object.get_by_ap_id(orig_object_ap_id)
+    orig_object_data = orig_object.data
+
+    updated_object =
+      if meta[:local] do
+        # If this is a local Update, we don't process it by transmogrifier,
+        # so we use the embedded object as-is.
+        updated_object
+      else
+        meta[:object_data]
+      end
+
+    if orig_object_data["type"] in Pleroma.Constants.updatable_object_types() do
+      {:ok, _, updated} =
+        Object.Updater.do_update_and_invalidate_cache(orig_object, updated_object)
+
+      if updated do
+        object
+        |> Activity.normalize()
+        |> ActivityPub.notify_and_stream()
+      end
+    end
+
+    {:ok, object, meta}
+  end
+
   def handle_object_creation(%{"type" => "ChatMessage"} = object, _activity, meta) do
     with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
       actor = User.get_cached_by_ap_id(object.data["actor"])
@@ -445,7 +513,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   def handle_object_creation(%{"type" => objtype} = object, _activity, meta)
-      when objtype in ~w[Audio Video Event Article Note Page] do
+      when objtype in ~w[Audio Video Image Event Article Note Page] do
     with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
       {:ok, object, meta}
     end

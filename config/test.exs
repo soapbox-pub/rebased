@@ -16,7 +16,7 @@ config :pleroma, Pleroma.Captcha,
 
 # Print only warnings and errors during test
 config :logger, :console,
-  level: :warn,
+  level: :warning,
   format: "\n[$level] $message\n"
 
 config :pleroma, :auth, oauth_consumer_strategies: []
@@ -47,6 +47,7 @@ config :pleroma, Pleroma.Repo,
   password: "postgres",
   database: "pleroma_test",
   hostname: System.get_env("DB_HOST") || "localhost",
+  port: System.get_env("DB_PORT") || "5432",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 50
 
@@ -81,10 +82,7 @@ config :web_push_encryption, :vapid_details,
     "BLH1qVhJItRGCfxgTtONfsOKDc9VRAraXw-3NsmjMngWSh7NxOizN6bkuRA7iLTMPS82PjwJAr3UoK9EC1IFrz4",
   private_key: "_-XZ0iebPrRfZ_o0-IatTdszYa8VCH1yLN-JauK7HHA"
 
-config :pleroma, Oban,
-  queues: false,
-  crontab: false,
-  plugins: false
+config :pleroma, Oban, testing: :manual
 
 config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 2,
@@ -129,13 +127,40 @@ config :pleroma, :pipeline,
 
 config :pleroma, :cachex, provider: Pleroma.CachexMock
 
+config :pleroma, Pleroma.Web.WebFinger, update_nickname_on_user_fetch: false
+
 config :pleroma, :side_effects,
   ap_streamer: Pleroma.Web.ActivityPub.ActivityPubMock,
   logger: Pleroma.LoggerMock
 
+config :pleroma, Pleroma.Search, module: Pleroma.Search.DatabaseSearch
+
+config :pleroma, Pleroma.Search.Meilisearch, url: "http://127.0.0.1:7700/", private_key: nil
+
 # Reduce recompilation time
 # https://dashbit.co/blog/speeding-up-re-compilation-of-elixir-projects
 config :phoenix, :plug_init_mode, :runtime
+
+config :pleroma, :config_impl, Pleroma.UnstubbedConfigMock
+
+config :pleroma, Pleroma.PromEx, disabled: true
+
+# Mox definitions. Only read during compile time.
+config :pleroma, Pleroma.User.Backup, config_impl: Pleroma.UnstubbedConfigMock
+config :pleroma, Pleroma.Uploaders.S3, ex_aws_impl: Pleroma.Uploaders.S3.ExAwsMock
+config :pleroma, Pleroma.Uploaders.S3, config_impl: Pleroma.UnstubbedConfigMock
+config :pleroma, Pleroma.Upload, config_impl: Pleroma.UnstubbedConfigMock
+config :pleroma, Pleroma.ScheduledActivity, config_impl: Pleroma.UnstubbedConfigMock
+config :pleroma, Pleroma.Web.RichMedia.Helpers, config_impl: Pleroma.StaticStubbedConfigMock
+
+peer_module =
+  if String.to_integer(System.otp_release()) >= 25 do
+    :peer
+  else
+    :slave
+  end
+
+config :pleroma, Pleroma.Cluster, peer_module: peer_module
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

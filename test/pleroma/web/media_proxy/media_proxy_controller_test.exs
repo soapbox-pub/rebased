@@ -6,9 +6,19 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
   use Pleroma.Web.ConnCase
 
   import Mock
+  import Mox
 
+  alias Pleroma.ReverseProxy.ClientMock
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.MediaProxy
   alias Plug.Conn
+
+  setup do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
+    :ok
+  end
 
   describe "Media Proxy" do
     setup do
@@ -73,6 +83,20 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
         call: fn _conn, _url, _opts -> %Conn{status: :success} end do
         assert %Conn{status: 404, resp_body: "Not Found"} = get(conn, url)
       end
+    end
+
+    test "it applies sandbox CSP to MediaProxy requests", %{conn: conn} do
+      media_url = "https://lain.com/image.png"
+      media_proxy_url = MediaProxy.encode_url(media_url)
+
+      ClientMock
+      |> expect(:request, fn :get, ^media_url, _, _, _ ->
+        {:ok, 200, [{"content-type", "image/png"}]}
+      end)
+
+      %Conn{resp_headers: headers} = get(conn, media_proxy_url)
+
+      assert {"content-security-policy", "sandbox;"} in headers
     end
   end
 
@@ -158,7 +182,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
       media_proxy_url: media_proxy_url
     } do
       Tesla.Mock.mock(fn
-        %{method: "head", url: ^media_proxy_url} ->
+        %{method: "HEAD", url: ^media_proxy_url} ->
           %Tesla.Env{status: 500, body: ""}
       end)
 
@@ -173,7 +197,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
       media_proxy_url: media_proxy_url
     } do
       Tesla.Mock.mock(fn
-        %{method: "head", url: ^media_proxy_url} ->
+        %{method: "HEAD", url: ^media_proxy_url} ->
           %Tesla.Env{status: 200, body: "", headers: [{"content-type", "application/pdf"}]}
       end)
 
@@ -193,7 +217,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
       clear_config([:media_preview_proxy, :min_content_length], 1_000_000_000)
 
       Tesla.Mock.mock(fn
-        %{method: "head", url: ^media_proxy_url} ->
+        %{method: "HEAD", url: ^media_proxy_url} ->
           %Tesla.Env{
             status: 200,
             body: "",
@@ -218,7 +242,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
            media_proxy_url: media_proxy_url
          } do
       Tesla.Mock.mock(fn
-        %{method: "head", url: ^media_proxy_url} ->
+        %{method: "HEAD", url: ^media_proxy_url} ->
           %Tesla.Env{status: 200, body: "", headers: [{"content-type", "image/gif"}]}
       end)
 
@@ -236,7 +260,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
            media_proxy_url: media_proxy_url
          } do
       Tesla.Mock.mock(fn
-        %{method: "head", url: ^media_proxy_url} ->
+        %{method: "HEAD", url: ^media_proxy_url} ->
           %Tesla.Env{status: 200, body: "", headers: [{"content-type", "image/jpeg"}]}
       end)
 
@@ -256,7 +280,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
       clear_config([:media_preview_proxy, :min_content_length], 100_000)
 
       Tesla.Mock.mock(fn
-        %{method: "head", url: ^media_proxy_url} ->
+        %{method: "HEAD", url: ^media_proxy_url} ->
           %Tesla.Env{
             status: 200,
             body: "",
@@ -278,7 +302,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
       assert_dependencies_installed()
 
       Tesla.Mock.mock(fn
-        %{method: "head", url: ^media_proxy_url} ->
+        %{method: "HEAD", url: ^media_proxy_url} ->
           %Tesla.Env{status: 200, body: "", headers: [{"content-type", "image/png"}]}
 
         %{method: :get, url: ^media_proxy_url} ->
@@ -300,7 +324,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
       assert_dependencies_installed()
 
       Tesla.Mock.mock(fn
-        %{method: "head", url: ^media_proxy_url} ->
+        %{method: "HEAD", url: ^media_proxy_url} ->
           %Tesla.Env{status: 200, body: "", headers: [{"content-type", "image/jpeg"}]}
 
         %{method: :get, url: ^media_proxy_url} ->
@@ -320,7 +344,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
       media_proxy_url: media_proxy_url
     } do
       Tesla.Mock.mock(fn
-        %{method: "head", url: ^media_proxy_url} ->
+        %{method: "HEAD", url: ^media_proxy_url} ->
           %Tesla.Env{status: 200, body: "", headers: [{"content-type", "image/jpeg"}]}
 
         %{method: :get, url: ^media_proxy_url} ->

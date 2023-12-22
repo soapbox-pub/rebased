@@ -62,6 +62,20 @@ An additional “Expect-CT” header will be sent with the configured `ct_max_ag
 
 If you click on a link, your browser’s request to the other site will include from where it is coming from. The “Referrer policy” header tells the browser how and if it should send this information. (see [Referrer policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy))
 
+### Uploaded media and media proxy
+
+It is STRONGLY RECOMMENDED to serve both the locally-uploaded media and the media proxy from another domain than the domain that Pleroma runs on, if applicable.
+
+```elixir
+config :pleroma, :media_proxy,
+  base_url: "https://some.other.domain"
+
+config :pleroma, Pleroma.Upload,
+  base_url: "https://some.other.domain/media"
+```
+
+See `installation/pleroma-mediaproxy.nginx` for examples on how to configure your media proxy.
+
 ## systemd
 
 A systemd unit example is provided at `installation/pleroma.service`.

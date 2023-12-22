@@ -285,6 +285,7 @@ defmodule Pleroma.Emoji.Pack do
 
   @spec load_pack(String.t()) :: {:ok, t()} | {:error, :file.posix()}
   def load_pack(name) do
+    name = Path.basename(name)
     pack_file = Path.join([emoji_path(), name, "pack.json"])
 
     with {:ok, _} <- File.stat(pack_file),

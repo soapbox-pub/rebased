@@ -7,13 +7,18 @@ defmodule Pleroma.Web.MastodonAPI.InstanceController do
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
-  plug(:skip_auth when action in [:show, :peers])
+  plug(:skip_auth when action in [:show, :show2, :peers])
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.InstanceOperation
 
   @doc "GET /api/v1/instance"
   def show(conn, _params) do
     render(conn, "show.json")
+  end
+
+  @doc "GET /api/v2/instance"
+  def show2(conn, _params) do
+    render(conn, "show2.json")
   end
 
   @doc "GET /api/v1/instance/peers"

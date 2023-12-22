@@ -121,6 +121,13 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
     render(conn, "followed.html", %{error: "Insufficient permissions: follow | write:follows."})
   end
 
+  # GET /authorize_interaction
+  #
+  def authorize_interaction(conn, %{"uri" => uri}) do
+    conn
+    |> redirect(to: Routes.remote_follow_path(conn, :follow, %{acct: uri}))
+  end
+
   defp handle_follow_error(conn, {:mfa_token, followee, _} = _) do
     render(conn, "follow_login.html", %{error: "Wrong username or password", followee: followee})
   end

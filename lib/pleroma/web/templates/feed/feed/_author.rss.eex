@@ -1,17 +1,10 @@
-<managingEditor>
-  <guid><%= @user.ap_id %></guid>
-  <activity:object>http://activitystrea.ms/schema/1.0/person</activity:object>
-  <uri><%= @user.ap_id %></uri>
-  <poco:preferredUsername><%= @user.nickname %></poco:preferredUsername>
-  <poco:displayName><%= @user.name %></poco:displayName>
-  <poco:note><%= escape(@user.bio) %></poco:note>
-  <description><%= escape(@user.bio) %></description>
-  <name><%= @user.nickname %></name>
-  <link rel="avatar"><%= User.avatar_url(@user) %></link>
-  <%= if User.banner_url(@user) do %>
-    <link rel="header"><%= User.banner_url(@user) %></link>
-  <% end %>
-  <%= if @user.local do %>
-    <ap_enabled>true</ap_enabled>
-  <% end %>
-</managingEditor>
+<managingEditor><%= "#{email(@user)} (#{escape(@user.name)})" %></managingEditor>
+<activity:object>http://activitystrea.ms/schema/1.0/person</activity:object>
+<activity:displayName><%= @user.name %></activity:displayName>
+<activity:image><%= User.avatar_url(@user) %></activity:image>
+<activity:id><%= @user.ap_id %></activity:id>
+<activity:published><%= to_rfc3339(@user.inserted_at) %></activity:published>
+<activity:updated><%= to_rfc3339(@user.updated_at) %></activity:updated>
+<poco:preferredUsername><%= @user.nickname %></poco:preferredUsername>
+<poco:displayName><%= @user.name %></poco:displayName>
+<poco:note><%= escape(@user.bio) %></poco:note>

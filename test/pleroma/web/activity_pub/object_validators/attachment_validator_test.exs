@@ -5,12 +5,27 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
   use Pleroma.DataCase, async: true
 
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
 
+  import Mox
   import Pleroma.Factory
 
   describe "attachments" do
+    test "fails without url" do
+      attachment = %{
+        "mediaType" => "",
+        "name" => "",
+        "summary" => "298p3RG7j27tfsZ9RQ.jpg",
+        "type" => "Document"
+      }
+
+      assert {:error, _cng} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+    end
+
     test "works with honkerific attachments" do
       attachment = %{
         "mediaType" => "",
@@ -18,6 +33,46 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
         "summary" => "298p3RG7j27tfsZ9RQ.jpg",
         "type" => "Document",
         "url" => "https://honk.tedunangst.com/d/298p3RG7j27tfsZ9RQ.jpg"
+      }
+
+      assert {:ok, attachment} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+
+      assert attachment.mediaType == "application/octet-stream"
+    end
+
+    test "works with an unknown but valid mime type" do
+      attachment = %{
+        "mediaType" => "x-custom/x-type",
+        "type" => "Document",
+        "url" => "https://example.org"
+      }
+
+      assert {:ok, attachment} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+
+      assert attachment.mediaType == "x-custom/x-type"
+    end
+
+    test "works with invalid mime types" do
+      attachment = %{
+        "mediaType" => "x-customx-type",
+        "type" => "Document",
+        "url" => "https://example.org"
+      }
+
+      assert {:ok, attachment} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+
+      assert attachment.mediaType == "application/octet-stream"
+
+      attachment = %{
+        "mediaType" => "https://example.org",
+        "type" => "Document",
+        "url" => "https://example.org"
       }
 
       assert {:ok, attachment} =
@@ -62,6 +117,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
+
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
 
       {:ok, attachment} = ActivityPub.upload(file, actor: user.ap_id)
 

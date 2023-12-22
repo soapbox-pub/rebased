@@ -53,10 +53,55 @@ defmodule Pleroma.Web.ActivityPub.MRF do
 
   @required_description_keys [:key, :related_policy]
 
+  def filter_one(policy, message) do
+    Code.ensure_loaded(policy)
+
+    should_plug_history? =
+      if function_exported?(policy, :history_awareness, 0) do
+        policy.history_awareness()
+      else
+        :manual
+      end
+      |> Kernel.==(:auto)
+
+    if not should_plug_history? do
+      policy.filter(message)
+    else
+      main_result = policy.filter(message)
+
+      with {_, {:ok, main_message}} <- {:main, main_result},
+           {_,
+            %{
+              "formerRepresentations" => %{
+                "orderedItems" => [_ | _]
+              }
+            }} = {_, object} <- {:object, message["object"]},
+           {_, {:ok, new_history}} <-
+             {:history,
+              Pleroma.Object.Updater.for_each_history_item(
+                object["formerRepresentations"],
+                object,
+                fn item ->
+                  with {:ok, filtered} <- policy.filter(Map.put(message, "object", item)) do
+                    {:ok, filtered["object"]}
+                  else
+                    e -> e
+                  end
+                end
+              )} do
+        {:ok, put_in(main_message, ["object", "formerRepresentations"], new_history)}
+      else
+        {:main, _} -> main_result
+        {:object, _} -> main_result
+        {:history, e} -> e
+      end
+    end
+  end
+
   def filter(policies, %{} = message) do
     policies
     |> Enum.reduce({:ok, message}, fn
-      policy, {:ok, message} -> policy.filter(message)
+      policy, {:ok, message} -> filter_one(policy, message)
       _, error -> error
     end)
   end
@@ -145,6 +190,8 @@ defmodule Pleroma.Web.ActivityPub.MRF do
 
   def config_descriptions(policies) do
     Enum.reduce(policies, @mrf_config_descriptions, fn policy, acc ->
+      Code.ensure_loaded(policy)
+
       if function_exported?(policy, :config_description, 0) do
         description =
           @default_description
@@ -156,7 +203,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
         if Enum.all?(@required_description_keys, &Map.has_key?(description, &1)) do
           [description | acc]
         else
-          Logger.warn(
+          Logger.warning(
             "#{policy} config description doesn't have one or all required keys #{inspect(@required_description_keys)}"
           )
 

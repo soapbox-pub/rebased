@@ -51,7 +51,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UpdateValidator do
     with actor = get_field(cng, :actor),
          object = get_field(cng, :object),
          {:ok, object_id} <- ObjectValidators.ObjectID.cast(object),
-         true <- actor == object_id do
+         actor_uri <- URI.parse(actor),
+         object_uri <- URI.parse(object_id),
+         true <- actor_uri.host == object_uri.host do
       cng
     else
       _e ->

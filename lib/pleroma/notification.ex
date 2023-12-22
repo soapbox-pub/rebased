@@ -117,9 +117,8 @@ defmodule Pleroma.Notification do
     |> join(:left, [n, a], object in Object,
       on:
         fragment(
-          "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
+          "(?->>'id') = associated_object_id(?)",
           object.data,
-          a.data,
           a.data
         )
     )
@@ -179,6 +178,7 @@ defmodule Pleroma.Notification do
         from([_n, a, o] in query,
           where:
             fragment("not(?->>'content' ~* ?)", o.data, ^regex) or
+              fragment("?->>'content' is null", o.data) or
               fragment("?->>'actor' = ?", o.data, ^user.ap_id)
         )
     end
@@ -193,13 +193,11 @@ defmodule Pleroma.Notification do
       |> join(:left, [n, a], mutated_activity in Pleroma.Activity,
         on:
           fragment(
-            "COALESCE((?->'object')->>'id', ?->>'object')",
-            a.data,
+            "associated_object_id(?)",
             a.data
           ) ==
             fragment(
-              "COALESCE((?->'object')->>'id', ?->>'object')",
-              mutated_activity.data,
+              "associated_object_id(?)",
               mutated_activity.data
             ) and
             fragment("(?->>'type' = 'Like' or ?->>'type' = 'Announce')", a.data, a.data) and
@@ -341,14 +339,6 @@ defmodule Pleroma.Notification do
     |> Repo.delete_all()
   end
 
-  def destroy_multiple_from_types(%{id: user_id}, types) do
-    from(n in Notification,
-      where: n.user_id == ^user_id,
-      where: n.type in ^types
-    )
-    |> Repo.delete_all()
-  end
-
   def dismiss(%Pleroma.Activity{} = activity) do
     Notification
     |> where([n], n.activity_id == ^activity.id)
@@ -385,7 +375,7 @@ defmodule Pleroma.Notification do
   end
 
   def create_notifications(%Activity{data: %{"type" => type}} = activity, options)
-      when type in ["Follow", "Like", "Announce", "Move", "EmojiReact", "Flag"] do
+      when type in ["Follow", "Like", "Announce", "Move", "EmojiReact", "Flag", "Update"] do
     do_create_notifications(activity, options)
   end
 
@@ -438,6 +428,9 @@ defmodule Pleroma.Notification do
       "Create" ->
         activity
         |> type_from_activity_object()
+
+      "Update" ->
+        "update"
 
       t ->
         raise "No notification type for activity type #{t}"
@@ -513,7 +506,16 @@ defmodule Pleroma.Notification do
   def get_notified_from_activity(activity, local_only \\ true)
 
   def get_notified_from_activity(%Activity{data: %{"type" => type}} = activity, local_only)
-      when type in ["Create", "Like", "Announce", "Follow", "Move", "EmojiReact", "Flag"] do
+      when type in [
+             "Create",
+             "Like",
+             "Announce",
+             "Follow",
+             "Move",
+             "EmojiReact",
+             "Flag",
+             "Update"
+           ] do
     potential_receiver_ap_ids = get_potential_receiver_ap_ids(activity)
 
     potential_receivers =
@@ -550,7 +552,24 @@ defmodule Pleroma.Notification do
   end
 
   def get_potential_receiver_ap_ids(%{data: %{"type" => "Flag", "actor" => actor}}) do
-    (User.all_superusers() |> Enum.map(fn user -> user.ap_id end)) -- [actor]
+    (User.all_users_with_privilege(:reports_manage_reports)
+     |> Enum.map(fn user -> user.ap_id end)) --
+      [actor]
+  end
+
+  # Update activity: notify all who repeated this
+  def get_potential_receiver_ap_ids(%{data: %{"type" => "Update", "actor" => actor}} = activity) do
+    with %Object{data: %{"id" => object_id}} <- Object.normalize(activity, fetch: false) do
+      repeaters =
+        Activity.Queries.by_type("Announce")
+        |> Activity.Queries.by_object_id(object_id)
+        |> Activity.with_joined_user_actor()
+        |> where([a, u], u.local)
+        |> select([a, u], u.ap_id)
+        |> Repo.all()
+
+      repeaters -- [actor]
+    end
   end
 
   def get_potential_receiver_ap_ids(activity) do
@@ -661,7 +680,7 @@ defmodule Pleroma.Notification do
     cond do
       opts[:type] == "poll" -> false
       user.ap_id == actor -> false
-      !User.following?(follower, user) -> true
+      !User.following?(user, follower) -> true
       true -> false
     end
   end

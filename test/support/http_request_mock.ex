@@ -21,7 +21,7 @@ defmodule HttpRequestMock do
     else
       error ->
         with {:error, message} <- error do
-          Logger.warn(to_string(message))
+          Logger.warning(to_string(message))
         end
 
         {_, _r} = error
@@ -424,14 +424,6 @@ defmodule HttpRequestMock do
     {:error, :nxdomain}
   end
 
-  def get("http://osada.macgirvin.com/.well-known/host-meta", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 404,
-       body: ""
-     }}
-  end
-
   def get("https://osada.macgirvin.com/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -725,6 +717,15 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get(
+        "https://mastodon.social/.well-known/webfinger?resource=acct:not_found@mastodon.social",
+        _,
+        _,
+        [{"accept", "application/xrd+xml,application/jrd+json"}]
+      ) do
+    {:ok, %Tesla.Env{status: 404}}
+  end
+
   def get("http://gs.example.org/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -756,7 +757,7 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 406, body: ""}}
   end
 
-  def get("http://squeet.me/.well-known/host-meta", _, _, _) do
+  def get("https://squeet.me/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/squeet.me_host_meta")}}
   end
@@ -797,7 +798,7 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 200, body: "", headers: [{"content-type", "application/jrd+json"}]}}
   end
 
-  def get("http://framatube.org/.well-known/host-meta", _, _, _) do
+  def get("https://framatube.org/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -806,7 +807,7 @@ defmodule HttpRequestMock do
   end
 
   def get(
-        "http://framatube.org/main/xrd?uri=acct:framasoft@framatube.org",
+        "https://framatube.org/main/xrd?uri=acct:framasoft@framatube.org",
         _,
         _,
         [{"accept", "application/xrd+xml,application/jrd+json"}]
@@ -841,7 +842,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://status.alpicola.com/.well-known/host-meta", _, _, _) do
+  def get("https://status.alpicola.com/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -849,7 +850,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://macgirvin.com/.well-known/host-meta", _, _, _) do
+  def get("https://macgirvin.com/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -857,7 +858,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://gerzilla.de/.well-known/host-meta", _, _, _) do
+  def get("https://gerzilla.de/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -1075,6 +1076,14 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://404.site" <> _, _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 404,
+       body: ""
+     }}
+  end
+
   def get(
         "https://zetsubou.xn--q9jyb4c/.well-known/webfinger?resource=acct:lain@zetsubou.xn--q9jyb4c",
         _,
@@ -1121,6 +1130,57 @@ defmodule HttpRequestMock do
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/host-meta-zetsubou.xn--q9jyb4c.xml")
+     }}
+  end
+
+  def get("http://lm.kazv.moe/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/lm.kazv.moe_host_meta")
+     }}
+  end
+
+  def get("https://lm.kazv.moe/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/lm.kazv.moe_host_meta")
+     }}
+  end
+
+  def get(
+        "https://lm.kazv.moe/.well-known/webfinger?resource=acct:mewmew@lm.kazv.moe",
+        _,
+        _,
+        [{"accept", "application/xrd+xml,application/jrd+json"}]
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/https___lm.kazv.moe_users_mewmew.xml"),
+       headers: [{"content-type", "application/xrd+xml"}]
+     }}
+  end
+
+  def get("https://lm.kazv.moe/users/mewmew", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mewmew@lm.kazv.moe.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://lm.kazv.moe/users/mewmew/collections/featured", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!("test/fixtures/users_mock/masto_featured.json")
+         |> String.replace("{{domain}}", "lm.kazv.moe")
+         |> String.replace("{{nickname}}", "mewmew"),
+       headers: [{"content-type", "application/activity+json"}]
      }}
   end
 
@@ -1320,6 +1380,15 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://misskey.io/users/83ssedkv53", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/aimu@misskey.io.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
   def get("https://gleasonator.com/users/macgirvin", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -1337,6 +1406,60 @@ defmodule HttpRequestMock do
          File.read!("test/fixtures/users_mock/masto_featured.json")
          |> String.replace("{{domain}}", "gleasonator.com")
          |> String.replace("{{nickname}}", "macgirvin"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://mk.absturztau.be/users/8ozbzjs3o8", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mametsuko@mk.absturztau.be.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://p.helene.moe/users/helene", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/helene@p.helene.moe.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://mk.absturztau.be/notes/93e7nm8wqg", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mk.absturztau.be-93e7nm8wqg.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://mk.absturztau.be/notes/93e7nm8wqg/activity", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mk.absturztau.be-93e7nm8wqg-activity.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://p.helene.moe/objects/fd5910ac-d9dc-412e-8d1d-914b203296c4", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/p.helene.moe-AM7S6vZQmL6pI9TgPY.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://misskey.io/notes/8vs6wxufd0", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/misskey.io_8vs6wxufd0.json"),
        headers: activitypub_object_headers()
      }}
   end

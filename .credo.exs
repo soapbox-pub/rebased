@@ -83,6 +83,7 @@
         # lanodan: I think PreferImplicitTry should be consistency, and the behaviour seems
         # inconsistent, see: https://github.com/rrrene/credo/issues/224
         {Credo.Check.Readability.PreferImplicitTry, false},
+        {Credo.Check.Readability.PipeIntoAnonymousFunctions, exit_status: 0},
         {Credo.Check.Readability.RedundantBlankLines},
         {Credo.Check.Readability.StringSigils},
         {Credo.Check.Readability.TrailingBlankLine},
@@ -90,6 +91,7 @@
         {Credo.Check.Readability.VariableNames},
         {Credo.Check.Readability.Semicolons},
         {Credo.Check.Readability.SpaceAfterCommas},
+        {Credo.Check.Readability.WithSingleClause, exit_status: 0},
         {Credo.Check.Refactor.DoubleBooleanNegation},
         {Credo.Check.Refactor.CondStatements},
         {Credo.Check.Refactor.CyclomaticComplexity},

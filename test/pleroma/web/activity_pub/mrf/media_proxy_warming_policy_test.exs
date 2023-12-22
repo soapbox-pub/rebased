@@ -7,9 +7,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicyTest do
   use Pleroma.Tests.Helpers
 
   alias Pleroma.HTTP
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
+  alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy
 
   import Mock
+  import Mox
 
   @message %{
     "type" => "Create",
@@ -21,6 +24,32 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicyTest do
       ]
     }
   }
+
+  @message_with_history %{
+    "type" => "Create",
+    "object" => %{
+      "type" => "Note",
+      "content" => "content",
+      "formerRepresentations" => %{
+        "orderedItems" => [
+          %{
+            "type" => "Note",
+            "content" => "content",
+            "attachment" => [
+              %{"url" => [%{"href" => "http://example.com/image.jpg"}]}
+            ]
+          }
+        ]
+      }
+    }
+  }
+
+  setup do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
+    :ok
+  end
 
   setup do: clear_config([:media_proxy, :enabled], true)
 
@@ -48,6 +77,30 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicyTest do
     with_mock HTTP, get: fn _, _, _ -> {:ok, []} end do
       MediaProxyWarmingPolicy.filter(message)
       refute called(HTTP.get(:_, :_, :_))
+    end
+  end
+
+  test "history-aware" do
+    Tesla.Mock.mock(fn %{method: :get, url: "http://example.com/image.jpg"} ->
+      {:ok, %Tesla.Env{status: 200, body: ""}}
+    end)
+
+    with_mock HTTP, get: fn _, _, _ -> {:ok, []} end do
+      MRF.filter_one(MediaProxyWarmingPolicy, @message_with_history)
+
+      assert called(HTTP.get(:_, :_, :_))
+    end
+  end
+
+  test "works with Updates" do
+    Tesla.Mock.mock(fn %{method: :get, url: "http://example.com/image.jpg"} ->
+      {:ok, %Tesla.Env{status: 200, body: ""}}
+    end)
+
+    with_mock HTTP, get: fn _, _, _ -> {:ok, []} end do
+      MRF.filter_one(MediaProxyWarmingPolicy, @message_with_history |> Map.put("type", "Update"))
+
+      assert called(HTTP.get(:_, :_, :_))
     end
   end
 end

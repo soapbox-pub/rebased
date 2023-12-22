@@ -26,6 +26,8 @@ defmodule Pleroma.Web.PleromaApi.InstancesControllerTest do
     constant_unreachable: constant_unreachable,
     constant: constant
   } do
+    clear_config([:instance, :public], false)
+
     constant_host = URI.parse(constant).host
 
     assert conn

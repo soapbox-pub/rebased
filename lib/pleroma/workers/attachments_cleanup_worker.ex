@@ -31,6 +31,9 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
 
   def perform(%Job{args: %{"op" => "cleanup_attachments", "object" => _object}}), do: {:ok, :skip}
 
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(900)
+
   defp do_clean({object_ids, attachment_urls}) do
     uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])
 

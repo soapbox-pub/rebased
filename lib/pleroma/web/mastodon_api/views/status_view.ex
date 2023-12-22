@@ -57,11 +57,40 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end)
   end
 
-  defp get_context_id(%{data: %{"context_id" => context_id}}) when not is_nil(context_id),
-    do: context_id
+  defp get_quoted_activities([]), do: %{}
 
-  defp get_context_id(%{data: %{"context" => context}}) when is_binary(context),
-    do: Utils.context_to_conversation_id(context)
+  defp get_quoted_activities(activities) do
+    activities
+    |> Enum.map(fn
+      %{data: %{"type" => "Create"}} = activity ->
+        object = Object.normalize(activity, fetch: false)
+        object && object.data["quoteUrl"] != "" && object.data["quoteUrl"]
+
+      _ ->
+        nil
+    end)
+    |> Enum.filter(& &1)
+    |> Activity.create_by_object_ap_id_with_object()
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn activity, acc ->
+      object = Object.normalize(activity, fetch: false)
+      if object, do: Map.put(acc, object.data["id"], activity), else: acc
+    end)
+  end
+
+  # DEPRECATED This field seems to be a left-over from the StatusNet era.
+  # If your application uses `pleroma.conversation_id`: this field is deprecated.
+  # It is currently stubbed instead by doing a CRC32 of the context, and
+  # clearing the MSB to avoid overflow exceptions with signed integers on the
+  # different clients using this field (Java/Kotlin code, mostly; see Husky.)
+  # This should be removed in a future version of Pleroma. Pleroma-FE currently
+  # depends on this field, as well.
+  defp get_context_id(%{data: %{"context" => context}}) when is_binary(context) do
+    import Bitwise
+
+    :erlang.crc32(context)
+    |> band(bnot(0x8000_0000))
+  end
 
   defp get_context_id(_), do: nil
 
@@ -89,6 +118,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     # length(activities_with_links) * timeout
     fetch_rich_media_for_activities(activities)
     replied_to_activities = get_replied_to_activities(activities)
+    quoted_activities = get_quoted_activities(activities)
 
     parent_activities =
       activities
@@ -121,6 +151,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     opts =
       opts
       |> Map.put(:replied_to_activities, replied_to_activities)
+      |> Map.put(:quoted_activities, quoted_activities)
       |> Map.put(:parent_activities, parent_activities)
       |> Map.put(:relationships, relationships_opt)
 
@@ -258,9 +289,44 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     created_at = Utils.to_masto_date(object.data["published"])
 
-    reply_to = get_reply_to(activity, opts)
+    edited_at =
+      with %{"updated" => updated} <- object.data,
+           date <- Utils.to_masto_date(updated),
+           true <- date != "" do
+        date
+      else
+        _ ->
+          nil
+      end
 
+    reply_to = get_reply_to(activity, opts)
     reply_to_user = reply_to && CommonAPI.get_user(reply_to.data["actor"])
+
+    history_len =
+      1 +
+        (Object.Updater.history_for(object.data)
+         |> Map.get("orderedItems")
+         |> length())
+
+    # See render("history.json", ...) for more details
+    # Here the implicit index of the current content is 0
+    chrono_order = history_len - 1
+
+    quote_activity = get_quote(activity, opts)
+
+    quote_id =
+      case quote_activity do
+        %Activity{id: id} -> id
+        _ -> nil
+      end
+
+    quote_post =
+      if visible_for_user?(quote_activity, opts[:for]) and opts[:show_quote] != false do
+        quote_rendering_opts = Map.merge(opts, %{activity: quote_activity, show_quote: false})
+        render("show.json", quote_rendering_opts)
+      else
+        nil
+      end
 
     content =
       object
@@ -271,14 +337,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       |> Activity.HTML.get_cached_scrubbed_html_for_activity(
         User.html_filter_policy(opts[:for]),
         activity,
-        "mastoapi:content"
+        "mastoapi:content:#{chrono_order}"
       )
 
     content_plaintext =
       content
       |> Activity.HTML.get_cached_stripped_html_for_activity(
         activity,
-        "mastoapi:content"
+        "mastoapi:content:#{chrono_order}"
       )
 
     summary = object.data["summary"] || ""
@@ -306,14 +372,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       end
 
     emoji_reactions =
-      object.data
-      |> Map.get("reactions", [])
+      object
+      |> Object.get_emoji_reactions()
       |> EmojiReactionController.filter_allowed_users(
         opts[:for],
         Map.get(opts, :with_muted, false)
       )
-      |> Stream.map(fn {emoji, users} ->
-        build_emoji_map(emoji, users, opts[:for])
+      |> Stream.map(fn {emoji, users, url} ->
+        build_emoji_map(emoji, users, url, opts[:for])
       end)
       |> Enum.to_list()
 
@@ -344,8 +410,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblog: nil,
       card: card,
       content: content_html,
-      text: opts[:with_source] && object.data["source"],
+      text: opts[:with_source] && get_source_text(object.data["source"]),
       created_at: created_at,
+      edited_at: edited_at,
       reblogs_count: announcement_count,
       replies_count: object.data["repliesCount"] || 0,
       favourites_count: like_count,
@@ -367,7 +434,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       pleroma: %{
         local: activity.local,
         conversation_id: get_context_id(activity),
+        context: object.data["context"],
         in_reply_to_account_acct: reply_to_user && reply_to_user.nickname,
+        quote: quote_post,
+        quote_id: quote_id,
+        quote_url: object.data["quoteUrl"],
+        quote_visible: visible_for_user?(quote_activity, opts[:for]),
         content: %{"text/plain" => content_plaintext},
         spoiler_text: %{"text/plain" => summary},
         expires_at: expires_at,
@@ -375,13 +447,108 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         thread_muted: thread_muted?,
         emoji_reactions: emoji_reactions,
         parent_visible: visible_for_user?(reply_to, opts[:for]),
-        pinned_at: pinned_at
+        pinned_at: pinned_at,
+        quotes_count: object.data["quotesCount"] || 0
       }
     }
   end
 
   def render("show.json", _) do
     nil
+  end
+
+  def render("history.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
+    object = Object.normalize(activity, fetch: false)
+
+    hashtags = Object.hashtags(object)
+
+    user = CommonAPI.get_user(activity.data["actor"])
+
+    past_history =
+      Object.Updater.history_for(object.data)
+      |> Map.get("orderedItems")
+      |> Enum.map(&Map.put(&1, "id", object.data["id"]))
+      |> Enum.map(&%Object{data: &1, id: object.id})
+
+    history =
+      [object | past_history]
+      # Mastodon expects the original to be at the first
+      |> Enum.reverse()
+      |> Enum.with_index()
+      |> Enum.map(fn {object, chrono_order} ->
+        %{
+          # The history is prepended every time there is a new edit.
+          # In chrono_order, the oldest item is always at 0, and so on.
+          # The chrono_order is an invariant kept between edits.
+          chrono_order: chrono_order,
+          object: object
+        }
+      end)
+
+    individual_opts =
+      opts
+      |> Map.put(:as, :item)
+      |> Map.put(:user, user)
+      |> Map.put(:hashtags, hashtags)
+
+    render_many(history, StatusView, "history_item.json", individual_opts)
+  end
+
+  def render(
+        "history_item.json",
+        %{
+          activity: activity,
+          user: user,
+          item: %{object: object, chrono_order: chrono_order},
+          hashtags: hashtags
+        } = opts
+      ) do
+    sensitive = object.data["sensitive"] || Enum.member?(hashtags, "nsfw")
+
+    attachment_data = object.data["attachment"] || []
+    attachments = render_many(attachment_data, StatusView, "attachment.json", as: :attachment)
+
+    created_at = Utils.to_masto_date(object.data["updated"] || object.data["published"])
+
+    content =
+      object
+      |> render_content()
+
+    content_html =
+      content
+      |> Activity.HTML.get_cached_scrubbed_html_for_activity(
+        User.html_filter_policy(opts[:for]),
+        activity,
+        "mastoapi:content:#{chrono_order}"
+      )
+
+    summary = object.data["summary"] || ""
+
+    %{
+      account:
+        AccountView.render("show.json", %{
+          user: user,
+          for: opts[:for]
+        }),
+      content: content_html,
+      sensitive: sensitive,
+      spoiler_text: summary,
+      created_at: created_at,
+      media_attachments: attachments,
+      emojis: build_emojis(object.data["emoji"]),
+      poll: render(PollView, "show.json", object: object, for: opts[:for])
+    }
+  end
+
+  def render("source.json", %{activity: %{data: %{"object" => _object}} = activity} = _opts) do
+    object = Object.normalize(activity, fetch: false)
+
+    %{
+      id: activity.id,
+      text: get_source_text(Map.get(object.data, "source", "")),
+      spoiler_text: Map.get(object.data, "summary", ""),
+      content_type: get_source_content_type(object.data["source"])
+    }
   end
 
   def render("card.json", %{rich_media: rich_media, page_url: page_url}) do
@@ -396,25 +563,24 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     page_url = page_url_data |> to_string
 
-    image_url_data =
-      if is_binary(rich_media["image"]) do
-        URI.parse(rich_media["image"])
-      else
-        nil
-      end
-
-    image_url = build_image_url(image_url_data, page_url_data)
+    image_url = proxied_url(rich_media["image"], page_url_data)
+    audio_url = proxied_url(rich_media["audio"], page_url_data)
+    video_url = proxied_url(rich_media["video"], page_url_data)
 
     %{
       type: "link",
       provider_name: page_url_data.host,
       provider_url: page_url_data.scheme <> "://" <> page_url_data.host,
       url: page_url,
-      image: image_url |> MediaProxy.url(),
+      image: image_url,
       title: rich_media["title"] || "",
       description: rich_media["description"] || "",
       pleroma: %{
-        opengraph: rich_media
+        opengraph:
+          rich_media
+          |> Maps.put_if_present("image", image_url)
+          |> Maps.put_if_present("audio", audio_url)
+          |> Maps.put_if_present("video", video_url)
       }
     }
   end
@@ -436,10 +602,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         true -> "unknown"
       end
 
-    <<hash_id::signed-32, _rest::binary>> = :crypto.hash(:md5, href)
+    attachment_id =
+      with {_, ap_id} when is_binary(ap_id) <- {:ap_id, attachment["id"]},
+           {_, %Object{data: _object_data, id: object_id}} <-
+             {:object, Object.get_by_ap_id(ap_id)} do
+        to_string(object_id)
+      else
+        _ ->
+          <<hash_id::signed-32, _rest::binary>> = :crypto.hash(:md5, href)
+          to_string(attachment["id"] || hash_id)
+      end
 
     %{
-      id: to_string(attachment["id"] || hash_id),
+      id: attachment_id,
       url: href,
       remote_url: href,
       preview_url: href_preview,
@@ -495,6 +670,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     if object.data["inReplyTo"] && object.data["inReplyTo"] != "" do
       Activity.get_create_by_object_ap_id(object.data["inReplyTo"])
+    else
+      nil
+    end
+  end
+
+  def get_quote(activity, %{quoted_activities: quoted_activities}) do
+    object = Object.normalize(activity, fetch: false)
+
+    with nil <- quoted_activities[object.data["quoteUrl"]] do
+      # For when a quote post is inside an Announce
+      Activity.get_create_by_object_ap_id_with_object(object.data["quoteUrl"])
+    end
+  end
+
+  def get_quote(%{data: %{"object" => _object}} = activity, _) do
+    object = Object.normalize(activity, fetch: false)
+
+    if object.data["quoteUrl"] && object.data["quoteUrl"] != "" do
+      Activity.get_create_by_object_ap_id(object.data["quoteUrl"])
     else
       nil
     end
@@ -569,11 +763,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
-  defp build_emoji_map(emoji, users, current_user) do
+  defp build_emoji_map(emoji, users, url, current_user) do
     %{
-      name: emoji,
+      name: Pleroma.Web.PleromaAPI.EmojiReactionView.emoji_name(emoji, url),
       count: length(users),
-      me: !!(current_user && current_user.ap_id in users)
+      url: MediaProxy.url(url),
+      me: !!(current_user && current_user.ap_id in users),
+      account_ids: Enum.map(users, fn user -> User.get_cached_by_ap_id(user).id end)
     }
   end
 
@@ -601,4 +797,32 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   defp build_image_url(_, _), do: nil
+
+  defp get_source_text(%{"content" => content} = _source) do
+    content
+  end
+
+  defp get_source_text(source) when is_binary(source) do
+    source
+  end
+
+  defp get_source_text(_) do
+    ""
+  end
+
+  defp get_source_content_type(%{"mediaType" => type} = _source) do
+    type
+  end
+
+  defp get_source_content_type(_source) do
+    Utils.get_content_type(nil)
+  end
+
+  defp proxied_url(url, page_url_data) do
+    if is_binary(url) do
+      build_image_url(URI.parse(url), page_url_data) |> MediaProxy.url()
+    else
+      nil
+    end
+  end
 end

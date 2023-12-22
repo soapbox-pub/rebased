@@ -54,7 +54,6 @@ defmodule Pleroma.Application do
     Config.DeprecationWarnings.warn()
     Pleroma.Web.Plugs.HTTPSecurityPlug.warn_if_disabled()
     Pleroma.ApplicationRequirements.verify!()
-    setup_instrumenters()
     load_custom_modules()
     Pleroma.Docs.JSON.compile()
     limiters_setup()
@@ -91,10 +90,12 @@ defmodule Pleroma.Application do
     # Define workers and child supervisors to be supervised
     children =
       [
+        Pleroma.PromEx,
         Pleroma.Repo,
         Config.TransferTask,
         Pleroma.Emoji,
-        Pleroma.Web.Plugs.RateLimiter.Supervisor
+        Pleroma.Web.Plugs.RateLimiter.Supervisor,
+        {Task.Supervisor, name: Pleroma.TaskSupervisor}
       ] ++
         cachex_children() ++
         http_children(adapter, @mix_env) ++
@@ -112,7 +113,17 @@ defmodule Pleroma.Application do
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
+    # If we have a lot of caches, default max_restarts can cause test
+    # resets to fail.
+    # Go for the default 3 unless we're in test
+    max_restarts =
+      if @mix_env == :test do
+        100
+      else
+        3
+      end
+
+    opts = [strategy: :one_for_one, name: Pleroma.Supervisor, max_restarts: max_restarts]
     result = Supervisor.start_link(children, opts)
 
     set_postgres_server_version()
@@ -127,7 +138,7 @@ defmodule Pleroma.Application do
         num
       else
         e ->
-          Logger.warn(
+          Logger.warning(
             "Could not get the postgres version: #{inspect(e)}.\nSetting the default value of 9.6"
           )
 
@@ -159,29 +170,6 @@ defmodule Pleroma.Application do
     end
   end
 
-  defp setup_instrumenters do
-    require Prometheus.Registry
-
-    if Application.get_env(:prometheus, Pleroma.Repo.Instrumenter) do
-      :ok =
-        :telemetry.attach(
-          "prometheus-ecto",
-          [:pleroma, :repo, :query],
-          &Pleroma.Repo.Instrumenter.handle_event/4,
-          %{}
-        )
-
-      Pleroma.Repo.Instrumenter.setup()
-    end
-
-    Pleroma.Web.Endpoint.MetricsExporter.setup()
-    Pleroma.Web.Endpoint.PipelineInstrumenter.setup()
-
-    # Note: disabled until prometheus-phx is integrated into prometheus-phoenix:
-    # Pleroma.Web.Endpoint.Instrumenter.setup()
-    PrometheusPhx.setup()
-  end
-
   defp cachex_children do
     [
       build_cachex("used_captcha", ttl_interval: seconds_valid_interval()),
@@ -189,6 +177,7 @@ defmodule Pleroma.Application do
       build_cachex("object", default_ttl: 25_000, ttl_interval: 1000, limit: 2500),
       build_cachex("rich_media", default_ttl: :timer.minutes(120), limit: 5000),
       build_cachex("scrubber", limit: 2500),
+      build_cachex("scrubber_management", limit: 2500),
       build_cachex("idempotency", expiration: idempotency_expiration(), limit: 2500),
       build_cachex("web_resp", limit: 2500),
       build_cachex("emoji_packs", expiration: emoji_packs_expiration(), limit: 10),
@@ -197,7 +186,8 @@ defmodule Pleroma.Application do
       build_cachex("chat_message_id_idempotency_key",
         expiration: chat_message_id_idempotency_key_expiration(),
         limit: 500_000
-      )
+      ),
+      build_cachex("rel_me", limit: 2500)
     ]
   end
 
@@ -238,7 +228,8 @@ defmodule Pleroma.Application do
 
   defp background_migrators do
     [
-      Pleroma.Migrators.HashtagsTableMigrator
+      Pleroma.Migrators.HashtagsTableMigrator,
+      Pleroma.Migrators.ContextObjectsDeletionMigrator
     ]
   end
 
@@ -308,7 +299,11 @@ defmodule Pleroma.Application do
   def limiters_setup do
     config = Config.get(ConcurrentLimiter, [])
 
-    [Pleroma.Web.RichMedia.Helpers, Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy]
+    [
+      Pleroma.Web.RichMedia.Helpers,
+      Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy,
+      Pleroma.Search
+    ]
     |> Enum.each(fn module ->
       mod_config = Keyword.get(config, module, [])
 

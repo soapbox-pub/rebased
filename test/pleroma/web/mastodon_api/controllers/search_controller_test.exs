@@ -13,6 +13,11 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
   import Tesla.Mock
   import Mock
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   setup_all do
     mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
@@ -77,6 +82,51 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       [status] = results["statuses"]
       assert status["id"] == to_string(activity.id)
+    end
+
+    test "search local-only status as an authenticated user" do
+      user = insert(:user)
+      %{conn: conn} = oauth_access(["read:search"])
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{status: "This is about 2hu private 天子", visibility: "local"})
+
+      results =
+        conn
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "2hu"})}")
+        |> json_response_and_validate_schema(200)
+
+      [status] = results["statuses"]
+      assert status["id"] == to_string(activity.id)
+    end
+
+    test "search local-only status as an unauthenticated user" do
+      user = insert(:user)
+      %{conn: conn} = oauth_access([])
+
+      {:ok, _activity} =
+        CommonAPI.post(user, %{status: "This is about 2hu private 天子", visibility: "local"})
+
+      results =
+        conn
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "2hu"})}")
+        |> json_response_and_validate_schema(200)
+
+      assert [] = results["statuses"]
+    end
+
+    test "search local-only status as an anonymous user" do
+      user = insert(:user)
+
+      {:ok, _activity} =
+        CommonAPI.post(user, %{status: "This is about 2hu private 天子", visibility: "local"})
+
+      results =
+        build_conn()
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "2hu"})}")
+        |> json_response_and_validate_schema(200)
+
+      assert [] = results["statuses"]
     end
 
     @tag capture_log: true

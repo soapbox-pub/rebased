@@ -196,7 +196,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
         |> get("/notice/#{like_activity.id}")
         |> response(200)
 
-      assert resp =~ "<!--server-generated-meta-->"
+      refute resp =~ ~r(<meta content="[^"]*" property="og:url")
     end
 
     test "404s a private notice", %{conn: conn} do
@@ -341,56 +341,6 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       |> put_req_header("accept", "text/html")
       |> get("/notice/#{note_activity.id}/embed_player")
       |> response(200)
-    end
-  end
-
-  describe "notice compatibility routes" do
-    test "Soapbox FE", %{conn: conn} do
-      user = insert(:user)
-      note_activity = insert(:note_activity, user: user)
-
-      resp =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get("/@#{user.nickname}/posts/#{note_activity.id}")
-        |> response(200)
-
-      expected =
-        "<meta content=\"#{Endpoint.url()}/notice/#{note_activity.id}\" property=\"og:url\">"
-
-      assert resp =~ expected
-    end
-
-    test "Mastodon", %{conn: conn} do
-      user = insert(:user)
-      note_activity = insert(:note_activity, user: user)
-
-      resp =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get("/@#{user.nickname}/#{note_activity.id}")
-        |> response(200)
-
-      expected =
-        "<meta content=\"#{Endpoint.url()}/notice/#{note_activity.id}\" property=\"og:url\">"
-
-      assert resp =~ expected
-    end
-
-    test "Twitter", %{conn: conn} do
-      user = insert(:user)
-      note_activity = insert(:note_activity, user: user)
-
-      resp =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get("/#{user.nickname}/status/#{note_activity.id}")
-        |> response(200)
-
-      expected =
-        "<meta content=\"#{Endpoint.url()}/notice/#{note_activity.id}\" property=\"og:url\">"
-
-      assert resp =~ expected
     end
   end
 end

@@ -6,6 +6,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
   alias Pleroma.Formatter
+  alias Pleroma.ModerationLog
   alias Pleroma.Object
   alias Pleroma.Rule
   alias Pleroma.ThreadMute
@@ -33,6 +34,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def post_chat_message(%User{} = user, %User{} = recipient, content, opts \\ []) do
     with maybe_attachment <- opts[:media_id] && Object.get_by_id(opts[:media_id]),
+         :ok <- validate_chat_attachment_attribution(maybe_attachment, user),
          :ok <- validate_chat_content_length(content, !!maybe_attachment),
          {_, {:ok, chat_message_data, _meta}} <-
            {:build_object,
@@ -69,6 +71,17 @@ defmodule Pleroma.Web.CommonAPI do
           end).()
 
     text
+  end
+
+  defp validate_chat_attachment_attribution(nil, _), do: :ok
+
+  defp validate_chat_attachment_attribution(attachment, user) do
+    with :ok <- Object.authorize_access(attachment, user) do
+      :ok
+    else
+      e ->
+        e
+    end
   end
 
   defp validate_chat_content_length(_, true), do: :ok
@@ -142,12 +155,27 @@ defmodule Pleroma.Web.CommonAPI do
 
   def delete(activity_id, user) do
     with {_, %Activity{data: %{"object" => _, "type" => "Create"}} = activity} <-
-           {:find_activity, Activity.get_by_id(activity_id)},
+           {:find_activity, Activity.get_by_id(activity_id, filter: [])},
          {_, %Object{} = object, _} <-
            {:find_object, Object.normalize(activity, fetch: false), activity},
-         true <- User.superuser?(user) || user.ap_id == object.data["actor"],
+         true <- User.privileged?(user, :messages_delete) || user.ap_id == object.data["actor"],
          {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
          {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
+      if User.privileged?(user, :messages_delete) and user.ap_id != object.data["actor"] do
+        action =
+          if object.data["type"] == "ChatMessage" do
+            "chat_message_delete"
+          else
+            "status_delete"
+          end
+
+        ModerationLog.insert_log(%{
+          action: action,
+          actor: user,
+          subject_id: activity_id
+        })
+      end
+
       {:ok, delete}
     else
       {:find_activity, _} ->
@@ -403,6 +431,41 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def update(user, orig_activity, changes) do
+    with orig_object <- Object.normalize(orig_activity),
+         {:ok, new_object} <- make_update_data(user, orig_object, changes),
+         {:ok, update_data, _} <- Builder.update(user, new_object),
+         {:ok, update, _} <- Pipeline.common_pipeline(update_data, local: true) do
+      {:ok, update}
+    else
+      _ -> {:error, nil}
+    end
+  end
+
+  defp make_update_data(user, orig_object, changes) do
+    kept_params = %{
+      visibility: Visibility.get_visibility(orig_object),
+      in_reply_to_id:
+        with replied_id when is_binary(replied_id) <- orig_object.data["inReplyTo"],
+             %Activity{id: activity_id} <- Activity.get_create_by_object_ap_id(replied_id) do
+          activity_id
+        else
+          _ -> nil
+        end
+    }
+
+    params = Map.merge(changes, kept_params)
+
+    with {:ok, draft} <- ActivityDraft.create(user, params) do
+      change =
+        Object.Updater.make_update_object_data(orig_object.data, draft.object, Utils.make_date())
+
+      {:ok, change}
+    else
+      _ -> {:error, nil}
+    end
+  end
+
   @spec pin(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, term()}
   def pin(id, %User{} = user) do
     with %Activity{} = activity <- create_activity_by_id(id),
@@ -488,7 +551,7 @@ defmodule Pleroma.Web.CommonAPI do
       remove_mute(user, activity)
     else
       {what, result} = error ->
-        Logger.warn(
+        Logger.warning(
           "CommonAPI.remove_mute/2 failed. #{what}: #{result}, user_id: #{user_id}, activity_id: #{activity_id}"
         )
 
@@ -544,7 +607,7 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def update_report_state(activity_id, state) do
-    with %Activity{} = activity <- Activity.get_by_id(activity_id) do
+    with %Activity{} = activity <- Activity.get_by_id(activity_id, filter: []) do
       Utils.update_report_state(activity, state)
     else
       nil -> {:error, :not_found}

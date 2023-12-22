@@ -81,6 +81,19 @@ server {
         proxy_pass http://phoenix;
     }
 
+    # Uncomment this if you want notice compatibility routes for frontends like Soapbox.
+    # location ~ ^/@[^/]+/([^/]+)$ {
+    #     proxy_pass http://phoenix/notice/$1;
+    # }
+    #
+    # location ~ ^/@[^/]+/posts/([^/]+)$ {
+    #     proxy_pass http://phoenix/notice/$1;
+    # }
+    #
+    # location ~ ^/[^/]+/status/([^/]+)$ {
+    #     proxy_pass http://phoenix/notice/$1;
+    # }
+
     location ~ ^/(media|proxy) {
         proxy_cache        pleroma_media_cache;
         slice              1m;
