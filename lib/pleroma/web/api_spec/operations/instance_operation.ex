@@ -48,7 +48,7 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
 
   def rules_operation do
     %Operation{
-      tags: ["Instance"],
+      tags: ["Instance misc"],
       summary: "Retrieve list of instance rules",
       operationId: "InstanceController.rules",
       responses: %{

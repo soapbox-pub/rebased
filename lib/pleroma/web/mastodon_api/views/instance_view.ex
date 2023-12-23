@@ -73,15 +73,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     })
   end
 
-  defp common_information(instance) do
-    %{
-      languages: Keyword.get(instance, :languages, ["en"]),
-      rules: render(__MODULE__, "rules.json"),
-      title: Keyword.get(instance, :name),
-      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})"
-    }
-  end
-
   def render("rules.json", _) do
     Pleroma.Rule.query()
     |> Pleroma.Repo.all()
@@ -92,6 +83,15 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     %{
       id: to_string(rule.id),
       text: rule.text
+    }
+  end
+
+  defp common_information(instance) do
+    %{
+      languages: Keyword.get(instance, :languages, ["en"]),
+      rules: render(__MODULE__, "rules.json"),
+      title: Keyword.get(instance, :name),
+      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})"
     }
   end
 
