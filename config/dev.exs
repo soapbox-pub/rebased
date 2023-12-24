@@ -36,7 +36,7 @@ config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Local
 # different ports.
 
 # Do not include timestamps in development logs
-config :logger, :console, format: "$metadata[$level] $message\n"
+config :logger, Logger.Backends.Console, format: "$metadata[$level] $message\n"
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.

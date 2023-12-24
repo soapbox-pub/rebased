@@ -1237,8 +1237,8 @@ config :pleroma, :config_description, [
         key: :backends,
         type: [:atom, :tuple, :module],
         description:
-          "Where logs will be sent, :console - send logs to stdout, { ExSyslogger, :ex_syslogger } - to syslog, Quack.Logger - to Slack.",
-        suggestions: [:console, {ExSyslogger, :ex_syslogger}]
+          "Where logs will be sent, Logger.Backends.Console - send logs to stdout, { ExSyslogger, :ex_syslogger } - to syslog.",
+        suggestions: [Logger.Backends.Console, {ExSyslogger, :ex_syslogger}]
       }
     ]
   },
@@ -1278,7 +1278,7 @@ config :pleroma, :config_description, [
   %{
     group: :logger,
     type: :group,
-    key: :console,
+    key: Logger.Backends.Console,
     label: "Console Logger",
     description: "Console logger settings",
     children: [

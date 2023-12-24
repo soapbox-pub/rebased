@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2023 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config.TransferTask do
@@ -12,6 +12,13 @@ defmodule Pleroma.Config.TransferTask do
   require Logger
 
   @type env() :: :test | :benchmark | :dev | :prod
+
+  @add_backend if Version.match?(System.version(), "< 1.15.0-rc.0"),
+                 do: &Logger.add_backend/1,
+                 else: &LoggerBackends.add/1
+  @remove_backend if Version.match?(System.version(), "< 1.15.0-rc.0"),
+                    do: &Logger.remove_backend/1,
+                    else: &LoggerBackends.remove/1
 
   defp reboot_time_keys,
     do: [
@@ -105,25 +112,29 @@ defmodule Pleroma.Config.TransferTask do
   # change logger configuration in runtime, without restart
   defp configure({_, :backends, _, merged}) do
     # removing current backends
-    Enum.each(Application.get_env(:logger, :backends), &Logger.remove_backend/1)
+    Enum.each(Application.get_env(:logger, :backends), @remove_backend)
 
-    Enum.each(merged, &Logger.add_backend/1)
+    Enum.each(merged, @add_backend)
 
     :ok = update_env(:logger, :backends, merged)
   end
 
-  defp configure({_, key, _, merged}) when key in [:console, :ex_syslogger] do
+  defp configure({_, key, _, merged})
+       when key in [:console, Logger.Backends.Console, :ex_syslogger] do
+    backend =
+      case key do
+        :ex_syslogger -> {ExSyslogger, :ex_syslogger}
+        :console -> Logger.Backends.Console
+        Logger.Backends.Console -> Logger.Backends.Console
+        key -> key
+      end
+
     merged =
-      if key == :console do
+      if backend == Logger.Backends.Console do
         put_in(merged[:format], merged[:format] <> "\n")
       else
         merged
       end
-
-    backend =
-      if key == :ex_syslogger,
-        do: {ExSyslogger, :ex_syslogger},
-        else: key
 
     Logger.configure_backend(backend, merged)
     :ok = update_env(:logger, key, merged)

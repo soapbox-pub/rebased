@@ -109,6 +109,14 @@ defmodule Pleroma.Mixfile do
     for s <- oauth_strategy_packages, do: {String.to_atom(s), ">= 0.0.0"}
   end
 
+  defp logger_deps do
+    if Version.match?(System.version(), "<1.15.0-rc.0") do
+      []
+    else
+      [{:logger_backends, "~> 1.0"}]
+    end
+  end
+
   # Specifies your project dependencies.
   #
   # Type `mix help deps` for examples and options.
@@ -197,7 +205,7 @@ defmodule Pleroma.Mixfile do
       {:websockex, "~> 0.4.3", only: :test},
       {:benchee, "~> 1.0", only: :benchmark},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
-    ] ++ oauth_deps()
+    ] ++ oauth_deps() ++ logger_deps()
   end
 
   # Aliases are shortcuts or tasks specific to the current project.
