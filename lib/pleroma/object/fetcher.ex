@@ -75,8 +75,9 @@ defmodule Pleroma.Object.Fetcher do
       {:allowed_depth, false} ->
         {:error, "Max thread distance exceeded."}
 
-      {:containment, _} ->
-        {:error, "Object containment failed."}
+      {:containment, e} ->
+        Logger.info("Error while fetching #{id}: Object containment failed. #{inspect(e)}")
+        {:error, e}
 
       {:transmogrifier, {:error, {:reject, e}}} ->
         Logger.info("Rejected #{id} while fetching: #{inspect(e)}")
