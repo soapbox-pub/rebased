@@ -99,6 +99,15 @@ defmodule Pleroma.Object.Fetcher do
       {:fetch_object, %Object{} = object} ->
         {:ok, object}
 
+      {:fetch, {:error, {:ok, %Tesla.Env{status: 403}}}} ->
+        Instances.set_consistently_unreachable(id)
+
+        Logger.error(
+          "Error while fetching #{id}: HTTP 403 likely due to instance block rejecting the signed fetch."
+        )
+
+        {:error, "Object fetch has been denied"}
+
       {:fetch, {:error, error}} ->
         Logger.error("Error while fetching #{id}: #{inspect(error)}")
         {:error, error}
