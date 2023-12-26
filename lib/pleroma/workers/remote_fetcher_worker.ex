@@ -9,8 +9,6 @@ defmodule Pleroma.Workers.RemoteFetcherWorker do
 
   @impl Oban.Worker
   def perform(%Job{args: %{"op" => "fetch_remote", "id" => id} = args}) do
-    {:ok, _object} = Fetcher.fetch_object_from_id(id, depth: args["depth"])
-
     case Fetcher.fetch_object_from_id(id, depth: args["depth"]) do
       {:ok, _object} ->
         :ok
