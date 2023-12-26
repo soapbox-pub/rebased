@@ -213,7 +213,6 @@ defmodule Pleroma.Object.Fetcher do
         end
 
       {:ok, %{status: 403}} ->
-        Instances.set_consistently_unreachable(id)
         {:error, "Object fetch has been denied"}
 
       {:ok, %{status: code}} when code in [404, 410] ->

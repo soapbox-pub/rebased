@@ -25,9 +25,6 @@ defmodule Pleroma.Object.FetcherTest do
       %{method: :get, url: "https://mastodon.example.org/users/userisgone404"} ->
         %Tesla.Env{status: 404}
 
-      %{method: :get, url: "https://octodon.social/users/cwebber/statuses/111647596861000656"} ->
-        %Tesla.Env{status: 403}
-
       %{
         method: :get,
         url:
@@ -234,18 +231,6 @@ defmodule Pleroma.Object.FetcherTest do
                Fetcher.fetch_and_contain_remote_object_from_id(
                  "https://mastodon.example.org/users/userisgone404"
                )
-    end
-
-    test "handle HTTP 403 response" do
-      object_id = "https://octodon.social/users/cwebber/statuses/111647596861000656"
-      Instances.set_reachable(object_id)
-
-      assert Instances.reachable?(object_id)
-
-      assert {:error, "Object fetch has been denied"} ==
-               Fetcher.fetch_object_from_id(object_id)
-
-      refute Instances.reachable?(object_id)
     end
 
     test "it can fetch pleroma polls with attachments" do
