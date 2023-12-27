@@ -1697,9 +1697,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            Fetcher.fetch_and_contain_remote_object_from_id(first) do
       {:ok, false}
     else
-      {:error, {:ok, %{status: code}}} when code in [401, 403] -> {:ok, true}
-      {:error, _} = e -> e
-      e -> {:error, e}
+      {:error, _} -> {:ok, true}
     end
   end
 
