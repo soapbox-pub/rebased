@@ -1,2 +1,2 @@
-Remote object fetch failures will prevent the object fetch job from retrying if the object has been deleted or the fetch was denied with a 403 due to instance block behavior with authorized_fetch enabled.
+Remote object fetch failures will prevent the object fetch job from retrying if the object has been deleted or the fetch was denied with a 403. 
 Skip fetching objects from unreachable instances.
