@@ -94,14 +94,14 @@ defmodule Pleroma.Web.ApiSpec do
             "tags" => [
               "Chat administration",
               "Emoji pack administration",
-              "Frontend managment",
+              "Frontend management",
               "Instance configuration",
               "Instance documents",
               "Invites",
               "MediaProxy cache",
-              "OAuth application managment",
+              "OAuth application management",
               "Relays",
-              "Report managment",
+              "Report management",
               "Status administration",
               "User administration",
               "Announcement management"
