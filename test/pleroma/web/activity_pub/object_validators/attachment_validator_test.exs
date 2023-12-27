@@ -164,7 +164,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
       assert attachment.mediaType == "image/jpeg"
     end
 
-    test "it transforms image dimentions to our internal format" do
+    test "it transforms image dimensions to our internal format" do
       attachment = %{
         "type" => "Document",
         "name" => "Hello world",

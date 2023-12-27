@@ -25,7 +25,7 @@ defmodule Pleroma.HealthcheckTest do
       refute result.healthy
     end
 
-    test "chech_health/1" do
+    test "check_health/1" do
       result = Healthcheck.check_health(%Healthcheck{pool_size: 10, active: 9})
       assert result.healthy
     end

@@ -172,7 +172,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
 
       ```
       config :pleroma, :mrf,
-        transparency_exclusions: [{"instance.tld", "Reason to exlude transparency"}]
+        transparency_exclusions: [{"instance.tld", "Reason to exclude transparency"}]
       ```
       """)
 
@@ -213,7 +213,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
       check_gun_pool_options(),
       check_activity_expiration_config(),
       check_remote_ip_plug_name(),
-      check_uploders_s3_public_endpoint(),
+      check_uploaders_s3_public_endpoint(),
       check_old_chat_shoutbox(),
       check_quarantined_instances_tuples(),
       check_transparency_exclusions_tuples(),
@@ -372,8 +372,8 @@ defmodule Pleroma.Config.DeprecationWarnings do
     )
   end
 
-  @spec check_uploders_s3_public_endpoint() :: :ok | nil
-  def check_uploders_s3_public_endpoint do
+  @spec check_uploaders_s3_public_endpoint() :: :ok | nil
+  def check_uploaders_s3_public_endpoint do
     s3_config = Pleroma.Config.get([Pleroma.Uploaders.S3])
 
     use_old_config = Keyword.has_key?(s3_config, :public_endpoint)

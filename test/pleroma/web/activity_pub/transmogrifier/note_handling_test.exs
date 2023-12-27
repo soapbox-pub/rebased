@@ -508,7 +508,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       [data: data]
     end
 
-    test "returns not modified object when hasn't containts inReplyTo field", %{data: data} do
+    test "returns not modified object when has no inReplyTo field", %{data: data} do
       assert Transmogrifier.fix_in_reply_to(data) == data
     end
 

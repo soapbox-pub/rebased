@@ -22,7 +22,7 @@ config :pleroma, Pleroma.Repo,
   ]
 ```
 
-A more detailed explaination of the issue can be found at <https://blog.soykaf.com/post/postgresql-elixir-troubles/>.
+A more detailed explanation of the issue can be found at <https://blog.soykaf.com/post/postgresql-elixir-troubles/>.
 
 ## Example configurations
 

@@ -13,7 +13,7 @@ defmodule Mix.Tasks.Pleroma.Ecto.RollbackTest do
 
     assert capture_log(fn ->
              Mix.Tasks.Pleroma.Ecto.Rollback.run(["--env", "test"])
-           end) =~ "[info] Rollback succesfully"
+           end) =~ "[info] Rollback successfully"
 
     Logger.configure(level: level)
   end

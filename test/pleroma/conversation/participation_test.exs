@@ -57,7 +57,7 @@ defmodule Pleroma.Conversation.ParticipationTest do
     assert Participation.unread_count(other_user) == 0
   end
 
-  test "for a new conversation, it sets the recipents of the participation" do
+  test "for a new conversation, it sets the recipients of the participation" do
     user = insert(:user)
     other_user = insert(:user)
     third_user = insert(:user)
