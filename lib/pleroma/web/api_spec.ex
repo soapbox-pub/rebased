@@ -116,6 +116,13 @@ defmodule Pleroma.Web.ApiSpec do
               "Report methods"
             ]
           },
+          %{
+            "name" => "Administration (Mastodon API)",
+            "tags" => [
+              "User administration (Mastodon API)",
+              "Report management (Mastodon API)"
+            ]
+          },
           %{"name" => "Applications", "tags" => ["Applications", "Push subscriptions"]},
           %{
             "name" => "Current account",

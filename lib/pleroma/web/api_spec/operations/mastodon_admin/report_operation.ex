@@ -19,7 +19,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Report methods"],
+      tags: ["Report management (Mastodon API)"],
       summary: "View all reports",
       operationId: "MastodonAdmin.ReportController.index",
       description:
@@ -51,7 +51,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Report methods"],
+      tags: ["Report management (Mastodon API)"],
       summary: "View a single report",
       operationId: "MastodonAdmin.ReportController.show",
       description: "View information about the report with the given ID.",
@@ -69,7 +69,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
 
   def resolve_operation do
     %Operation{
-      tags: ["Report methods"],
+      tags: ["Report management (Mastodon API)"],
       summary: "Mark as resolved",
       operationId: "MastodonAdmin.ReportController.resolve",
       description: "Mark a report as resolved with no further action taken.",
@@ -87,7 +87,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
 
   def reopen_operation do
     %Operation{
-      tags: ["Report methods"],
+      tags: ["Report management (Mastodon API)"],
       summary: "Re-open report",
       operationId: "MastodonAdmin.ReportController.reopen",
       description: "Reopen a currently closed report.",

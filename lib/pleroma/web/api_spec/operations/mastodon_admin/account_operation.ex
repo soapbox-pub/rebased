@@ -18,7 +18,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
 
   def index_operation do
     %Operation{
-      tags: ["User administration"],
+      tags: ["User administration (Mastodon API)"],
       summary: "View accounts by criteria",
       operationId: "MastodonAdmin.AccountController.index",
       description: "View accounts matching certain criteria for filtering, up to 40 at a time.",
@@ -95,7 +95,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
 
   def show_operation do
     %Operation{
-      tags: ["User administration"],
+      tags: ["User administration (Mastodon API)"],
       summary: "View a specific account",
       operationId: "MastodonAdmin.AccountController.show",
       description: "View admin-level information about the given account.",
@@ -113,7 +113,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
 
   def account_action_operation do
     %Operation{
-      tags: ["User administration"],
+      tags: ["User administration (Mastodon API)"],
       summary: "Perform an action against an account",
       operationId: "MastodonAdmin.AccountController.account_action",
       description:
@@ -150,7 +150,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
 
   def delete_operation do
     %Operation{
-      tags: ["User administration"],
+      tags: ["User administration (Mastodon API)"],
       summary: "Delete a specific account",
       operationId: "MastodonAdmin.AccountController.delete",
       description: "Delete the given account.",
@@ -168,7 +168,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
 
   def enable_operation do
     %Operation{
-      tags: ["User administration"],
+      tags: ["User administration (Mastodon API)"],
       summary: "Re-enable account",
       operationId: "MastodonAdmin.AccountController.enable",
       description: "Re-enable a local account whose login is currently disabled.",
@@ -186,7 +186,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
 
   def approve_operation do
     %Operation{
-      tags: ["User administration"],
+      tags: ["User administration (Mastodon API)"],
       summary: "Approve pending account",
       operationId: "MastodonAdmin.AccountController.approve",
       description: "Approve the given local account if it is currently pending approval.",
@@ -203,7 +203,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
 
   def reject_operation do
     %Operation{
-      tags: ["User administration"],
+      tags: ["User administration (Mastodon API)"],
       summary: "Reject pending account",
       operationId: "MastodonAdmin.AccountController.reject",
       description: "Reject the given local account if it is currently pending approval.",
