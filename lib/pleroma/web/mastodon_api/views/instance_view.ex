@@ -125,7 +125,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       if Config.get([:instance, :profile_directory]) do
         "profile_directory"
       end,
-      "pleroma:get:main/ostatus"
+      "pleroma:get:main/ostatus",
+      "pleroma:group_actors"
     ]
     |> Enum.filter(& &1)
   end

@@ -26,7 +26,14 @@ defmodule Pleroma.Web.CommonAPITest do
   import Mox
   import Pleroma.Factory
 
+  require Pleroma.Activity.Queries
   require Pleroma.Constants
+
+  defp get_announces_of_object(%{data: %{"id" => id}} = _object) do
+    Pleroma.Activity.Queries.by_type("Announce")
+    |> Pleroma.Activity.Queries.by_object_id(id)
+    |> Pleroma.Repo.all()
+  end
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -1833,6 +1840,56 @@ defmodule Pleroma.Web.CommonAPITest do
       assert updated_object.data["content"] == "mewmew 2"
       assert Map.get(updated_object.data, "summary", "") == ""
       assert Map.has_key?(updated_object.data, "updated")
+    end
+  end
+
+  describe "Group actors" do
+    setup do
+      poster = insert(:user)
+      group = insert(:user, actor_type: "Group")
+      other_group = insert(:user, actor_type: "Group")
+      %{poster: poster, group: group, other_group: other_group}
+    end
+
+    test "it boosts public posts", %{poster: poster, group: group} do
+      {:ok, post} = CommonAPI.post(poster, %{status: "hey @#{group.nickname}"})
+
+      announces = get_announces_of_object(post.object)
+      assert [_] = announces
+    end
+
+    test "it does not boost private posts", %{poster: poster, group: group} do
+      {:ok, private_post} =
+        CommonAPI.post(poster, %{status: "hey @#{group.nickname}", visibility: "private"})
+
+      assert [] = get_announces_of_object(private_post.object)
+    end
+
+    test "remote groups do not boost any posts", %{poster: poster} do
+      remote_group =
+        insert(:user, actor_type: "Group", local: false, nickname: "remote@example.com")
+
+      {:ok, post} = CommonAPI.post(poster, %{status: "hey @#{User.full_nickname(remote_group)}"})
+      assert remote_group.ap_id in post.data["to"]
+
+      announces = get_announces_of_object(post.object)
+      assert [] = announces
+    end
+
+    test "multiple groups mentioned", %{poster: poster, group: group, other_group: other_group} do
+      {:ok, post} =
+        CommonAPI.post(poster, %{status: "hey @#{group.nickname} @#{other_group.nickname}"})
+
+      announces = get_announces_of_object(post.object)
+      assert [_, _] = announces
+    end
+
+    test "it does not boost if group is blocking poster", %{poster: poster, group: group} do
+      {:ok, _} = CommonAPI.block(group, poster)
+      {:ok, post} = CommonAPI.post(poster, %{status: "hey @#{group.nickname}"})
+
+      announces = get_announces_of_object(post.object)
+      assert [] = announces
     end
   end
 end
