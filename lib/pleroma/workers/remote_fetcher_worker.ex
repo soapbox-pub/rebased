@@ -21,6 +21,9 @@ defmodule Pleroma.Workers.RemoteFetcherWorker do
         {:error, :not_found} ->
           {:cancel, :not_found}
 
+        {:error, :allowed_depth} ->
+          {:cancel, :allowed_depth}
+
         _ ->
           :error
       end

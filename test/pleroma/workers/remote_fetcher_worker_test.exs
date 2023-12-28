@@ -13,6 +13,7 @@ defmodule Pleroma.Workers.RemoteFetcherWorkerTest do
   @deleted_object_two "https://deleted-410.example.com/"
   @unauthorized_object "https://unauthorized.example.com/"
   @unreachable_object "https://unreachable.example.com/"
+  @depth_object "https://depth.example.com/"
 
   describe "it does not" do
     setup do
@@ -30,6 +31,11 @@ defmodule Pleroma.Workers.RemoteFetcherWorkerTest do
         %{method: :get, url: @unauthorized_object} ->
           %Tesla.Env{
             status: 403
+          }
+
+        %{method: :get, url: @depth_object} ->
+          %Tesla.Env{
+            status: 200
           }
       end)
     end
@@ -61,6 +67,15 @@ defmodule Pleroma.Workers.RemoteFetcherWorkerTest do
       assert {:cancel, _} =
                RemoteFetcherWorker.perform(%Oban.Job{
                  args: %{"op" => "fetch_remote", "id" => @unreachable_object}
+               })
+    end
+
+    test "requeue an object that exceeded depth" do
+      clear_config([:instance, :federation_incoming_replies_max_depth], 0)
+
+      assert {:cancel, _} =
+               RemoteFetcherWorker.perform(%Oban.Job{
+                 args: %{"op" => "fetch_remote", "id" => @depth_object, "depth" => 1}
                })
     end
   end

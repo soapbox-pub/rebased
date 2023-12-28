@@ -74,7 +74,7 @@ defmodule Pleroma.Object.Fetcher do
     else
       {:allowed_depth, false} = e ->
         log_fetch_error(id, e)
-        {:error, "Max thread distance exceeded."}
+        {:error, :allowed_depth}
 
       {:containment, reason} = e ->
         log_fetch_error(id, e)
