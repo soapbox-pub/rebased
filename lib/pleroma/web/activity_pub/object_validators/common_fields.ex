@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFields do
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
-  alias Pleroma.Web.ActivityPub.ObjectValidators.PlaceValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.TagValidator
 
   # Activities and Objects, except (Create)ChatMessage
