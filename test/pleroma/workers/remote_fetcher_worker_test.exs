@@ -15,7 +15,7 @@ defmodule Pleroma.Workers.RemoteFetcherWorkerTest do
   @unreachable_object "https://unreachable.example.com/"
   @depth_object "https://depth.example.com/"
 
-  describe "it does not" do
+  describe "RemoteFetcherWorker" do
     setup do
       Tesla.Mock.mock(fn
         %{method: :get, url: @deleted_object_one} ->
@@ -40,7 +40,7 @@ defmodule Pleroma.Workers.RemoteFetcherWorkerTest do
       end)
     end
 
-    test "requeue a deleted object" do
+    test "does not requeue a deleted object" do
       assert {:cancel, _} =
                RemoteFetcherWorker.perform(%Oban.Job{
                  args: %{"op" => "fetch_remote", "id" => @deleted_object_one}
@@ -52,14 +52,14 @@ defmodule Pleroma.Workers.RemoteFetcherWorkerTest do
                })
     end
 
-    test "requeue an unauthorized object" do
+    test "does not requeue an unauthorized object" do
       assert {:cancel, _} =
                RemoteFetcherWorker.perform(%Oban.Job{
                  args: %{"op" => "fetch_remote", "id" => @unauthorized_object}
                })
     end
 
-    test "fetch an unreachable instance" do
+    test "does not fetch an unreachable instance" do
       Instances.set_consistently_unreachable(@unreachable_object)
 
       refute Instances.reachable?(@unreachable_object)
@@ -70,7 +70,7 @@ defmodule Pleroma.Workers.RemoteFetcherWorkerTest do
                })
     end
 
-    test "requeue an object that exceeded depth" do
+    test "does not requeue an object that exceeded depth" do
       clear_config([:instance, :federation_incoming_replies_max_depth], 0)
 
       assert {:cancel, _} =
