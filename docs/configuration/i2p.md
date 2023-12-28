@@ -1,4 +1,4 @@
-# I2P Federation and Accessability
+# I2P Federation and Accessibility
 
 This guide is going to focus on the Pleroma federation aspect. The actual installation is neatly explained in the official documentation, and more likely to remain up-to-date.
 It might be added to this guide if there will be a need for that.

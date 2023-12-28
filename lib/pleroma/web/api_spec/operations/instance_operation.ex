@@ -101,7 +101,7 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
         languages: %Schema{
           type: :array,
           items: %Schema{type: :string},
-          description: "Primary langauges of the website and its staff"
+          description: "Primary languages of the website and its staff"
         },
         registrations: %Schema{type: :boolean, description: "Whether registrations are enabled"},
         # Extra (not present in Mastodon):
@@ -252,7 +252,7 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
         languages: %Schema{
           type: :array,
           items: %Schema{type: :string},
-          description: "Primary langauges of the website and its staff"
+          description: "Primary languages of the website and its staff"
         },
         registrations: %Schema{
           type: :object,

@@ -1444,7 +1444,7 @@ config :pleroma, :config_description, [
             label: "Subject line behavior",
             type: :string,
             description: "Allows changing the default behaviour of subject lines in replies.
-          `email`: copy and preprend re:, as in email,
+          `email`: copy and prepend re:, as in email,
           `masto`: copy verbatim, as in Mastodon,
           `noop`: don't copy the subject.",
             suggestions: ["email", "masto", "noop"]
@@ -3096,7 +3096,7 @@ config :pleroma, :config_description, [
               key: :max_waiting,
               type: :integer,
               description:
-                "Maximum number of requests waiting for other requests to finish. After this number is reached, the pool will start returning errrors when a new request is made",
+                "Maximum number of requests waiting for other requests to finish. After this number is reached, the pool will start returning errors when a new request is made",
               suggestions: [10]
             },
             %{
@@ -3362,7 +3362,7 @@ config :pleroma, :config_description, [
       %{
         key: :purge_after_days,
         type: :integer,
-        description: "Remove backup achives after N days",
+        description: "Remove backup archives after N days",
         suggestions: [30]
       },
       %{

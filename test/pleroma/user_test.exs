@@ -226,7 +226,7 @@ defmodule Pleroma.UserTest do
     assert [] = User.get_follow_requests(followed)
   end
 
-  test "follow_all follows mutliple users" do
+  test "follow_all follows multiple users" do
     user = insert(:user)
     followed_zero = insert(:user)
     followed_one = insert(:user)
@@ -250,7 +250,7 @@ defmodule Pleroma.UserTest do
     refute User.following?(user, reverse_blocked)
   end
 
-  test "follow_all follows mutliple users without duplicating" do
+  test "follow_all follows multiple users without duplicating" do
     user = insert(:user)
     followed_zero = insert(:user)
     followed_one = insert(:user)
@@ -873,7 +873,7 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "get_or_fetch/1 remote users with tld, while BE is runned on subdomain" do
+  describe "get_or_fetch/1 remote users with tld, while BE is running on a subdomain" do
     setup do: clear_config([Pleroma.Web.WebFinger, :update_nickname_on_user_fetch], true)
 
     test "for mastodon" do
@@ -1018,13 +1018,13 @@ defmodule Pleroma.UserTest do
 
     @tag capture_log: true
     test "returns nil if no user could be fetched" do
-      {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistant@social.heldscal.la")
-      assert fetched_user == "not found nonexistant@social.heldscal.la"
+      {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistent@social.heldscal.la")
+      assert fetched_user == "not found nonexistent@social.heldscal.la"
     end
 
-    test "returns nil for nonexistant local user" do
-      {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistant")
-      assert fetched_user == "not found nonexistant"
+    test "returns nil for nonexistent local user" do
+      {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistent")
+      assert fetched_user == "not found nonexistent"
     end
 
     test "updates an existing user, if stale" do
@@ -1132,7 +1132,7 @@ defmodule Pleroma.UserTest do
       assert cs.valid?
     end
 
-    test "it sets the follower_adress" do
+    test "it sets the follower_address" do
       cs = User.remote_user_changeset(@valid_remote)
       # remote users get a fake local follower address
       assert cs.changes.follower_address ==

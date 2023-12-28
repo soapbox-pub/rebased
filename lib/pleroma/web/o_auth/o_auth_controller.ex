@@ -310,7 +310,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       after_token_exchange(conn, %{token: token})
     else
       _error ->
-        handle_token_exchange_error(conn, :invalid_credentails)
+        handle_token_exchange_error(conn, :invalid_credentials)
     end
   end
 

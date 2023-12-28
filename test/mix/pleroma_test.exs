@@ -39,7 +39,7 @@ defmodule Mix.PleromaTest do
 
   describe "get_option/3" do
     test "get from options" do
-      assert get_option([domain: "some-domain.com"], :domain, "Promt") == "some-domain.com"
+      assert get_option([domain: "some-domain.com"], :domain, "Prompt") == "some-domain.com"
     end
 
     test "get from prompt" do

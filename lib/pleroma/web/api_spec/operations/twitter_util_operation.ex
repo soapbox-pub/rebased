@@ -87,7 +87,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
   defp change_password_request do
     %Schema{
       title: "ChangePasswordRequest",
-      description: "POST body for changing the account's passowrd",
+      description: "POST body for changing the account's password",
       type: :object,
       required: [:password, :new_password, :new_password_confirmation],
       properties: %{
@@ -136,12 +136,12 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
     }
   end
 
-  def update_notificaton_settings_operation do
+  def update_notification_settings_operation do
     %Operation{
       tags: ["Settings"],
       summary: "Update Notification Settings",
       security: [%{"oAuth" => ["write:accounts"]}],
-      operationId: "UtilController.update_notificaton_settings",
+      operationId: "UtilController.update_notification_settings",
       parameters: [
         Operation.parameter(
           :block_from_strangers,

@@ -396,7 +396,7 @@ defmodule Pleroma.Web.Streamer do
     end
   end
 
-  # In test environement, only return true if the registry is started.
+  # In test environment, only return true if the registry is started.
   # In benchmark environment, returns false.
   # In any other environment, always returns true.
   cond do
