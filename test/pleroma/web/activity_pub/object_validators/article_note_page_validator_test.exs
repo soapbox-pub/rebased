@@ -197,12 +197,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
         "actor" => user.ap_id
       }
 
-      {:ok, object} =
-        ArticleNotePageValidator.cast_and_apply(note_activity["object"],
-          activity_data: note_activity
-        )
+      {:ok, _create_activity, meta} = ObjectValidator.validate(note_activity, []) |> IO.inspect()
 
-      assert object.language == "pl"
+      assert meta[:object_data]["language"] == "pl"
     end
 
     test "it detects language from contentMap" do
