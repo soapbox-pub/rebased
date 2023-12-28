@@ -220,10 +220,10 @@ defmodule Pleroma.Object.Fetcher do
         end
 
       {:ok, %{status: 403}} ->
-        {:error, "Object fetch has been denied"}
+        {:error, :forbidden}
 
       {:ok, %{status: code}} when code in [404, 410] ->
-        {:error, "Object has been deleted"}
+        {:error, :not_found}
 
       {:error, e} ->
         {:error, e}

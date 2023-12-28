@@ -15,11 +15,11 @@ defmodule Pleroma.Workers.RemoteFetcherWorker do
         {:ok, _object} ->
           :ok
 
-        {:error, reason = "Object fetch has been denied"} ->
-          {:cancel, reason}
+        {:error, :forbidden} ->
+          {:cancel, :forbidden}
 
-        {:error, reason = "Object has been deleted"} ->
-          {:cancel, reason}
+        {:error, :not_found} ->
+          {:cancel, :not_found}
 
         _ ->
           :error

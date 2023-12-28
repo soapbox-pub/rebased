@@ -220,14 +220,14 @@ defmodule Pleroma.Object.FetcherTest do
     end
 
     test "handle HTTP 410 Gone response" do
-      assert {:error, "Object has been deleted"} ==
+      assert {:error, :not_found} ==
                Fetcher.fetch_and_contain_remote_object_from_id(
                  "https://mastodon.example.org/users/userisgone"
                )
     end
 
     test "handle HTTP 404 response" do
-      assert {:error, "Object has been deleted"} ==
+      assert {:error, :not_found} ==
                Fetcher.fetch_and_contain_remote_object_from_id(
                  "https://mastodon.example.org/users/userisgone404"
                )
