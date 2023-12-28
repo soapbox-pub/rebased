@@ -6,9 +6,9 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Activity
   alias Pleroma.Object.Containment
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Publisher
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Workers.PublisherWorker
   alias Pleroma.Workers.ReceiverWorker
 
