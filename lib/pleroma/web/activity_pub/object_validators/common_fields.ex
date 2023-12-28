@@ -68,19 +68,4 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFields do
       field(:announcements, {:array, ObjectValidators.ObjectID}, default: [])
     end
   end
-
-  defmacro event_object_fields do
-    quote bind_quoted: binding() do
-      field(:startTime, ObjectValidators.DateTime)
-      field(:endTime, ObjectValidators.DateTime)
-
-      field(:joinMode, :string, default: "free")
-
-      embeds_one(:location, PlaceValidator)
-
-      field(:participation_count, :integer, default: 0)
-      field(:participations, {:array, ObjectValidators.ObjectID}, default: [])
-      field(:participation_request_count, :integer, default: 0)
-    end
-  end
 end

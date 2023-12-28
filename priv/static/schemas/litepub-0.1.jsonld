@@ -55,16 +55,16 @@
             },
             "participationMessage": {
                 "@id": "mz:participationMessage",
-                "@type": "sc:Text"
+                "@type": "schema:Text"
             },
-            "streetAddress": "sc:streetAddress",
-            "postalCode": "sc:postalCode",
-            "addressLocality": "sc:addressLocality",
-            "addressRegion": "sc:addressRegion",
-            "addressCountry": "sc:addressCountry",
+            "streetAddress": "schema:streetAddress",
+            "postalCode": "schema:postalCode",
+            "addressLocality": "schema:addressLocality",
+            "addressRegion": "schema:addressRegion",
+            "addressCountry": "schema:addressCountry",
             "location": {
-                "@id": "sc:location",
-                "@type": "sc:Place"
+                "@id": "schema:location",
+                "@type": "schema:Place"
             }
         }
     ]

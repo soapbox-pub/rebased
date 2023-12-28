@@ -22,9 +22,19 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
         message_fields()
         object_fields()
         status_object_fields()
-        event_object_fields()
       end
     end
+
+    field(:startTime, ObjectValidators.DateTime)
+    field(:endTime, ObjectValidators.DateTime)
+
+    field(:joinMode, :string, default: "free")
+
+    embeds_one(:location, PlaceValidator)
+
+    field(:participation_count, :integer, default: 0)
+    field(:participations, {:array, ObjectValidators.ObjectID}, default: [])
+    field(:participation_request_count, :integer, default: 0)
   end
 
   def cast_and_apply(data) do
