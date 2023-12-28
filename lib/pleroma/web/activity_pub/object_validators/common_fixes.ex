@@ -128,11 +128,20 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
 
   def is_object_link_tag(_), do: false
 
-  def maybe_add_language(object, meta \\ []) do
+  def maybe_add_language_from_activity(object, activity) do
+    language = get_language_from_context(activity)
+
+    if language do
+      Map.put(object, "language", language)
+    else
+      object
+    end
+  end
+
+  def maybe_add_language(object) do
     language =
       [
         get_language_from_context(object),
-        get_language_from_context(Keyword.get(meta, :activity_data)),
         get_language_from_content_map(object)
       ]
       |> Enum.find(&is_good_locale_code?(&1))
