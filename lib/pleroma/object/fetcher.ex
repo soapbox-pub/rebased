@@ -112,7 +112,7 @@ defmodule Pleroma.Object.Fetcher do
   end
 
   defp log_fetch_error(id, error) do
-    Logger.metadata([object: id])
+    Logger.metadata(object: id)
     Logger.error("Object rejected while fetching #{id} #{inspect(error)}")
   end
 
