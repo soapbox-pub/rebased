@@ -16,19 +16,19 @@ defmodule Pleroma.Workers.RemoteFetcherWorker do
           :ok
 
         {:error, :forbidden} ->
-          {:cancel, :forbidden}
+          {:discard, :forbidden}
 
         {:error, :not_found} ->
-          {:cancel, :not_found}
+          {:discard, :not_found}
 
         {:error, :allowed_depth} ->
-          {:cancel, :allowed_depth}
+          {:discard, :allowed_depth}
 
         _ ->
           :error
       end
     else
-      {:cancel, "Unreachable instance"}
+      {:discard, "Unreachable instance"}
     end
   end
 

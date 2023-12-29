@@ -41,19 +41,19 @@ defmodule Pleroma.Workers.RemoteFetcherWorkerTest do
     end
 
     test "does not requeue a deleted object" do
-      assert {:cancel, _} =
+      assert {:discard, _} =
                RemoteFetcherWorker.perform(%Oban.Job{
                  args: %{"op" => "fetch_remote", "id" => @deleted_object_one}
                })
 
-      assert {:cancel, _} =
+      assert {:discard, _} =
                RemoteFetcherWorker.perform(%Oban.Job{
                  args: %{"op" => "fetch_remote", "id" => @deleted_object_two}
                })
     end
 
     test "does not requeue an unauthorized object" do
-      assert {:cancel, _} =
+      assert {:discard, _} =
                RemoteFetcherWorker.perform(%Oban.Job{
                  args: %{"op" => "fetch_remote", "id" => @unauthorized_object}
                })
@@ -64,7 +64,7 @@ defmodule Pleroma.Workers.RemoteFetcherWorkerTest do
 
       refute Instances.reachable?(@unreachable_object)
 
-      assert {:cancel, _} =
+      assert {:discard, _} =
                RemoteFetcherWorker.perform(%Oban.Job{
                  args: %{"op" => "fetch_remote", "id" => @unreachable_object}
                })
@@ -73,7 +73,7 @@ defmodule Pleroma.Workers.RemoteFetcherWorkerTest do
     test "does not requeue an object that exceeded depth" do
       clear_config([:instance, :federation_incoming_replies_max_depth], 0)
 
-      assert {:cancel, _} =
+      assert {:discard, _} =
                RemoteFetcherWorker.perform(%Oban.Job{
                  args: %{"op" => "fetch_remote", "id" => @depth_object, "depth" => 1}
                })
