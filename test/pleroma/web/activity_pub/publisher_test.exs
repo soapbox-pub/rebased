@@ -212,7 +212,8 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       actor = insert(:user)
       inbox = "http://404.site/users/nick1/inbox"
 
-      assert {:error, _} = Publisher.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+      assert {:discard, _} =
+               Publisher.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
 
       assert called(Instances.set_unreachable(inbox))
     end
