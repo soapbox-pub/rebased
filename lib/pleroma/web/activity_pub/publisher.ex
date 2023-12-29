@@ -124,6 +124,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
         case response do
           %{status: 403} -> {:discard, :forbidden}
+          %{status: 404} -> {:discard, :not_found}
           %{status: 410} -> {:discard, :not_found}
           _ -> {:error, response}
         end
