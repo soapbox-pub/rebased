@@ -117,8 +117,9 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
       result
     else
-      {_post_result, response} ->
+      {_post_result, response} = e ->
         unless params[:unreachable_since], do: Instances.set_unreachable(inbox)
+        Logger.error("Failed to publish activity #{id} #{inspect(e)}")
         {:error, response}
     end
   end
