@@ -219,7 +219,7 @@ defmodule Pleroma.Object.Fetcher do
             {:error, {:content_type, nil}}
         end
 
-      {:ok, %{status: 403}} ->
+      {:ok, %{status: code}} when code in [401, 403] ->
         {:error, :forbidden}
 
       {:ok, %{status: code}} when code in [404, 410] ->
