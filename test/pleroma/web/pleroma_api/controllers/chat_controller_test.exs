@@ -226,8 +226,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       assert length(result) == 20
 
-      response =
-        get(conn, "#{api_endpoint}#{chat.id}/messages?max_id=#{List.last(result)["id"]}")
+      response = get(conn, "#{api_endpoint}#{chat.id}/messages?max_id=#{List.last(result)["id"]}")
 
       result = json_response_and_validate_schema(response, 200)
       [next, prev] = get_resp_header(response, "link") |> hd() |> String.split(", ")
