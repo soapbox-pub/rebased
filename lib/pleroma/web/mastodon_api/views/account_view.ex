@@ -194,6 +194,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp do_render("show.json", %{user: user} = opts) do
+    self = opts[:for] == user
+
     user = User.sanitize_html(user, User.html_filter_policy(opts[:for]))
     display_name = user.name || user.nickname
 
@@ -203,12 +205,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     header_static = User.banner_url(user) |> MediaProxy.preview_url(static: true)
 
     following_count =
-      if !user.hide_follows_count or !user.hide_follows or opts[:for] == user,
+      if !user.hide_follows_count or !user.hide_follows or self,
         do: user.following_count,
         else: 0
 
     followers_count =
-      if !user.hide_followers_count or !user.hide_followers or opts[:for] == user,
+      if !user.hide_followers_count or !user.hide_followers or self,
         do: user.follower_count,
         else: 0
 
