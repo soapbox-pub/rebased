@@ -251,8 +251,12 @@ defmodule Pleroma.Emoji.Pack do
     uri = url |> String.trim() |> URI.parse()
 
     with :ok <- validate_shareable_packs_available(uri),
+         {:ok, %{"files_count" => files_count}} <-
+           uri |> URI.merge("/api/v1/pleroma/emoji/pack?name=#{name}&page_size=0") |> http_get(),
          {:ok, remote_pack} <-
-           uri |> URI.merge("/api/v1/pleroma/emoji/pack?name=#{name}") |> http_get(),
+           uri
+           |> URI.merge("/api/v1/pleroma/emoji/pack?name=#{name}&page_size=#{files_count}")
+           |> http_get(),
          {:ok, %{sha: sha, url: url} = pack_info} <- fetch_pack_info(remote_pack, uri, name),
          {:ok, archive} <- download_archive(url, sha),
          pack <- copy_as(remote_pack, as || name),
