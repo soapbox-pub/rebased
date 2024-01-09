@@ -35,6 +35,8 @@ defmodule Pleroma.User.Backup do
     timestamps()
   end
 
+  @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
+
   def create(user, admin_id \\ nil) do
     with :ok <- validate_limit(user, admin_id),
          {:ok, backup} <- user |> new() |> Repo.insert() do
@@ -124,7 +126,10 @@ defmodule Pleroma.User.Backup do
     |> Repo.update()
   end
 
-  def process(%__MODULE__{} = backup) do
+  def process(
+        %__MODULE__{} = backup,
+        processor_module \\ __MODULE__.Processor
+      ) do
     set_state(backup, :running, 0)
 
     current_pid = self()
@@ -132,7 +137,7 @@ defmodule Pleroma.User.Backup do
     task =
       Task.Supervisor.async_nolink(
         Pleroma.TaskSupervisor,
-        __MODULE__,
+        processor_module,
         :do_process,
         [backup, current_pid]
       )
@@ -140,25 +145,8 @@ defmodule Pleroma.User.Backup do
     wait_backup(backup, backup.processed_number, task)
   end
 
-  def do_process(backup, current_pid) do
-    with {:ok, zip_file} <- export(backup, current_pid),
-         {:ok, %{size: size}} <- File.stat(zip_file),
-         {:ok, _upload} <- upload(backup, zip_file) do
-      backup
-      |> cast(
-        %{
-          file_size: size,
-          processed: true,
-          state: :complete
-        },
-        [:file_size, :processed, :state]
-      )
-      |> Repo.update()
-    end
-  end
-
   defp wait_backup(backup, current_processed, task) do
-    wait_time = Pleroma.Config.get([__MODULE__, :process_wait_time])
+    wait_time = @config_impl.get([__MODULE__, :process_wait_time])
 
     receive do
       {:progress, new_processed} ->
@@ -363,5 +351,37 @@ defmodule Pleroma.User.Backup do
       end,
       caller_pid
     )
+  end
+end
+
+defmodule Pleroma.User.Backup.ProcessorAPI do
+  @callback do_process(%Pleroma.User.Backup{}, pid()) ::
+              {:ok, %Pleroma.User.Backup{}} | {:error, any()}
+end
+
+defmodule Pleroma.User.Backup.Processor do
+  @behaviour Pleroma.User.Backup.ProcessorAPI
+
+  alias Pleroma.Repo
+  alias Pleroma.User.Backup
+
+  import Ecto.Changeset
+
+  @impl true
+  def do_process(backup, current_pid) do
+    with {:ok, zip_file} <- Backup.export(backup, current_pid),
+         {:ok, %{size: size}} <- File.stat(zip_file),
+         {:ok, _upload} <- Backup.upload(backup, zip_file) do
+      backup
+      |> cast(
+        %{
+          file_size: size,
+          processed: true,
+          state: :complete
+        },
+        [:file_size, :processed, :state]
+      )
+      |> Repo.update()
+    end
   end
 end

@@ -192,9 +192,6 @@ config :pleroma, :instance,
   federating: true,
   federation_incoming_replies_max_depth: 100,
   federation_reachability_timeout_days: 7,
-  federation_publisher_modules: [
-    Pleroma.Web.ActivityPub.Publisher
-  ],
   allow_relay: true,
   public: true,
   quarantined_instances: [],

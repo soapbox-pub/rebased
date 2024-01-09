@@ -31,7 +31,7 @@
 
 1. Optionally you can remove the users of your instance. This will trigger delete requests for their accounts and posts. Note that this is 'best effort' and doesn't mean that all traces of your instance will be gone from the fediverse.
     * You can do this from the admin-FE where you can select all local users and delete the accounts using the *Moderate multiple users* dropdown.
-    * You can also list local users and delete them individualy using the CLI tasks for [Managing users](./CLI_tasks/user.md).
+    * You can also list local users and delete them individually using the CLI tasks for [Managing users](./CLI_tasks/user.md).
 2. Stop the Pleroma service `systemctl stop pleroma`
 3. Disable pleroma from systemd `systemctl disable pleroma`
 4. Remove the files and folders you created during installation (see installation guide). This includes the pleroma, nginx and systemd files and folders.

@@ -895,6 +895,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert Activity.get_by_ap_id(data["id"])
     end
 
+    test "it rejects an invalid incoming activity", %{conn: conn, data: data} do
+      user = insert(:user, is_active: false)
+
+      data =
+        data
+        |> Map.put("bcc", [user.ap_id])
+        |> Kernel.put_in(["object", "bcc"], [user.ap_id])
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/inbox", data)
+
+      assert "Invalid request." == json_response(conn, 400)
+    end
+
     test "it accepts messages with to as string instead of array", %{conn: conn, data: data} do
       user = insert(:user)
 

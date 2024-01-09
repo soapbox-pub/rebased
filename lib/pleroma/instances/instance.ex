@@ -97,13 +97,9 @@ defmodule Pleroma.Instances.Instance do
   def reachable?(url_or_host) when is_binary(url_or_host), do: true
 
   def set_reachable(url_or_host) when is_binary(url_or_host) do
-    with host <- host(url_or_host),
-         %Instance{} = existing_record <- Repo.get_by(Instance, %{host: host}) do
-      {:ok, _instance} =
-        existing_record
-        |> changeset(%{unreachable_since: nil})
-        |> Repo.update()
-    end
+    %Instance{host: host(url_or_host)}
+    |> changeset(%{unreachable_since: nil})
+    |> Repo.insert(on_conflict: {:replace, [:unreachable_since]}, conflict_target: :host)
   end
 
   def set_reachable(_), do: {:error, nil}

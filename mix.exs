@@ -8,7 +8,7 @@ defmodule Pleroma.Mixfile do
       app: :pleroma,
       name: "Rebased",
       compat_name: "Pleroma",
-      version: version("2.6.50"),
+      version: version("2.6.51"),
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: Mix.compilers(),
@@ -193,7 +193,7 @@ defmodule Pleroma.Mixfile do
       {:icalendar, "~> 1.1"},
       {:geospatial, "~> 0.2.0"},
       {:unplug, "~> 1.0"},
-      {:vix, "~> 0.25.0"},
+      {:vix, "~> 0.26.0"},
       {:elixir_make, "~> 0.7.7", override: true},
       {:blurhash, "~> 0.1.0", hex: :rinpatch_blurhash},
 

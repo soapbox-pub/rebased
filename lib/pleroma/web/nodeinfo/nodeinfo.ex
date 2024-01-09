@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
   alias Pleroma.Config
   alias Pleroma.Stats
   alias Pleroma.User
-  alias Pleroma.Web.Federator.Publisher
+  alias Pleroma.Web.ActivityPub.Publisher
   alias Pleroma.Web.MastodonAPI.InstanceView
 
   # returns a nodeinfo 2.0 map, since 2.1 just adds a repository field

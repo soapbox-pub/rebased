@@ -41,6 +41,7 @@ defmodule Pleroma.User do
   alias Pleroma.Workers.BackgroundWorker
 
   require Logger
+  require Pleroma.Constants
 
   @type t :: %__MODULE__{}
   @type account_status ::
@@ -591,7 +592,7 @@ defmodule Pleroma.User do
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:location, max: location_limit)
     |> validate_length(:name, min: 1, max: name_limit)
-    |> validate_inclusion(:actor_type, ["Person", "Service"])
+    |> validate_inclusion(:actor_type, Pleroma.Constants.allowed_user_actor_types())
     |> put_fields()
     |> put_emoji()
     |> put_change_if_present(:bio, &{:ok, parse_bio(&1)})
@@ -2249,7 +2250,7 @@ defmodule Pleroma.User do
   def public_key(_), do: {:error, "key not found"}
 
   def get_public_key_for_ap_id(ap_id) do
-    with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id),
+    with %User{} = user <- get_cached_by_ap_id(ap_id),
          {:ok, public_key} <- public_key(user) do
       {:ok, public_key}
     else
@@ -2365,7 +2366,7 @@ defmodule Pleroma.User do
     if String.contains?(user.nickname, "@") do
       user.nickname
     else
-      host = Pleroma.Web.WebFinger.domain()
+      host = Pleroma.Web.WebFinger.host()
       user.nickname <> "@" <> host
     end
   end
@@ -2794,6 +2795,8 @@ defmodule Pleroma.User do
     |> cast(%{last_active_at: NaiveDateTime.utc_now()}, [:last_active_at])
     |> update_and_set_cache()
   end
+
+  def update_last_active_at(user), do: user
 
   def active_user_count(days \\ 30) do
     active_after = Timex.shift(NaiveDateTime.utc_now(), days: -days)

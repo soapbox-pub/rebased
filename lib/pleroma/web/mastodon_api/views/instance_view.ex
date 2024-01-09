@@ -20,12 +20,11 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
   def render("show.json", _) do
     instance = Config.get(:instance)
 
-    %{
-      uri: Pleroma.Web.WebFinger.domain(),
-      title: Keyword.get(instance, :name),
+    common_information(instance)
+    |> Map.merge(%{
+      uri: Pleroma.Web.WebFinger.host(),
       description: Keyword.get(instance, :description),
       short_description: Keyword.get(instance, :short_description),
-      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.compat_version()})",
       email: Keyword.get(instance, :email),
       urls: %{
         streaming_api: Pleroma.Web.Endpoint.websocket_url()
@@ -34,12 +33,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       thumbnail:
         URI.merge(Pleroma.Web.Endpoint.url(), Keyword.get(instance, :instance_thumbnail))
         |> to_string,
-      languages: Keyword.get(instance, :languages, ["en"]),
       registrations: Keyword.get(instance, :registrations_open),
       approval_required: Keyword.get(instance, :account_approval_required),
       configuration: configuration(),
       contact_account: contact_account(Keyword.get(instance, :contact_username)),
-      rules: render(__MODULE__, "rules.json"),
       # Extra (not present in Mastodon):
       max_toot_chars: Keyword.get(instance, :limit),
       max_media_attachments: Keyword.get(instance, :max_media_attachments),
@@ -50,20 +47,16 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
       background_image: Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
       description_limit: Keyword.get(instance, :description_limit),
-      pleroma: pleroma_configuration(instance),
-      soapbox: %{
-        version: Soapbox.version()
-      }
-    }
+      pleroma: pleroma_configuration(instance)
+    })
   end
 
   def render("show2.json", _) do
     instance = Config.get(:instance)
 
-    %{
-      domain: Pleroma.Web.WebFinger.domain(),
-      title: Keyword.get(instance, :name),
-      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.compat_version()})",
+    common_information(instance)
+    |> Map.merge(%{
+      domain: Pleroma.Web.WebFinger.host(),
       source_url: Pleroma.Application.repository(),
       description: Keyword.get(instance, :short_description),
       usage: %{users: %{active_month: Pleroma.User.active_user_count()}},
@@ -72,7 +65,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           URI.merge(Pleroma.Web.Endpoint.url(), Keyword.get(instance, :instance_thumbnail))
           |> to_string
       },
-      languages: Keyword.get(instance, :languages, ["en"]),
       configuration: configuration2(),
       registrations: %{
         enabled: Keyword.get(instance, :registrations_open),
@@ -83,13 +75,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         email: Keyword.get(instance, :email),
         account: contact_account(Keyword.get(instance, :contact_username))
       },
-      rules: render(__MODULE__, "rules.json"),
       # Extra (not present in Mastodon):
-      pleroma: pleroma_configuration2(instance),
-      soapbox: %{
-        version: Soapbox.version()
-      }
-    }
+      pleroma: pleroma_configuration2(instance)
+    })
   end
 
   def render("rules.json", _) do
@@ -142,6 +130,18 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     end
   end
 
+  defp common_information(instance) do
+    %{
+      title: Keyword.get(instance, :name),
+      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.compat_version()})",
+      languages: Keyword.get(instance, :languages, ["en"]),
+      rules: render(__MODULE__, "rules.json"),
+      soapbox: %{
+        version: Soapbox.version()
+      }
+    }
+  end
+
   def features do
     [
       "pleroma_api",
@@ -182,6 +182,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         "profile_directory"
       end,
       "pleroma:get:main/ostatus",
+      "pleroma:group_actors",
       if Pleroma.Language.Translation.configured?() do
         "translation"
       end,
@@ -276,9 +277,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         federation: federation(),
         fields_limits: fields_limits(),
         post_formats: Config.get([:instance, :allowed_post_formats]),
-        privileged_staff: Config.get([:instance, :privileged_staff]),
         birthday_required: Config.get([:instance, :birthday_required]),
         birthday_min_age: Config.get([:instance, :birthday_min_age]),
+        privileged_staff: Config.get([:instance, :privileged_staff]),
         migration_cooldown_period: Config.get([:instance, :migration_cooldown_period]),
         restrict_unauthenticated: restrict_unauthenticated(),
         translation: translation_configuration(),

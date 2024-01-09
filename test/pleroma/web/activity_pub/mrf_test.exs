@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRFTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   use Pleroma.Tests.Helpers
   alias Pleroma.Web.ActivityPub.MRF
 

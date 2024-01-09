@@ -7,10 +7,12 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
   alias Pleroma.Object
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
+  import Mox
   import Pleroma.Factory
 
   describe "POST /api/v1/pleroma/chats/:id/messages/:message_id/read" do
@@ -111,6 +113,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
+
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
 
       {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
 
