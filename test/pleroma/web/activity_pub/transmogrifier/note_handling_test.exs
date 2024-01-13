@@ -221,6 +221,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
                "<p><span class=\"h-card\"><a href=\"http://localtesting.pleroma.lol/users/lain\" class=\"u-url mention\">@<span>lain</span></a></span></p>"
     end
 
+    test "it works for incoming notices with a nil contentMap (firefish)" do
+      data =
+        File.read!("test/fixtures/mastodon-post-activity-contentmap.json")
+        |> Jason.decode!()
+        |> Map.put("contentMap", nil)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+      object = Object.normalize(data["object"], fetch: false)
+
+      assert object.data["content"] ==
+               "<p><span class=\"h-card\"><a href=\"http://localtesting.pleroma.lol/users/lain\" class=\"u-url mention\">@<span>lain</span></a></span></p>"
+    end
+
     test "it works for incoming notices with to/cc not being an array (kroeg)" do
       data = File.read!("test/fixtures/kroeg-post-activity.json") |> Jason.decode!()
 
