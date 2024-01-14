@@ -3,32 +3,27 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.RemoteFetcherWorker do
-  alias Pleroma.Instances
   alias Pleroma.Object.Fetcher
 
   use Pleroma.Workers.WorkerHelper, queue: "remote_fetcher"
 
   @impl Oban.Worker
   def perform(%Job{args: %{"op" => "fetch_remote", "id" => id} = args}) do
-    if Instances.reachable?(id) do
-      case Fetcher.fetch_object_from_id(id, depth: args["depth"]) do
-        {:ok, _object} ->
-          :ok
+    case Fetcher.fetch_object_from_id(id, depth: args["depth"]) do
+      {:ok, _object} ->
+        :ok
 
-        {:error, :forbidden} ->
-          {:discard, :forbidden}
+      {:error, :forbidden} ->
+        {:discard, :forbidden}
 
-        {:error, :not_found} ->
-          {:discard, :not_found}
+      {:error, :not_found} ->
+        {:discard, :not_found}
 
-        {:error, :allowed_depth} ->
-          {:discard, :allowed_depth}
+      {:error, :allowed_depth} ->
+        {:discard, :allowed_depth}
 
-        _ ->
-          :error
-      end
-    else
-      {:discard, "Unreachable instance"}
+      _ ->
+        :error
     end
   end
 

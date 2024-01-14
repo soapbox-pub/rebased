@@ -6,13 +6,11 @@ defmodule Pleroma.Workers.RemoteFetcherWorkerTest do
   use Pleroma.DataCase
   use Oban.Testing, repo: Pleroma.Repo
 
-  alias Pleroma.Instances
   alias Pleroma.Workers.RemoteFetcherWorker
 
   @deleted_object_one "https://deleted-404.example.com/"
   @deleted_object_two "https://deleted-410.example.com/"
   @unauthorized_object "https://unauthorized.example.com/"
-  @unreachable_object "https://unreachable.example.com/"
   @depth_object "https://depth.example.com/"
 
   describe "RemoteFetcherWorker" do
@@ -56,17 +54,6 @@ defmodule Pleroma.Workers.RemoteFetcherWorkerTest do
       assert {:discard, _} =
                RemoteFetcherWorker.perform(%Oban.Job{
                  args: %{"op" => "fetch_remote", "id" => @unauthorized_object}
-               })
-    end
-
-    test "does not fetch an unreachable instance" do
-      Instances.set_consistently_unreachable(@unreachable_object)
-
-      refute Instances.reachable?(@unreachable_object)
-
-      assert {:discard, _} =
-               RemoteFetcherWorker.perform(%Oban.Job{
-                 args: %{"op" => "fetch_remote", "id" => @unreachable_object}
                })
     end
 
