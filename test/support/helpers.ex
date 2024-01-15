@@ -32,6 +32,17 @@ defmodule Pleroma.Tests.Helpers do
     |> URI.to_string()
   end
 
+  @doc "Returns the value of the specified query parameter for the provided URL"
+  def get_query_parameter(url, param) do
+    url
+    |> URI.parse()
+    |> Map.get(:query)
+    |> URI.query_decoder()
+    |> Enum.to_list()
+    |> Enum.into(%{}, fn {x, y} -> {x, y} end)
+    |> Map.get(param)
+  end
+
   defmacro clear_config(config_path) do
     quote do
       clear_config(unquote(config_path)) do
