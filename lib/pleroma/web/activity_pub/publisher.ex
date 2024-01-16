@@ -255,7 +255,10 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       [priority_recipients, recipients]
       |> Enum.map(fn recipients ->
         recipients
-        |> Enum.map(fn actor -> actor.inbox end)
+        |> Enum.map(fn %User{} = user ->
+          determine_inbox(activity, user)
+        end)
+        |> Enum.uniq()
         |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
         |> Instances.filter_reachable()
       end)
@@ -302,7 +305,10 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       recipients(actor, activity)
       |> Enum.map(fn recipients ->
         recipients
-        |> Enum.map(fn actor -> actor.inbox end)
+        |> Enum.map(fn %User{} = user ->
+          determine_inbox(activity, user)
+        end)
+        |> Enum.uniq()
         |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
       end)
 

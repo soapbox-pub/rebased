@@ -1,10 +1,13 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2023 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRFTest do
   use ExUnit.Case
   use Pleroma.Tests.Helpers
+
+  import ExUnit.CaptureLog
+
   alias Pleroma.Web.ActivityPub.MRF
 
   test "subdomains_regex/1" do
@@ -60,6 +63,14 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
 
       refute MRF.subdomain_match?(regexes, "EXAMPLE.COM")
       refute MRF.subdomain_match?(regexes, "example.com")
+    end
+
+    @tag capture_log: true
+    test "logs sensible error on accidental wildcard" do
+      assert_raise Regex.CompileError, fn ->
+        assert capture_log(MRF.subdomains_regex(["*unsafe.tld"])) =~
+                 "MRF: Invalid subdomain Regex: *unsafe.tld"
+      end
     end
   end
 
