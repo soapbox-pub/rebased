@@ -99,7 +99,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         location: nil,
         is_local: true,
         avatar_description: "",
-        header_description: ""
+        header_description: "",
+        permit_followback: false
       }
     }
 
@@ -310,7 +311,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         location: nil,
         is_local: true,
         avatar_description: "",
-        header_description: ""
+        header_description: "",
+        permit_followback: false
       }
     }
 

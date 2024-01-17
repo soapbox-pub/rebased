@@ -164,6 +164,7 @@ defmodule Pleroma.User do
     field(:location, :string)
     field(:language, :string)
     field(:last_move_at, :naive_datetime)
+    field(:permit_followback, :boolean, default: false)
 
     belongs_to(:domain, Domain)
 
@@ -588,7 +589,8 @@ defmodule Pleroma.User do
         :disclose_client,
         :birthday,
         :show_birthday,
-        :location
+        :location,
+        :permit_followback
       ]
     )
     |> validate_min_age()
@@ -1143,16 +1145,21 @@ defmodule Pleroma.User do
 
   def needs_update?(_), do: true
 
+  # "Locked" (self-locked) users demand explicit authorization of follow requests
+  @spec can_direct_follow_local(User.t(), User.t()) :: true | false
+  def can_direct_follow_local(%User{} = follower, %User{local: true} = followed) do
+    !followed.is_locked || (followed.permit_followback and is_friend_of(follower, followed))
+  end
+
   @spec maybe_direct_follow(User.t(), User.t()) ::
           {:ok, User.t(), User.t()} | {:error, String.t()}
 
-  # "Locked" (self-locked) users demand explicit authorization of follow requests
-  def maybe_direct_follow(%User{} = follower, %User{local: true, is_locked: true} = followed) do
-    follow(follower, followed, :follow_pending)
-  end
-
   def maybe_direct_follow(%User{} = follower, %User{local: true} = followed) do
-    follow(follower, followed)
+    if can_direct_follow_local(follower, followed) do
+      follow(follower, followed)
+    else
+      follow(follower, followed, :follow_pending)
+    end
   end
 
   def maybe_direct_follow(%User{} = follower, %User{} = followed) do
@@ -1524,6 +1531,13 @@ defmodule Pleroma.User do
     user
     |> get_familiar_followers_query(current_user, page)
     |> Repo.all()
+  end
+
+  def is_friend_of(%User{} = potential_friend, %User{local: true} = user) do
+    user
+    |> get_friends_query()
+    |> where(id: ^potential_friend.id)
+    |> Repo.exists?()
   end
 
   def increase_note_count(%User{} = user) do

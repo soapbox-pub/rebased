@@ -328,7 +328,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         location: user.location,
         is_local: user.local,
         avatar_description: avatar_description,
-        header_description: header_description
+        header_description: header_description,
+        permit_followback: user.permit_followback
       }
     }
     |> maybe_put_role(user, opts[:for])

@@ -822,6 +822,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           nullable: true,
           description: "User's birthday will be visible"
         },
+        permit_followback: %Schema{
+          allOf: [BooleanLike],
+          nullable: true,
+          description:
+            "Whether follow requests from accounts the user is already following are auto-approved (when locked)."
+        },
         location: %Schema{
           type: :string,
           nullable: true,
@@ -858,7 +864,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         discoverable: false,
         actor_type: "Person",
         show_birthday: false,
-        birthday: "2001-02-12"
+        birthday: "2001-02-12",
+        permit_followback: true
       }
     }
   end

@@ -149,6 +149,7 @@ Has these additional fields under the `pleroma` object:
 - `favicon`: nullable URL string, Favicon image of the user's instance
 - `avatar_description`: string, image description for user avatar, defaults to empty string
 - `header_description`: string, image description for user banner, defaults to empty string
+- `permit_followback`: boolean, whether follows from followed accounts are auto-approved
 
 ### Source
 

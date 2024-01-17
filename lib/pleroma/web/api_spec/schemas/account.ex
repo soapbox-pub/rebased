@@ -113,7 +113,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
             description: "Favicon image of the user's instance"
           },
           avatar_description: %Schema{type: :string},
-          header_description: %Schema{type: :string}
+          header_description: %Schema{type: :string},
+          permit_followback: %Schema{type: :boolean}
         }
       },
       source: %Schema{
@@ -208,7 +209,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
         "settings_store" => %{
           "pleroma-fe" => %{}
         },
-        "birthday" => "2001-02-12"
+        "birthday" => "2001-02-12",
+        "permit_followback" => true
       },
       "source" => %{
         "fields" => [],

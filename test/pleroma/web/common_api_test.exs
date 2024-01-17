@@ -1472,6 +1472,36 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert User.following?(follower, followed)
     end
+
+    test "directly follows back a locked, but followback-allowing local user" do
+      uopen = insert(:user, is_locked: false)
+      uselective = insert(:user, is_locked: true, permit_followback: true)
+
+      assert {:ok, uselective, uopen, %{data: %{"state" => "accept"}}} =
+               CommonAPI.follow(uselective, uopen)
+
+      assert User.get_follow_state(uselective, uopen) == :follow_accept
+
+      assert {:ok, uopen, uselective, %{data: %{"state" => "accept"}}} =
+               CommonAPI.follow(uopen, uselective)
+
+      assert User.get_follow_state(uopen, uselective) == :follow_accept
+    end
+
+    test "creates a pending request for locked, non-followback local user" do
+      uopen = insert(:user, is_locked: false)
+      ulocked = insert(:user, is_locked: true, permit_followback: false)
+
+      assert {:ok, ulocked, uopen, %{data: %{"state" => "accept"}}} =
+               CommonAPI.follow(ulocked, uopen)
+
+      assert User.get_follow_state(ulocked, uopen) == :follow_accept
+
+      assert {:ok, uopen, ulocked, %{data: %{"state" => "pending"}}} =
+               CommonAPI.follow(uopen, ulocked)
+
+      assert User.get_follow_state(uopen, ulocked) == :follow_pending
+    end
   end
 
   describe "unfollow/2" do
