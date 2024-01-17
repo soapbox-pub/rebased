@@ -125,13 +125,12 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
         media_removal: ["some.removal", {"some.other.instance", "Some reason"}]
       )
 
-      expected_config = [
+      expected_config =
         {:media_removal, [{"some.removal", ""}, {"some.other.instance", "Some reason"}]}
-      ]
 
       capture_log(fn -> DeprecationWarnings.warn() end)
 
-      assert Config.get([:mrf_simple]) == expected_config
+      assert expected_config in Config.get([:mrf_simple])
     end
 
     test "doesn't give a warning with correct config" do

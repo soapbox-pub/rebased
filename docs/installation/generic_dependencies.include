@@ -2,7 +2,7 @@
 
 * PostgreSQL >=9.6
 * Elixir >=1.11.0 <1.15
-* Erlang OTP >=22.2.0 <26
+* Erlang OTP >=22.2.0 (supported: <27)
 * git
 * file / libmagic
 * gcc or clang
