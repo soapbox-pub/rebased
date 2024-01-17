@@ -283,6 +283,117 @@ See [Admin-API](admin_api.md)
     * `id`: the id of the status
 * Response: JSON, returns a list of Mastodon Status entities
 
+## `/api/v1/pleroma/events`
+### Creates an event
+* Method `POST`
+* Authentication: required
+* Params:
+    * `name`: name of the event
+    * `status`: optional, description of the event
+    * `banner_id`: optional, event banner attachment ID
+    * `start_time`: start time of the event
+    * `end_time`: optional, end time of the event
+    * `join_mode`: optional, event join mode, either `free` or `restricted`, defaults to `free`
+    * `location_id`: optional, location ID from the location provider used by server
+
+* Response: JSON. Returns a Mastodon Status entity.
+
+## `/api/v1/pleroma/events/joined_events`
+### Gets user's joined events
+* Method `GET`
+* Authentication: required
+
+* Response: JSON. Returns a list of Mastodon Status entities.
+
+## `/api/v1/pleroma/events/:id`
+### Edits an event
+* Method `POST`
+* Authentication: required
+* Params:
+    * `id`: ID of the status
+    * `name`: optional, name of the event
+    * `status`: optional, description of the event
+    * `banner_id`: optional, event banner attachment ID
+    * `start_time`: optional, start time of the event
+    * `end_time`: optional, end time of the event
+    * `location_id`: optional, location ID from the location provider used by server
+
+* Response: JSON. Returns a Mastodon Status entity.
+
+## `/api/v1/pleroma/events/:id/participations`
+### Gets event participants
+* Method `GET`
+* Authentication: required
+* Params:
+    * `id`: ID of the status
+
+* Response: JSON. Returns a list of Mastodon Account entities.
+
+## `/api/v1/pleroma/events/:id/participation_requests`
+### Gets event participation requests
+* Method `GET`
+* Authentication: required
+* Params:
+    * `id`: ID of the status
+
+* Response: JSON. Returns a list of `{"account": "[Mastodon Account entity]", "participation_message": "[Participation request message]"}` entities.
+
+## `/api/v1/pleroma/events/:id/participation_requests/:participant_id/authorize`
+### Accepts user to the event
+* Method `POST`
+* Authentication: required
+* Params:
+    * `id`: ID of the status
+    * `participant_id`: ID of the account
+
+* Response: JSON. Returns a Mastodon Status entity.
+
+## `/api/v1/pleroma/events/:id/participation_requests/:participant_id/reject`
+### Rejects user from the event
+* Method `POST`
+* Authentication: required
+* Params:
+    * `id`: ID of the status
+    * `participant_id`: ID of the account
+
+* Response: JSON. Returns a Mastodon Status entity.
+
+## `/api/v1/pleroma/events/:id/join`
+### Joins the event
+* Method `POST`
+* Authentication: required
+* Params:
+    * `id`: ID of the status
+
+* Response: JSON. Returns a Mastodon Status entity.
+
+## `/api/v1/pleroma/events/:id/leave`
+### Leaves the event
+* Method `POST`
+* Authentication: required
+* Params:
+    * `id`: ID of the status
+
+* Response: JSON. Returns a Mastodon Status entity.
+
+## `/api/v1/pleroma/events/:id/ics`
+### Event ICS file
+* Method `POST`
+* Authentication: not required
+* Params:
+    * `id`: ID of the status
+
+* Response: ICS. Returns calendar file for the event.
+
+## `/api/v1/pleroma/search/location`
+### Searches for locations
+* Method `GET`
+* Authentication: required
+* Params:
+    * `q`: Search query
+
+* Response: JSON. Returns a list of found locations.
+
 ## `/api/v1/pleroma/mascot`
 ### Gets user mascot image
 * Method `GET`

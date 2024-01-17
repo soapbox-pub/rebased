@@ -253,11 +253,6 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
           type: :string,
           description: "Location ID from geospatial provider",
           nullable: true
-        },
-        language: %Schema{
-          type: :string,
-          nullable: true,
-          description: "ISO 639 language code for this status."
         }
       },
       example: %{
