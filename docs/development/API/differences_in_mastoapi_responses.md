@@ -40,10 +40,38 @@ Has these additional fields under the `pleroma` object:
 - `parent_visible`: If the parent of this post is visible to the user or not.
 - `pinned_at`: a datetime (iso8601) when status was pinned, `null` otherwise.
 - `quotes_count`: the count of status quotes.
+- `event`: event information if the post is an event, `null` otherwise.
 
 The `GET /api/v1/statuses/:id/source` endpoint additionally has the following attributes:
 
 - `content_type`: The content type of the status source.
+
+### Event
+
+Event object includes following fields:
+
+- `name`: event name.
+- `start_time`: datetime, if specified, the time when the event starts, `null` otherwise.
+- `end_time`: datetime, if specified, the time when the event finishes, `null` otherwise.
+- `join_mode`: who can join the event. Possible values, if specified: `free`, `restricted` and `invite`. `null` otherwise.
+- `participants_count`: the number of users who joined the event.
+- `location`: event location, if specified, `null` otherwise.
+- `join_state`: whether the user joined the event. Possible values: `pending`, `reject`, `accept`. `null`, if no `Join` exists.
+- `participation_request_count`: the number of users who requested to join the event.
+
+### Event location
+
+Event location object includes following fields:
+
+- `name`: place name.
+- `url`: location url address or `null`.
+- `longitude`: X-coordinate of the place or `null`. 
+- `latitude`: Y-coordinate of the place or `null`. 
+- `street`: place street or `null`.
+- `postal_code`: place postal code or `null`.
+- `locality`: place city or `null`.
+- `region`: place region or `null`.
+- `country`: place country or `null`.
 
 ## Scheduled statuses
 
@@ -162,6 +190,32 @@ The `type` value is `pleroma:emoji_reaction`. Has these fields:
 - `emoji`: The used emoji
 - `account`: The account of the user who reacted
 - `status`: The status that was reacted on
+
+### EventReminder Notification
+
+The `type` value is `pleroma:event_reminder`. Has these fields:
+
+- `status`: The event status
+
+### EventUpdate Notification
+
+The `type` value is `pleroma:event_update`. Has these fields:
+
+- `status`: The event status
+
+### ParticipationAccepted Notification
+
+The `type` value is `pleroma:participation_accepted`. Has these fields:
+
+- `status`: The event status
+- `participation_message`: Participation request message
+
+### ParticipationRequest Notification
+
+The `type` value is `pleroma:participation_request`. Has these fields:
+
+- `status`: The event status
+- `participation_message`: Participation request message
 
 ### ChatMention Notification (not default)
 
