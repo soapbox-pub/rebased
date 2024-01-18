@@ -129,7 +129,7 @@ The `/api/v1/pleroma/*` path is backwards compatible with `/api/pleroma/*` (`/ap
 * method: `GET`
 * Authentication: required
 * OAuth scope: `write:security`
-* Response: JSON. Returns `{"codes": codes}`when successful, otherwise HTTP 422 `{"error": "[error message]"}`
+* Response: JSON. Returns `{"codes": codes}` when successful, otherwise HTTP 422 `{"error": "[error message]"}`
 
 ## `/api/v1/pleroma/admin/`
 See [Admin-API](admin_api.md)
@@ -251,6 +251,15 @@ See [Admin-API](admin_api.md)
 ]
 ```
 
+
+## `/api/v1/pleroma/accounts/:id/endorsements`
+### Returns users endorsed by a user
+* Method `GET`
+* Authentication: not required
+* Params:
+    * `id`: the id of the account for whom to return results
+* Response: JSON, returns a list of Mastodon Account entities
+
 ## `/api/v1/pleroma/accounts/update_*`
 ### Set and clear account avatar, banner, and background
 
@@ -265,6 +274,14 @@ See [Admin-API](admin_api.md)
     * `email`: email of that needs to be verified
 * Authentication: not required
 * Response: 204 No Content
+
+## `/api/v1/pleroma/statuses/:id/quotes`
+### Gets quotes for a given status
+* Method `GET`
+* Authentication: not required
+* Params:
+    * `id`: the id of the status
+* Response: JSON, returns a list of Mastodon Status entities
 
 ## `/api/v1/pleroma/mascot`
 ### Gets user mascot image
@@ -371,6 +388,15 @@ See [Admin-API](admin_api.md)
 * Params:
     * `alias`: the nickname of the alias to delete, e.g. `foo@example.org`.
 * Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
+
+## `/api/v1/pleroma/remote_interaction`
+## Interact with profile or status from remote account
+* Metod `POST`
+* Authentication: not required
+* Params:
+    * `ap_id`: Profile or status ActivityPub ID
+    * `profile`: Remote profile webfinger
+* Response: JSON. Returns `{"url": "[redirect url]"}` on success, `{"error": "[error message]"}` otherwise
 
 # Pleroma Conversations
 
