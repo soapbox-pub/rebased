@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EnsureRePrependedTest do
       assert res["object"]["summary"] == "re: object-summary"
     end
 
-    test "it adds `re:` to summary object when child summary containts re-subject of parent summary " do
+    test "it adds `re:` to summary object when child summary contains re-subject of parent summary " do
       message = %{
         "type" => "Create",
         "object" => %{

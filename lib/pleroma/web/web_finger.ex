@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.WebFinger do
   alias Pleroma.HTTP
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Publisher
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Web.XML
   alias Pleroma.XmlBuilder
   require Jason

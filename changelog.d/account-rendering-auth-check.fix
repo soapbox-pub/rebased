@@ -1,0 +1,1 @@
+Fix authentication check on account rendering when bio is defined

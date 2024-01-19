@@ -235,7 +235,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     # So we first build the normal local changeset, then apply it to the
     # user data, but don't persist it. With this, we generate the object
     # data for our update activity. We feed this and the changeset as meta
-    # inforation into the pipeline, where they will be properly updated and
+    # information into the pipeline, where they will be properly updated and
     # federated.
     with changeset <- User.update_changeset(user, user_params),
          {:ok, unpersisted_user} <- Ecto.Changeset.apply_action(changeset, :update),

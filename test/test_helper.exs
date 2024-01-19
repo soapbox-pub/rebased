@@ -6,6 +6,12 @@ Code.put_compiler_option(:warnings_as_errors, true)
 
 ExUnit.start(exclude: [:federated, :erratic])
 
+if match?({:unix, :darwin}, :os.type()) do
+  excluded = ExUnit.configuration() |> Keyword.get(:exclude, [])
+  excluded = excluded ++ [:skip_darwin]
+  ExUnit.configure(exclude: excluded)
+end
+
 Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, :manual)
 
 Mox.defmock(Pleroma.ReverseProxy.ClientMock, for: Pleroma.ReverseProxy.Client)

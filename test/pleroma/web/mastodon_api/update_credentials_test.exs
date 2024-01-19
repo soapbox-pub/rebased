@@ -732,4 +732,20 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert account["source"]["pleroma"]["actor_type"] == "Person"
     end
   end
+
+  describe "Mark account as group" do
+    setup do: oauth_access(["write:accounts"])
+    setup :request_content_type
+
+    test "changing actor_type to Group makes account a Group and enables bot indicator for backward compatibility",
+         %{conn: conn} do
+      account =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{actor_type: "Group"})
+        |> json_response_and_validate_schema(200)
+
+      assert account["bot"]
+      assert account["source"]["pleroma"]["actor_type"] == "Group"
+    end
+  end
 end

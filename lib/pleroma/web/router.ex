@@ -182,7 +182,7 @@ defmodule Pleroma.Web.Router do
   end
 
   pipeline :well_known do
-    plug(:accepts, ["json", "jrd+json", "xml", "xrd+xml"])
+    plug(:accepts, ["json", "jrd", "jrd+json", "xml", "xrd+xml"])
   end
 
   pipeline :config do
@@ -481,7 +481,7 @@ defmodule Pleroma.Web.Router do
     post("/change_email", UtilController, :change_email)
     post("/change_password", UtilController, :change_password)
     post("/delete_account", UtilController, :delete_account)
-    put("/notification_settings", UtilController, :update_notificaton_settings)
+    put("/notification_settings", UtilController, :update_notification_settings)
     post("/disable_account", UtilController, :disable_account)
     post("/move_account", UtilController, :move_account)
 

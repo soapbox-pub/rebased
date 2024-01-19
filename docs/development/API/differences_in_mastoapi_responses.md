@@ -1,6 +1,6 @@
 # Differences in Mastodon API responses from vanilla Mastodon
 
-A Pleroma instance can be identified by "<Mastodon version> (compatible; Pleroma <version>)" present in `version` field in response from `/api/v1/instance`
+A Pleroma instance can be identified by "<Mastodon version> (compatible; Pleroma <version>)" present in `version` field in response from `/api/v1/instance` and `/api/v2/instance`
 
 ## Flake IDs
 
@@ -39,6 +39,7 @@ Has these additional fields under the `pleroma` object:
 - `emoji_reactions`: A list with emoji / reaction maps. The format is `{name: "☕", count: 1, me: true}`. Contains no information about the reacting users, for that use the `/statuses/:id/reactions` endpoint.
 - `parent_visible`: If the parent of this post is visible to the user or not.
 - `pinned_at`: a datetime (iso8601) when status was pinned, `null` otherwise.
+- `quotes_count`: the count of status quotes.
 
 The `GET /api/v1/statuses/:id/source` endpoint additionally has the following attributes:
 
@@ -304,19 +305,27 @@ Has these additional parameters (which are the same as in Pleroma-API):
 `GET /api/v1/instance` has additional fields
 
 - `max_toot_chars`: The maximum characters per post
+- `max_media_attachments`: Maximum number of post media attachments
 - `chat_limit`: The maximum characters per chat message
 - `description_limit`: The maximum characters per image description
 - `poll_limits`: The limits of polls
+- `shout_limit`: The maximum characters per Shoutbox message
 - `upload_limit`: The maximum upload file size
 - `avatar_upload_limit`: The same for avatars
 - `background_upload_limit`: The same for backgrounds
 - `banner_upload_limit`: The same for banners
 - `background_image`: A background image that frontends can use
+- `pleroma.metadata.account_activation_required`: Whether users are required to confirm their emails before signing in
+- `pleroma.metadata.birthday_required`: Whether users are required to provide their birth day when signing in
+- `pleroma.metadata.birthday_min_age`: The minimum user age (in days)
 - `pleroma.metadata.features`: A list of supported features
 - `pleroma.metadata.federation`: The federation restrictions of this instance
 - `pleroma.metadata.fields_limits`: A list of values detailing the length and count limitation for various instance-configurable fields.
 - `pleroma.metadata.post_formats`: A list of the allowed post format types
-- `vapid_public_key`: The public key needed for push messages
+- `pleroma.stats.mau`: Monthly active user count
+- `pleroma.vapid_public_key`: The public key needed for push messages
+
+In, `GET /api/v2/instance` Pleroma-specific fields are all moved into `pleroma` object. `max_toot_chars`, `poll_limits` and `upload_limit` are replaced with their MastoAPI counterparts.
 
 ## Push Subscription
 

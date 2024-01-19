@@ -1028,7 +1028,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     refute repeat_activity in activities
   end
 
-  test "see your own posts even when they adress actors from blocked domains" do
+  test "see your own posts even when they address actors from blocked domains" do
     user = insert(:user)
 
     domain = "dogwhistle.zone"

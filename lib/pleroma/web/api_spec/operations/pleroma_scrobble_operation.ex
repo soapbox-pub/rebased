@@ -23,7 +23,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaScrobbleOperation do
       security: [%{"oAuth" => ["write"]}],
       operationId: "PleromaAPI.ScrobbleController.create",
       deprecated: true,
-      requestBody: request_body("Parameters", create_request(), requried: true),
+      requestBody: request_body("Parameters", create_request(), required: true),
       responses: %{
         200 => Operation.response("Scrobble", "application/json", scrobble())
       }

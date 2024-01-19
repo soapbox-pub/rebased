@@ -178,7 +178,7 @@ defmodule HttpRequestMock do
   end
 
   def get(
-        "https://social.heldscal.la/.well-known/webfinger?resource=nonexistant@social.heldscal.la",
+        "https://social.heldscal.la/.well-known/webfinger?resource=nonexistent@social.heldscal.la",
         _,
         _,
         [{"accept", "application/xrd+xml,application/jrd+json"}]
@@ -186,7 +186,7 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!("test/fixtures/tesla_mock/nonexistant@social.heldscal.la.xml")
+       body: File.read!("test/fixtures/tesla_mock/nonexistent@social.heldscal.la.xml")
      }}
   end
 

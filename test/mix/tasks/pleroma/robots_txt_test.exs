@@ -26,7 +26,7 @@ defmodule Mix.Tasks.Pleroma.RobotsTxtTest do
     assert file == "User-Agent: *\nDisallow: /\n"
   end
 
-  test "to existance folder" do
+  test "to existing folder" do
     path = "test/fixtures/"
     file_path = path <> "robots.txt"
     clear_config([:instance, :static_dir], path)

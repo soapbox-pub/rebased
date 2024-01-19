@@ -13,18 +13,55 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Workers.PublisherWorker
 
   require Pleroma.Constants
 
   import Pleroma.Web.ActivityPub.Visibility
-
-  @behaviour Pleroma.Web.Federator.Publisher
 
   require Logger
 
   @moduledoc """
   ActivityPub outgoing federation module.
   """
+
+  @doc """
+  Enqueue publishing a single activity.
+  """
+  @spec enqueue_one(Map.t(), Keyword.t()) :: {:ok, %Oban.Job{}}
+  def enqueue_one(%{} = params, worker_args \\ []) do
+    PublisherWorker.enqueue(
+      "publish_one",
+      %{"params" => params},
+      worker_args
+    )
+  end
+
+  @doc """
+  Gathers a set of remote users given an IR envelope.
+  """
+  def remote_users(%User{id: user_id}, %{data: %{"to" => to} = data}) do
+    cc = Map.get(data, "cc", [])
+
+    bcc =
+      data
+      |> Map.get("bcc", [])
+      |> Enum.reduce([], fn ap_id, bcc ->
+        case Pleroma.List.get_by_ap_id(ap_id) do
+          %Pleroma.List{user_id: ^user_id} = list ->
+            {:ok, following} = Pleroma.List.get_following(list)
+            bcc ++ Enum.map(following, & &1.ap_id)
+
+          _ ->
+            bcc
+        end
+      end)
+
+    [to, cc, bcc]
+    |> Enum.concat()
+    |> Enum.map(&User.get_cached_by_ap_id/1)
+    |> Enum.filter(fn user -> user && !user.local end)
+  end
 
   @doc """
   Determine if an activity can be represented by running it through Transmogrifier.
@@ -80,9 +117,23 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
       result
     else
-      {_post_result, response} ->
+      {_post_result, %{status: code} = response} = e ->
         unless params[:unreachable_since], do: Instances.set_unreachable(inbox)
-        {:error, response}
+        Logger.metadata(activity: id, inbox: inbox, status: code)
+        Logger.error("Publisher failed to inbox #{inbox} with status #{code}")
+
+        case response do
+          %{status: 403} -> {:discard, :forbidden}
+          %{status: 404} -> {:discard, :not_found}
+          %{status: 410} -> {:discard, :not_found}
+          _ -> {:error, e}
+        end
+
+      e ->
+        unless params[:unreachable_since], do: Instances.set_unreachable(inbox)
+        Logger.metadata(activity: id, inbox: inbox)
+        Logger.error("Publisher failed to inbox #{inbox} #{inspect(e)}")
+        {:error, e}
     end
   end
 
@@ -138,7 +189,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
           []
       end
 
-    mentioned = Pleroma.Web.Federator.Publisher.remote_users(actor, activity)
+    mentioned = remote_users(actor, activity)
     non_mentioned = (followers ++ fetchers) -- mentioned
 
     [mentioned, non_mentioned]
@@ -204,7 +255,10 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       [priority_recipients, recipients]
       |> Enum.map(fn recipients ->
         recipients
-        |> Enum.map(fn actor -> actor.inbox end)
+        |> Enum.map(fn %User{} = user ->
+          determine_inbox(activity, user)
+        end)
+        |> Enum.uniq()
         |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
         |> Instances.filter_reachable()
       end)
@@ -223,7 +277,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
             |> Map.put("cc", cc)
             |> Jason.encode!()
 
-          Pleroma.Web.Federator.Publisher.enqueue_one(__MODULE__, %{
+          __MODULE__.enqueue_one(%{
             inbox: inbox,
             json: json,
             actor_id: actor.id,
@@ -251,7 +305,10 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       recipients(actor, activity)
       |> Enum.map(fn recipients ->
         recipients
-        |> Enum.map(fn actor -> actor.inbox end)
+        |> Enum.map(fn %User{} = user ->
+          determine_inbox(activity, user)
+        end)
+        |> Enum.uniq()
         |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
       end)
 
@@ -262,8 +319,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       inboxes
       |> Instances.filter_reachable()
       |> Enum.each(fn {inbox, unreachable_since} ->
-        Pleroma.Web.Federator.Publisher.enqueue_one(
-          __MODULE__,
+        __MODULE__.enqueue_one(
           %{
             inbox: inbox,
             json: json,

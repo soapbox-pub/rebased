@@ -17,7 +17,7 @@ defmodule Pleroma.Search.SearchBackend do
   Remove the object from the index.
 
   Just the object, as opposed to the whole activity, is passed, since the object
-  is what contains the actual content and there is no need for fitlering when removing
+  is what contains the actual content and there is no need for filtering when removing
   from index.
   """
   @callback remove_from_index(object :: Pleroma.Object.t()) :: {:ok, any()} | {:error, any()}

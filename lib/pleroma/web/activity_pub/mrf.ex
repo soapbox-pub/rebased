@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2023 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF do
@@ -139,7 +139,16 @@ defmodule Pleroma.Web.ActivityPub.MRF do
 
   @spec subdomains_regex([String.t()]) :: [Regex.t()]
   def subdomains_regex(domains) when is_list(domains) do
-    for domain <- domains, do: ~r(^#{String.replace(domain, "*.", "(.*\\.)*")}$)i
+    for domain <- domains do
+      try do
+        target = String.replace(domain, "*.", "(.*\\.)*")
+        ~r<^#{target}$>i
+      rescue
+        e ->
+          Logger.error("MRF: Invalid subdomain Regex: #{domain}")
+          reraise e, __STACKTRACE__
+      end
+    end
   end
 
   @spec subdomain_match?([Regex.t()], String.t()) :: boolean()
