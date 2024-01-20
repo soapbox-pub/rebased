@@ -102,7 +102,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
         ttl_setters: [MyModule]
   """
   @spec set_ttl_based_on_image(map(), String.t()) ::
-          {:ok, Integer.t() | :noop} | {:error, :no_key}
+          {:ok, integer() | :noop} | {:error, :no_key}
   def set_ttl_based_on_image(data, url) do
     case get_ttl_from_image(data, url) do
       {:ok, ttl} when is_number(ttl) ->
