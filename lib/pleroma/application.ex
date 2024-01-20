@@ -116,12 +116,7 @@ defmodule Pleroma.Application do
     # If we have a lot of caches, default max_restarts can cause test
     # resets to fail.
     # Go for the default 3 unless we're in test
-    max_restarts =
-      if @mix_env == :test do
-        100
-      else
-        3
-      end
+    max_restarts = Application.get_env(:pleroma, __MODULE__)[:max_restarts]
 
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor, max_restarts: max_restarts]
     result = Supervisor.start_link(children, opts)

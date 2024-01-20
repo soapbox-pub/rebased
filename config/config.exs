@@ -904,6 +904,9 @@ config :pleroma, Pleroma.Search.Meilisearch,
   private_key: nil,
   initial_indexing_chunk_size: 100_000
 
+config :pleroma, Pleroma.Application,
+  max_restarts: 3
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
