@@ -132,7 +132,7 @@ defmodule Pleroma.Web.Feed.FeedView do
     |> safe_to_string()
   end
 
-  @spec to_rfc3339(String.t() | NativeDateTime.t()) :: String.t()
+  @spec to_rfc3339(String.t() | NaiveDateTime.t()) :: String.t()
   def to_rfc3339(date) when is_binary(date) do
     date
     |> Timex.parse!("{ISO:Extended}")
@@ -145,7 +145,7 @@ defmodule Pleroma.Web.Feed.FeedView do
     |> Timex.format!("{RFC3339}")
   end
 
-  @spec to_rfc2822(String.t() | DateTime.t() | NativeDateTime.t()) :: String.t()
+  @spec to_rfc2822(String.t() | DateTime.t() | NaiveDateTime.t()) :: String.t()
   def to_rfc2822(datestr) when is_binary(datestr) do
     datestr
     |> Timex.parse!("{ISO:Extended}")
