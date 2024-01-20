@@ -58,7 +58,7 @@ defmodule Pleroma.Web.OAuth.Authorization do
     put_change(changeset, :valid_until, NaiveDateTime.add(NaiveDateTime.utc_now(), lifespan))
   end
 
-  @spec use_changeset(Authtorizatiton.t(), map()) :: Ecto.Changeset.t()
+  @spec use_changeset(Authorization.t(), map()) :: Ecto.Changeset.t()
   def use_changeset(%Authorization{} = auth, params) do
     auth
     |> cast(params, [:used])
