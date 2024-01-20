@@ -166,7 +166,8 @@ config :pleroma, Pleroma.Application,
   background_migrators: false,
   internal_fetch: false,
   load_custom_modules: false,
-  max_restarts: 100
+  max_restarts: 100,
+  streamer_registry: false
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

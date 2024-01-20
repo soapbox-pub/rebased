@@ -107,7 +107,7 @@ defmodule Pleroma.Application do
           Pleroma.Web.Endpoint
         ] ++
         task_children() ++
-        dont_run_in_test(@mix_env) ++
+        streamer_registry() ++
         background_migrators() ++
         shout_child(shout_enabled?()) ++
         [Pleroma.Gopher.Server]
@@ -209,17 +209,19 @@ defmodule Pleroma.Application do
 
   defp shout_enabled?, do: Config.get([:shout, :enabled])
 
-  defp dont_run_in_test(env) when env in [:test, :benchmark], do: []
-
-  defp dont_run_in_test(_) do
-    [
-      {Registry,
-       [
-         name: Pleroma.Web.Streamer.registry(),
-         keys: :duplicate,
-         partitions: System.schedulers_online()
-       ]}
-    ]
+  defp streamer_registry() do
+    if Application.get_env(:pleroma, __MODULE__)[:streamer_registry] do
+      [
+        {Registry,
+         [
+           name: Pleroma.Web.Streamer.registry(),
+           keys: :duplicate,
+           partitions: System.schedulers_online()
+         ]}
+      ]
+    else
+      []
+    end
   end
 
   defp background_migrators do
