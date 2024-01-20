@@ -163,6 +163,7 @@ peer_module =
 config :pleroma, Pleroma.Cluster, peer_module: peer_module
 
 config :pleroma, Pleroma.Application,
+  background_migrators: false,
   internal_fetch: false,
   load_custom_modules: false,
   max_restarts: 100

@@ -108,6 +108,7 @@ defmodule Pleroma.Application do
         ] ++
         task_children() ++
         dont_run_in_test(@mix_env) ++
+        background_migrators() ++
         shout_child(shout_enabled?()) ++
         [Pleroma.Gopher.Server]
 
@@ -218,14 +219,18 @@ defmodule Pleroma.Application do
          keys: :duplicate,
          partitions: System.schedulers_online()
        ]}
-    ] ++ background_migrators()
+    ]
   end
 
   defp background_migrators do
-    [
-      Pleroma.Migrators.HashtagsTableMigrator,
-      Pleroma.Migrators.ContextObjectsDeletionMigrator
-    ]
+    if Application.get_env(:pleroma, __MODULE__)[:background_migrators] do
+      [
+        Pleroma.Migrators.HashtagsTableMigrator,
+        Pleroma.Migrators.ContextObjectsDeletionMigrator
+      ]
+    else
+      []
+    end
   end
 
   defp shout_child(true) do

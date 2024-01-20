@@ -905,6 +905,7 @@ config :pleroma, Pleroma.Search.Meilisearch,
   initial_indexing_chunk_size: 100_000
 
 config :pleroma, Pleroma.Application,
+  background_migrators: true,
   internal_fetch: true,
   load_custom_modules: true,
   max_restarts: 3
