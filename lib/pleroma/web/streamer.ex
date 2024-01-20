@@ -34,7 +34,7 @@ defmodule Pleroma.Web.Streamer do
           stream :: String.t(),
           User.t() | nil,
           Token.t() | nil,
-          Map.t() | nil
+          map() | nil
         ) ::
           {:ok, topic :: String.t()} | {:error, :bad_topic} | {:error, :unauthorized}
   def get_topic_and_add_socket(stream, user, oauth_token, params \\ %{}) do
@@ -60,7 +60,7 @@ defmodule Pleroma.Web.Streamer do
   end
 
   @doc "Expand and authorizes a stream"
-  @spec get_topic(stream :: String.t() | nil, User.t() | nil, Token.t() | nil, Map.t()) ::
+  @spec get_topic(stream :: String.t() | nil, User.t() | nil, Token.t() | nil, map()) ::
           {:ok, topic :: String.t() | nil} | {:error, :bad_topic}
   def get_topic(stream, user, oauth_token, params \\ %{})
 
