@@ -28,7 +28,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   @doc """
   Enqueue publishing a single activity.
   """
-  @spec enqueue_one(Map.t(), Keyword.t()) :: {:ok, %Oban.Job{}}
+  @spec enqueue_one(map(), Keyword.t()) :: {:ok, %Oban.Job{}}
   def enqueue_one(%{} = params, worker_args \\ []) do
     PublisherWorker.enqueue(
       "publish_one",
