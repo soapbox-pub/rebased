@@ -24,7 +24,7 @@ defmodule Pleroma.ReportNote do
   end
 
   @spec create(Ecto.UUID.t(), Ecto.UUID.t(), String.t()) ::
-          {:ok, ReportNote.t()} | {:error, Changeset.t()}
+          {:ok, ReportNote.t()} | {:error, Ecto.Changeset.t()}
   def create(user_id, activity_id, content) do
     attrs = %{
       user_id: user_id,
@@ -39,7 +39,7 @@ defmodule Pleroma.ReportNote do
   end
 
   @spec destroy(Ecto.UUID.t()) ::
-          {:ok, ReportNote.t()} | {:error, Changeset.t()}
+          {:ok, ReportNote.t()} | {:error, Ecto.Changeset.t()}
   def destroy(id) do
     from(r in ReportNote, where: r.id == ^id)
     |> Repo.one()

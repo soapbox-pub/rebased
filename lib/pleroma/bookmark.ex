@@ -23,7 +23,7 @@ defmodule Pleroma.Bookmark do
   end
 
   @spec create(Ecto.UUID.t(), Ecto.UUID.t()) ::
-          {:ok, Bookmark.t()} | {:error, Changeset.t()}
+          {:ok, Bookmark.t()} | {:error, Ecto.Changeset.t()}
   def create(user_id, activity_id) do
     attrs = %{
       user_id: user_id,
@@ -53,7 +53,7 @@ defmodule Pleroma.Bookmark do
   end
 
   @spec destroy(Ecto.UUID.t(), Ecto.UUID.t()) ::
-          {:ok, Bookmark.t()} | {:error, Changeset.t()}
+          {:ok, Bookmark.t()} | {:error, Ecto.Changeset.t()}
   def destroy(user_id, activity_id) do
     from(b in Bookmark,
       where: b.user_id == ^user_id,
