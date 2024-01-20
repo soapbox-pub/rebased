@@ -905,6 +905,8 @@ config :pleroma, Pleroma.Search.Meilisearch,
   initial_indexing_chunk_size: 100_000
 
 config :pleroma, Pleroma.Application,
+  internal_fetch: true,
+  load_custom_modules: true,
   max_restarts: 3
 
 # Import environment specific config. This must remain at the bottom

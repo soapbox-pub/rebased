@@ -106,7 +106,7 @@ defmodule Pleroma.Application do
           {Oban, Config.get(Oban)},
           Pleroma.Web.Endpoint
         ] ++
-        task_children(@mix_env) ++
+        task_children() ++
         dont_run_in_test(@mix_env) ++
         shout_child(shout_enabled?()) ++
         [Pleroma.Gopher.Server]
@@ -154,7 +154,7 @@ defmodule Pleroma.Application do
           raise "Invalid custom modules"
 
         {:ok, modules, _warnings} ->
-          if @mix_env != :test do
+          if Application.get_env(:pleroma, __MODULE__)[:load_custom_modules] do
             Enum.each(modules, fn mod ->
               Logger.info("Custom module loaded: #{inspect(mod)}")
             end)
@@ -237,29 +237,27 @@ defmodule Pleroma.Application do
 
   defp shout_child(_), do: []
 
-  defp task_children(:test) do
-    [
+  defp task_children() do
+    children = [
       %{
         id: :web_push_init,
         start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
         restart: :temporary
       }
     ]
-  end
 
-  defp task_children(_) do
-    [
-      %{
-        id: :web_push_init,
-        start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
-        restart: :temporary
-      },
-      %{
-        id: :internal_fetch_init,
-        start: {Task, :start_link, [&Pleroma.Web.ActivityPub.InternalFetchActor.init/0]},
-        restart: :temporary
-      }
-    ]
+    if Application.get_env(:pleroma, __MODULE__)[:internal_fetch] do
+      children ++
+        [
+          %{
+            id: :internal_fetch_init,
+            start: {Task, :start_link, [&Pleroma.Web.ActivityPub.InternalFetchActor.init/0]},
+            restart: :temporary
+          }
+        ]
+    else
+      children
+    end
   end
 
   # start hackney and gun pools in tests

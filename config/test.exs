@@ -162,7 +162,10 @@ peer_module =
 
 config :pleroma, Pleroma.Cluster, peer_module: peer_module
 
-config :pleroma, Pleroma.Application, max_restarts: 100
+config :pleroma, Pleroma.Application,
+  internal_fetch: false,
+  load_custom_modules: false,
+  max_restarts: 100
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
