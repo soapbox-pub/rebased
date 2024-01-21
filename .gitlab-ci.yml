@@ -186,9 +186,9 @@ unit-testing-1.12-rum:
     - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
     - mix test --preload-modules
 
-formatting:
+formatting-1.13:
   extends: .build_changes_policy
-  image: &current_elixir elixir:1.13-alpine
+  image: &formatting_elixir elixir:1.13-alpine
   stage: lint
   cache: *testing_cache_policy
   before_script: &current_bfr_script
@@ -199,6 +199,16 @@ formatting:
     - mix deps.get
   script:
     - mix format --check-formatted
+
+cycles-1.13:
+  extends: .build_changes_policy
+  image: *formatting_elixir
+  stage: lint
+  cache: {}
+  before_script: *current_bfr_script
+  script:
+    - mix compile
+    - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
 
 analysis:
   extends:
@@ -221,16 +231,6 @@ dialyzer:
     - feld
   script:
     - mix dialyzer
-
-cycles:
-  extends: .build_changes_policy
-  image: *current_elixir
-  stage: lint
-  cache: {}
-  before_script: *current_bfr_script
-  script:
-    - mix compile
-    - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
 
 docs-deploy:
   stage: deploy
