@@ -14,7 +14,6 @@ defmodule Pleroma.Application do
   @name Mix.Project.config()[:name]
   @version Mix.Project.config()[:version]
   @repository Mix.Project.config()[:source_url]
-  @mix_env Mix.env()
 
   def name, do: @name
   def version, do: @version
@@ -98,7 +97,7 @@ defmodule Pleroma.Application do
         {Task.Supervisor, name: Pleroma.TaskSupervisor}
       ] ++
         cachex_children() ++
-        http_children(adapter, @mix_env) ++
+        http_children(adapter) ++
         [
           Pleroma.Stats,
           Pleroma.JobQueueMonitor,
@@ -268,11 +267,19 @@ defmodule Pleroma.Application do
   end
 
   # start hackney and gun pools in tests
-  defp http_children(_, :test) do
-    http_children(Tesla.Adapter.Hackney, nil) ++ http_children(Tesla.Adapter.Gun, nil)
+  defp http_children(adapter) do
+    if Application.get_env(:pleroma, __MODULE__)[:test_http_pools] do
+      http_children_hackney() ++ http_children_gun()
+    else
+      cond do
+        match?(Tesla.Adapter.Hackney, adapter) -> http_children_hackney()
+        match?(Tesla.Adapter.Gun, adapter) -> http_children_gun()
+        true -> []
+      end
+    end
   end
 
-  defp http_children(Tesla.Adapter.Hackney, _) do
+  defp http_children_hackney() do
     pools = [:federation, :media]
 
     pools =
@@ -288,12 +295,10 @@ defmodule Pleroma.Application do
     end
   end
 
-  defp http_children(Tesla.Adapter.Gun, _) do
+  defp http_children_gun() do
     Pleroma.Gun.ConnectionPool.children() ++
       [{Task, &Pleroma.HTTP.AdapterHelper.Gun.limiter_setup/0}]
   end
-
-  defp http_children(_, _), do: []
 
   @spec limiters_setup() :: :ok
   def limiters_setup do
