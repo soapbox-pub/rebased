@@ -170,6 +170,8 @@ config :pleroma, Pleroma.Application,
   streamer_registry: false,
   test_http_pools: true
 
+config :pleroma, Pleroma.Uploaders.Uploader, timeout: 1_000
+
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
 else
