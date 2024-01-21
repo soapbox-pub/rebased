@@ -208,7 +208,7 @@ defmodule Pleroma.Application do
 
   defp shout_enabled?, do: Config.get([:shout, :enabled])
 
-  defp streamer_registry() do
+  defp streamer_registry do
     if Application.get_env(:pleroma, __MODULE__)[:streamer_registry] do
       [
         {Registry,
@@ -243,7 +243,7 @@ defmodule Pleroma.Application do
 
   defp shout_child(_), do: []
 
-  defp task_children() do
+  defp task_children do
     children = [
       %{
         id: :web_push_init,
@@ -279,7 +279,7 @@ defmodule Pleroma.Application do
     end
   end
 
-  defp http_children_hackney() do
+  defp http_children_hackney do
     pools = [:federation, :media]
 
     pools =
@@ -295,7 +295,7 @@ defmodule Pleroma.Application do
     end
   end
 
-  defp http_children_gun() do
+  defp http_children_gun do
     Pleroma.Gun.ConnectionPool.children() ++
       [{Task, &Pleroma.HTTP.AdapterHelper.Gun.limiter_setup/0}]
   end
