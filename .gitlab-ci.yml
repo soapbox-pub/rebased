@@ -71,11 +71,21 @@ check-changelog:
   tags:
     - amd64
 
-build:
+build-1.12.3:
   extends:
   - .build_changes_policy
   - .using-ci-base
   stage: build
+  script:
+  - mix compile --force
+
+build-1.15.7-otp-25:
+  extends:
+  - .build_changes_policy
+  - .using-ci-base
+  stage: build
+  image: elixir:1.15.7-otp-25
+  allow_failure: true
   script:
   - mix compile --force
 
@@ -110,20 +120,17 @@ benchmark:
     - mix ecto.migrate
     - mix pleroma.load_testing
 
-unit-testing:
+unit-testing-1.12.3:
   extends:
   - .build_changes_policy
   - .using-ci-base
   stage: test
   cache: &testing_cache_policy
-    <<: *global_cache_policy
-    policy: pull
-
-  services:
+  services: &testing_services
   - name: postgres:13-alpine
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-  script:
+  script: &testing_script
     - mix ecto.create
     - mix ecto.migrate
     - mix test --cover --preload-modules
@@ -134,6 +141,17 @@ unit-testing:
         coverage_format: cobertura
         path: coverage.xml
 
+unit-testing-1.15.7-otp-25:
+  extends:
+  - .build_changes_policy
+  - .using-ci-base
+  stage: test
+  image: elixir:1.15.7-otp-25
+  allow_failure: true
+  cache: *testing_cache_policy
+  services: *testing_services
+  script: *testing_script
+
 unit-testing-erratic:
   extends:
   - .build_changes_policy
@@ -141,14 +159,8 @@ unit-testing-erratic:
   stage: test
   retry: 2
   allow_failure: true
-  cache: &testing_cache_policy
-    <<: *global_cache_policy
-    policy: pull
-
-  services:
-  - name: postgres:13-alpine
-    alias: postgres
-    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+  cache: *testing_cache_policy
+  services: *testing_services
   script:
     - mix ecto.create
     - mix ecto.migrate
