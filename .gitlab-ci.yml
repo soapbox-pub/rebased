@@ -209,6 +209,19 @@ analysis:
   script:
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
 
+dialyzer:
+  extends:
+  - .build_changes_policy
+  - .using-ci-base
+  stage: lint
+  allow_failure: true
+  when: manual 
+  cache: *testing_cache_policy
+  tags:
+    - feld
+  script:
+    - mix dialyzer
+
 cycles:
   extends: .build_changes_policy
   image: *current_elixir

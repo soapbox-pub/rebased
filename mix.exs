@@ -194,7 +194,8 @@ defmodule Pleroma.Mixfile do
       {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
       {:websockex, "~> 0.4.3", only: :test},
-      {:benchee, "~> 1.0", only: :benchmark}
+      {:benchee, "~> 1.0", only: :benchmark},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ] ++ oauth_deps()
   end
 
