@@ -10,6 +10,7 @@ defmodule Pleroma.Mixfile do
       compilers: Mix.compilers(),
       elixirc_options: [warnings_as_errors: warnings_as_errors()],
       xref: [exclude: [:eldap]],
+      dialyzer: [plt_add_apps: [:mix]],
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
