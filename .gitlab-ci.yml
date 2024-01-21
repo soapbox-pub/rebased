@@ -150,6 +150,8 @@ unit-testing-1.15.7-otp-25:
   image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15-otp25
   allow_failure: true
   cache: *testing_cache_policy
+    <<: *global_cache_policy
+    policy: pull
   services: *testing_services
   script: *testing_script
 
