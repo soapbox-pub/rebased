@@ -7,7 +7,10 @@ defmodule Pleroma.ApplicationRequirements do
   The module represents the collection of validations to runs before start server.
   """
 
-  defmodule VerifyError, do: defexception([:message])
+  defmodule VerifyError do
+    defexception([:message])
+    @type t :: %__MODULE__{}
+  end
 
   alias Pleroma.Config
   alias Pleroma.Helpers.MediaHelper
@@ -192,8 +195,6 @@ defmodule Pleroma.ApplicationRequirements do
        "System commands missing. Check logs and see `docs/installation` for more details."}
     end
   end
-
-  defp check_system_commands!(result), do: result
 
   defp check_repo_pool_size!(:ok) do
     if Pleroma.Config.get([Pleroma.Repo, :pool_size], 10) != 10 and

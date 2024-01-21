@@ -64,7 +64,7 @@ defmodule Pleroma.UserInviteToken do
   end
 
   @spec update_invite(UserInviteToken.t(), map()) ::
-          {:ok, UserInviteToken.t()} | {:error, Changeset.t()}
+          {:ok, UserInviteToken.t()} | {:error, Ecto.Changeset.t()}
   def update_invite(invite, changes) do
     change(invite, changes) |> Repo.update()
   end

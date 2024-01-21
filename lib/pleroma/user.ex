@@ -672,7 +672,7 @@ defmodule Pleroma.User do
     |> validate_inclusion(:actor_type, ["Person", "Service"])
   end
 
-  @spec update_as_admin(User.t(), map()) :: {:ok, User.t()} | {:error, Changeset.t()}
+  @spec update_as_admin(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_as_admin(user, params) do
     params = Map.put(params, "password_confirmation", params["password"])
     changeset = update_as_admin_changeset(user, params)
@@ -693,7 +693,7 @@ defmodule Pleroma.User do
     |> put_change(:password_reset_pending, false)
   end
 
-  @spec reset_password(User.t(), map()) :: {:ok, User.t()} | {:error, Changeset.t()}
+  @spec reset_password(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def reset_password(%User{} = user, params) do
     reset_password(user, user, params)
   end
@@ -1011,7 +1011,7 @@ defmodule Pleroma.User do
 
   def maybe_send_confirmation_email(_), do: {:ok, :noop}
 
-  @spec send_confirmation_email(Uset.t()) :: User.t()
+  @spec send_confirmation_email(User.t()) :: User.t()
   def send_confirmation_email(%User{} = user) do
     user
     |> Pleroma.Emails.UserEmail.account_confirmation_email()
@@ -1048,7 +1048,8 @@ defmodule Pleroma.User do
 
   def needs_update?(_), do: true
 
-  @spec maybe_direct_follow(User.t(), User.t()) :: {:ok, User.t()} | {:error, String.t()}
+  @spec maybe_direct_follow(User.t(), User.t()) ::
+          {:ok, User.t(), User.t()} | {:error, String.t()}
 
   # "Locked" (self-locked) users demand explicit authorization of follow requests
   def maybe_direct_follow(%User{} = follower, %User{local: true, is_locked: true} = followed) do
@@ -1783,14 +1784,14 @@ defmodule Pleroma.User do
     BackgroundWorker.enqueue("user_activation", %{"user_id" => user.id, "status" => status})
   end
 
-  @spec set_activation([User.t()], boolean()) :: {:ok, User.t()} | {:error, Changeset.t()}
+  @spec set_activation([User.t()], boolean()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def set_activation(users, status) when is_list(users) do
     Repo.transaction(fn ->
       for user <- users, do: set_activation(user, status)
     end)
   end
 
-  @spec set_activation(User.t(), boolean()) :: {:ok, User.t()} | {:error, Changeset.t()}
+  @spec set_activation(User.t(), boolean()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def set_activation(%User{} = user, status) do
     with {:ok, user} <- set_activation_status(user, status) do
       user
@@ -1868,7 +1869,7 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  @spec purge_user_changeset(User.t()) :: Changeset.t()
+  @spec purge_user_changeset(User.t()) :: Ecto.Changeset.t()
   def purge_user_changeset(user) do
     # "Right to be forgotten"
     # https://gdpr.eu/right-to-be-forgotten/
@@ -2359,7 +2360,7 @@ defmodule Pleroma.User do
     updated_user
   end
 
-  @spec set_confirmation(User.t(), boolean()) :: {:ok, User.t()} | {:error, Changeset.t()}
+  @spec set_confirmation(User.t(), boolean()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def set_confirmation(%User{} = user, bool) do
     user
     |> confirmation_changeset(set_confirmation: bool)
@@ -2537,7 +2538,7 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  @spec confirmation_changeset(User.t(), keyword()) :: Changeset.t()
+  @spec confirmation_changeset(User.t(), keyword()) :: Ecto.Changeset.t()
   def confirmation_changeset(user, set_confirmation: confirmed?) do
     params =
       if confirmed? do
@@ -2555,7 +2556,7 @@ defmodule Pleroma.User do
     cast(user, params, [:is_confirmed, :confirmation_token])
   end
 
-  @spec approval_changeset(User.t(), keyword()) :: Changeset.t()
+  @spec approval_changeset(User.t(), keyword()) :: Ecto.Changeset.t()
   def approval_changeset(user, set_approval: approved?) do
     cast(user, %{is_approved: approved?}, [:is_approved])
   end

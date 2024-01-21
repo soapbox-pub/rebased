@@ -79,6 +79,10 @@ IO.puts("RUM enabled: #{rum_enabled}")
 
 config :pleroma, Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.ClientMock
 
+config :pleroma, Pleroma.Application,
+  background_migrators: false,
+  streamer_registry: false
+
 if File.exists?("./config/benchmark.secret.exs") do
   import_config "benchmark.secret.exs"
 else
