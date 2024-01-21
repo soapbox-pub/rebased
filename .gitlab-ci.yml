@@ -93,7 +93,7 @@ build-1.15.7-otp-25:
 spec-build:
   extends:
   - .using-ci-base
-  stage: test
+  stage: build
   rules:
     - changes:
         - ".gitlab-ci.yml"
