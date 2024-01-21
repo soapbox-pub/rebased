@@ -147,13 +147,13 @@ unit-testing-1.15.7-otp-25:
   - .build_changes_policy
   - .using-ci-base
   stage: test
-  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15
+  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15-otp25
   allow_failure: true
   cache: *testing_cache_policy
   services: *testing_services
   script: *testing_script
 
-unit-testing-erratic:
+unit-testing-1.12-erratic:
   extends:
   - .build_changes_policy
   - .using-ci-base
@@ -167,7 +167,7 @@ unit-testing-erratic:
     - mix ecto.migrate
     - mix test --only=erratic
 
-unit-testing-rum:
+unit-testing-1.12-rum:
   extends:
   - .build_changes_policy
   - .using-ci-base
