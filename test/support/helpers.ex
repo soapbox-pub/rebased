@@ -10,6 +10,39 @@ defmodule Pleroma.Tests.Helpers do
 
   require Logger
 
+  @doc "Accepts two URLs/URIs and sorts the query parameters before comparing"
+  def uri_equal?(a, b) do
+    a_sorted = uri_query_sort(a)
+    b_sorted = uri_query_sort(b)
+
+    match?(^a_sorted, b_sorted)
+  end
+
+  @doc "Accepts a URL/URI and sorts the query parameters"
+  def uri_query_sort(uri) do
+    parsed = URI.parse(uri)
+
+    sorted_query =
+      String.split(parsed.query, "&")
+      |> Enum.sort()
+      |> Enum.join("&")
+
+    parsed
+    |> Map.put(:query, sorted_query)
+    |> URI.to_string()
+  end
+
+  @doc "Returns the value of the specified query parameter for the provided URL"
+  def get_query_parameter(url, param) do
+    url
+    |> URI.parse()
+    |> Map.get(:query)
+    |> URI.query_decoder()
+    |> Enum.to_list()
+    |> Enum.into(%{}, fn {x, y} -> {x, y} end)
+    |> Map.get(param)
+  end
+
   defmacro clear_config(config_path) do
     quote do
       clear_config(unquote(config_path)) do
@@ -41,7 +74,7 @@ defmodule Pleroma.Tests.Helpers do
     # NOTE: `clear_config([section, key], value)` != `clear_config([section], key: value)` (!)
     # Displaying a warning to prevent unintentional clearing of all but one keys in section
     if Keyword.keyword?(temp_setting) and length(temp_setting) == 1 do
-      Logger.warn(
+      Logger.warning(
         "Please change `clear_config([section], key: value)` to `clear_config([section, key], value)`"
       )
     end

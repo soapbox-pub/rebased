@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
-  use Pleroma.Web.ConnCase, async: true
+  use Pleroma.Web.ConnCase, async: false
 
   import Pleroma.Factory
 
@@ -35,17 +35,20 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
 
   defmacro assert_error_when_disable_push(do: yield) do
     quote do
-      vapid_details = Application.get_env(:web_push_encryption, :vapid_details, [])
-      Application.put_env(:web_push_encryption, :vapid_details, [])
-
       assert %{"error" => "Web push subscription is disabled on this Pleroma instance"} ==
                unquote(yield)
-
-      Application.put_env(:web_push_encryption, :vapid_details, vapid_details)
     end
   end
 
   describe "when disabled" do
+    setup do
+      vapid_config = Application.get_env(:web_push_encryption, :vapid_details)
+
+      Application.put_env(:web_push_encryption, :vapid_details, [])
+
+      on_exit(fn -> Application.put_env(:web_push_encryption, :vapid_details, vapid_config) end)
+    end
+
     test "POST returns error", %{conn: conn} do
       assert_error_when_disable_push do
         conn

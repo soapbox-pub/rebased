@@ -81,9 +81,9 @@ defmodule Pleroma.ReverseProxy do
   import Plug.Conn
 
   @type option() ::
-          {:max_read_duration, :timer.time() | :infinity}
+          {:max_read_duration, non_neg_integer() | :infinity}
           | {:max_body_length, non_neg_integer() | :infinity}
-          | {:failed_request_ttl, :timer.time() | :infinity}
+          | {:failed_request_ttl, non_neg_integer() | :infinity}
           | {:http, []}
           | {:req_headers, [{String.t(), String.t()}]}
           | {:resp_headers, [{String.t(), String.t()}]}
@@ -192,7 +192,7 @@ defmodule Pleroma.ReverseProxy do
         halt(conn)
 
       {:error, error, conn} ->
-        Logger.warn(
+        Logger.warning(
           "#{__MODULE__} request to #{url} failed while reading/chunking: #{inspect(error)}"
         )
 

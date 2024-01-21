@@ -57,6 +57,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
     |> Map.put("attachment", attachment)
   end
 
+  def fix_attachment(%{"attachment" => attachment} = data) when attachment == [] do
+    data
+    |> Map.drop(["attachment"])
+  end
+
   def fix_attachment(data), do: data
 
   def changeset(struct, data) do

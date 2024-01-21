@@ -24,6 +24,8 @@ defmodule Pleroma.Emoji do
 
   defstruct [:code, :file, :tags, :safe_code, :safe_file]
 
+  @type t :: %__MODULE__{}
+
   @doc "Build emoji struct"
   def build({code, file, tags}) do
     %__MODULE__{

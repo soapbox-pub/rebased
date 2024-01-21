@@ -6,7 +6,8 @@ defmodule Pleroma.Uploaders.S3 do
   @behaviour Pleroma.Uploaders.Uploader
   require Logger
 
-  alias Pleroma.Config
+  @ex_aws_impl Application.compile_env(:pleroma, [__MODULE__, :ex_aws_impl], ExAws)
+  @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
 
   # The file name is re-encoded with S3's constraints here to comply with previous
   # links with less strict filenames
@@ -22,7 +23,7 @@ defmodule Pleroma.Uploaders.S3 do
 
   @impl true
   def put_file(%Pleroma.Upload{} = upload) do
-    config = Config.get([__MODULE__])
+    config = @config_impl.get([__MODULE__])
     bucket = Keyword.get(config, :bucket)
     streaming = Keyword.get(config, :streaming_enabled)
 
@@ -56,7 +57,7 @@ defmodule Pleroma.Uploaders.S3 do
         ])
       end
 
-    case ExAws.request(op) do
+    case @ex_aws_impl.request(op) do
       {:ok, _} ->
         {:ok, {:file, s3_name}}
 
@@ -69,9 +70,9 @@ defmodule Pleroma.Uploaders.S3 do
   @impl true
   def delete_file(file) do
     [__MODULE__, :bucket]
-    |> Config.get()
+    |> @config_impl.get()
     |> ExAws.S3.delete_object(file)
-    |> ExAws.request()
+    |> @ex_aws_impl.request()
     |> case do
       {:ok, %{status_code: 204}} -> :ok
       error -> {:error, inspect(error)}
@@ -82,4 +83,8 @@ defmodule Pleroma.Uploaders.S3 do
   def strict_encode(name) do
     String.replace(name, @regex, "-")
   end
+end
+
+defmodule Pleroma.Uploaders.S3.ExAwsAPI do
+  @callback request(op :: ExAws.Operation.t()) :: {:ok, ExAws.Operation.t()} | {:error, term()}
 end

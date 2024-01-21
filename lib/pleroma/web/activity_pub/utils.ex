@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Ecto.UUID
   alias Pleroma.Activity
   alias Pleroma.Config
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators.ObjectID
   alias Pleroma.Maps
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -852,9 +853,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     [actor | reported_activities] = activity.data["object"]
 
     stripped_activities =
-      Enum.map(reported_activities, fn
-        act when is_map(act) -> act["id"]
-        act when is_binary(act) -> act
+      Enum.reduce(reported_activities, [], fn act, acc ->
+        case ObjectID.cast(act) do
+          {:ok, act} -> [act | acc]
+          _ -> acc
+        end
       end)
 
     new_data = put_in(activity.data, ["object"], [actor | stripped_activities])
@@ -931,5 +934,28 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> where([a, object: o], fragment("(?)->>'inReplyTo' = ?", o.data, ^to_string(id)))
     |> where([a, object: o], fragment("(?)->>'type' = 'Answer'", o.data))
     |> Repo.all()
+  end
+
+  def maybe_handle_group_posts(activity) do
+    poster = User.get_cached_by_ap_id(activity.actor)
+
+    mentions =
+      activity.data["to"]
+      |> Enum.filter(&(&1 != activity.actor))
+
+    mentioned_local_groups =
+      User.get_all_by_ap_id(mentions)
+      |> Enum.filter(fn user ->
+        user.actor_type == "Group" and
+          user.local and
+          not User.blocks?(user, poster)
+      end)
+
+    mentioned_local_groups
+    |> Enum.each(fn group ->
+      Pleroma.Web.CommonAPI.repeat(activity.id, group)
+    end)
+
+    :ok
   end
 end

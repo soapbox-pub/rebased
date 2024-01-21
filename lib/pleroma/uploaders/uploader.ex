@@ -40,7 +40,7 @@ defmodule Pleroma.Uploaders.Uploader do
 
   @callback delete_file(file :: String.t()) :: :ok | {:error, String.t()}
 
-  @callback http_callback(Plug.Conn.t(), Map.t()) ::
+  @callback http_callback(Plug.Conn.t(), map()) ::
               {:ok, Plug.Conn.t()}
               | {:ok, Plug.Conn.t(), file_spec()}
               | {:error, Plug.Conn.t(), String.t()}

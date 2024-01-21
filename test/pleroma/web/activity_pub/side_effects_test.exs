@@ -17,10 +17,18 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.SideEffects
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.CommonAPI.ActivityDraft
 
   import Mock
   import Pleroma.Factory
+
+  defp get_announces_of_object(%{data: %{"id" => id}} = _object) do
+    Pleroma.Activity.Queries.by_type("Announce")
+    |> Pleroma.Activity.Queries.by_object_id(id)
+    |> Pleroma.Repo.all()
+  end
 
   describe "handle_after_transaction" do
     test "it streams out notifications and streams" do
@@ -913,6 +921,87 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
 
       assert User.get_follow_state(user, followed) == nil
       assert User.get_follow_state(user, followed, nil) == nil
+    end
+  end
+
+  describe "Group actors" do
+    setup do
+      poster =
+        insert(:user,
+          local: false,
+          nickname: "poster@example.com",
+          ap_id: "https://example.com/users/poster"
+        )
+
+      group = insert(:user, actor_type: "Group")
+
+      make_create = fn mentioned_users ->
+        mentions = mentioned_users |> Enum.map(fn u -> "@#{u.nickname}" end) |> Enum.join(" ")
+        {:ok, draft} = ActivityDraft.create(poster, %{status: "#{mentions} hey"})
+
+        create_activity_data =
+          Utils.make_create_data(draft.changes |> Map.put(:published, nil), %{})
+          |> put_in(["object", "id"], "https://example.com/object")
+          |> put_in(["id"], "https://example.com/activity")
+
+        assert Enum.all?(mentioned_users, fn u -> u.ap_id in create_activity_data["to"] end)
+
+        create_activity_data
+      end
+
+      %{poster: poster, group: group, make_create: make_create}
+    end
+
+    test "group should boost it", %{make_create: make_create, group: group} do
+      create_activity_data = make_create.([group])
+      {:ok, create_activity, _meta} = ActivityPub.persist(create_activity_data, local: false)
+
+      {:ok, _create_activity, _meta} =
+        SideEffects.handle(create_activity,
+          local: false,
+          object_data: create_activity_data["object"]
+        )
+
+      object = Object.normalize(create_activity, fetch: false)
+      assert [announce] = get_announces_of_object(object)
+      assert announce.actor == group.ap_id
+    end
+
+    test "remote group should not boost it", %{make_create: make_create, group: group} do
+      remote_group =
+        insert(:user, actor_type: "Group", local: false, nickname: "remotegroup@example.com")
+
+      create_activity_data = make_create.([group, remote_group])
+      {:ok, create_activity, _meta} = ActivityPub.persist(create_activity_data, local: false)
+
+      {:ok, _create_activity, _meta} =
+        SideEffects.handle(create_activity,
+          local: false,
+          object_data: create_activity_data["object"]
+        )
+
+      object = Object.normalize(create_activity, fetch: false)
+      assert [announce] = get_announces_of_object(object)
+      assert announce.actor == group.ap_id
+    end
+
+    test "group should not boost it if group is blocking poster", %{
+      make_create: make_create,
+      group: group,
+      poster: poster
+    } do
+      {:ok, _} = CommonAPI.block(group, poster)
+      create_activity_data = make_create.([group])
+      {:ok, create_activity, _meta} = ActivityPub.persist(create_activity_data, local: false)
+
+      {:ok, _create_activity, _meta} =
+        SideEffects.handle(create_activity,
+          local: false,
+          object_data: create_activity_data["object"]
+        )
+
+      object = Object.normalize(create_activity, fetch: false)
+      assert [] = get_announces_of_object(object)
     end
   end
 end

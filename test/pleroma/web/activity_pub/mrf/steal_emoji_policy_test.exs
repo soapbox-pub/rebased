@@ -60,6 +60,33 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicyTest do
            |> File.exists?()
   end
 
+  test "works with unknown extension", %{path: path} do
+    message = %{
+      "type" => "Create",
+      "object" => %{
+        "emoji" => [{"firedfox", "https://example.org/emoji/firedfox"}],
+        "actor" => "https://example.org/users/admin"
+      }
+    }
+
+    fullpath = Path.join(path, "firedfox.png")
+
+    Tesla.Mock.mock(fn %{method: :get, url: "https://example.org/emoji/firedfox"} ->
+      %Tesla.Env{status: 200, body: File.read!("test/fixtures/image.jpg")}
+    end)
+
+    clear_config(:mrf_steal_emoji, hosts: ["example.org"], size_limit: 284_468)
+
+    refute "firedfox" in installed()
+    refute File.exists?(path)
+
+    assert {:ok, _message} = StealEmojiPolicy.filter(message)
+
+    assert "firedfox" in installed()
+    assert File.exists?(path)
+    assert File.exists?(fullpath)
+  end
+
   test "reject regex shortcode", %{message: message} do
     refute "firedfox" in installed()
 

@@ -193,7 +193,7 @@ defmodule Mix.Tasks.Pleroma.Database do
         "ALTER DATABASE #{db} SET default_text_search_config = '#{tsconfig}';"
       )
 
-    # non-exist config will not raise excpetion but only give >0 messages
+    # non-exist config will not raise exception but only give >0 messages
     if length(msg) > 0 do
       shell_info("Error: #{inspect(msg, pretty: true)}")
     else

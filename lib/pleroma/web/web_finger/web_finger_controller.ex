@@ -30,7 +30,7 @@ defmodule Pleroma.Web.WebFinger.WebFingerController do
   end
 
   def webfinger(%{assigns: %{format: format}} = conn, %{"resource" => resource})
-      when format in ["json", "jrd+json"] do
+      when format in ["jrd", "json", "jrd+json"] do
     with {:ok, response} <- WebFinger.webfinger(resource, "JSON") do
       json(conn, response)
     else

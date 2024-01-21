@@ -35,7 +35,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
            :change_email,
            :change_password,
            :delete_account,
-           :update_notificaton_settings,
+           :update_notification_settings,
            :disable_account,
            :move_account,
            :add_alias,
@@ -181,7 +181,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     json(conn, emoji)
   end
 
-  def update_notificaton_settings(%{assigns: %{user: user}} = conn, params) do
+  def update_notification_settings(%{assigns: %{user: user}} = conn, params) do
     with {:ok, _} <- User.update_notification_settings(user, params) do
       json(conn, %{status: "success"})
     end
@@ -345,12 +345,15 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def healthcheck(conn, _params) do
-    with true <- Config.get([:instance, :healthcheck]),
+    with {:cfg, true} <- {:cfg, Config.get([:instance, :healthcheck])},
          %{healthy: true} = info <- Healthcheck.system_info() do
       json(conn, info)
     else
       %{healthy: false} = info ->
         service_unavailable(conn, info)
+
+      {:cfg, false} ->
+        service_unavailable(conn, %{"error" => "Healthcheck disabled"})
 
       _ ->
         service_unavailable(conn, %{})

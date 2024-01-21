@@ -1,0 +1,1 @@
+Change mediaproxy previews to use vips to generate thumbnails instead of ImageMagick
