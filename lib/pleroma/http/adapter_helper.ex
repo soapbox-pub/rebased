@@ -15,8 +15,8 @@ defmodule Pleroma.HTTP.AdapterHelper do
   require Logger
 
   @type proxy ::
-          {Connection.host(), pos_integer()}
-          | {Connection.proxy_type(), Connection.host(), pos_integer()}
+          {host(), pos_integer()}
+          | {proxy_type(), host(), pos_integer()}
 
   @callback options(keyword(), URI.t()) :: keyword()
 
