@@ -14,6 +14,8 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   import Pleroma.Web.Gettext
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
+  @type t :: %__MODULE__{}
+
   defstruct valid?: true,
             errors: [],
             user: nil,

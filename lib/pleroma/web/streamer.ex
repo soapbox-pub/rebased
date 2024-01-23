@@ -20,7 +20,6 @@ defmodule Pleroma.Web.Streamer do
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.StreamerView
 
-  @mix_env Mix.env()
   @registry Pleroma.Web.StreamerRegistry
 
   def registry, do: @registry
@@ -396,25 +395,20 @@ defmodule Pleroma.Web.Streamer do
     end
   end
 
-  # In test environment, only return true if the registry is started.
-  # In benchmark environment, returns false.
-  # In any other environment, always returns true.
-  cond do
-    @mix_env == :test ->
-      def should_env_send? do
-        case Process.whereis(@registry) do
-          nil ->
-            false
+  # In dev/prod the streamer registry is expected to be started, so return true
+  # In test it is possible to have the registry started for a test so it will check
+  # In benchmark it will never find the process alive and return false
+  def should_env_send? do
+    if Application.get_env(:pleroma, Pleroma.Application)[:streamer_registry] do
+      true
+    else
+      case Process.whereis(@registry) do
+        nil ->
+          false
 
-          pid ->
-            Process.alive?(pid)
-        end
+        pid ->
+          Process.alive?(pid)
       end
-
-    @mix_env == :benchmark ->
-      def should_env_send?, do: false
-
-    true ->
-      def should_env_send?, do: true
+    end
   end
 end
