@@ -818,7 +818,7 @@ defmodule Pleroma.User do
   end
 
   defp fix_nickname(changeset, domain_id, from_admin) when not is_nil(domain_id) do
-    with {:domain, domain} <- {:domain, Pleroma.Domain.get(domain_id)},
+    with {:domain, domain} <- {:domain, Domain.get(domain_id)},
          {:domain_allowed, true} <- {:domain_allowed, from_admin || domain.public} do
       nickname = get_field(changeset, :nickname)
 

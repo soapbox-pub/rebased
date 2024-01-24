@@ -3,21 +3,21 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.SetDomainPlug do
-  alias Pleroma.Domain
-
   use Pleroma.Web, :plug
+
+  alias Pleroma.Domain
 
   def init(opts), do: opts
 
   @impl true
-  def perform(%{host: domain} = conn, opts) do
+  def perform(%{host: domain} = conn, _opts) do
     with true <- Pleroma.Config.get([:instance, :multitenancy, :enabled], false),
          false <-
            domain in [
              Pleroma.Config.get([__MODULE__, :domain]),
              Pleroma.Web.Endpoint.host()
            ],
-         %Domain{domain: domain} <- Domain.get_by_service_domain(domain) do
+         %Domain{} = domain <- Domain.get_by_service_domain(domain) do
       Map.put(conn, :domain, domain)
     else
       _ -> conn

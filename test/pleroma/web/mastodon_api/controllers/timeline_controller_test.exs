@@ -410,12 +410,11 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     end
 
     test "filtering local posts basing on domain", %{conn: conn} do
-      clear_config([:instance, :multitenancy], %{separate_timelines: false})
+      clear_config([:instance, :multitenancy], %{enabled: true, separate_timelines: false})
 
       {:ok, domain} = Pleroma.Domain.create(%{domain: "pleroma.example.org"})
 
       user1 = insert(:user)
-
       user2 = insert(:user, %{domain_id: domain.id})
 
       %{id: note1} = insert(:note_activity, user: user1)
@@ -429,7 +428,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
                |> get("/api/v1/timelines/public?local=true")
                |> json_response_and_validate_schema(200)
 
-      clear_config([:instance, :multitenancy], %{separate_timelines: true})
+      clear_config([:instance, :multitenancy, :separate_timelines], true)
 
       assert [%{"id" => ^note1}] =
                conn
@@ -438,16 +437,12 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       assert [%{"id" => ^note1}] =
                conn
-               |> assign(:user, user1)
-               |> assign(:token, insert(:oauth_token, user: user1, scopes: ["read:statuses"]))
                |> get("/api/v1/timelines/public?local=true")
                |> json_response_and_validate_schema(200)
 
       assert [%{"id" => ^note2}] =
                conn
-               |> assign(:user, user2)
-               |> assign(:token, insert(:oauth_token, user: user2, scopes: ["read:statuses"]))
-               |> get("/api/v1/timelines/public?local=true")
+               |> get("http://pleroma.example.org/api/v1/timelines/public?local=true")
                |> json_response_and_validate_schema(200)
     end
   end

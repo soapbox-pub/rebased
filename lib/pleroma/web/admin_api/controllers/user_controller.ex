@@ -128,8 +128,13 @@ defmodule Pleroma.Web.AdminAPI.UserController do
   def create(%{assigns: %{user: admin}, body_params: %{users: users}} = conn, _) do
     changesets =
       users
-      |> Enum.map(fn %{nickname: nickname, email: email, password: password, domain: domain} ->
-        domain = Domain.get(domain)
+      |> Enum.map(fn %{nickname: nickname, email: email, password: password} = user ->
+        domain_id = Map.get(user, :domain)
+
+        domain =
+          if domain_id do
+            Domain.get(domain_id)
+          end
 
         user_data = %{
           nickname: nickname,

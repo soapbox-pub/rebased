@@ -207,7 +207,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         birthday_required: Config.get([:instance, :birthday_required]),
         birthday_min_age: Config.get([:instance, :birthday_min_age]),
         multitenancy: multitenancy()
-        },
+      },
       stats: %{mau: Pleroma.User.active_user_count()},
       vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
     }
