@@ -19,7 +19,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Report managment"],
+      tags: ["Report management"],
       summary: "Retrieve a list of reports",
       operationId: "AdminAPI.ReportController.index",
       security: [%{"oAuth" => ["admin:read:reports"]}],
@@ -69,7 +69,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Report managment"],
+      tags: ["Report management"],
       summary: "Retrieve a report",
       operationId: "AdminAPI.ReportController.show",
       parameters: [id_param() | admin_api_params()],
@@ -83,7 +83,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def update_operation do
     %Operation{
-      tags: ["Report managment"],
+      tags: ["Report management"],
       summary: "Change state of specified reports",
       operationId: "AdminAPI.ReportController.update",
       security: [%{"oAuth" => ["admin:write:reports"]}],
@@ -99,7 +99,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def notes_create_operation do
     %Operation{
-      tags: ["Report managment"],
+      tags: ["Report management"],
       summary: "Add a note to the report",
       operationId: "AdminAPI.ReportController.notes_create",
       parameters: [id_param() | admin_api_params()],
@@ -120,7 +120,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def notes_delete_operation do
     %Operation{
-      tags: ["Report managment"],
+      tags: ["Report management"],
       summary: "Delete note attached to the report",
       operationId: "AdminAPI.ReportController.notes_delete",
       parameters: [

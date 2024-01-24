@@ -20,16 +20,16 @@ Content-Type: multipart/form-data
 
 Parameters:
 - (required) `file`: The file being uploaded
-- (optionnal) `description`: A plain-text description of the media, for accessibility purposes.
+- (optional) `description`: A plain-text description of the media, for accessibility purposes.
 
 Response: HTTP 201 Created with the object into the body, no `Location` header provided as it doesn't have an `id`
 
-The object given in the reponse should then be inserted into an Object's `attachment` field.
+The object given in the response should then be inserted into an Object's `attachment` field.
 
 ## ChatMessages
 
 `ChatMessage`s are the messages sent in 1-on-1 chats. They are similar to
-`Note`s, but the addresing is done by having a single AP actor in the `to`
+`Note`s, but the addressing is done by having a single AP actor in the `to`
 field. Addressing multiple actors is not allowed. These messages are always
 private, there is no public version of them. They are created with a `Create`
 activity.

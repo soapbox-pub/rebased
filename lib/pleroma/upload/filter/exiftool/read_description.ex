@@ -10,8 +10,6 @@ defmodule Pleroma.Upload.Filter.Exiftool.ReadDescription do
   """
   @behaviour Pleroma.Upload.Filter
 
-  @spec filter(Pleroma.Upload.t()) :: {:ok, any()} | {:error, String.t()}
-
   def filter(%Pleroma.Upload{description: description})
       when is_binary(description),
       do: {:ok, :noop}

@@ -319,6 +319,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, _actor} <- update_last_status_at_if_public(actor, activity),
          _ <- notify_and_stream(activity),
          :ok <- maybe_schedule_poll_notifications(activity),
+         :ok <- maybe_handle_group_posts(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
@@ -498,7 +499,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   @spec fetch_latest_direct_activity_id_for_context(String.t(), keyword() | map()) ::
-          FlakeId.Ecto.CompatType.t() | nil
+          Ecto.UUID.t() | nil
   def fetch_latest_direct_activity_id_for_context(context, opts \\ %{}) do
     context
     |> fetch_activities_for_context_query(Map.merge(%{skip_preload: true}, opts))
@@ -1716,9 +1717,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            Fetcher.fetch_and_contain_remote_object_from_id(first) do
       {:ok, false}
     else
-      {:error, {:ok, %{status: code}}} when code in [401, 403] -> {:ok, true}
-      {:error, _} = e -> e
-      e -> {:error, e}
+      {:error, _} -> {:ok, true}
     end
   end
 

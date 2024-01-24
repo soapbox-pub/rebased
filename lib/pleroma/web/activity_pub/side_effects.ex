@@ -233,6 +233,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
       Pleroma.Search.add_to_index(Map.put(activity, :object, object))
 
+      Utils.maybe_handle_group_posts(activity)
+
       meta =
         meta
         |> add_notifications(notifications)

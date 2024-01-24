@@ -22,7 +22,7 @@ defmodule Pleroma.User.Query do
       - pass non empty string
       - e.g. Pleroma.User.Query.build(%{email: "email@example.com"})
     - *contains criteria*
-      - add field to @containns_criteria list
+      - add field to @contains_criteria list
       - pass values list
       - e.g. Pleroma.User.Query.build(%{ap_id: ["http://ap_id1", "http://ap_id2"]})
   """
@@ -71,7 +71,7 @@ defmodule Pleroma.User.Query do
   @equal_criteria [:email]
   @contains_criteria [:ap_id, :nickname]
 
-  @spec build(Query.t(), criteria()) :: Query.t()
+  @spec build(Ecto.Query.t(), criteria()) :: Ecto.Query.t()
   def build(query \\ base_query(), criteria) do
     prepare_query(query, criteria)
   end

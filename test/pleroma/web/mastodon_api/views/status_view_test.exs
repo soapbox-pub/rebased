@@ -11,6 +11,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
@@ -19,9 +20,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   require Bitwise
 
+  import Mox
+  import OpenApiSpex.TestAssertions
   import Pleroma.Factory
   import Tesla.Mock
-  import OpenApiSpex.TestAssertions
 
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -198,6 +200,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert_schema(status, "Status", Pleroma.Web.ApiSpec.spec())
   end
 
+  @tag capture_log: true
   test "returns a temporary ap_id based user for activities missing db users" do
     user = insert(:user)
 
@@ -778,6 +781,39 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
       %{provider_name: "example.com"} =
         StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+    end
+
+    test "a rich media card has all media proxied" do
+      clear_config([:media_proxy, :enabled], true)
+      clear_config([:media_preview_proxy, :enabled])
+
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
+
+      page_url = "http://example.com"
+
+      card = %{
+        url: page_url,
+        site_name: "Example site name",
+        title: "Example website",
+        image: page_url <> "/example.jpg",
+        audio: page_url <> "/example.ogg",
+        video: page_url <> "/example.mp4",
+        description: "Example description"
+      }
+
+      strcard = for {k, v} <- card, into: %{}, do: {to_string(k), v}
+
+      %{
+        provider_name: "example.com",
+        image: image,
+        pleroma: %{opengraph: og}
+      } = StatusView.render("card.json", %{page_url: page_url, rich_media: strcard})
+
+      assert String.match?(image, ~r/\/proxy\//)
+      assert String.match?(og["image"], ~r/\/proxy\//)
+      assert String.match?(og["audio"], ~r/\/proxy\//)
+      assert String.match?(og["video"], ~r/\/proxy\//)
     end
   end
 

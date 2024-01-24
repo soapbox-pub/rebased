@@ -12,6 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
+  alias Pleroma.Tests.Helpers
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -19,16 +20,24 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Workers.ScheduledActivityWorker
 
+  import Mox
   import Pleroma.Factory
 
   setup do: clear_config([:instance, :federating])
   setup do: clear_config([:instance, :allow_relay])
-  setup do: clear_config([:rich_media, :enabled])
   setup do: clear_config([:mrf, :policies])
   setup do: clear_config([:mrf_keyword, :reject])
 
   setup do
-    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    Pleroma.UnstubbedConfigMock
+    |> stub_with(Pleroma.Config)
+
+    Pleroma.StaticStubbedConfigMock
+    |> stub(:get, fn
+      [:rich_media, :enabled] -> false
+      path -> Pleroma.Test.StaticConfig.get(path)
+    end)
+
     :ok
   end
 
@@ -37,7 +46,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     test "posting a status does not increment reblog_count when relaying", %{conn: conn} do
       clear_config([:instance, :federating], true)
-      Config.get([:instance, :allow_relay], true)
+      clear_config([:instance, :allow_relay], true)
 
       response =
         conn
@@ -321,7 +330,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "fake statuses' preview card is not cached", %{conn: conn} do
-      clear_config([:rich_media, :enabled], true)
+      Pleroma.StaticStubbedConfigMock
+      |> stub(:get, fn
+        [:rich_media, :enabled] -> true
+        path -> Pleroma.Test.StaticConfig.get(path)
+      end)
 
       Tesla.Mock.mock(fn
         %{
@@ -358,7 +371,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     test "posting a status with OGP link preview", %{conn: conn} do
       Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-      clear_config([:rich_media, :enabled], true)
+
+      Pleroma.StaticStubbedConfigMock
+      |> stub(:get, fn
+        [:rich_media, :enabled] -> true
+        path -> Pleroma.Test.StaticConfig.get(path)
+      end)
 
       conn =
         conn
@@ -1689,7 +1707,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
   describe "cards" do
     setup do
-      clear_config([:rich_media, :enabled], true)
+      Pleroma.StaticStubbedConfigMock
+      |> stub(:get, fn
+        [:rich_media, :enabled] -> true
+        path -> Pleroma.Test.StaticConfig.get(path)
+      end)
 
       oauth_access(["read:statuses"])
     end
@@ -2170,7 +2192,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     # Using the header for pagination works correctly
     [next, _] = get_resp_header(result, "link") |> hd() |> String.split(", ")
-    [_, max_id] = Regex.run(~r/max_id=([^&]+)/, next)
+    [next_url, _next_rel] = String.split(next, ";")
+    next_url = String.trim_trailing(next_url, ">") |> String.trim_leading("<")
+
+    max_id = Helpers.get_query_parameter(next_url, "max_id")
 
     assert max_id == third_favorite.id
 

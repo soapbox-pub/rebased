@@ -27,6 +27,7 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleView do
       title: object.data["title"] |> HTML.strip_tags(),
       artist: object.data["artist"] |> HTML.strip_tags(),
       album: object.data["album"] |> HTML.strip_tags(),
+      externalLink: object.data["externalLink"],
       length: object.data["length"]
     }
   end

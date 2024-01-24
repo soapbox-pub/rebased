@@ -321,13 +321,13 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       format_asctime(date)
     else
       _e ->
-        Logger.warn("Date #{date} in wrong format, must be ISO 8601")
+        Logger.warning("Date #{date} in wrong format, must be ISO 8601")
         ""
     end
   end
 
   def date_to_asctime(date) do
-    Logger.warn("Date #{date} in wrong format, must be ISO 8601")
+    Logger.warning("Date #{date} in wrong format, must be ISO 8601")
     ""
   end
 

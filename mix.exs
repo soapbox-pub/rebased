@@ -4,12 +4,13 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.6.50"),
+      version: version("2.6.51"),
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: Mix.compilers(),
       elixirc_options: [warnings_as_errors: warnings_as_errors()],
       xref: [exclude: [:eldap]],
+      dialyzer: [plt_add_apps: [:mix, :eldap]],
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
@@ -142,7 +143,7 @@ defmodule Pleroma.Mixfile do
       {:gun, "~> 2.0.0-rc.1", override: true},
       {:finch, "~> 0.15"},
       {:jason, "~> 1.2"},
-      {:mogrify, "~> 0.9.1"},
+      {:mogrify, "~> 0.8.0"},
       {:ex_aws, "~> 2.1.6"},
       {:ex_aws_s3, "~> 2.0"},
       {:sweet_xml, "~> 0.7.2"},
@@ -156,11 +157,11 @@ defmodule Pleroma.Mixfile do
       {:phoenix_swoosh, "~> 1.1"},
       {:gen_smtp, "~> 0.13"},
       {:ex_syslogger, "~> 1.4"},
-      {:floki, "~> 0.27"},
+      {:floki, "~> 0.35"},
       {:timex, "~> 3.6"},
       {:ueberauth, "~> 0.4"},
       {:linkify, "~> 0.5.3"},
-      {:http_signatures, "~> 0.1.1"},
+      {:http_signatures, "~> 0.1.2"},
       {:telemetry, "~> 1.0.0", override: true},
       {:poolboy, "~> 1.5"},
       {:prom_ex, "~> 1.9"},
@@ -179,11 +180,14 @@ defmodule Pleroma.Mixfile do
        ref: "90f6ce7672f70f56708792a98d98bd05176c9176"},
       {:restarter, path: "./restarter"},
       {:majic, "~> 1.0"},
-      {:eblurhash,
-       git: "https://github.com/zotonic/eblurhash.git",
-       ref: "bc37ceb426ef021ee9927fb249bb93f7059194ab"},
       {:open_api_spex, "~> 3.16"},
       {:ecto_psql_extras, "~> 0.6"},
+      {:vix, "~> 0.26.0"},
+      {:elixir_make, "~> 0.7.7", override: true},
+      {:blurhash, "~> 0.1.0", hex: :rinpatch_blurhash},
+      {:exile,
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/exile.git",
+       ref: "0d6337cf68e7fbc8a093cae000955aa93b067f91"},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
@@ -194,7 +198,8 @@ defmodule Pleroma.Mixfile do
       {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
       {:websockex, "~> 0.4.3", only: :test},
-      {:benchee, "~> 1.0", only: :benchmark}
+      {:benchee, "~> 1.0", only: :benchmark},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ] ++ oauth_deps()
   end
 

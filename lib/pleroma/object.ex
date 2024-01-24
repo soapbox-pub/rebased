@@ -177,7 +177,10 @@ defmodule Pleroma.Object do
         ap_id
 
       Keyword.get(options, :fetch) ->
-        Fetcher.fetch_object_from_id!(ap_id, options)
+        case Fetcher.fetch_object_from_id(ap_id, options) do
+          {:ok, object} -> object
+          _ -> nil
+        end
 
       true ->
         get_cached_by_ap_id(ap_id)

@@ -505,7 +505,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec unpin(String.t(), User.t()) :: {:ok, User.t()} | {:error, term()}
+  @spec unpin(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, term()}
   def unpin(id, user) do
     with %Activity{} = activity <- create_activity_by_id(id),
          {:ok, unpin_data, _} <- Builder.unpin(user, activity.object),
@@ -550,7 +550,7 @@ defmodule Pleroma.Web.CommonAPI do
       remove_mute(user, activity)
     else
       {what, result} = error ->
-        Logger.warn(
+        Logger.warning(
           "CommonAPI.remove_mute/2 failed. #{what}: #{result}, user_id: #{user_id}, activity_id: #{activity_id}"
         )
 

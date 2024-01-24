@@ -4,10 +4,18 @@
 
 defmodule Pleroma.Web.Plugs.UploadedMediaPlugTest do
   use Pleroma.Web.ConnCase, async: true
+
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Upload
 
+  import Mox
+
   defp upload_file(context) do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
     Pleroma.DataCase.ensure_local_uploader(context)
+
     File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
     file = %Plug.Upload{
@@ -22,6 +30,13 @@ defmodule Pleroma.Web.Plugs.UploadedMediaPlugTest do
   end
 
   setup_all :upload_file
+
+  setup do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
+    :ok
+  end
 
   test "does not send Content-Disposition header when name param is not set", %{
     attachment_url: attachment_url

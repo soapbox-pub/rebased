@@ -38,7 +38,7 @@ defmodule Pleroma.Web.AdminAPI.DomainController do
 
   def create(%{body_params: params} = conn, _) do
     with {:domain_not_used, true} <-
-           {:domain_not_used, params[:domain] !== Pleroma.Web.WebFinger.domain()},
+           {:domain_not_used, params[:domain] !== Pleroma.Web.WebFinger.host()},
          {:ok, domain} <- Domain.create(params),
          _ <- @cachex.del(:domain, :domains_list) do
       Pleroma.Workers.CheckDomainResolveWorker.enqueue("check_domain_resolve", %{

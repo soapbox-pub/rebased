@@ -5,10 +5,12 @@
 defmodule Pleroma.Web.Push.ImplTest do
   use Pleroma.DataCase, async: true
 
+  import Mox
   import Pleroma.Factory
 
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
@@ -256,6 +258,9 @@ defmodule Pleroma.Web.Push.ImplTest do
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
+
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
 
       {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
 

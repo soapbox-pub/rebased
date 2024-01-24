@@ -347,7 +347,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       summary: "Endorse",
       operationId: "AccountController.endorse",
       security: [%{"oAuth" => ["follow", "write:accounts"]}],
-      description: "Addds the given account to endorsed accounts list.",
+      description: "Adds the given account to endorsed accounts list.",
       parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
       responses: %{
         200 => Operation.response("Relationship", "application/json", AccountRelationship),

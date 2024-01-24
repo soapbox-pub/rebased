@@ -9,8 +9,16 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
   import Mox
 
   alias Pleroma.ReverseProxy.ClientMock
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.MediaProxy
   alias Plug.Conn
+
+  setup do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
+    :ok
+  end
 
   describe "Media Proxy" do
     setup do

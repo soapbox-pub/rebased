@@ -214,7 +214,7 @@ defmodule Pleroma.Web.OAuth.MFAControllerTest do
       assert response == %{"error" => "Invalid code"}
     end
 
-    test "returns error when client credentails is wrong ", %{conn: conn, user: user} do
+    test "returns error when client credentials is wrong ", %{conn: conn, user: user} do
       otp_token = TOTP.generate_token(user.multi_factor_authentication_settings.totp.secret)
       mfa_token = insert(:mfa_token, user: user)
 

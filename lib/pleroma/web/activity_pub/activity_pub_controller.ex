@@ -284,12 +284,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   def inbox(%{assigns: %{valid_signature: true}} = conn, %{"nickname" => nickname} = params) do
-    with %User{} = recipient <- User.get_cached_by_nickname(nickname),
-         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(params["actor"]),
+    with %User{is_active: true} = recipient <- User.get_cached_by_nickname(nickname),
+         {:ok, %User{is_active: true} = actor} <- User.get_or_fetch_by_ap_id(params["actor"]),
          true <- Utils.recipient_in_message(recipient, actor, params),
          params <- Utils.maybe_splice_recipient(recipient.ap_id, params) do
       Federator.incoming_ap_doc(params)
       json(conn, "ok")
+    else
+      _ ->
+        conn
+        |> put_status(:bad_request)
+        |> json("Invalid request.")
     end
   end
 
@@ -298,10 +303,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     json(conn, "ok")
   end
 
-  def inbox(%{assigns: %{valid_signature: false}} = conn, _params) do
-    conn
-    |> put_status(:bad_request)
-    |> json("Invalid HTTP Signature")
+  def inbox(%{assigns: %{valid_signature: false}, req_headers: req_headers} = conn, params) do
+    Federator.incoming_ap_doc(%{req_headers: req_headers, params: params})
+    json(conn, "ok")
   end
 
   # POST /relay/inbox -or- POST /internal/fetch/inbox
@@ -487,7 +491,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
         |> json(message)
 
       e ->
-        Logger.warn(fn -> "AP C2S: #{inspect(e)}" end)
+        Logger.warning(fn -> "AP C2S: #{inspect(e)}" end)
 
         conn
         |> put_status(:bad_request)

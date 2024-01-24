@@ -23,7 +23,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   import Ecto.Query
 
-  require Logger
   require Pleroma.Constants
 
   @doc """
@@ -155,8 +154,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         |> Map.put("context", replied_object.data["context"] || object["conversation"])
         |> Map.drop(["conversation", "inReplyToAtomUri"])
       else
-        e ->
-          Logger.warn("Couldn't fetch #{inspect(in_reply_to_id)}, error: #{inspect(e)}")
+        _ ->
           object
       end
     else
@@ -181,8 +179,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       {:quoting?, _} ->
         object
 
-      e ->
-        Logger.warn("Couldn't fetch #{inspect(quote_url)}, error: #{inspect(e)}")
+      _ ->
         object
     end
   end
@@ -338,6 +335,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_tag(object), do: object
+
+  def fix_content_map(%{"contentMap" => nil} = object) do
+    Map.drop(object, ["contentMap"])
+  end
 
   # content map usually only has one language so this will do for now.
   def fix_content_map(%{"contentMap" => content_map} = object) do
@@ -852,8 +853,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            relative_object do
       Map.put(data, "object", external_url)
     else
-      {:fetch, e} ->
-        Logger.error("Couldn't fetch #{object} #{inspect(e)}")
+      {:fetch, _} ->
         data
 
       _ ->

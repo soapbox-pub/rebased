@@ -107,6 +107,13 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              |> json_response_and_validate_schema(200)
   end
 
+  test "get instance information v2", %{conn: conn} do
+    clear_config([:auth, :oauth_consumer_strategies], [])
+
+    assert get(conn, "/api/v2/instance")
+           |> json_response_and_validate_schema(200)
+  end
+
   test "instance domains", %{conn: conn} do
     clear_config([:instance, :multitenancy], %{enabled: true})
 
