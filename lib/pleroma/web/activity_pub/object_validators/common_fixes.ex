@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
+  alias Pleroma.Maps
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.User
@@ -24,6 +25,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   end
 
   def fix_object_defaults(data) do
+    data = Maps.filter_empty_values(data)
+
     context =
       Utils.maybe_create_context(
         data["context"] || data["conversation"] || data["inReplyTo"] || data["id"]
