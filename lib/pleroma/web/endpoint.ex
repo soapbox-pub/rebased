@@ -109,7 +109,10 @@ defmodule Pleroma.Web.Endpoint do
     plug(Phoenix.CodeReloader)
   end
 
-  plug(Pleroma.Web.Plugs.TrailingFormatPlug)
+  plug(Pleroma.Web.Plugs.TrailingFormatPlug,
+    supported_formats: ["html", "xml", "rss", "atom", "activity+json", "json"]
+  )
+
   plug(Plug.RequestId)
   plug(Plug.Logger, log: :debug)
 

@@ -96,21 +96,14 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         do: Date.to_iso8601(user.birthday),
         else: nil
 
-    ap_id =
-      if String.ends_with?(user.ap_id, ".json") do
-        String.slice(user.ap_id, 0..-6)
-      else
-        user.ap_id
-      end
-
     %{
       "id" => user.ap_id,
       "type" => user.actor_type,
-      "following" => "#{ap_id}/following",
-      "followers" => "#{ap_id}/followers",
-      "inbox" => "#{ap_id}/inbox",
-      "outbox" => "#{ap_id}/outbox",
-      "featured" => "#{ap_id}/collections/featured",
+      "following" => "#{user.ap_id}/following",
+      "followers" => "#{user.ap_id}/followers",
+      "inbox" => "#{user.ap_id}/inbox",
+      "outbox" => "#{user.ap_id}/outbox",
+      "featured" => "#{user.ap_id}/collections/featured",
       "preferredUsername" => user.nickname,
       "name" => user.name,
       "summary" => user.bio,
