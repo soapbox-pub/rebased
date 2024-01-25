@@ -110,7 +110,7 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
       get_ip(conn) in Config.get([:instance, :trusted_unsigned], []) ->
         conn
         |> assign(:valid_signature, true)
-        |> assign(:actor_id, Pleroma.Web.ActivityPub.Relay.ap_id)
+        |> assign(:actor_id, Pleroma.Web.ActivityPub.Relay.ap_id())
 
       Pleroma.Config.get([:activitypub, :authorized_fetch_mode], false) ->
         conn
