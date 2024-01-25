@@ -14,6 +14,8 @@ defmodule Pleroma.UserRelationship do
   alias Pleroma.User
   alias Pleroma.UserRelationship
 
+  @type t :: %__MODULE__{}
+
   schema "user_relationships" do
     belongs_to(:source, User, type: FlakeId.Ecto.CompatType)
     belongs_to(:target, User, type: FlakeId.Ecto.CompatType)

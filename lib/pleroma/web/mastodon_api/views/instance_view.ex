@@ -47,6 +47,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
       background_image: Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
       description_limit: Keyword.get(instance, :description_limit),
+      chat_limit: Keyword.get(instance, :chat_limit),
       pleroma: pleroma_configuration(instance)
     })
   end
@@ -307,7 +308,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
           background_image:
             Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
-          description_limit: Keyword.get(instance, :description_limit)
+          chat_limit: Keyword.get(instance, :chat_limit),
+          description_limit: Keyword.get(instance, :description_limit),
+          shout_limit: Config.get([:shout, :limit])
         })
     })
   end

@@ -3,5 +3,5 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parser.TTL do
-  @callback ttl(Map.t(), String.t()) :: Integer.t() | nil
+  @callback ttl(map(), String.t()) :: integer() | nil
 end

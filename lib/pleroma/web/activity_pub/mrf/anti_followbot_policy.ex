@@ -56,8 +56,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicy do
     nick_score + name_score + actor_type_score
   end
 
-  defp determine_if_followbot(_), do: 0.0
-
   defp bot_allowed?(%{"object" => target}, bot_actor) do
     %User{} = user = normalize_by_ap_id(target)
 

@@ -86,7 +86,7 @@ defmodule Pleroma.Upload do
     end
   end
 
-  @spec store(source, options :: [option()]) :: {:ok, Map.t()} | {:error, any()}
+  @spec store(source, options :: [option()]) :: {:ok, map()} | {:error, any()}
   @doc "Store a file. If using a `Plug.Upload{}` as the source, be sure to use `Majic.Plug` to ensure its content_type and filename is correct."
   def store(upload, opts \\ []) do
     opts = get_opts(opts)

@@ -9,14 +9,16 @@ defmodule Pleroma.HealthcheckTest do
   test "system_info/0" do
     result = Healthcheck.system_info() |> Map.from_struct()
 
-    assert Map.keys(result) == [
+    keys = Map.keys(result)
+
+    assert Keyword.equal?(keys, [
              :active,
              :healthy,
              :idle,
              :job_queue_stats,
              :memory_used,
              :pool_size
-           ]
+           ])
   end
 
   describe "check_health/1" do

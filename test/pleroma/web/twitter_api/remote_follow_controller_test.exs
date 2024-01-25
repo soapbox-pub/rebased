@@ -137,7 +137,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
                  |> html_response(200)
 
                assert response =~ "Error fetching user"
-             end) =~ "Object has been deleted"
+             end) =~ ":not_found"
     end
   end
 

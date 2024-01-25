@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   This module encodes our addressing policies and general shape of our objects.
   """
 
+  alias Pleroma.Activity
   alias Pleroma.Emoji
   alias Pleroma.Object
   alias Pleroma.User

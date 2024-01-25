@@ -585,7 +585,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec unpin(String.t(), User.t()) :: {:ok, User.t()} | {:error, term()}
+  @spec unpin(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, term()}
   def unpin(id, user) do
     with %Activity{} = activity <- create_activity_by_id(id),
          {:ok, unpin_data, _} <- Builder.unpin(user, activity.object),

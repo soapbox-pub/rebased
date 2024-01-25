@@ -26,7 +26,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   import Pleroma.Web.CommonAPI.Utils, only: [get_valid_language: 1]
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
-  require Logger
   require Pleroma.Constants
 
   @doc """
@@ -159,8 +158,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         |> Map.put("context", replied_object.data["context"] || object["conversation"])
         |> Map.drop(["conversation", "inReplyToAtomUri"])
       else
-        e ->
-          Logger.warning("Couldn't fetch #{inspect(in_reply_to_id)}, error: #{inspect(e)}")
+        _ ->
           object
       end
     else
@@ -185,8 +183,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       {:quoting?, _} ->
         object
 
-      e ->
-        Logger.warning("Couldn't fetch #{inspect(quote_url)}, error: #{inspect(e)}")
+      _ ->
         object
     end
   end
@@ -873,8 +870,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            relative_object do
       Map.put(data, "object", external_url)
     else
-      {:fetch, e} ->
-        Logger.error("Couldn't fetch #{object} #{inspect(e)}")
+      {:fetch, _} ->
         data
 
       _ ->
