@@ -1,4 +1,4 @@
-FROM elixir:1.12.3
+FROM elixir:1.15.7
 
 # Single RUN statement, otherwise intermediate images are created
 # https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#run
