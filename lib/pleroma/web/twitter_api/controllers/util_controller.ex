@@ -319,7 +319,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     user = User.get_cached_by_nickname(nickname)
 
     if user == nil do
-      {:not_found, nil}
+      {:error, :not_found}
     else
       {:ok, user}
     end
