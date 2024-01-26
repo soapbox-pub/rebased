@@ -105,7 +105,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
           {:ok, integer() | :noop} | {:error, :no_key}
   def set_ttl_based_on_image(data, url) do
     case get_ttl_from_image(data, url) do
-      {:ok, ttl} when is_number(ttl) ->
+      ttl when is_number(ttl) ->
         ttl = ttl * 1000
 
         case @cachex.expire_at(:rich_media_cache, url, ttl) do
