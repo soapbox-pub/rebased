@@ -372,7 +372,7 @@ defmodule Pleroma.Web.CommonAPI do
       do: visibility in ~w(public unlisted)
 
   def public_announce?(object, _) do
-    Visibility.is_public?(object)
+    Visibility.public?(object)
   end
 
   def get_visibility(_, _, %Participation{}), do: {"direct", "direct"}
@@ -500,7 +500,7 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   defp activity_is_public(activity) do
-    with false <- Visibility.is_public?(activity) do
+    with false <- Visibility.public?(activity) do
       {:error, :visibility_error}
     end
   end

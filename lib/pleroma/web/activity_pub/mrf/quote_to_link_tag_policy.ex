@@ -28,7 +28,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.QuoteToLinkTagPolicy do
     tags = object["tag"] || []
 
     if Enum.any?(tags, fn tag ->
-         CommonFixes.is_object_link_tag(tag) and tag["href"] == quote_url
+         CommonFixes.object_link_tag?(tag) and tag["href"] == quote_url
        end) do
       object
     else

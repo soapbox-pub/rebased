@@ -138,23 +138,23 @@ defmodule Pleroma.Emoji do
   emojis = emojis ++ regional_indicators
 
   for emoji <- emojis do
-    def is_unicode_emoji?(unquote(emoji)), do: true
+    def unicode?(unquote(emoji)), do: true
   end
 
-  def is_unicode_emoji?(_), do: false
+  def unicode?(_), do: false
 
   @emoji_regex ~r/:[A-Za-z0-9_-]+(@.+)?:/
 
-  def is_custom_emoji?(s) when is_binary(s), do: Regex.match?(@emoji_regex, s)
+  def custom?(s) when is_binary(s), do: Regex.match?(@emoji_regex, s)
 
-  def is_custom_emoji?(_), do: false
+  def custom?(_), do: false
 
   def maybe_strip_name(name) when is_binary(name), do: String.trim(name, ":")
 
   def maybe_strip_name(name), do: name
 
   def maybe_quote(name) when is_binary(name) do
-    if is_unicode_emoji?(name) do
+    if unicode?(name) do
       name
     else
       if String.starts_with?(name, ":") do

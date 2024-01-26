@@ -245,7 +245,7 @@ defmodule Pleroma.Web.Streamer do
   defp do_stream("list", item) do
     # filter the recipient list if the activity is not public, see #270.
     recipient_lists =
-      case Visibility.is_public?(item) do
+      case Visibility.public?(item) do
         true ->
           Pleroma.List.get_lists_from_activity(item)
 
