@@ -388,8 +388,6 @@ defmodule Pleroma.ReverseProxy do
 
   defp body_size_constraint(_, _), do: :ok
 
-  defp check_read_duration(nil = _duration, max), do: check_read_duration(@max_read_duration, max)
-
   defp check_read_duration(duration, max)
        when is_integer(duration) and is_integer(max) and max > 0 do
     if duration > max do
@@ -405,10 +403,6 @@ defmodule Pleroma.ReverseProxy do
        when is_integer(previous_duration) and is_integer(started) do
     duration = :erlang.system_time(:millisecond) - started
     {:ok, previous_duration + duration}
-  end
-
-  defp increase_read_duration(_) do
-    {:ok, :no_duration_limit, :no_duration_limit}
   end
 
   defp client, do: Pleroma.ReverseProxy.Client.Wrapper
