@@ -51,7 +51,7 @@ defmodule Pleroma.Emoji do
   end
 
   @doc "Returns the path of the emoji `name`."
-  @spec get(String.t()) :: Emoji.t() | nil
+  @spec get(String.t()) :: Pleroma.Emoji.t() | nil
   def get(name) do
     name = maybe_strip_name(name)
 
