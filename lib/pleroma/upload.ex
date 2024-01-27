@@ -175,7 +175,7 @@ defmodule Pleroma.Upload do
   defp prepare_upload(%{img: "data:image/" <> image_data}, opts) do
     parsed = Regex.named_captures(~r/(?<filetype>jpeg|png|gif);base64,(?<data>.*)/, image_data)
     data = Base.decode64!(parsed["data"], ignore: :whitespace)
-    hash = Base.encode16(:crypto.hash(:sha256, data), lower: true)
+    hash = Base.encode16(:crypto.hash(:sha256, data), case: :upper)
 
     with :ok <- check_binary_size(data, opts.size_limit),
          tmp_path <- tempfile_for_image(data),
