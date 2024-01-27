@@ -242,17 +242,17 @@ defmodule Pleroma.Object do
          {:ok, _} <- invalid_object_cache(object) do
       cleanup_attachments(
         Config.get([:instance, :cleanup_attachments]),
-        %{"object" => object}
+        object
       )
 
       {:ok, object, deleted_activity}
     end
   end
 
-  @spec cleanup_attachments(boolean(), %{required(:object) => map()}) ::
+  @spec cleanup_attachments(boolean(), Object.t()) ::
           {:ok, Oban.Job.t() | nil}
-  def cleanup_attachments(true, %{"object" => _} = params) do
-    AttachmentsCleanupWorker.enqueue("cleanup_attachments", params)
+  def cleanup_attachments(true, %Object{} = object) do
+    AttachmentsCleanupWorker.enqueue("cleanup_attachments", %{"object" => object})
   end
 
   def cleanup_attachments(_, _), do: {:ok, nil}
