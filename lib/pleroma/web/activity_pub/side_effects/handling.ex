@@ -4,5 +4,5 @@
 
 defmodule Pleroma.Web.ActivityPub.SideEffects.Handling do
   @callback handle(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
-  @callback handle_after_transaction(map()) :: map()
+  @callback handle_after_transaction(keyword()) :: keyword()
 end
