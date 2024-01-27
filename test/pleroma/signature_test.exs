@@ -113,7 +113,7 @@ defmodule Pleroma.SignatureTest do
 
     test "it calls webfinger for 'acct:' accounts" do
       with_mock(Pleroma.Web.WebFinger,
-        finger: fn _ -> %{"ap_id" => "https://gensokyo.2hu/users/raymoo"} end
+        finger: fn _ -> {:ok, %{"ap_id" => "https://gensokyo.2hu/users/raymoo"}} end
       ) do
         assert Signature.key_id_to_actor_id("acct:raymoo@gensokyo.2hu") ==
                  {:ok, "https://gensokyo.2hu/users/raymoo"}

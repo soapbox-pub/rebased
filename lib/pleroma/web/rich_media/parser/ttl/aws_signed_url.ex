@@ -45,6 +45,6 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl do
       |> Map.get("X-Amz-Date")
       |> Timex.parse("{ISO:Basic:Z}")
 
-    {:ok, Timex.to_unix(date) + String.to_integer(Map.get(params, "X-Amz-Expires"))}
+    Timex.to_unix(date) + String.to_integer(Map.get(params, "X-Amz-Expires"))
   end
 end
