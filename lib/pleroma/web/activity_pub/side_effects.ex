@@ -580,7 +580,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
   def handle_undoing(object), do: {:error, ["don't know how to handle", object]}
 
-  @spec delete_object(Object.t()) :: :ok | {:error, Ecto.Changeset.t()}
+  @spec delete_object(Activity.t()) :: :ok | {:error, Ecto.Changeset.t()}
   defp delete_object(object) do
     with {:ok, _} <- Repo.delete(object), do: :ok
   end
