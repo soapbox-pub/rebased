@@ -212,7 +212,7 @@ defmodule Pleroma.Web.AdminAPI.UserController do
       action: "activate"
     })
 
-    render(conn, "index.json", users: Keyword.values(updated_users))
+    render(conn, "index.json", users: updated_users)
   end
 
   def deactivate(%{assigns: %{user: admin}, body_params: %{"nicknames" => nicknames}} = conn, _) do
@@ -225,7 +225,7 @@ defmodule Pleroma.Web.AdminAPI.UserController do
       action: "deactivate"
     })
 
-    render(conn, "index.json", users: Keyword.values(updated_users))
+    render(conn, "index.json", users: updated_users)
   end
 
   def approve(%{assigns: %{user: admin}, body_params: %{"nicknames" => nicknames}} = conn, _) do
