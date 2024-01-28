@@ -120,7 +120,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   end
 
   def mark_as_read(
-        %{body_params: %{last_read_id: last_read_id}, assigns: %{user: user}} = conn,
+        %{body_params: %{"last_read_id" => last_read_id}, assigns: %{user: user}} = conn,
         %{id: id}
       ) do
     with {:ok, chat} <- Chat.get_by_user_and_id(user, id),
