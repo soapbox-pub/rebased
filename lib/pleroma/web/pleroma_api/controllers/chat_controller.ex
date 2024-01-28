@@ -76,7 +76,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
         %{id: id}
       ) do
     with {:ok, chat} <- Chat.get_by_user_and_id(user, id),
-         %User{} = recipient <- User.get_cached_by_ap_id(chat.recipient),
+         {_, %User{} = recipient} <- {:user, User.get_cached_by_ap_id(chat.recipient)},
          {:ok, activity} <-
            CommonAPI.post_chat_message(user, recipient, params[:content],
              media_id: params[:media_id],
@@ -97,6 +97,11 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
         conn
         |> put_status(:bad_request)
         |> json(%{error: message})
+
+      {:user, nil} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: "Recipient does not exist"})
     end
   end
 
