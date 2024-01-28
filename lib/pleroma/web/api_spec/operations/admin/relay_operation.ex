@@ -87,7 +87,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.RelayOperation do
     %Schema{
       type: :object,
       properties: %{
-        relay_url: %Schema{type: :string, format: :uri}
+        "relay_url" => %Schema{type: :string, format: :uri}
       }
     }
   end
@@ -96,8 +96,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.RelayOperation do
     %Schema{
       type: :object,
       properties: %{
-        relay_url: %Schema{type: :string, format: :uri},
-        force: %Schema{type: :boolean, default: false}
+        "relay_url" => %Schema{type: :string, format: :uri},
+        "force" => %Schema{type: :boolean, default: false}
       }
     }
   end
