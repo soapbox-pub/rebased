@@ -61,9 +61,9 @@ defmodule Pleroma.Web.ApiSpec.Admin.InstanceDocumentOperation do
       title: "UpdateRequest",
       description: "POST body for uploading the file",
       type: :object,
-      required: [:file],
+      required: ["file"],
       properties: %{
-        file: %Schema{
+        "file" => %Schema{
           type: :string,
           format: :binary,
           description: "The file to be uploaded, using multipart form data."
