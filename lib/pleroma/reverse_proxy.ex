@@ -84,13 +84,13 @@ defmodule Pleroma.ReverseProxy do
           {:max_read_duration, non_neg_integer() | :infinity}
           | {:max_body_length, non_neg_integer() | :infinity}
           | {:failed_request_ttl, non_neg_integer() | :infinity}
-          | {:http, []}
+          | {:http, keyword()}
           | {:req_headers, [{String.t(), String.t()}]}
           | {:resp_headers, [{String.t(), String.t()}]}
-          | {:inline_content_types, boolean() | [String.t()]}
+          | {:inline_content_types, boolean() | list(String.t())}
           | {:redirect_on_failure, boolean()}
 
-  @spec call(Plug.Conn.t(), url :: String.t(), [option()]) :: Plug.Conn.t()
+  @spec call(Plug.Conn.t(), String.t(), list(option())) :: Plug.Conn.t()
   def call(_conn, _url, _opts \\ [])
 
   def call(conn = %{method: method}, url, opts) when method in @methods do
