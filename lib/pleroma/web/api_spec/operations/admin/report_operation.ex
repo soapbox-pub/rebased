@@ -107,7 +107,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
         request_body("Parameters", %Schema{
           type: :object,
           properties: %{
-            content: %Schema{type: :string, description: "The message"}
+            "content" => %Schema{type: :string, description: "The message"}
           }
         }),
       security: [%{"oAuth" => ["admin:write:reports"]}],
@@ -199,9 +199,9 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
   defp update_request do
     %Schema{
       type: :object,
-      required: [:reports],
+      required: ["reports"],
       properties: %{
-        reports: %Schema{
+        "reports" => %Schema{
           type: :array,
           items: %Schema{
             type: :object,
