@@ -109,8 +109,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
     end
   end
 
-  def download(%{body_params: %{url: url, name: name} = params} = conn, _) do
-    with {:ok, _pack} <- Pack.download(name, url, params[:as]) do
+  def download(%{body_params: %{"url" => url, "name" => name} = params} = conn, _) do
+    with {:ok, _pack} <- Pack.download(name, url, params["as"]) do
       json(conn, "ok")
     else
       {:error, :not_shareable} ->
@@ -184,7 +184,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
     end
   end
 
-  def update(%{body_params: %{metadata: metadata}} = conn, %{name: name}) do
+  def update(%{body_params: %{"metadata" => metadata}} = conn, %{name: name}) do
     with {:ok, pack} <- Pack.update_metadata(name, metadata) do
       json(conn, pack.pack)
     else

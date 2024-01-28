@@ -130,15 +130,15 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
   defp download_request do
     %Schema{
       type: :object,
-      required: [:url, :name],
+      required: ["url", "name"],
       properties: %{
-        url: %Schema{
+        "url" => %Schema{
           type: :string,
           format: :uri,
           description: "URL of the instance to download from"
         },
-        name: %Schema{type: :string, format: :uri, description: "Pack Name"},
-        as: %Schema{type: :string, format: :uri, description: "Save as"}
+        "name" => %Schema{type: :string, format: :uri, description: "Pack Name"},
+        "as" => %Schema{type: :string, format: :uri, description: "Save as"}
       }
     }
   end
@@ -302,27 +302,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
   defp update_request do
     %Schema{
       type: :object,
-      properties: %{
-        metadata: %Schema{
-          type: :object,
-          description: "Metadata to replace the old one",
-          properties: %{
-            license: %Schema{type: :string},
-            homepage: %Schema{type: :string, format: :uri},
-            description: %Schema{type: :string},
-            "fallback-src": %Schema{
-              type: :string,
-              format: :uri,
-              description: "Fallback url to download pack from"
-            },
-            "fallback-src-sha256": %Schema{
-              type: :string,
-              description: "SHA256 encoded for fallback pack archive"
-            },
-            "share-files": %Schema{type: :boolean, description: "Is pack allowed for sharing?"}
-          }
-        }
-      }
+      properties: %{"metadata" => metadata()}
     }
   end
 
