@@ -472,7 +472,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/note"
   def note(
-        %{assigns: %{user: noter, account: target}, body_params: %{comment: comment}} = conn,
+        %{assigns: %{user: noter, account: target}, body_params: %{"comment" => comment}} = conn,
         _params
       ) do
     with {:ok, _user_note} <- UserNote.create(noter, target, comment) do
@@ -513,7 +513,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "POST /api/v1/follows"
-  def follow_by_uri(%{body_params: %{uri: uri}} = conn, _) do
+  def follow_by_uri(%{body_params: %{"uri" => uri}} = conn, _) do
     case User.get_cached_by_nickname(uri) do
       %User{} = user ->
         conn
