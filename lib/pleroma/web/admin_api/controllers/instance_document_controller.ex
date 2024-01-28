@@ -27,7 +27,7 @@ defmodule Pleroma.Web.AdminAPI.InstanceDocumentController do
     end
   end
 
-  def update(%{body_params: %{file: file}} = conn, %{name: document_name}) do
+  def update(%{body_params: %{"file" => file}} = conn, %{name: document_name}) do
     with {:ok, url} <- InstanceDocument.put(document_name, file.path) do
       json(conn, %{"url" => url})
     end

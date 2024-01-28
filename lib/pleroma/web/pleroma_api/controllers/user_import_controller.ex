@@ -18,11 +18,11 @@ defmodule Pleroma.Web.PleromaAPI.UserImportController do
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
   defdelegate open_api_operation(action), to: ApiSpec.UserImportOperation
 
-  def follow(%{body_params: %{list: %Plug.Upload{path: path}}} = conn, _) do
-    follow(%Plug.Conn{conn | body_params: %{list: File.read!(path)}}, %{})
+  def follow(%{body_params: %{"list" => %Plug.Upload{path: path}}} = conn, _) do
+    follow(%Plug.Conn{conn | body_params: %{"list" => File.read!(path)}}, %{})
   end
 
-  def follow(%{assigns: %{user: follower}, body_params: %{list: list}} = conn, _) do
+  def follow(%{assigns: %{user: follower}, body_params: %{"list" => list}} = conn, _) do
     identifiers =
       list
       |> String.split("\n")
@@ -35,20 +35,20 @@ defmodule Pleroma.Web.PleromaAPI.UserImportController do
     json(conn, "job started")
   end
 
-  def blocks(%{body_params: %{list: %Plug.Upload{path: path}}} = conn, _) do
-    blocks(%Plug.Conn{conn | body_params: %{list: File.read!(path)}}, %{})
+  def blocks(%{body_params: %{"list" => %Plug.Upload{path: path}}} = conn, _) do
+    blocks(%Plug.Conn{conn | body_params: %{"list" => File.read!(path)}}, %{})
   end
 
-  def blocks(%{assigns: %{user: blocker}, body_params: %{list: list}} = conn, _) do
+  def blocks(%{assigns: %{user: blocker}, body_params: %{"list" => list}} = conn, _) do
     User.Import.blocks_import(blocker, prepare_user_identifiers(list))
     json(conn, "job started")
   end
 
-  def mutes(%{body_params: %{list: %Plug.Upload{path: path}}} = conn, _) do
-    mutes(%Plug.Conn{conn | body_params: %{list: File.read!(path)}}, %{})
+  def mutes(%{body_params: %{"list" => %Plug.Upload{path: path}}} = conn, _) do
+    mutes(%Plug.Conn{conn | body_params: %{"list" => File.read!(path)}}, %{})
   end
 
-  def mutes(%{assigns: %{user: user}, body_params: %{list: list}} = conn, _) do
+  def mutes(%{assigns: %{user: user}, body_params: %{"list" => list}} = conn, _) do
     User.Import.mutes_import(user, prepare_user_identifiers(list))
     json(conn, "job started")
   end

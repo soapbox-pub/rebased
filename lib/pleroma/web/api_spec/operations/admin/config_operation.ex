@@ -47,7 +47,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ConfigOperation do
         request_body("Parameters", %Schema{
           type: :object,
           properties: %{
-            configs: %Schema{
+            "configs" => %Schema{
               type: :array,
               items: %Schema{
                 type: :object,

@@ -31,7 +31,7 @@ defmodule Pleroma.Web.AdminAPI.RelayController do
     end
   end
 
-  def follow(%{assigns: %{user: admin}, body_params: %{relay_url: target}} = conn, _) do
+  def follow(%{assigns: %{user: admin}, body_params: %{"relay_url" => target}} = conn, _) do
     with {:ok, _message} <- Relay.follow(target) do
       ModerationLog.insert_log(%{action: "relay_follow", actor: admin, target: target})
 
@@ -44,8 +44,11 @@ defmodule Pleroma.Web.AdminAPI.RelayController do
     end
   end
 
-  def unfollow(%{assigns: %{user: admin}, body_params: %{relay_url: target} = params} = conn, _) do
-    with {:ok, _message} <- Relay.unfollow(target, %{force: params[:force]}) do
+  def unfollow(
+        %{assigns: %{user: admin}, body_params: %{"relay_url" => target} = params} = conn,
+        _
+      ) do
+    with {:ok, _message} <- Relay.unfollow(target, %{force: params["force"]}) do
       ModerationLog.insert_log(%{action: "relay_unfollow", actor: admin, target: target})
 
       json(conn, target)

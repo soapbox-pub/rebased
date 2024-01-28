@@ -53,11 +53,11 @@ defmodule Pleroma.Web.AdminAPI.UserController do
 
   def delete(conn, %{nickname: nickname}) do
     conn
-    |> Map.put(:body_params, %{nicknames: [nickname]})
+    |> Map.put(:body_params, %{"nicknames" => [nickname]})
     |> delete(%{})
   end
 
-  def delete(%{assigns: %{user: admin}, body_params: %{nicknames: nicknames}} = conn, _) do
+  def delete(%{assigns: %{user: admin}, body_params: %{"nicknames" => nicknames}} = conn, _) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
 
     Enum.each(users, fn user ->
@@ -78,8 +78,8 @@ defmodule Pleroma.Web.AdminAPI.UserController do
         %{
           assigns: %{user: admin},
           body_params: %{
-            follower: follower_nick,
-            followed: followed_nick
+            "follower" => follower_nick,
+            "followed" => followed_nick
           }
         } = conn,
         _
@@ -103,8 +103,8 @@ defmodule Pleroma.Web.AdminAPI.UserController do
         %{
           assigns: %{user: admin},
           body_params: %{
-            follower: follower_nick,
-            followed: followed_nick
+            "follower" => follower_nick,
+            "followed" => followed_nick
           }
         } = conn,
         _
@@ -124,7 +124,7 @@ defmodule Pleroma.Web.AdminAPI.UserController do
     json(conn, "ok")
   end
 
-  def create(%{assigns: %{user: admin}, body_params: %{users: users}} = conn, _) do
+  def create(%{assigns: %{user: admin}, body_params: %{"users" => users}} = conn, _) do
     changesets =
       users
       |> Enum.map(fn %{nickname: nickname, email: email, password: password} ->
@@ -202,7 +202,7 @@ defmodule Pleroma.Web.AdminAPI.UserController do
     render(conn, "show.json", user: updated_user)
   end
 
-  def activate(%{assigns: %{user: admin}, body_params: %{nicknames: nicknames}} = conn, _) do
+  def activate(%{assigns: %{user: admin}, body_params: %{"nicknames" => nicknames}} = conn, _) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
     {:ok, updated_users} = User.set_activation(users, true)
 
@@ -212,10 +212,10 @@ defmodule Pleroma.Web.AdminAPI.UserController do
       action: "activate"
     })
 
-    render(conn, "index.json", users: Keyword.values(updated_users))
+    render(conn, "index.json", users: updated_users)
   end
 
-  def deactivate(%{assigns: %{user: admin}, body_params: %{nicknames: nicknames}} = conn, _) do
+  def deactivate(%{assigns: %{user: admin}, body_params: %{"nicknames" => nicknames}} = conn, _) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
     {:ok, updated_users} = User.set_activation(users, false)
 
@@ -225,10 +225,10 @@ defmodule Pleroma.Web.AdminAPI.UserController do
       action: "deactivate"
     })
 
-    render(conn, "index.json", users: Keyword.values(updated_users))
+    render(conn, "index.json", users: updated_users)
   end
 
-  def approve(%{assigns: %{user: admin}, body_params: %{nicknames: nicknames}} = conn, _) do
+  def approve(%{assigns: %{user: admin}, body_params: %{"nicknames" => nicknames}} = conn, _) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
     {:ok, updated_users} = User.approve(users)
 
@@ -241,7 +241,7 @@ defmodule Pleroma.Web.AdminAPI.UserController do
     render(conn, "index.json", users: updated_users)
   end
 
-  def suggest(%{assigns: %{user: admin}, body_params: %{nicknames: nicknames}} = conn, _) do
+  def suggest(%{assigns: %{user: admin}, body_params: %{"nicknames" => nicknames}} = conn, _) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
     {:ok, updated_users} = User.set_suggestion(users, true)
 
@@ -254,7 +254,7 @@ defmodule Pleroma.Web.AdminAPI.UserController do
     render(conn, "index.json", users: updated_users)
   end
 
-  def unsuggest(%{assigns: %{user: admin}, body_params: %{nicknames: nicknames}} = conn, _) do
+  def unsuggest(%{assigns: %{user: admin}, body_params: %{"nicknames" => nicknames}} = conn, _) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
     {:ok, updated_users} = User.set_suggestion(users, false)
 

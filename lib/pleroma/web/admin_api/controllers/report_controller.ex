@@ -45,7 +45,7 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
     end
   end
 
-  def update(%{assigns: %{user: admin}, body_params: %{reports: reports}} = conn, _) do
+  def update(%{assigns: %{user: admin}, body_params: %{"reports" => reports}} = conn, _) do
     result =
       Enum.map(reports, fn report ->
         case CommonAPI.update_report_state(report.id, report.state) do
@@ -73,7 +73,7 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
     end
   end
 
-  def notes_create(%{assigns: %{user: user}, body_params: %{content: content}} = conn, %{
+  def notes_create(%{assigns: %{user: user}, body_params: %{"content" => content}} = conn, %{
         id: report_id
       }) do
     with {:ok, _} <- ReportNote.create(user.id, report_id, content),
