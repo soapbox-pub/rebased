@@ -10,9 +10,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoEmptyPolicy do
 
   @impl true
   def filter(%{"actor" => actor} = object) do
-    with true <- is_local?(actor),
-         true <- is_eligible_type?(object),
-         true <- is_note?(object),
+    with true <- local?(actor),
+         true <- eligible_type?(object),
+         true <- note?(object),
          false <- has_attachment?(object),
          true <- only_mentions?(object) do
       {:reject, "[NoEmptyPolicy]"}
@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoEmptyPolicy do
 
   def filter(object), do: {:ok, object}
 
-  defp is_local?(actor) do
+  defp local?(actor) do
     if actor |> String.starts_with?("#{Endpoint.url()}") do
       true
     else
@@ -59,11 +59,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoEmptyPolicy do
 
   defp only_mentions?(_), do: false
 
-  defp is_note?(%{"object" => %{"type" => "Note"}}), do: true
-  defp is_note?(_), do: false
+  defp note?(%{"object" => %{"type" => "Note"}}), do: true
+  defp note?(_), do: false
 
-  defp is_eligible_type?(%{"type" => type}) when type in ["Create", "Update"], do: true
-  defp is_eligible_type?(_), do: false
+  defp eligible_type?(%{"type" => type}) when type in ["Create", "Update"], do: true
+  defp eligible_type?(_), do: false
 
   @impl true
   def describe, do: {:ok, %{}}

@@ -99,7 +99,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   end
 
   def fix_quote_url(%{"tag" => [_ | _] = tags} = data) do
-    tag = Enum.find(tags, &is_object_link_tag/1)
+    tag = Enum.find(tags, &object_link_tag?/1)
 
     if not is_nil(tag) do
       data
@@ -112,7 +112,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   def fix_quote_url(data), do: data
 
   # https://codeberg.org/fediverse/fep/src/branch/main/fep/e232/fep-e232.md
-  def is_object_link_tag(%{
+  def object_link_tag?(%{
         "type" => "Link",
         "mediaType" => media_type,
         "href" => href
@@ -121,5 +121,5 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
     true
   end
 
-  def is_object_link_tag(_), do: false
+  def object_link_tag?(_), do: false
 end
