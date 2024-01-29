@@ -93,10 +93,7 @@ defmodule Pleroma.Web.ControllerHelper do
   end
 
   def try_render(conn, target, params) when is_binary(target) do
-    case render(conn, target, params) do
-      nil -> render_error(conn, :not_implemented, "Can't display this activity")
-      res -> res
-    end
+    render(conn, target, params)
   end
 
   def try_render(conn, _, _) do
