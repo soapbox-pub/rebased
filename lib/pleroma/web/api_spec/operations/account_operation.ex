@@ -122,22 +122,27 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       parameters:
         [
           %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
-          Operation.parameter(:pinned, :query, BooleanLike, "Include only pinned statuses"),
+          Operation.parameter(
+            :pinned,
+            :query,
+            BooleanLike.schema(),
+            "Include only pinned statuses"
+          ),
           Operation.parameter(:tagged, :query, :string, "With tag"),
           Operation.parameter(
             :only_media,
             :query,
-            BooleanLike,
+            BooleanLike.schema(),
             "Include only statuses with media attached"
           ),
           Operation.parameter(
             :with_muted,
             :query,
-            BooleanLike,
+            BooleanLike.schema(),
             "Include statuses from muted accounts."
           ),
-          Operation.parameter(:exclude_reblogs, :query, BooleanLike, "Exclude reblogs"),
-          Operation.parameter(:exclude_replies, :query, BooleanLike, "Exclude replies"),
+          Operation.parameter(:exclude_reblogs, :query, BooleanLike.schema(), "Exclude reblogs"),
+          Operation.parameter(:exclude_replies, :query, BooleanLike.schema(), "Exclude replies"),
           Operation.parameter(
             :exclude_visibilities,
             :query,
@@ -147,7 +152,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           Operation.parameter(
             :with_muted,
             :query,
-            BooleanLike,
+            BooleanLike.schema(),
             "Include reactions from muted accounts."
           )
         ] ++ pagination_params(),

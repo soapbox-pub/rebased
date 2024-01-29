@@ -146,13 +146,13 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
         Operation.parameter(
           :block_from_strangers,
           :query,
-          BooleanLike,
+          BooleanLike.schema(),
           "blocks notifications from accounts you do not follow"
         ),
         Operation.parameter(
           :hide_notification_contents,
           :query,
-          BooleanLike,
+          BooleanLike.schema(),
           "removes the contents of a message from the push notification"
         )
       ],
