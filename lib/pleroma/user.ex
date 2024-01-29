@@ -2559,9 +2559,9 @@ defmodule Pleroma.User do
     cast(user, params, [:is_confirmed, :confirmation_token])
   end
 
-  @spec approval_changeset(User.t(), keyword()) :: Ecto.Changeset.t()
-  def approval_changeset(user, set_approval: approved?) do
-    cast(user, %{is_approved: approved?}, [:is_approved])
+  @spec approval_changeset(Ecto.Changeset.t(), keyword()) :: Ecto.Changeset.t()
+  def approval_changeset(changeset, set_approval: approved?) do
+    cast(changeset, %{is_approved: approved?}, [:is_approved])
   end
 
   @spec add_pinned_object_id(User.t(), String.t()) :: {:ok, User.t()} | {:error, term()}
