@@ -202,7 +202,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def notify_and_stream(activity) do
-    Notification.create_notifications(activity)
+    {:ok, notifications} = Notification.create_notifications(activity)
+    Notification.send(notifications)
 
     original_activity =
       case activity do
