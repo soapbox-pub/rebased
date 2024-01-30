@@ -50,7 +50,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
             %Schema{
               type: :object,
               properties: %{
-                "users" => %Schema{type: :array, items: user()},
+                users: %Schema{type: :array, items: user()},
                 count: %Schema{type: :integer},
                 page_size: %Schema{type: :integer}
               }
@@ -75,7 +75,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
             description: "POST body for creating users",
             type: :object,
             properties: %{
-              "users" => %Schema{
+              users: %Schema{
                 type: :array,
                 items: %Schema{
                   type: :object,
@@ -168,8 +168,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
           %Schema{
             type: :object,
             properties: %{
-              "follower" => %Schema{type: :string, description: "Follower nickname"},
-              "followed" => %Schema{type: :string, description: "Followed nickname"}
+              follower: %Schema{type: :string, description: "Follower nickname"},
+              followed: %Schema{type: :string, description: "Followed nickname"}
             }
           }
         ),
@@ -193,8 +193,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
           %Schema{
             type: :object,
             properties: %{
-              "follower" => %Schema{type: :string, description: "Follower nickname"},
-              "followed" => %Schema{type: :string, description: "Followed nickname"}
+              follower: %Schema{type: :string, description: "Follower nickname"},
+              followed: %Schema{type: :string, description: "Followed nickname"}
             }
           }
         ),
@@ -219,7 +219,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
             description: "POST body for approving multiple users",
             type: :object,
             properties: %{
-              "nicknames" => %Schema{
+              nicknames: %Schema{
                 type: :array,
                 items: %Schema{type: :string}
               }
@@ -251,7 +251,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
             description: "POST body for adding multiple suggested users",
             type: :object,
             properties: %{
-              "nicknames" => %Schema{
+              nicknames: %Schema{
                 type: :array,
                 items: %Schema{type: :string}
               }
@@ -283,7 +283,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
             description: "POST body for removing multiple suggested users",
             type: :object,
             properties: %{
-              "nicknames" => %Schema{
+              nicknames: %Schema{
                 type: :array,
                 items: %Schema{type: :string}
               }
@@ -332,7 +332,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
             description: "POST body for deleting multiple users",
             type: :object,
             properties: %{
-              "nicknames" => %Schema{
+              nicknames: %Schema{
                 type: :array,
                 items: %Schema{type: :string}
               }
@@ -364,7 +364,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
             description: "POST body for deleting multiple users",
             type: :object,
             properties: %{
-              "nicknames" => %Schema{
+              nicknames: %Schema{
                 type: :array,
                 items: %Schema{type: :string}
               }
@@ -404,7 +404,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
             description: "POST body for deleting multiple users",
             type: :object,
             properties: %{
-              "nicknames" => %Schema{
+              nicknames: %Schema{
                 type: :array,
                 items: %Schema{type: :string}
               }
