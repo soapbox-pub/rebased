@@ -23,11 +23,11 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
   defdelegate open_api_operation(action), to: ApiSpec.PleromaEmojiFileOperation
 
   def create(%{body_params: params} = conn, %{name: pack_name}) do
-    filename = params["filename"] || get_filename(params["file"])
-    shortcode = params["shortcode"] || Path.basename(filename, Path.extname(filename))
+    filename = params[:filename] || get_filename(params[:file])
+    shortcode = params[:shortcode] || Path.basename(filename, Path.extname(filename))
 
     with {:ok, pack} <- Pack.load_pack(pack_name),
-         {:ok, file} <- get_file(params["file"]),
+         {:ok, file} <- get_file(params[:file]),
          {:ok, pack} <- Pack.add_file(pack, shortcode, filename, file) do
       json(conn, pack.files)
     else
@@ -49,10 +49,10 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
     end
   end
 
-  def update(%{body_params: %{"shortcode" => shortcode} = params} = conn, %{name: pack_name}) do
-    new_shortcode = params["new_shortcode"]
-    new_filename = params["new_filename"]
-    force = params["force"]
+  def update(%{body_params: %{shortcode: shortcode} = params} = conn, %{name: pack_name}) do
+    new_shortcode = params[:new_shortcode]
+    new_filename = params[:new_filename]
+    force = params[:force]
 
     with {:ok, pack} <- Pack.load_pack(pack_name),
          {:ok, pack} <- Pack.update_file(pack, shortcode, new_shortcode, new_filename, force) do
@@ -128,9 +128,9 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
   defp get_filename(%Plug.Upload{filename: filename}), do: filename
   defp get_filename(url) when is_binary(url), do: Path.basename(url)
 
-  defp get_file(%Plug.Upload{} = file), do: {:ok, file}
+  def get_file(%Plug.Upload{} = file), do: {:ok, file}
 
-  defp get_file(url) when is_binary(url) do
+  def get_file(url) when is_binary(url) do
     with {:ok, %Tesla.Env{body: body, status: code, headers: headers}}
          when code in 200..299 <- Pleroma.HTTP.get(url) do
       path = Plug.Upload.random_file!("emoji")

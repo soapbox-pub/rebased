@@ -873,7 +873,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                                   %{
                                     "tuple" => [
                                       ":_",
-                                      "Plug.Cowboy.Handler",
+                                      "Phoenix.Endpoint.Cowboy2Handler",
                                       %{"tuple" => ["Pleroma.Web.Endpoint", []]}
                                     ]
                                   }
@@ -937,7 +937,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                                        %{
                                          "tuple" => [
                                            ":_",
-                                           "Plug.Cowboy.Handler",
+                                           "Phoenix.Endpoint.Cowboy2Handler",
                                            %{"tuple" => ["Pleroma.Web.Endpoint", []]}
                                          ]
                                        }

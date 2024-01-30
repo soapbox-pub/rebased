@@ -78,9 +78,9 @@ defmodule Pleroma.Web.ApiSpec.Admin.MediaProxyCacheOperation do
           "Parameters",
           %Schema{
             type: :object,
-            required: ["urls"],
+            required: [:urls],
             properties: %{
-              "urls" => %Schema{type: :array, items: %Schema{type: :string, format: :uri}}
+              urls: %Schema{type: :array, items: %Schema{type: :string, format: :uri}}
             }
           },
           required: true
@@ -104,10 +104,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.MediaProxyCacheOperation do
           "Parameters",
           %Schema{
             type: :object,
-            required: ["urls"],
+            required: [:urls],
             properties: %{
-              "urls" => %Schema{type: :array, items: %Schema{type: :string, format: :uri}},
-              "ban" => %Schema{type: :boolean, default: true}
+              urls: %Schema{type: :array, items: %Schema{type: :string, format: :uri}},
+              ban: %Schema{type: :boolean, default: true}
             }
           },
           required: true

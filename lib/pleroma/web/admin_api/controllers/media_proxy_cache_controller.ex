@@ -59,12 +59,12 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
     Enum.slice(entries, offset, page_size)
   end
 
-  def delete(%{assigns: %{user: _}, body_params: %{"urls" => urls}} = conn, _) do
+  def delete(%{assigns: %{user: _}, body_params: %{urls: urls}} = conn, _) do
     MediaProxy.remove_from_banned_urls(urls)
     json(conn, %{})
   end
 
-  def purge(%{assigns: %{user: _}, body_params: %{"urls" => urls, "ban" => ban}} = conn, _) do
+  def purge(%{assigns: %{user: _}, body_params: %{urls: urls, ban: ban}} = conn, _) do
     MediaProxy.Invalidation.purge(urls)
 
     if ban do

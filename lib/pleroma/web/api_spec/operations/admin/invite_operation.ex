@@ -79,9 +79,9 @@ defmodule Pleroma.Web.ApiSpec.Admin.InviteOperation do
           "Parameters",
           %Schema{
             type: :object,
-            required: ["token"],
+            required: [:token],
             properties: %{
-              "token" => %Schema{type: :string}
+              token: %Schema{type: :string}
             }
           },
           required: true
@@ -106,10 +106,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.InviteOperation do
           "Parameters",
           %Schema{
             type: :object,
-            required: ["email"],
+            required: [:email],
             properties: %{
-              "email" => %Schema{type: :string, format: :email},
-              "name" => %Schema{type: :string}
+              email: %Schema{type: :string, format: :email},
+              name: %Schema{type: :string}
             }
           },
           required: true

@@ -51,7 +51,6 @@ defmodule Pleroma.Upload do
           | {:size_limit, nil | non_neg_integer()}
           | {:uploader, module()}
           | {:filters, [module()]}
-          | {:actor, String.t()}
 
   @type t :: %__MODULE__{
           id: String.t(),

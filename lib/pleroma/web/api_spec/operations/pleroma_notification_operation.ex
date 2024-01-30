@@ -24,11 +24,8 @@ defmodule Pleroma.Web.ApiSpec.PleromaNotificationOperation do
         request_body("Parameters", %Schema{
           type: :object,
           properties: %{
-            "id" => %Schema{type: :integer, description: "A single notification ID to read"},
-            "max_id" => %Schema{
-              type: :integer,
-              description: "Read all notifications up to this ID"
-            }
+            id: %Schema{type: :integer, description: "A single notification ID to read"},
+            max_id: %Schema{type: :integer, description: "Read all notifications up to this ID"}
           }
         }),
       security: [%{"oAuth" => ["write:notifications"]}],

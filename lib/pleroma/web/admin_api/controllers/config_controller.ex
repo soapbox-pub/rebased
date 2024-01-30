@@ -128,7 +128,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
     end
   end
 
-  def update(%{body_params: %{"configs" => configs}} = conn, _) do
+  def update(%{body_params: %{configs: configs}} = conn, _) do
     with :ok <- configurable_from_database() do
       results =
         configs

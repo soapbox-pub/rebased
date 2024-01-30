@@ -61,9 +61,9 @@ defmodule Pleroma.Web.ApiSpec.UserImportOperation do
   defp import_request do
     %Schema{
       type: :object,
-      required: ["list"],
+      required: [:list],
       properties: %{
-        "list" => %Schema{
+        list: %Schema{
           description:
             "STRING or FILE containing a whitespace-separated list of accounts to import.",
           anyOf: [

@@ -36,9 +36,9 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiFileOperation do
   defp create_request do
     %Schema{
       type: :object,
-      required: ["file"],
+      required: [:file],
       properties: %{
-        "file" => %Schema{
+        file: %Schema{
           description:
             "File needs to be uploaded with the multipart request or link to remote file",
           anyOf: [
@@ -46,12 +46,12 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiFileOperation do
             %Schema{type: :string, format: :uri}
           ]
         },
-        "shortcode" => %Schema{
+        shortcode: %Schema{
           type: :string,
           description:
             "Shortcode for new emoji, must be unique for all emoji. If not sended, shortcode will be taken from original filename."
         },
-        "filename" => %Schema{
+        filename: %Schema{
           type: :string,
           description:
             "New emoji file name. If not specified will be taken from original filename."
@@ -81,21 +81,21 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiFileOperation do
   defp update_request do
     %Schema{
       type: :object,
-      required: ["shortcode", "new_shortcode", "new_filename"],
+      required: [:shortcode, :new_shortcode, :new_filename],
       properties: %{
-        "shortcode" => %Schema{
+        shortcode: %Schema{
           type: :string,
           description: "Emoji file shortcode"
         },
-        "new_shortcode" => %Schema{
+        new_shortcode: %Schema{
           type: :string,
           description: "New emoji file shortcode"
         },
-        "new_filename" => %Schema{
+        new_filename: %Schema{
           type: :string,
           description: "New filename for emoji file"
         },
-        "force" => %Schema{
+        force: %Schema{
           type: :boolean,
           description: "With true value to overwrite existing emoji with new shortcode",
           default: false
