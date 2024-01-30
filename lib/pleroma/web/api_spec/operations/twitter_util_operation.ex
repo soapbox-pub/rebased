@@ -404,10 +404,10 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
       title: "RemoteInteractionRequest",
       description: "POST body for remote interaction",
       type: :object,
-      required: ["ap_id", "profile"],
+      required: [:ap_id, :profile],
       properties: %{
-        "ap_id" => %Schema{type: :string, description: "Profile or status ActivityPub ID"},
-        "profile" => %Schema{type: :string, description: "Remote profile webfinger"}
+        ap_id: %Schema{type: :string, description: "Profile or status ActivityPub ID"},
+        profile: %Schema{type: :string, description: "Remote profile webfinger"}
       }
     }
   end
