@@ -22,9 +22,9 @@ defmodule Pleroma.Web.PleromaAPI.MascotController do
   end
 
   @doc "PUT /api/v1/pleroma/mascot"
-  def update(%{assigns: %{user: user}, body_params: %{"file" => file}} = conn, _) do
-    with {_, "image" <> _} <- {:content_type, file.content_type},
-         {_, {:ok, object}} <- {:upload, ActivityPub.upload(file, actor: User.ap_id(user))} do
+  def update(%{assigns: %{user: user}, body_params: %{file: file}} = conn, _) do
+    with {:content_type, "image" <> _} <- {:content_type, file.content_type},
+         {:ok, object} <- ActivityPub.upload(file, actor: User.ap_id(user)) do
       attachment = render_attachment(object)
       {:ok, _user} = User.mascot_update(user, attachment)
 

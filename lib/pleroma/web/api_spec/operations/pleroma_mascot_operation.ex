@@ -39,7 +39,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaMascotOperation do
           %Schema{
             type: :object,
             properties: %{
-              "file" => %Schema{type: :string, format: :binary}
+              file: %Schema{type: :string, format: :binary}
             }
           },
           required: true
