@@ -27,7 +27,7 @@ defmodule Pleroma.Web.MastodonAPI.DomainBlockController do
   end
 
   @doc "POST /api/v1/domain_blocks"
-  def create(%{assigns: %{user: blocker}, body_params: %{"domain" => domain}} = conn, _params) do
+  def create(%{assigns: %{user: blocker}, body_params: %{domain: domain}} = conn, _params) do
     User.block_domain(blocker, domain)
     json(conn, %{})
   end
@@ -38,7 +38,7 @@ defmodule Pleroma.Web.MastodonAPI.DomainBlockController do
   end
 
   @doc "DELETE /api/v1/domain_blocks"
-  def delete(%{assigns: %{user: blocker}, body_params: %{"domain" => domain}} = conn, _params) do
+  def delete(%{assigns: %{user: blocker}, body_params: %{domain: domain}} = conn, _params) do
     User.unblock_domain(blocker, domain)
     json(conn, %{})
   end

@@ -73,10 +73,10 @@ defmodule Pleroma.Web.ApiSpec.DomainBlockOperation do
       %Schema{
         type: :object,
         properties: %{
-          "domain" => %Schema{type: :string}
+          domain: %Schema{type: :string}
         }
       },
-      required: true,
+      required: false,
       example: %{
         "domain" => "facebook.com"
       }
