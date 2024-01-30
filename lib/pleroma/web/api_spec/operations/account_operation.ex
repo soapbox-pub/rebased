@@ -887,9 +887,9 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       description: "POST body for muting an account",
       type: :object,
       properties: %{
-        "uri" => %Schema{type: :string, nullable: true, format: :uri}
+        uri: %Schema{type: :string, nullable: true, format: :uri}
       },
-      required: ["uri"]
+      required: [:uri]
     }
   end
 
@@ -930,7 +930,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       description: "POST body for adding a note for an account",
       type: :object,
       properties: %{
-        "comment" => %Schema{
+        comment: %Schema{
           type: :string,
           description: "Account note body"
         }
