@@ -29,6 +29,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.PlaceValidator do
   end
 
   def changeset(struct, data) do
+    data = fix(data)
+
     struct
     |> cast(data, [:type, :name, :longitude, :latitude, :accuracy, :altitude, :radius, :units])
     |> cast_embed(:address, with: &address_changeset/2)
@@ -51,4 +53,19 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.PlaceValidator do
     ])
     |> validate_inclusion(:type, ["PostalAddress"])
   end
+
+  defp fix(data) do
+    data
+    |> fix_address()
+  end
+
+  defp fix_address(%{"address" => address} = data) when is_binary(address) do
+    data
+    |> Map.put("address", %{
+      "type" => "PostalAddress",
+      "streetAddress" => address
+    })
+  end
+
+  defp fix_address(data), do: data
 end
