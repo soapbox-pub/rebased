@@ -630,6 +630,7 @@ defmodule Pleroma.Notification do
   def skip?(%Activity{} = activity, %User{} = user, opts) do
     [
       :self,
+      :internal,
       :invisible,
       :block_from_strangers,
       :recently_followed,
@@ -647,6 +648,12 @@ defmodule Pleroma.Notification do
       activity.data["actor"] == user.ap_id -> true
       true -> false
     end
+  end
+
+  def skip?(:internal, %Activity{} = activity, _user, _opts) do
+    actor = activity.data["actor"]
+    user = User.get_cached_by_ap_id(actor)
+    User.internal?(user)
   end
 
   def skip?(:invisible, %Activity{} = activity, _user, _opts) do

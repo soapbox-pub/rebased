@@ -261,16 +261,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
     Utils.add_announce_to_object(object, announced_object)
 
-    notifications =
-      if !User.is_internal_user?(user) do
-        {:ok, notifications} = Notification.create_notifications(object)
+    {:ok, notifications} = Notification.create_notifications(object)
 
-        ap_streamer().stream_out(object)
-
-        notifications
-      else
-        []
-      end
+    if !User.internal?(user), do: ap_streamer().stream_out(object)
 
     meta =
       meta
