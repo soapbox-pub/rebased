@@ -40,7 +40,7 @@ defmodule Pleroma.Web.AdminAPI.InviteController do
   end
 
   @doc "Revokes invite by token"
-  def revoke(%{body_params: %{"token" => token}} = conn, _) do
+  def revoke(%{body_params: %{token: token}} = conn, _) do
     with {:ok, invite} <- UserInviteToken.find_by_token(token),
          {:ok, updated_invite} = UserInviteToken.update_invite(invite, %{used: true}) do
       render(conn, "show.json", invite: updated_invite)
@@ -51,7 +51,7 @@ defmodule Pleroma.Web.AdminAPI.InviteController do
   end
 
   @doc "Sends registration invite via email"
-  def email(%{assigns: %{user: user}, body_params: %{"email" => email} = params} = conn, _) do
+  def email(%{assigns: %{user: user}, body_params: %{email: email} = params} = conn, _) do
     with {_, false} <- {:registrations_open, Config.get([:instance, :registrations_open])},
          {_, true} <- {:invites_enabled, Config.get([:instance, :invites_enabled])},
          {:ok, invite_token} <- UserInviteToken.create_invite(),
@@ -60,7 +60,7 @@ defmodule Pleroma.Web.AdminAPI.InviteController do
            |> Pleroma.Emails.UserEmail.user_invitation_email(
              invite_token,
              email,
-             params["name"]
+             params[:name]
            )
            |> Pleroma.Emails.Mailer.deliver() do
       json_response(conn, :no_content, "")
