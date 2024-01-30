@@ -36,18 +36,18 @@ defmodule Pleroma.Web.ApiSpec.MediaOperation do
       title: "MediaCreateRequest",
       description: "POST body for creating an attachment",
       type: :object,
-      required: ["file"],
+      required: [:file],
       properties: %{
-        "file" => %Schema{
+        file: %Schema{
           type: :string,
           format: :binary,
           description: "The file to be attached, using multipart form data."
         },
-        "description" => %Schema{
+        description: %Schema{
           type: :string,
           description: "A plain-text description of the media, for accessibility purposes."
         },
-        "focus" => %Schema{
+        focus: %Schema{
           type: :string,
           description: "Two floating points (x,y), comma-delimited, ranging from -1.0 to 1.0."
         }
@@ -79,16 +79,16 @@ defmodule Pleroma.Web.ApiSpec.MediaOperation do
       description: "POST body for updating an attachment",
       type: :object,
       properties: %{
-        "file" => %Schema{
+        file: %Schema{
           type: :string,
           format: :binary,
           description: "The file to be attached, using multipart form data."
         },
-        "description" => %Schema{
+        description: %Schema{
           type: :string,
           description: "A plain-text description of the media, for accessibility purposes."
         },
-        "focus" => %Schema{
+        focus: %Schema{
           type: :string,
           description: "Two floating points (x,y), comma-delimited, ranging from -1.0 to 1.0."
         }
