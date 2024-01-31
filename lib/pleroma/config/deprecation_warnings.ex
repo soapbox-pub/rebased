@@ -256,7 +256,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     move_namespace_and_warn(@mrf_config_map, warning_preface)
   end
 
-  @spec move_namespace_and_warn([config_map()], String.t()) :: :ok | nil
+  @spec move_namespace_and_warn([config_map()], String.t()) :: :ok | nil | :error
   def move_namespace_and_warn(config_map, warning_preface) do
     warning =
       Enum.reduce(config_map, "", fn
