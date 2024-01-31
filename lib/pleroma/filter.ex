@@ -216,9 +216,6 @@ defmodule Pleroma.Filter do
 
       :re ->
         ~r/\b#{phrases}\b/i
-
-      _ ->
-        nil
     end
   end
 
