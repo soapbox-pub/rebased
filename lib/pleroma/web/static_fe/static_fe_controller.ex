@@ -22,10 +22,18 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   def show(%{assigns: %{notice_id: notice_id}} = conn, _params) do
     with %Activity{local: true} = activity <-
            Activity.get_by_id_with_object(notice_id),
-         true <- Visibility.is_public?(activity.object),
+         true <- Visibility.public?(activity.object),
          {_, true} <- {:visible?, Visibility.visible_for_user?(activity, _reading_user = nil)},
          %User{} = user <- User.get_by_ap_id(activity.object.data["actor"]) do
-      meta = Metadata.build_tags(%{activity_id: notice_id, object: activity.object, user: user})
+      url = Helpers.url(conn) <> conn.request_path
+
+      meta =
+        Metadata.build_tags(%{
+          activity_id: notice_id,
+          object: activity.object,
+          user: user,
+          url: url
+        })
 
       timeline =
         activity.object.data["context"]

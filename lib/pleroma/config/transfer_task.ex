@@ -55,8 +55,7 @@ defmodule Pleroma.Config.TransferTask do
 
       started_applications = Application.started_applications()
 
-      # TODO: some problem with prometheus after restart!
-      reject = [nil, :prometheus, :postgrex]
+      reject = [nil, :postgrex]
 
       reject =
         if restart_pleroma? do
@@ -145,7 +144,7 @@ defmodule Pleroma.Config.TransferTask do
         error_msg =
           "updating env causes error, group: #{inspect(group)}, key: #{inspect(key)}, value: #{inspect(value)} error: #{inspect(error)}"
 
-        Logger.warn(error_msg)
+        Logger.warning(error_msg)
 
         nil
     end
@@ -179,12 +178,12 @@ defmodule Pleroma.Config.TransferTask do
       :ok = Application.start(app)
     else
       nil ->
-        Logger.warn("#{app} is not started.")
+        Logger.warning("#{app} is not started.")
 
       error ->
         error
         |> inspect()
-        |> Logger.warn()
+        |> Logger.warning()
     end
   end
 

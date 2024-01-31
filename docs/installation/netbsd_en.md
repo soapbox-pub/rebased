@@ -123,6 +123,10 @@ Edit the defaults:
 * Change `ssl_certificate_key` to `/etc/nginx/tls/key`.
 * Change `example.tld` to your instance's domain name.
 
+### (Strongly recommended) serve media on another domain
+
+Refer to the [Hardening your instance](../configuration/hardening.md) document on how to serve media on another domain. We STRONGLY RECOMMEND you to do this to minimize attack vectors.
+
 ## Configuring acme.sh
 
 We'll be using acme.sh in Stateless Mode for TLS certificate renewal.

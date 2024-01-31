@@ -33,6 +33,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def post_chat_message(%User{} = user, %User{} = recipient, content, opts \\ []) do
     with maybe_attachment <- opts[:media_id] && Object.get_by_id(opts[:media_id]),
+         :ok <- validate_chat_attachment_attribution(maybe_attachment, user),
          :ok <- validate_chat_content_length(content, !!maybe_attachment),
          {_, {:ok, chat_message_data, _meta}} <-
            {:build_object,
@@ -69,6 +70,17 @@ defmodule Pleroma.Web.CommonAPI do
           end).()
 
     text
+  end
+
+  defp validate_chat_attachment_attribution(nil, _), do: :ok
+
+  defp validate_chat_attachment_attribution(attachment, user) do
+    with :ok <- Object.authorize_access(attachment, user) do
+      :ok
+    else
+      e ->
+        e
+    end
   end
 
   defp validate_chat_content_length(_, true), do: :ok
@@ -142,7 +154,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def delete(activity_id, user) do
     with {_, %Activity{data: %{"object" => _, "type" => "Create"}} = activity} <-
-           {:find_activity, Activity.get_by_id(activity_id)},
+           {:find_activity, Activity.get_by_id(activity_id, filter: [])},
          {_, %Object{} = object, _} <-
            {:find_object, Object.normalize(activity, fetch: false), activity},
          true <- User.privileged?(user, :messages_delete) || user.ap_id == object.data["actor"],
@@ -360,7 +372,7 @@ defmodule Pleroma.Web.CommonAPI do
       do: visibility in ~w(public unlisted)
 
   def public_announce?(object, _) do
-    Visibility.is_public?(object)
+    Visibility.public?(object)
   end
 
   def get_visibility(_, _, %Participation{}), do: {"direct", "direct"}
@@ -488,12 +500,12 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   defp activity_is_public(activity) do
-    with false <- Visibility.is_public?(activity) do
+    with false <- Visibility.public?(activity) do
       {:error, :visibility_error}
     end
   end
 
-  @spec unpin(String.t(), User.t()) :: {:ok, User.t()} | {:error, term()}
+  @spec unpin(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, term()}
   def unpin(id, user) do
     with %Activity{} = activity <- create_activity_by_id(id),
          {:ok, unpin_data, _} <- Builder.unpin(user, activity.object),
@@ -538,7 +550,7 @@ defmodule Pleroma.Web.CommonAPI do
       remove_mute(user, activity)
     else
       {what, result} = error ->
-        Logger.warn(
+        Logger.warning(
           "CommonAPI.remove_mute/2 failed. #{what}: #{result}, user_id: #{user_id}, activity_id: #{activity_id}"
         )
 
@@ -583,7 +595,7 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def update_report_state(activity_id, state) do
-    with %Activity{} = activity <- Activity.get_by_id(activity_id) do
+    with %Activity{} = activity <- Activity.get_by_id(activity_id, filter: []) do
       Utils.update_report_state(activity, state)
     else
       nil -> {:error, :not_found}

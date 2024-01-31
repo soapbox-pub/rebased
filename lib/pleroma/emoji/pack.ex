@@ -209,7 +209,9 @@ defmodule Pleroma.Emoji.Pack do
 
     with :ok <- validate_shareable_packs_available(uri) do
       uri
-      |> URI.merge("/api/pleroma/emoji/packs?page=#{opts[:page]}&page_size=#{opts[:page_size]}")
+      |> URI.merge(
+        "/api/v1/pleroma/emoji/packs?page=#{opts[:page]}&page_size=#{opts[:page_size]}"
+      )
       |> http_get()
     end
   end
@@ -249,8 +251,12 @@ defmodule Pleroma.Emoji.Pack do
     uri = url |> String.trim() |> URI.parse()
 
     with :ok <- validate_shareable_packs_available(uri),
+         {:ok, %{"files_count" => files_count}} <-
+           uri |> URI.merge("/api/v1/pleroma/emoji/pack?name=#{name}&page_size=0") |> http_get(),
          {:ok, remote_pack} <-
-           uri |> URI.merge("/api/pleroma/emoji/pack?name=#{name}") |> http_get(),
+           uri
+           |> URI.merge("/api/v1/pleroma/emoji/pack?name=#{name}&page_size=#{files_count}")
+           |> http_get(),
          {:ok, %{sha: sha, url: url} = pack_info} <- fetch_pack_info(remote_pack, uri, name),
          {:ok, archive} <- download_archive(url, sha),
          pack <- copy_as(remote_pack, as || name),
@@ -285,6 +291,7 @@ defmodule Pleroma.Emoji.Pack do
 
   @spec load_pack(String.t()) :: {:ok, t()} | {:error, :file.posix()}
   def load_pack(name) do
+    name = Path.basename(name)
     pack_file = Path.join([emoji_path(), name, "pack.json"])
 
     with {:ok, _} <- File.stat(pack_file),
@@ -591,7 +598,7 @@ defmodule Pleroma.Emoji.Pack do
         {:ok,
          %{
            sha: sha,
-           url: URI.merge(uri, "/api/pleroma/emoji/packs/archive?name=#{name}") |> to_string()
+           url: URI.merge(uri, "/api/v1/pleroma/emoji/packs/archive?name=#{name}") |> to_string()
          }}
 
       %{"fallback-src" => src, "fallback-src-sha256" => sha} when is_binary(src) ->

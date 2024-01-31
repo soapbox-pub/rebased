@@ -9,7 +9,7 @@ defmodule Pleroma.Web.AdminAPI.InstanceDocumentController do
   alias Pleroma.Web.Plugs.InstanceStatic
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
 
   action_fallback(Pleroma.Web.AdminAPI.FallbackController)
 
@@ -18,7 +18,7 @@ defmodule Pleroma.Web.AdminAPI.InstanceDocumentController do
   plug(OAuthScopesPlug, %{scopes: ["admin:read"]} when action == :show)
   plug(OAuthScopesPlug, %{scopes: ["admin:write"]} when action in [:update, :delete])
 
-  def show(conn, %{name: document_name}) do
+  def show(%{private: %{open_api_spex: %{params: %{name: document_name}}}} = conn, _) do
     with {:ok, url} <- InstanceDocument.get(document_name),
          {:ok, content} <- File.read(InstanceStatic.file_path(url)) do
       conn
@@ -27,13 +27,18 @@ defmodule Pleroma.Web.AdminAPI.InstanceDocumentController do
     end
   end
 
-  def update(%{body_params: %{file: file}} = conn, %{name: document_name}) do
+  def update(
+        %{
+          private: %{open_api_spex: %{body_params: %{file: file}, params: %{name: document_name}}}
+        } = conn,
+        _
+      ) do
     with {:ok, url} <- InstanceDocument.put(document_name, file.path) do
       json(conn, %{"url" => url})
     end
   end
 
-  def delete(conn, %{name: document_name}) do
+  def delete(%{private: %{open_api_spex: %{params: %{name: document_name}}}} = conn, _) do
     with :ok <- InstanceDocument.delete(document_name) do
       json(conn, %{})
     end

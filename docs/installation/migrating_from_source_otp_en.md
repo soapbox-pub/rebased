@@ -86,26 +86,26 @@ export FLAVOUR="amd64-musl"
 
 # Clone the release build into a temporary directory and unpack it
 # Replace `stable` with `unstable` if you want to run the unstable branch
-su pleroma -s $SHELL -lc "
+sudo -Hu pleroma "
 curl 'https://git.pleroma.social/api/v4/projects/2/jobs/artifacts/stable/download?job=$FLAVOUR' -o /tmp/pleroma.zip
 unzip /tmp/pleroma.zip -d /tmp/
 "
 
 # Move the release to the home directory and delete temporary files
-su pleroma -s $SHELL -lc "
+sudo -Hu pleroma "
 mv /tmp/release/* ~pleroma/
 rmdir /tmp/release
 rm /tmp/pleroma.zip
 "
 
 # Start the instance to verify that everything is working as expected
-su pleroma -s $SHELL -lc "./bin/pleroma daemon"
+sudo -Hu pleroma "./bin/pleroma daemon"
 
 # Wait for about 20 seconds and query the instance endpoint, if it shows your uri, name and email correctly, you are configured correctly
 sleep 20 && curl http://localhost:4000/api/v1/instance
 
 # Stop the instance
-su pleroma -s $SHELL -lc "./bin/pleroma stop"
+sudo -Hu pleroma "./bin/pleroma stop"
 ```
 
 ## Setting up a system service

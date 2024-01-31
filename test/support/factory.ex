@@ -50,7 +50,6 @@ defmodule Pleroma.Factory do
       last_refreshed_at: NaiveDateTime.utc_now(),
       notification_settings: %Pleroma.User.NotificationSetting{},
       multi_factor_authentication_settings: %Pleroma.MFA.Settings{},
-      ap_enabled: true,
       keys: pem
     }
 
@@ -213,7 +212,7 @@ defmodule Pleroma.Factory do
   end
 
   def direct_note_factory do
-    user2 = insert(:user)
+    user2 = insert(:user, local: false, inbox: "http://example.com/inbox")
 
     %Pleroma.Object{data: data} = note_factory()
     %Pleroma.Object{data: Map.merge(data, %{"to" => [user2.ap_id]})}

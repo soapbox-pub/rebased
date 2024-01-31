@@ -4,10 +4,18 @@
 
 defmodule Pleroma.Web.Plugs.UploadedMediaPlugTest do
   use Pleroma.Web.ConnCase, async: true
+
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Upload
 
+  import Mox
+
   defp upload_file(context) do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
     Pleroma.DataCase.ensure_local_uploader(context)
+
     File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
     file = %Plug.Upload{
@@ -23,6 +31,13 @@ defmodule Pleroma.Web.Plugs.UploadedMediaPlugTest do
 
   setup_all :upload_file
 
+  setup do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
+    :ok
+  end
+
   test "does not send Content-Disposition header when name param is not set", %{
     attachment_url: attachment_url
   } do
@@ -33,11 +48,11 @@ defmodule Pleroma.Web.Plugs.UploadedMediaPlugTest do
   test "sends Content-Disposition header when name param is set", %{
     attachment_url: attachment_url
   } do
-    conn = get(build_conn(), attachment_url <> "?name=\"cofe\".gif")
+    conn = get(build_conn(), attachment_url <> ~s[?name="cofe".gif])
 
     assert Enum.any?(
              conn.resp_headers,
-             &(&1 == {"content-disposition", "filename=\"\\\"cofe\\\".gif\""})
+             &(&1 == {"content-disposition", ~s[inline; filename="\\"cofe\\".gif"]})
            )
   end
 end

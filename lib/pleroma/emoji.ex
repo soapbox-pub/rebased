@@ -24,6 +24,8 @@ defmodule Pleroma.Emoji do
 
   defstruct [:code, :file, :tags, :safe_code, :safe_file]
 
+  @type t :: %__MODULE__{}
+
   @doc "Build emoji struct"
   def build({code, file, tags}) do
     %__MODULE__{
@@ -49,10 +51,12 @@ defmodule Pleroma.Emoji do
   end
 
   @doc "Returns the path of the emoji `name`."
-  @spec get(String.t()) :: String.t() | nil
+  @spec get(String.t()) :: Pleroma.Emoji.t() | nil
   def get(name) do
+    name = maybe_strip_name(name)
+
     case :ets.lookup(@ets, name) do
-      [{_, path}] -> path
+      [{_, emoji}] -> emoji
       _ -> nil
     end
   end
@@ -134,10 +138,61 @@ defmodule Pleroma.Emoji do
   emojis = emojis ++ regional_indicators
 
   for emoji <- emojis do
-    def is_unicode_emoji?(unquote(emoji)), do: true
+    def unicode?(unquote(emoji)), do: true
   end
 
-  def is_unicode_emoji?(_), do: false
+  def unicode?(_), do: false
+
+  @emoji_regex ~r/:[A-Za-z0-9_-]+(@.+)?:/
+
+  def custom?(s) when is_binary(s), do: Regex.match?(@emoji_regex, s)
+
+  def custom?(_), do: false
+
+  def maybe_strip_name(name) when is_binary(name), do: String.trim(name, ":")
+
+  def maybe_strip_name(name), do: name
+
+  def maybe_quote(name) when is_binary(name) do
+    if unicode?(name) do
+      name
+    else
+      if String.starts_with?(name, ":") do
+        name
+      else
+        ":#{name}:"
+      end
+    end
+  end
+
+  def maybe_quote(name), do: name
+
+  def emoji_url(%{"type" => "EmojiReact", "content" => _, "tag" => []}), do: nil
+
+  def emoji_url(%{"type" => "EmojiReact", "content" => emoji, "tag" => tags}) do
+    emoji = maybe_strip_name(emoji)
+
+    tag =
+      tags
+      |> Enum.find(fn tag ->
+        tag["type"] == "Emoji" && !is_nil(tag["name"]) && tag["name"] == emoji
+      end)
+
+    if is_nil(tag) do
+      nil
+    else
+      tag
+      |> Map.get("icon")
+      |> Map.get("url")
+    end
+  end
+
+  def emoji_url(_), do: nil
+
+  def emoji_name_with_instance(name, url) do
+    url = url |> URI.parse() |> Map.get(:host)
+    "#{name}@#{url}"
+  end
 
   emoji_qualification_map =
     emojis

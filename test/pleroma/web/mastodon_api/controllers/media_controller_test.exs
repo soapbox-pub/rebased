@@ -6,8 +6,10 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
   use Pleroma.Web.ConnCase
 
   import ExUnit.CaptureLog
+  import Mox
 
   alias Pleroma.Object
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
@@ -15,6 +17,9 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
     setup do: oauth_access(["write:media"])
 
     setup do
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
+
       image = %Plug.Upload{
         content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
@@ -122,12 +127,32 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
 
       assert :ok == File.rm(Path.absname("test/tmp/large_binary.data"))
     end
+
+    test "Do not allow nested filename", %{conn: conn, image: image} do
+      image = %Plug.Upload{
+        image
+        | filename: "../../../../../nested/file.jpg"
+      }
+
+      desc = "Description of the image"
+
+      media =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/v1/media", %{"file" => image, "description" => desc})
+        |> json_response_and_validate_schema(:ok)
+
+      refute Regex.match?(~r"/nested/", media["url"])
+    end
   end
 
   describe "Update media description" do
     setup do: oauth_access(["write:media"])
 
     setup %{user: actor} do
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
+
       file = %Plug.Upload{
         content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
@@ -160,6 +185,9 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
     setup do: oauth_access(["read:media"])
 
     setup %{user: actor} do
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
+
       file = %Plug.Upload{
         content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),

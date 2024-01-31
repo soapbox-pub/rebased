@@ -13,7 +13,7 @@ defmodule Pleroma.Web.AdminAPI.InviteController do
 
   require Logger
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
   plug(OAuthScopesPlug, %{scopes: ["admin:read:invites"]} when action == :index)
 
   plug(
@@ -33,14 +33,14 @@ defmodule Pleroma.Web.AdminAPI.InviteController do
   end
 
   @doc "Create an account registration invite token"
-  def create(%{body_params: params} = conn, _) do
+  def create(%{private: %{open_api_spex: %{body_params: params}}} = conn, _) do
     {:ok, invite} = UserInviteToken.create_invite(params)
 
     render(conn, "show.json", invite: invite)
   end
 
   @doc "Revokes invite by token"
-  def revoke(%{body_params: %{token: token}} = conn, _) do
+  def revoke(%{private: %{open_api_spex: %{body_params: %{token: token}}}} = conn, _) do
     with {:ok, invite} <- UserInviteToken.find_by_token(token),
          {:ok, updated_invite} = UserInviteToken.update_invite(invite, %{used: true}) do
       render(conn, "show.json", invite: updated_invite)
@@ -51,7 +51,13 @@ defmodule Pleroma.Web.AdminAPI.InviteController do
   end
 
   @doc "Sends registration invite via email"
-  def email(%{assigns: %{user: user}, body_params: %{email: email} = params} = conn, _) do
+  def email(
+        %{
+          assigns: %{user: user},
+          private: %{open_api_spex: %{body_params: %{email: email} = params}}
+        } = conn,
+        _
+      ) do
     with {_, false} <- {:registrations_open, Config.get([:instance, :registrations_open])},
          {_, true} <- {:invites_enabled, Config.get([:instance, :invites_enabled])},
          {:ok, invite_token} <- UserInviteToken.create_invite(),

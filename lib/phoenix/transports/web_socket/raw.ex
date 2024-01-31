@@ -26,7 +26,6 @@ defmodule Phoenix.Transports.WebSocket.Raw do
       conn
       |> fetch_query_params
       |> Transport.transport_log(opts[:transport_log])
-      |> Transport.force_ssl(handler, endpoint, opts)
       |> Transport.check_origin(handler, endpoint, opts)
 
     case conn do

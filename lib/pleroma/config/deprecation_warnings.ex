@@ -24,7 +24,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     filters = Config.get([Pleroma.Upload]) |> Keyword.get(:filters, [])
 
     if Pleroma.Upload.Filter.Exiftool in filters do
-      Logger.warn("""
+      Logger.warning("""
       !!!DEPRECATION WARNING!!!
       Your config is using Exiftool as a filter instead of Exiftool.StripLocation. This should work for now, but you are advised to change to the new configuration to prevent possible issues later:
 
@@ -63,7 +63,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
       |> Enum.any?(fn {_, v} -> Enum.any?(v, &is_binary/1) end)
 
     if has_strings do
-      Logger.warn("""
+      Logger.warning("""
       !!!DEPRECATION WARNING!!!
       Your config is using strings in the SimplePolicy configuration instead of tuples. They should work for now, but you are advised to change to the new configuration to prevent possible issues later:
 
@@ -121,7 +121,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     has_strings = Config.get([:instance, :quarantined_instances]) |> Enum.any?(&is_binary/1)
 
     if has_strings do
-      Logger.warn("""
+      Logger.warning("""
       !!!DEPRECATION WARNING!!!
       Your config is using strings in the quarantined_instances configuration instead of tuples. They should work for now, but you are advised to change to the new configuration to prevent possible issues later:
 
@@ -158,7 +158,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     has_strings = Config.get([:mrf, :transparency_exclusions]) |> Enum.any?(&is_binary/1)
 
     if has_strings do
-      Logger.warn("""
+      Logger.warning("""
       !!!DEPRECATION WARNING!!!
       Your config is using strings in the transparency_exclusions configuration instead of tuples. They should work for now, but you are advised to change to the new configuration to prevent possible issues later:
 
@@ -172,7 +172,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
 
       ```
       config :pleroma, :mrf,
-        transparency_exclusions: [{"instance.tld", "Reason to exlude transparency"}]
+        transparency_exclusions: [{"instance.tld", "Reason to exclude transparency"}]
       ```
       """)
 
@@ -193,7 +193,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
 
   def check_hellthread_threshold do
     if Config.get([:mrf_hellthread, :threshold]) do
-      Logger.warn("""
+      Logger.warning("""
       !!!DEPRECATION WARNING!!!
       You are using the old configuration mechanism for the hellthread filter. Please check config.md.
       """)
@@ -213,7 +213,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
       check_gun_pool_options(),
       check_activity_expiration_config(),
       check_remote_ip_plug_name(),
-      check_uploders_s3_public_endpoint(),
+      check_uploaders_s3_public_endpoint(),
       check_old_chat_shoutbox(),
       check_quarantined_instances_tuples(),
       check_transparency_exclusions_tuples(),
@@ -274,7 +274,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     if warning == "" do
       :ok
     else
-      Logger.warn(warning_preface <> warning)
+      Logger.warning(warning_preface <> warning)
       :error
     end
   end
@@ -284,7 +284,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     whitelist = Config.get([:media_proxy, :whitelist])
 
     if Enum.any?(whitelist, &(not String.starts_with?(&1, "http"))) do
-      Logger.warn("""
+      Logger.warning("""
       !!!DEPRECATION WARNING!!!
       Your config is using old format (only domain) for MediaProxy whitelist option. Setting should work for now, but you are advised to change format to scheme with port to prevent possible issues later.
       """)
@@ -299,7 +299,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     pool_config = Config.get(:connections_pool)
 
     if timeout = pool_config[:await_up_timeout] do
-      Logger.warn("""
+      Logger.warning("""
       !!!DEPRECATION WARNING!!!
       Your config is using old setting `config :pleroma, :connections_pool, await_up_timeout`. Please change to `config :pleroma, :connections_pool, connect_timeout` to ensure compatibility with future releases.
       """)
@@ -331,7 +331,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
           "\n* `:timeout` options in #{pool_name} pool is now `:recv_timeout`"
         end)
 
-      Logger.warn(Enum.join([warning_preface | pool_warnings]))
+      Logger.warning(Enum.join([warning_preface | pool_warnings]))
 
       Config.put(:pools, updated_config)
       :error
@@ -372,8 +372,8 @@ defmodule Pleroma.Config.DeprecationWarnings do
     )
   end
 
-  @spec check_uploders_s3_public_endpoint() :: :ok | nil
-  def check_uploders_s3_public_endpoint do
+  @spec check_uploaders_s3_public_endpoint() :: :ok | nil
+  def check_uploaders_s3_public_endpoint do
     s3_config = Pleroma.Config.get([Pleroma.Uploaders.S3])
 
     use_old_config = Keyword.has_key?(s3_config, :public_endpoint)

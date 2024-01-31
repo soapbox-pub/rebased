@@ -10,6 +10,14 @@ defmodule Pleroma.Web.ApiSpec do
 
   @behaviour OpenApi
 
+  defp streaming_paths do
+    %{
+      "/api/v1/streaming" => %OpenApiSpex.PathItem{
+        get: Pleroma.Web.ApiSpec.StreamingOperation.streaming_operation()
+      }
+    }
+  end
+
   @impl OpenApi
   def spec(opts \\ []) do
     %OpenApi{
@@ -35,7 +43,7 @@ defmodule Pleroma.Web.ApiSpec do
         - [Mastodon API documentation](https://docs.joinmastodon.org/client/intro/)
         - [Differences in Mastodon API responses from vanilla Mastodon](https://docs-develop.pleroma.social/backend/development/API/differences_in_mastoapi_responses/)
 
-        Please report such occurences on our [issue tracker](https://git.pleroma.social/pleroma/pleroma/-/issues). Feel free to submit API questions or proposals there too!
+        Please report such occurrences on our [issue tracker](https://git.pleroma.social/pleroma/pleroma/-/issues). Feel free to submit API questions or proposals there too!
         """,
         # Strip environment from the version
         version: Application.spec(:pleroma, :vsn) |> to_string() |> String.replace(~r/\+.*$/, ""),
@@ -45,7 +53,7 @@ defmodule Pleroma.Web.ApiSpec do
         }
       },
       # populate the paths from a phoenix router
-      paths: OpenApiSpex.Paths.from_router(Router),
+      paths: Map.merge(streaming_paths(), OpenApiSpex.Paths.from_router(Router)),
       components: %OpenApiSpex.Components{
         parameters: %{
           "accountIdOrNickname" =>
@@ -86,14 +94,14 @@ defmodule Pleroma.Web.ApiSpec do
             "tags" => [
               "Chat administration",
               "Emoji pack administration",
-              "Frontend managment",
+              "Frontend management",
               "Instance configuration",
               "Instance documents",
               "Invites",
               "MediaProxy cache",
-              "OAuth application managment",
+              "OAuth application management",
               "Relays",
-              "Report managment",
+              "Report management",
               "Status administration",
               "User administration",
               "Announcement management"

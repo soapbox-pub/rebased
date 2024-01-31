@@ -20,6 +20,11 @@ defmodule Mix.Tasks.Pleroma.UserTest do
   import Mock
   import Pleroma.Factory
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   setup_all do
     Mix.shell(Mix.Shell.Process)
 

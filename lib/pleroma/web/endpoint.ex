@@ -9,7 +9,20 @@ defmodule Pleroma.Web.Endpoint do
 
   alias Pleroma.Config
 
-  socket("/socket", Pleroma.Web.UserSocket)
+  socket("/socket", Pleroma.Web.UserSocket,
+    websocket: [
+      path: "/websocket",
+      serializer: [
+        {Phoenix.Socket.V1.JSONSerializer, "~> 1.0.0"},
+        {Phoenix.Socket.V2.JSONSerializer, "~> 2.0.0"}
+      ],
+      timeout: 60_000,
+      transport_log: false,
+      compress: false
+    ],
+    longpoll: false
+  )
+
   socket("/live", Phoenix.LiveView.Socket)
 
   plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
@@ -101,13 +114,10 @@ defmodule Pleroma.Web.Endpoint do
   plug(Plug.Logger, log: :debug)
 
   plug(Plug.Parsers,
-    parsers: [
-      :urlencoded,
-      {:multipart, length: {Config, :get, [[:instance, :upload_limit]]}},
-      :json
-    ],
+    parsers: [:urlencoded, Pleroma.Web.Multipart, :json],
     pass: ["*/*"],
     json_decoder: Jason,
+    # Note: this is compile-time only, won't work for database-config
     length: Config.get([:instance, :upload_limit]),
     body_reader: {Pleroma.Web.Plugs.DigestPlug, :read_body, []}
   )
@@ -140,47 +150,6 @@ defmodule Pleroma.Web.Endpoint do
   )
 
   plug(Pleroma.Web.Plugs.RemoteIp)
-
-  defmodule Instrumenter do
-    use Prometheus.PhoenixInstrumenter
-  end
-
-  defmodule PipelineInstrumenter do
-    use Prometheus.PlugPipelineInstrumenter
-  end
-
-  defmodule MetricsExporter do
-    use Prometheus.PlugExporter
-  end
-
-  defmodule MetricsExporterCaller do
-    @behaviour Plug
-
-    def init(opts), do: opts
-
-    def call(conn, opts) do
-      prometheus_config = Application.get_env(:prometheus, MetricsExporter, [])
-      ip_whitelist = List.wrap(prometheus_config[:ip_whitelist])
-
-      cond do
-        !prometheus_config[:enabled] ->
-          conn
-
-        ip_whitelist != [] and
-            !Enum.find(ip_whitelist, fn ip ->
-              Pleroma.Helpers.InetHelper.parse_address(ip) == {:ok, conn.remote_ip}
-            end) ->
-          conn
-
-        true ->
-          MetricsExporter.call(conn, opts)
-      end
-    end
-  end
-
-  plug(PipelineInstrumenter)
-
-  plug(MetricsExporterCaller)
 
   plug(Pleroma.Web.Router)
 
