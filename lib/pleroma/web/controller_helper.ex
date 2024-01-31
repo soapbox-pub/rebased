@@ -53,10 +53,15 @@ defmodule Pleroma.Web.ControllerHelper do
     end
   end
 
+  # TODO: Only fetch the params from open_api_spex when everything is converted
   @id_keys Pagination.page_keys() -- ["limit", "order"]
   defp build_pagination_fields(conn, min_id, max_id, extra_params) do
     params =
-      conn.params
+      if Map.has_key?(conn.private, :open_api_spex) do
+        get_in(conn, [Access.key(:private), Access.key(:open_api_spex), Access.key(:params)])
+      else
+        conn.params
+      end
       |> Map.drop(Map.keys(conn.path_params) |> Enum.map(&String.to_existing_atom/1))
       |> Map.merge(extra_params)
       |> Map.drop(@id_keys)
@@ -85,8 +90,8 @@ defmodule Pleroma.Web.ControllerHelper do
     end
   end
 
-  def assign_account_by_id(conn, _) do
-    case Pleroma.User.get_cached_by_id(conn.params.id) do
+  def assign_account_by_id(%{private: %{open_api_spex: %{params: %{id: id}}}} = conn, _) do
+    case Pleroma.User.get_cached_by_id(id) do
       %Pleroma.User{} = account -> assign(conn, :account, account)
       nil -> Pleroma.Web.MastodonAPI.FallbackController.call(conn, {:error, :not_found}) |> halt()
     end
