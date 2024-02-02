@@ -141,7 +141,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
   end
 
   def id_param do
-    Operation.parameter(:id, :path, FlakeID, "Report ID",
+    Operation.parameter(:id, :path, FlakeID.schema(), "Report ID",
       example: "9umDrYheeY451cQnEe",
       required: true
     )

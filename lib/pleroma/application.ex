@@ -14,7 +14,6 @@ defmodule Pleroma.Application do
   @name Mix.Project.config()[:name]
   @version Mix.Project.config()[:version]
   @repository Mix.Project.config()[:source_url]
-  @mix_env Mix.env()
 
   def name, do: @name
   def version, do: @version
@@ -98,7 +97,7 @@ defmodule Pleroma.Application do
         {Task.Supervisor, name: Pleroma.TaskSupervisor}
       ] ++
         cachex_children() ++
-        http_children(adapter, @mix_env) ++
+        http_children(adapter) ++
         [
           Pleroma.Stats,
           Pleroma.JobQueueMonitor,
@@ -106,8 +105,9 @@ defmodule Pleroma.Application do
           {Oban, Config.get(Oban)},
           Pleroma.Web.Endpoint
         ] ++
-        task_children(@mix_env) ++
-        dont_run_in_test(@mix_env) ++
+        task_children() ++
+        streamer_registry() ++
+        background_migrators() ++
         shout_child(shout_enabled?()) ++
         [Pleroma.Gopher.Server]
 
@@ -116,12 +116,7 @@ defmodule Pleroma.Application do
     # If we have a lot of caches, default max_restarts can cause test
     # resets to fail.
     # Go for the default 3 unless we're in test
-    max_restarts =
-      if @mix_env == :test do
-        100
-      else
-        3
-      end
+    max_restarts = Application.get_env(:pleroma, __MODULE__)[:max_restarts]
 
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor, max_restarts: max_restarts]
     result = Supervisor.start_link(children, opts)
@@ -159,7 +154,7 @@ defmodule Pleroma.Application do
           raise "Invalid custom modules"
 
         {:ok, modules, _warnings} ->
-          if @mix_env != :test do
+          if Application.get_env(:pleroma, __MODULE__)[:load_custom_modules] do
             Enum.each(modules, fn mod ->
               Logger.info("Custom module loaded: #{inspect(mod)}")
             end)
@@ -213,24 +208,30 @@ defmodule Pleroma.Application do
 
   defp shout_enabled?, do: Config.get([:shout, :enabled])
 
-  defp dont_run_in_test(env) when env in [:test, :benchmark], do: []
-
-  defp dont_run_in_test(_) do
-    [
-      {Registry,
-       [
-         name: Pleroma.Web.Streamer.registry(),
-         keys: :duplicate,
-         partitions: System.schedulers_online()
-       ]}
-    ] ++ background_migrators()
+  defp streamer_registry do
+    if Application.get_env(:pleroma, __MODULE__)[:streamer_registry] do
+      [
+        {Registry,
+         [
+           name: Pleroma.Web.Streamer.registry(),
+           keys: :duplicate,
+           partitions: System.schedulers_online()
+         ]}
+      ]
+    else
+      []
+    end
   end
 
   defp background_migrators do
-    [
-      Pleroma.Migrators.HashtagsTableMigrator,
-      Pleroma.Migrators.ContextObjectsDeletionMigrator
-    ]
+    if Application.get_env(:pleroma, __MODULE__)[:background_migrators] do
+      [
+        Pleroma.Migrators.HashtagsTableMigrator,
+        Pleroma.Migrators.ContextObjectsDeletionMigrator
+      ]
+    else
+      []
+    end
   end
 
   defp shout_child(true) do
@@ -242,37 +243,43 @@ defmodule Pleroma.Application do
 
   defp shout_child(_), do: []
 
-  defp task_children(:test) do
-    [
+  defp task_children do
+    children = [
       %{
         id: :web_push_init,
         start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
         restart: :temporary
       }
     ]
-  end
 
-  defp task_children(_) do
-    [
-      %{
-        id: :web_push_init,
-        start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
-        restart: :temporary
-      },
-      %{
-        id: :internal_fetch_init,
-        start: {Task, :start_link, [&Pleroma.Web.ActivityPub.InternalFetchActor.init/0]},
-        restart: :temporary
-      }
-    ]
+    if Application.get_env(:pleroma, __MODULE__)[:internal_fetch] do
+      children ++
+        [
+          %{
+            id: :internal_fetch_init,
+            start: {Task, :start_link, [&Pleroma.Web.ActivityPub.InternalFetchActor.init/0]},
+            restart: :temporary
+          }
+        ]
+    else
+      children
+    end
   end
 
   # start hackney and gun pools in tests
-  defp http_children(_, :test) do
-    http_children(Tesla.Adapter.Hackney, nil) ++ http_children(Tesla.Adapter.Gun, nil)
+  defp http_children(adapter) do
+    if Application.get_env(:pleroma, __MODULE__)[:test_http_pools] do
+      http_children_hackney() ++ http_children_gun()
+    else
+      cond do
+        match?(Tesla.Adapter.Hackney, adapter) -> http_children_hackney()
+        match?(Tesla.Adapter.Gun, adapter) -> http_children_gun()
+        true -> []
+      end
+    end
   end
 
-  defp http_children(Tesla.Adapter.Hackney, _) do
+  defp http_children_hackney do
     pools = [:federation, :media]
 
     pools =
@@ -288,12 +295,10 @@ defmodule Pleroma.Application do
     end
   end
 
-  defp http_children(Tesla.Adapter.Gun, _) do
+  defp http_children_gun do
     Pleroma.Gun.ConnectionPool.children() ++
       [{Task, &Pleroma.HTTP.AdapterHelper.Gun.limiter_setup/0}]
   end
-
-  defp http_children(_, _), do: []
 
   @spec limiters_setup() :: :ok
   def limiters_setup do

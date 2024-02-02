@@ -20,5 +20,5 @@ defmodule Pleroma.Search.SearchBackend do
   is what contains the actual content and there is no need for filtering when removing
   from index.
   """
-  @callback remove_from_index(object :: Pleroma.Object.t()) :: {:ok, any()} | {:error, any()}
+  @callback remove_from_index(object :: Pleroma.Object.t()) :: :ok | {:error, any()}
 end

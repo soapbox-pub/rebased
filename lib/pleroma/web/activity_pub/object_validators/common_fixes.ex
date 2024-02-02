@@ -11,7 +11,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   alias Pleroma.Web.ActivityPub.Utils
 
   import Pleroma.EctoType.ActivityPub.ObjectValidators.LanguageCode,
-    only: [is_good_locale_code?: 1]
+    only: [good_locale_code?: 1]
 
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
@@ -104,7 +104,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   end
 
   def fix_quote_url(%{"tag" => [_ | _] = tags} = data) do
-    tag = Enum.find(tags, &is_object_link_tag/1)
+    tag = Enum.find(tags, &object_link_tag?/1)
 
     if not is_nil(tag) do
       data
@@ -117,7 +117,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   def fix_quote_url(data), do: data
 
   # https://codeberg.org/fediverse/fep/src/branch/main/fep/e232/fep-e232.md
-  def is_object_link_tag(%{
+  def object_link_tag?(%{
         "type" => "Link",
         "mediaType" => media_type,
         "href" => href
@@ -126,7 +126,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
     true
   end
 
-  def is_object_link_tag(_), do: false
+  def object_link_tag?(_), do: false
 
   def maybe_add_language_from_activity(object, activity) do
     language = get_language_from_context(activity)
@@ -144,7 +144,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
         get_language_from_context(object),
         get_language_from_content_map(object)
       ]
-      |> Enum.find(&is_good_locale_code?(&1))
+      |> Enum.find(&good_locale_code?(&1))
 
     if language do
       Map.put(object, "language", language)

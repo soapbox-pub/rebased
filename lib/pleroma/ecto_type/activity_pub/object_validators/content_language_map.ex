@@ -6,7 +6,7 @@ defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.ContentLanguageMap do
   use Ecto.Type
 
   import Pleroma.EctoType.ActivityPub.ObjectValidators.LanguageCode,
-    only: [is_good_locale_code?: 1]
+    only: [good_locale_code?: 1]
 
   def type, do: :map
 
@@ -30,7 +30,7 @@ defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.ContentLanguageMap do
       object
       |> Enum.reduce({:ok, %{}}, fn
         {lang, value}, {status, acc} when is_binary(lang) and is_binary(value) ->
-          if is_good_locale_code?(lang) do
+          if good_locale_code?(lang) do
             {status, Map.put(acc, lang, value)}
           else
             {:modified, acc}

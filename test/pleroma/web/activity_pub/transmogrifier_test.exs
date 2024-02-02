@@ -132,7 +132,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                assert {:ok, activity} = Transmogrifier.handle_incoming(message)
                object = Object.normalize(activity)
                assert [%{"type" => "Mention"}, %{"type" => "Link"}] = object.data["tag"]
-             end) =~ "Error while fetching"
+             end) =~ "Object rejected while fetching"
     end
 
     test "it accepts quote posts" do
@@ -410,7 +410,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert capture_log(fn ->
                {:error, _} = Transmogrifier.handle_incoming(data)
-             end) =~ "Object containment failed"
+             end) =~ "Object rejected while fetching"
     end
 
     test "it rejects activities which reference objects that have an incorrect attribution (variant 1)" do
@@ -425,7 +425,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert capture_log(fn ->
                {:error, _} = Transmogrifier.handle_incoming(data)
-             end) =~ "Object containment failed"
+             end) =~ "Object rejected while fetching"
     end
 
     test "it rejects activities which reference objects that have an incorrect attribution (variant 2)" do
@@ -440,7 +440,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert capture_log(fn ->
                {:error, _} = Transmogrifier.handle_incoming(data)
-             end) =~ "Object containment failed"
+             end) =~ "Object rejected while fetching"
     end
   end
 

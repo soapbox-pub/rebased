@@ -10,6 +10,7 @@ defmodule Pleroma.Mixfile do
       compilers: Mix.compilers(),
       elixirc_options: [warnings_as_errors: warnings_as_errors()],
       xref: [exclude: [:eldap]],
+      dialyzer: [plt_add_apps: [:mix, :eldap]],
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
@@ -184,6 +185,9 @@ defmodule Pleroma.Mixfile do
       {:vix, "~> 0.26.0"},
       {:elixir_make, "~> 0.7.7", override: true},
       {:blurhash, "~> 0.1.0", hex: :rinpatch_blurhash},
+      {:exile,
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/exile.git",
+       ref: "0d6337cf68e7fbc8a093cae000955aa93b067f91"},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
@@ -194,7 +198,8 @@ defmodule Pleroma.Mixfile do
       {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
       {:websockex, "~> 0.4.3", only: :test},
-      {:benchee, "~> 1.0", only: :benchmark}
+      {:benchee, "~> 1.0", only: :benchmark},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ] ++ oauth_deps()
   end
 

@@ -796,8 +796,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     URI.merge(page_url_data, image_url_data) |> to_string
   end
 
-  defp build_image_url(_, _), do: nil
-
   defp get_source_text(%{"content" => content} = _source) do
     content
   end

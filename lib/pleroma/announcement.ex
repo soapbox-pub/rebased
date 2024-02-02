@@ -23,19 +23,21 @@ defmodule Pleroma.Announcement do
     timestamps(type: :utc_datetime)
   end
 
-  def change(struct, params \\ %{}) do
-    struct
-    |> cast(validate_params(struct, params), [:data, :starts_at, :ends_at, :rendered])
+  @doc "Generates changeset for %Pleroma.Announcement{}"
+  @spec changeset(%__MODULE__{}, map()) :: %Ecto.Changeset{}
+  def changeset(announcement \\ %__MODULE__{}, params \\ %{data: %{}}) do
+    announcement
+    |> cast(validate_params(announcement, params), [:data, :starts_at, :ends_at, :rendered])
     |> validate_required([:data])
   end
 
-  defp validate_params(struct, params) do
+  defp validate_params(announcement, params) do
     base_data =
       %{
         "content" => "",
         "all_day" => false
       }
-      |> Map.merge((struct && struct.data) || %{})
+      |> Map.merge((announcement && announcement.data) || %{})
 
     merged_data =
       Map.merge(base_data, params.data)
@@ -61,13 +63,13 @@ defmodule Pleroma.Announcement do
   end
 
   def add(params) do
-    changeset = change(%__MODULE__{}, params)
+    changeset = changeset(%__MODULE__{}, params)
 
     Repo.insert(changeset)
   end
 
   def update(announcement, params) do
-    changeset = change(announcement, params)
+    changeset = changeset(announcement, params)
 
     Repo.update(changeset)
   end

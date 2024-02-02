@@ -28,7 +28,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   @doc """
   Enqueue publishing a single activity.
   """
-  @spec enqueue_one(Map.t(), Keyword.t()) :: {:ok, %Oban.Job{}}
+  @spec enqueue_one(map(), Keyword.t()) :: {:ok, %Oban.Job{}}
   def enqueue_one(%{} = params, worker_args \\ []) do
     PublisherWorker.enqueue(
       "publish_one",
@@ -66,7 +66,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   @doc """
   Determine if an activity can be represented by running it through Transmogrifier.
   """
-  def is_representable?(%Activity{} = activity) do
+  def representable?(%Activity{} = activity) do
     with {:ok, _data} <- Transmogrifier.prepare_outgoing(activity.data) do
       true
     else
@@ -246,7 +246,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
   def publish(%User{} = actor, %{data: %{"bcc" => bcc}} = activity)
       when is_list(bcc) and bcc != [] do
-    public = is_public?(activity)
+    public = public?(activity)
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
 
     [priority_recipients, recipients] = recipients(actor, activity)
@@ -291,7 +291,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
   # Publishes an activity to all relevant peers.
   def publish(%User{} = actor, %Activity{} = activity) do
-    public = is_public?(activity)
+    public = public?(activity)
 
     if public && Config.get([:instance, :allow_relay]) do
       Logger.debug(fn -> "Relaying #{activity.data["id"]} out" end)

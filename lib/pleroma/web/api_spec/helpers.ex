@@ -62,7 +62,7 @@ defmodule Pleroma.Web.ApiSpec.Helpers do
     Operation.parameter(
       :with_relationships,
       :query,
-      BooleanLike,
+      BooleanLike.schema(),
       "Embed relationships into accounts. **If this parameter is not set account's `pleroma.relationship` is going to be `null`.**"
     )
   end
