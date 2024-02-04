@@ -156,7 +156,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
         tags
       end
 
-    Pleroma.Pagination.paginate(tags, options)
+    Pleroma.Pagination.paginate_list(tags, options)
   end
 
   defp add_joined_tag(tags) do

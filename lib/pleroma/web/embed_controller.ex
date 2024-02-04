@@ -11,8 +11,6 @@ defmodule Pleroma.Web.EmbedController do
 
   alias Pleroma.Web.ActivityPub.Visibility
 
-  plug(:put_layout, :embed)
-
   def show(conn, %{"id" => id}) do
     with %Activity{local: true} = activity <-
            Activity.get_by_id_with_object(id),
