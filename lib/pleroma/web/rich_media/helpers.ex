@@ -27,8 +27,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
     |> parse_uri(page_url)
   end
 
-  defp validate_page_url(%URI{host: host, scheme: "https", authority: authority})
-       when is_binary(authority) do
+  defp validate_page_url(%URI{host: host, scheme: "https"}) do
     cond do
       host in @config_impl.get([:rich_media, :ignore_hosts], []) ->
         :error
