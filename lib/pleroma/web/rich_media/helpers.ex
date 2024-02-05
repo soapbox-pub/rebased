@@ -8,6 +8,8 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.Object
   alias Pleroma.Web.RichMedia.Parser
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
 
   @options [
@@ -71,7 +73,24 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   def fetch_data_for_activity(%Activity{data: %{"type" => "Create"}} = activity) do
     with true <- @config_impl.get([:rich_media, :enabled]),
          %Object{} = object <- Object.normalize(activity, fetch: false) do
-      fetch_data_for_object(object)
+      if object.data["fake"] do
+        fetch_data_for_object(object)
+      else
+        key = "URL|#{activity.id}"
+
+        @cachex.fetch!(:scrubber_cache, key, fn _ ->
+          result = fetch_data_for_object(object)
+
+          cond do
+            match?(%{page_url: _, rich_media: _}, result) ->
+              Activity.HTML.add_cache_key_for(activity.id, key)
+              {:commit, result}
+
+            true ->
+              {:ignore, %{}}
+          end
+        end)
+      end
     else
       _ -> %{}
     end
