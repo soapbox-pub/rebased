@@ -1549,7 +1549,8 @@ defmodule HttpRequestMock do
     "https://example.com/ogp-missing-data",
     "https://example.com/twitter-card",
     "https://google.com/",
-    "https://yahoo.com/"
+    "https://yahoo.com/",
+    "https://pleroma.local/notice/9kCP7V"
   ]
   def head(url, _query, _body, _headers) when url in @rich_media_mocks do
     {:ok, %Tesla.Env{status: 404, body: ""}}

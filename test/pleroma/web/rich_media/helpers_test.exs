@@ -111,8 +111,6 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
            )
   end
 
-  # This does not seem to work. The urls are being fetched.
-  @tag skip: true
   test "refuses to crawl URLs of private network from posts" do
     user = insert(:user)
 
@@ -130,10 +128,10 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
       path -> Pleroma.Test.StaticConfig.get(path)
     end)
 
-    assert %{} = Helpers.fetch_data_for_activity(activity)
-    assert %{} = Helpers.fetch_data_for_activity(activity2)
-    assert %{} = Helpers.fetch_data_for_activity(activity3)
-    assert %{} = Helpers.fetch_data_for_activity(activity4)
-    assert %{} = Helpers.fetch_data_for_activity(activity5)
+    assert %{} == Helpers.fetch_data_for_activity(activity)
+    assert %{} == Helpers.fetch_data_for_activity(activity2)
+    assert %{} == Helpers.fetch_data_for_activity(activity3)
+    assert %{} == Helpers.fetch_data_for_activity(activity4)
+    assert %{} == Helpers.fetch_data_for_activity(activity5)
   end
 end

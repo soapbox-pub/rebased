@@ -29,6 +29,9 @@ defmodule Pleroma.Web.RichMedia.Helpers do
 
   defp validate_page_url(%URI{host: host, scheme: "https"}) do
     cond do
+      Linkify.Parser.ip?(host) ->
+        :error
+
       host in @config_impl.get([:rich_media, :ignore_hosts], []) ->
         :error
 
