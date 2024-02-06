@@ -6,6 +6,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
   require Logger
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+  @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
 
   defp parsers do
     Pleroma.Config.get([:rich_media, :parsers])
@@ -15,7 +16,8 @@ defmodule Pleroma.Web.RichMedia.Parser do
 
   @spec parse(String.t()) :: {:ok, map()} | {:error, any()}
   def parse(url) do
-    with {:ok, data} <- get_cached_or_parse(url),
+    with :ok <- validate_page_url(url),
+         {:ok, data} <- get_cached_or_parse(url),
          {:ok, _} <- set_ttl_based_on_image(data, url) do
       {:ok, data}
     end
@@ -160,5 +162,47 @@ defmodule Pleroma.Web.RichMedia.Parser do
       not match?({:ok, _}, Jason.encode(%{key => val}))
     end)
     |> Map.new()
+  end
+
+  @spec validate_page_url(URI.t() | binary()) :: :ok | :error
+  defp validate_page_url(page_url) when is_binary(page_url) do
+    validate_tld = @config_impl.get([Pleroma.Formatter, :validate_tld])
+
+    page_url
+    |> Linkify.Parser.url?(validate_tld: validate_tld)
+    |> parse_uri(page_url)
+  end
+
+  defp validate_page_url(%URI{host: host, scheme: "https"}) do
+    cond do
+      Linkify.Parser.ip?(host) ->
+        :error
+
+      host in @config_impl.get([:rich_media, :ignore_hosts], []) ->
+        :error
+
+      get_tld(host) in @config_impl.get([:rich_media, :ignore_tld], []) ->
+        :error
+
+      true ->
+        :ok
+    end
+  end
+
+  defp validate_page_url(_), do: :error
+
+  defp parse_uri(true, url) do
+    url
+    |> URI.parse()
+    |> validate_page_url
+  end
+
+  defp parse_uri(_, _), do: :error
+
+  defp get_tld(host) do
+    host
+    |> String.split(".")
+    |> Enum.reverse()
+    |> hd
   end
 end
