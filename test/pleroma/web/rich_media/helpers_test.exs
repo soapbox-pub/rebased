@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.HelpersTest do
-  use Pleroma.DataCase, async: true
+  use Pleroma.DataCase, async: false
 
   alias Pleroma.StaticStubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.CommonAPI
@@ -14,7 +14,7 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
   import Tesla.Mock
 
   setup do
-    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
 
     ConfigMock
     |> stub(:get, fn
