@@ -39,7 +39,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
         Operation.parameter(
           :with_muted,
           :query,
-          BooleanLike,
+          BooleanLike.schema(),
           "Include reactions from muted acccounts."
         )
       ],
@@ -82,7 +82,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
         Operation.parameter(
           :with_muted,
           :query,
-          BooleanLike,
+          BooleanLike.schema(),
           "Include reactions from muted acccounts."
         )
       ],
@@ -685,7 +685,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
   end
 
   def id_param do
-    Operation.parameter(:id, :path, FlakeID, "Status ID",
+    Operation.parameter(:id, :path, FlakeID.schema(), "Status ID",
       example: "9umDrYheeY451cQnEe",
       required: true
     )

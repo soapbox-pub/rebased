@@ -111,7 +111,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
         {:ok, _} =
           :zip.unzip(binary_archive,
-            cwd: pack_path,
+            cwd: String.to_charlist(pack_path),
             file_list: files_to_unzip
           )
 

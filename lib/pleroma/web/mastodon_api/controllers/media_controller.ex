@@ -11,7 +11,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
   plug(Majic.Plug, [pool: Pleroma.MajicPool] when action in [:create, :create2])
-  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
 
   plug(OAuthScopesPlug, %{scopes: ["read:media"]} when action == :show)
   plug(OAuthScopesPlug, %{scopes: ["write:media"]} when action != :show)
@@ -19,7 +19,11 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.MediaOperation
 
   @doc "POST /api/v1/media"
-  def create(%{assigns: %{user: user}, body_params: %{file: file} = data} = conn, _) do
+  def create(
+        %{assigns: %{user: user}, private: %{open_api_spex: %{body_params: %{file: file} = data}}} =
+          conn,
+        _
+      ) do
     with {:ok, object} <-
            ActivityPub.upload(
              file,
@@ -35,7 +39,11 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
   def create(_conn, _data), do: {:error, :bad_request}
 
   @doc "POST /api/v2/media"
-  def create2(%{assigns: %{user: user}, body_params: %{file: file} = data} = conn, _) do
+  def create2(
+        %{assigns: %{user: user}, private: %{open_api_spex: %{body_params: %{file: file} = data}}} =
+          conn,
+        _
+      ) do
     with {:ok, object} <-
            ActivityPub.upload(
              file,
@@ -53,7 +61,15 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
   def create2(_conn, _data), do: {:error, :bad_request}
 
   @doc "PUT /api/v1/media/:id"
-  def update(%{assigns: %{user: user}, body_params: %{description: description}} = conn, %{id: id}) do
+  def update(
+        %{
+          assigns: %{user: user},
+          private: %{
+            open_api_spex: %{body_params: %{description: description}, params: %{id: id}}
+          }
+        } = conn,
+        _
+      ) do
     with %Object{} = object <- Object.get_by_id(id),
          :ok <- Object.authorize_access(object, user),
          {:ok, %Object{data: data}} <- Object.update_data(object, %{"name" => description}) do
@@ -66,7 +82,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
   def update(conn, data), do: show(conn, data)
 
   @doc "GET /api/v1/media/:id"
-  def show(%{assigns: %{user: user}} = conn, %{id: id}) do
+  def show(%{assigns: %{user: user}, private: %{open_api_spex: %{params: %{id: id}}}} = conn, _) do
     with %Object{data: data, id: object_id} = object <- Object.get_by_id(id),
          :ok <- Object.authorize_access(object, user) do
       attachment_data = Map.put(data, "id", object_id)

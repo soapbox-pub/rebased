@@ -1821,7 +1821,10 @@ defmodule Pleroma.User do
   @spec set_activation([User.t()], boolean()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def set_activation(users, status) when is_list(users) do
     Repo.transaction(fn ->
-      for user <- users, do: set_activation(user, status)
+      for user <- users do
+        {:ok, user} = set_activation(user, status)
+        user
+      end
     end)
   end
 
@@ -2438,9 +2441,9 @@ defmodule Pleroma.User do
 
   defp put_password_hash(changeset), do: changeset
 
-  def is_internal_user?(%User{nickname: nil}), do: true
-  def is_internal_user?(%User{local: true, nickname: "internal." <> _}), do: true
-  def is_internal_user?(_), do: false
+  def internal?(%User{nickname: nil}), do: true
+  def internal?(%User{local: true, nickname: "internal." <> _}), do: true
+  def internal?(_), do: false
 
   # A hack because user delete activities have a fake id for whatever reason
   # TODO: Get rid of this
@@ -2590,9 +2593,9 @@ defmodule Pleroma.User do
     cast(user, params, [:is_confirmed, :confirmation_token])
   end
 
-  @spec approval_changeset(User.t(), keyword()) :: Ecto.Changeset.t()
-  def approval_changeset(user, set_approval: approved?) do
-    cast(user, %{is_approved: approved?}, [:is_approved])
+  @spec approval_changeset(Ecto.Changeset.t(), keyword()) :: Ecto.Changeset.t()
+  def approval_changeset(changeset, set_approval: approved?) do
+    cast(changeset, %{is_approved: approved?}, [:is_approved])
   end
 
   @spec add_pinned_object_id(User.t(), String.t()) :: {:ok, User.t()} | {:error, term()}

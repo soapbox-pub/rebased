@@ -18,7 +18,7 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
 
   require Logger
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
   plug(OAuthScopesPlug, %{scopes: ["admin:read:reports"]} when action in [:index, :show])
 
   plug(
@@ -31,13 +31,13 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.ReportOperation
 
-  def index(conn, params) do
+  def index(%{private: %{open_api_spex: %{params: params}}} = conn, _) do
     reports = Utils.get_reports(params, params.page, params.page_size)
 
     render(conn, "index.json", reports: reports)
   end
 
-  def show(conn, %{id: id}) do
+  def show(%{private: %{open_api_spex: %{params: %{id: id}}}} = conn, _) do
     with %Activity{} = report <- Activity.get_report(id) do
       render(conn, "show.json", Report.extract_report_info(report))
     else
@@ -45,7 +45,13 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
     end
   end
 
-  def update(%{assigns: %{user: admin}, body_params: %{reports: reports}} = conn, _) do
+  def update(
+        %{
+          assigns: %{user: admin},
+          private: %{open_api_spex: %{body_params: %{reports: reports}}}
+        } = conn,
+        _
+      ) do
     result =
       Enum.map(reports, fn report ->
         case CommonAPI.update_report_state(report.id, report.state) do
@@ -73,9 +79,13 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
     end
   end
 
-  def notes_create(%{assigns: %{user: user}, body_params: %{content: content}} = conn, %{
-        id: report_id
-      }) do
+  def notes_create(
+        %{
+          assigns: %{user: user},
+          private: %{open_api_spex: %{body_params: %{content: content}, params: %{id: report_id}}}
+        } = conn,
+        _
+      ) do
     with {:ok, _} <- ReportNote.create(user.id, report_id, content),
          report <- Activity.get_by_id_with_user_actor(report_id) do
       ModerationLog.insert_log(%{
@@ -92,10 +102,20 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
     end
   end
 
-  def notes_delete(%{assigns: %{user: user}} = conn, %{
-        id: note_id,
-        report_id: report_id
-      }) do
+  def notes_delete(
+        %{
+          assigns: %{user: user},
+          private: %{
+            open_api_spex: %{
+              params: %{
+                id: note_id,
+                report_id: report_id
+              }
+            }
+          }
+        } = conn,
+        _
+      ) do
     with {:ok, note} <- ReportNote.destroy(note_id),
          report <- Activity.get_by_id_with_user_actor(report_id) do
       ModerationLog.insert_log(%{

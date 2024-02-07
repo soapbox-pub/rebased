@@ -74,22 +74,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp check_remote_limit(_), do: true
 
   def increase_note_count_if_public(actor, object) do
-    if is_public?(object), do: User.increase_note_count(actor), else: {:ok, actor}
+    if public?(object), do: User.increase_note_count(actor), else: {:ok, actor}
   end
 
   def decrease_note_count_if_public(actor, object) do
-    if is_public?(object), do: User.decrease_note_count(actor), else: {:ok, actor}
+    if public?(object), do: User.decrease_note_count(actor), else: {:ok, actor}
   end
 
   def update_last_status_at_if_public(actor, object) do
-    if is_public?(object), do: User.update_last_status_at(actor), else: {:ok, actor}
+    if public?(object), do: User.update_last_status_at(actor), else: {:ok, actor}
   end
 
   defp increase_replies_count_if_reply(%{
          "object" => %{"inReplyTo" => reply_ap_id} = object,
          "type" => "Create"
        }) do
-    if is_public?(object) do
+    if public?(object) do
       Object.increase_replies_count(reply_ap_id)
     end
   end
@@ -100,7 +100,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          "object" => %{"quoteUrl" => quote_ap_id} = object,
          "type" => "Create"
        }) do
-    if is_public?(object) do
+    if public?(object) do
       Object.increase_quotes_count(quote_ap_id)
     end
   end

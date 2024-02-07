@@ -258,7 +258,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
     Utils.add_announce_to_object(object, announced_object)
 
-    if !User.is_internal_user?(user) do
+    if !User.internal?(user) do
       Notification.create_notifications(object)
 
       ap_streamer().stream_out(object)
@@ -304,9 +304,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     result =
       case deleted_object do
         %Object{} ->
-          with {:ok, deleted_object, _activity} <- Object.delete(deleted_object),
+          with {_, {:ok, deleted_object, _activity}} <- {:object, Object.delete(deleted_object)},
                {_, actor} when is_binary(actor) <- {:actor, deleted_object.data["actor"]},
-               %User{} = user <- User.get_cached_by_ap_id(actor) do
+               {_, %User{} = user} <- {:user, User.get_cached_by_ap_id(actor)} do
             User.remove_pinned_object_id(user, deleted_object.data["id"])
 
             {:ok, user} = ActivityPub.decrease_note_count_if_public(user, deleted_object)
@@ -328,6 +328,17 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
             {:actor, _} ->
               @logger.error("The object doesn't have an actor: #{inspect(deleted_object)}")
               :no_object_actor
+
+            {:user, _} ->
+              @logger.error(
+                "The object's actor could not be resolved to a user: #{inspect(deleted_object)}"
+              )
+
+              :no_object_user
+
+            {:object, _} ->
+              @logger.error("The object could not be deleted: #{inspect(deleted_object)}")
+              {:error, object}
           end
 
         %User{} ->
@@ -569,7 +580,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
   def handle_undoing(object), do: {:error, ["don't know how to handle", object]}
 
-  @spec delete_object(Object.t()) :: :ok | {:error, Ecto.Changeset.t()}
+  @spec delete_object(Activity.t()) :: :ok | {:error, Ecto.Changeset.t()}
   defp delete_object(object) do
     with {:ok, _} <- Repo.delete(object), do: :ok
   end

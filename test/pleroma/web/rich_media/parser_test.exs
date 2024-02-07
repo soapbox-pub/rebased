@@ -3,95 +3,26 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.ParserTest do
-  use ExUnit.Case, async: true
+  use Pleroma.DataCase, async: false
 
   alias Pleroma.Web.RichMedia.Parser
 
+  import Tesla.Mock
+
   setup do
-    Tesla.Mock.mock(fn
-      %{
-        method: :get,
-        url: "http://example.com/ogp"
-      } ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}
-
-      %{
-        method: :get,
-        url: "http://example.com/non-ogp"
-      } ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/non_ogp_embed.html")}
-
-      %{
-        method: :get,
-        url: "http://example.com/ogp-missing-title"
-      } ->
-        %Tesla.Env{
-          status: 200,
-          body: File.read!("test/fixtures/rich_media/ogp-missing-title.html")
-        }
-
-      %{
-        method: :get,
-        url: "http://example.com/twitter-card"
-      } ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/twitter_card.html")}
-
-      %{
-        method: :get,
-        url: "http://example.com/oembed"
-      } ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/oembed.html")}
-
-      %{
-        method: :get,
-        url: "http://example.com/oembed.json"
-      } ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/oembed.json")}
-
-      %{method: :get, url: "http://example.com/empty"} ->
-        %Tesla.Env{status: 200, body: "hello"}
-
-      %{method: :get, url: "http://example.com/malformed"} ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/malformed-data.html")}
-
-      %{method: :get, url: "http://example.com/error"} ->
-        {:error, :overload}
-
-      %{
-        method: :head,
-        url: "http://example.com/huge-page"
-      } ->
-        %Tesla.Env{
-          status: 200,
-          headers: [{"content-length", "2000001"}, {"content-type", "text/html"}]
-        }
-
-      %{
-        method: :head,
-        url: "http://example.com/pdf-file"
-      } ->
-        %Tesla.Env{
-          status: 200,
-          headers: [{"content-length", "1000000"}, {"content-type", "application/pdf"}]
-        }
-
-      %{method: :head} ->
-        %Tesla.Env{status: 404, body: "", headers: []}
-    end)
-
-    :ok
+    mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
   end
 
   test "returns error when no metadata present" do
-    assert {:error, _} = Parser.parse("http://example.com/empty")
+    assert {:error, _} = Parser.parse("https://example.com/empty")
   end
 
   test "doesn't just add a title" do
-    assert {:error, {:invalid_metadata, _}} = Parser.parse("http://example.com/non-ogp")
+    assert {:error, {:invalid_metadata, _}} = Parser.parse("https://example.com/non-ogp")
   end
 
   test "parses ogp" do
-    assert Parser.parse("http://example.com/ogp") ==
+    assert Parser.parse("https://example.com/ogp") ==
              {:ok,
               %{
                 "image" => "http://ia.media-imdb.com/images/rock.jpg",
@@ -99,12 +30,12 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
                 "description" =>
                   "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
                 "type" => "video.movie",
-                "url" => "http://example.com/ogp"
+                "url" => "https://example.com/ogp"
               }}
   end
 
   test "falls back to <title> when ogp:title is missing" do
-    assert Parser.parse("http://example.com/ogp-missing-title") ==
+    assert Parser.parse("https://example.com/ogp-missing-title") ==
              {:ok,
               %{
                 "image" => "http://ia.media-imdb.com/images/rock.jpg",
@@ -112,12 +43,12 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
                 "description" =>
                   "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
                 "type" => "video.movie",
-                "url" => "http://example.com/ogp-missing-title"
+                "url" => "https://example.com/ogp-missing-title"
               }}
   end
 
   test "parses twitter card" do
-    assert Parser.parse("http://example.com/twitter-card") ==
+    assert Parser.parse("https://example.com/twitter-card") ==
              {:ok,
               %{
                 "card" => "summary",
@@ -125,12 +56,12 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
                 "image" => "https://farm6.staticflickr.com/5510/14338202952_93595258ff_z.jpg",
                 "title" => "Small Island Developing States Photo Submission",
                 "description" => "View the album on Flickr.",
-                "url" => "http://example.com/twitter-card"
+                "url" => "https://example.com/twitter-card"
               }}
   end
 
   test "parses OEmbed and filters HTML tags" do
-    assert Parser.parse("http://example.com/oembed") ==
+    assert Parser.parse("https://example.com/oembed") ==
              {:ok,
               %{
                 "author_name" => "\u202E\u202D\u202Cbees\u202C",
@@ -150,7 +81,7 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
                 "thumbnail_width" => 150,
                 "title" => "Bacon Lollys",
                 "type" => "photo",
-                "url" => "http://example.com/oembed",
+                "url" => "https://example.com/oembed",
                 "version" => "1.0",
                 "web_page" => "https://www.flickr.com/photos/bees/2362225867/",
                 "web_page_short_url" => "https://flic.kr/p/4AK2sc",
@@ -159,18 +90,18 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
   end
 
   test "rejects invalid OGP data" do
-    assert {:error, _} = Parser.parse("http://example.com/malformed")
+    assert {:error, _} = Parser.parse("https://example.com/malformed")
   end
 
   test "returns error if getting page was not successful" do
-    assert {:error, :overload} = Parser.parse("http://example.com/error")
+    assert {:error, :overload} = Parser.parse("https://example.com/error")
   end
 
   test "does a HEAD request to check if the body is too large" do
-    assert {:error, :body_too_large} = Parser.parse("http://example.com/huge-page")
+    assert {:error, :body_too_large} = Parser.parse("https://example.com/huge-page")
   end
 
   test "does a HEAD request to check if the body is html" do
-    assert {:error, {:content_type, _}} = Parser.parse("http://example.com/pdf-file")
+    assert {:error, {:content_type, _}} = Parser.parse("https://example.com/pdf-file")
   end
 end

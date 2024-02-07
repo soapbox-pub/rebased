@@ -239,7 +239,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user)
       {:ok, post} = CommonAPI.post(user, %{status: "test", visibility: "local"})
 
-      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+      assert Pleroma.Web.ActivityPub.Visibility.local_public?(post)
 
       object = Object.normalize(post, fetch: false)
       uuid = String.split(object.data["id"], "/") |> List.last()
@@ -256,7 +256,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user)
       {:ok, post} = CommonAPI.post(user, %{status: "test", visibility: "local"})
 
-      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+      assert Pleroma.Web.ActivityPub.Visibility.local_public?(post)
 
       object = Object.normalize(post, fetch: false)
       uuid = String.split(object.data["id"], "/") |> List.last()
@@ -277,7 +277,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       {:ok, post} =
         CommonAPI.post(user, %{status: "test @#{reader.nickname}", visibility: "local"})
 
-      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+      assert Pleroma.Web.ActivityPub.Visibility.local_public?(post)
 
       object = Object.normalize(post, fetch: false)
       uuid = String.split(object.data["id"], "/") |> List.last()
@@ -454,7 +454,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user)
       {:ok, post} = CommonAPI.post(user, %{status: "test", visibility: "local"})
 
-      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+      assert Pleroma.Web.ActivityPub.Visibility.local_public?(post)
 
       uuid = String.split(post.data["id"], "/") |> List.last()
 
@@ -470,7 +470,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user)
       {:ok, post} = CommonAPI.post(user, %{status: "test", visibility: "local"})
 
-      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+      assert Pleroma.Web.ActivityPub.Visibility.local_public?(post)
 
       uuid = String.split(post.data["id"], "/") |> List.last()
 
