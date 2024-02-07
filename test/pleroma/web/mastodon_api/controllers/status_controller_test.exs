@@ -336,13 +336,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         path -> Pleroma.Test.StaticConfig.get(path)
       end)
 
-      Tesla.Mock.mock(fn
-        %{
-          method: :get,
-          url: "https://example.com/twitter-card"
-        } ->
-          %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/twitter_card.html")}
-
+      Tesla.Mock.mock_global(fn
         env ->
           apply(HttpRequestMock, :request, [env])
       end)
