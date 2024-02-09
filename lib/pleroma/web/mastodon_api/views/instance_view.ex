@@ -129,7 +129,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         "profile_directory"
       end,
       "pleroma:get:main/ostatus",
-      "pleroma:group_actors"
+      "pleroma:group_actors",
+      "multitenancy"
     ]
     |> Enum.filter(& &1)
   end
