@@ -59,7 +59,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   defp http_options() do
     [
       pool: :media,
-      max_body: Config.get([:rich_media, :max_body], 2_000_000)
+      max_body: Config.get([:rich_media, :max_body], 5_000_000)
     ]
   end
 end
