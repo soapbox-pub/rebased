@@ -25,6 +25,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
+  alias Pleroma.Web.RichMedia.Card
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
 
@@ -480,9 +481,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
         _
       ) do
     with %Activity{} = activity <- Activity.get_by_id(status_id),
-         true <- Visibility.visible_for_user?(activity, user) do
-      data = Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
-      render(conn, "card.json", data)
+         true <- Visibility.visible_for_user?(activity, user),
+         %Card{} = card_data <- Card.get_by_activity(activity) do
+      render(conn, "card.json", card_data)
     else
       _ -> render_error(conn, :not_found, "Record not found")
     end

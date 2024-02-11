@@ -174,6 +174,8 @@ config :pleroma, Pleroma.Uploaders.Uploader, timeout: 1_000
 
 config :pleroma, Pleroma.Emoji.Loader, test_emoji: true
 
+config :pleroma, Pleroma.Web.RichMedia.Backfill, provider: Pleroma.Web.RichMedia.Backfill
+
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
 else
