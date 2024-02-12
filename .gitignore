@@ -57,5 +57,6 @@ pleroma.iml
 .tool-versions
 
 # Editor temp files
-/*~
-/*#
+*~
+*#
+*.swp
