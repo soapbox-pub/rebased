@@ -11,6 +11,16 @@ defmodule Pleroma.Language.Translation do
     !!provider and provider.configured?
   end
 
+  def missing_dependencies do
+    provider = get_provider()
+
+    if provider do
+      provider.missing_dependencies()
+    else
+      []
+    end
+  end
+
   def translate(text, source_language, target_language) do
     cache_key = get_cache_key(text, source_language, target_language)
 
