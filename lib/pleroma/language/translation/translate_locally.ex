@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2024 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Language.Translation.TranslateLocally do
@@ -71,16 +71,24 @@ defmodule Pleroma.Language.Translation.TranslateLocally do
 
   @impl Provider
   def supported_languages(:source) do
-    languages_matrix()
-    |> Map.keys()
+    languages =
+      languages_matrix()
+      |> elem(1)
+      |> Map.keys()
+
+    {:ok, languages}
   end
 
   @impl Provider
   def supported_languages(:target) do
-    languages_matrix()
-    |> Map.values()
-    |> List.flatten()
-    |> Enum.uniq()
+    languages =
+      languages_matrix()
+      |> elem(1)
+      |> Map.values()
+      |> List.flatten()
+      |> Enum.uniq()
+
+    {:ok, languages}
   end
 
   @impl Provider
@@ -91,21 +99,25 @@ defmodule Pleroma.Language.Translation.TranslateLocally do
       |> Enum.map(fn {key, value} -> {key, Map.keys(value)} end)
       |> Enum.into(%{})
 
-    if intermediary_language() do
-      languages
-      |> Map.to_list()
-      |> Enum.map(fn {key, value} ->
-        with_intermediary =
-          ((value ++ languages[intermediary_language()])
-           |> Enum.uniq()) --
-            [intermediary_language()]
+    matrix =
+      if intermediary_language() do
+        languages
+        |> Map.to_list()
+        |> Enum.map(fn {key, value} ->
+          with_intermediary =
+            (((value ++ languages[intermediary_language()])
+              |> Enum.uniq()) --
+               [key])
+            |> Enum.sort()
 
-        {key, with_intermediary}
-      end)
-      |> Enum.into(%{})
-    else
-      languages
-    end
+          {key, with_intermediary}
+        end)
+        |> Enum.into(%{})
+      else
+        languages
+      end
+
+    {:ok, matrix}
   end
 
   @impl Provider
