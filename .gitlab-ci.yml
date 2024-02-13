@@ -117,7 +117,7 @@ review:
   only:
     - branches
   except:
-    - develop
+    - main
   variables:
     GIT_REMOTE_URL: ssh://dokku@$DOKKU_HOST/rebased-$CI_COMMIT_REF_SLUG
     GIT_PUSH_FLAGS: --force
@@ -140,7 +140,7 @@ release:
   cache: {}
   only:
     refs:
-      - develop
+      - main
     changes: *elixir-changes
 
 docker:
@@ -158,4 +158,4 @@ docker:
     - docker push $CI_REGISTRY_IMAGE
   only:
     refs:
-      - develop
+      - main
