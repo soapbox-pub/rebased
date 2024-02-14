@@ -7,6 +7,8 @@ defmodule Pleroma.Language.Translation.Libretranslate do
 
   alias Pleroma.Language.Translation.Provider
 
+  use Provider
+
   @behaviour Provider
 
   @name "LibreTranslate"
