@@ -9,6 +9,15 @@ defmodule Pleroma.Web.Endpoint do
 
   alias Pleroma.Config
 
+  socket("/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler,
+    longpoll: false,
+    websocket: [
+      path: "/",
+      compress: false,
+      error_handler: {Pleroma.Web.MastodonAPI.WebsocketHandler, :handle_error, []}
+    ]
+  )
+
   socket("/socket", Pleroma.Web.UserSocket,
     websocket: [
       path: "/websocket",
