@@ -21,7 +21,7 @@ defmodule Pleroma.Config.ReleaseRuntimeProvider do
     with_runtime_config =
       if File.exists?(config_path) do
         # <https://git.pleroma.social/pleroma/pleroma/-/issues/3135>
-        %File.Stat{mode: mode} = File.lstat!(config_path)
+        %File.Stat{mode: mode} = File.stat!(config_path)
 
         if Bitwise.band(mode, 0o007) > 0 do
           raise "Configuration at #{config_path} has world-permissions, execute the following: chmod o= #{config_path}"
