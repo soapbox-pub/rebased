@@ -188,6 +188,7 @@ defmodule Pleroma.Mixfile do
       {:exile,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/exile.git",
        ref: "0d6337cf68e7fbc8a093cae000955aa93b067f91"},
+      {:bandit, "~> 1.2"},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
