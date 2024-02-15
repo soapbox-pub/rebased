@@ -32,7 +32,8 @@ defmodule Pleroma.Web.Endpoint do
   plug(Pleroma.Web.Plugs.HTTPSecurityPlug)
   plug(Pleroma.Web.Plugs.UploadedMedia)
 
-  @static_cache_control "public, no-cache"
+  @static_cache_control "public, max-age=1209600"
+  @static_cache_disabled "public, no-cache"
 
   # InstanceStatic needs to be before Plug.Static to be able to override shipped-static files
   # If you're adding new paths to `only:` you'll need to configure them in InstanceStatic as well
@@ -43,22 +44,32 @@ defmodule Pleroma.Web.Endpoint do
     from: :pleroma,
     only: ["emoji", "images"],
     gzip: true,
-    cache_control_for_etags: "public, max-age=1209600",
-    headers: %{
-      "cache-control" => "public, max-age=1209600"
-    }
-  )
-
-  plug(Pleroma.Web.Plugs.InstanceStatic,
-    at: "/",
-    gzip: true,
     cache_control_for_etags: @static_cache_control,
     headers: %{
       "cache-control" => @static_cache_control
     }
   )
 
-  # Careful! No `only` restriction here, as we don't know what frontends contain.
+  plug(Pleroma.Web.Plugs.InstanceStatic,
+    at: "/",
+    gzip: true,
+    cache_control_for_etags: @static_cache_disabled,
+    headers: %{
+      "cache-control" => @static_cache_disabled
+    }
+  )
+
+  plug(Pleroma.Web.Plugs.FrontendStatic,
+    at: "/",
+    frontend_type: :primary,
+    only: ["index.html"],
+    gzip: true,
+    cache_control_for_etags: @static_cache_disabled,
+    headers: %{
+      "cache-control" => @static_cache_disabled
+    }
+  )
+
   plug(Pleroma.Web.Plugs.FrontendStatic,
     at: "/",
     frontend_type: :primary,
@@ -75,9 +86,9 @@ defmodule Pleroma.Web.Endpoint do
     at: "/pleroma/admin",
     frontend_type: :admin,
     gzip: true,
-    cache_control_for_etags: @static_cache_control,
+    cache_control_for_etags: @static_cache_disabled,
     headers: %{
-      "cache-control" => @static_cache_control
+      "cache-control" => @static_cache_disabled
     }
   )
 
@@ -92,9 +103,9 @@ defmodule Pleroma.Web.Endpoint do
     only: Pleroma.Constants.static_only_files(),
     # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
     gzip: true,
-    cache_control_for_etags: @static_cache_control,
+    cache_control_for_etags: @static_cache_disabled,
     headers: %{
-      "cache-control" => @static_cache_control
+      "cache-control" => @static_cache_disabled
     }
   )
 
