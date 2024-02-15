@@ -137,7 +137,7 @@ defmodule Pleroma.Mixfile do
       {:calendar, "~> 1.0"},
       {:cachex, "~> 3.2"},
       {:poison, "~> 3.0", override: true},
-      {:tesla, "~> 1.4.0", override: true},
+      {:tesla, "~> 1.8.0"},
       {:castore, "~> 0.1"},
       {:cowlib, "~> 2.9", override: true},
       {:gun, "~> 2.0.0-rc.1", override: true},

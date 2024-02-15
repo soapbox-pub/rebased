@@ -23,5 +23,6 @@ collectType change Changed
 collectType add Added
 collectType fix Fixed
 collectType remove Removed
+collectType deps Dependencies
 
 rm changelog.d/*

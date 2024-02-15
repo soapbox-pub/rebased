@@ -6,7 +6,7 @@ git remote add upstream https://git.pleroma.social/pleroma/pleroma.git
 git fetch upstream ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}:refs/remotes/upstream/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME
 
 git diff --raw --no-renames upstream/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME HEAD -- changelog.d | \
-    grep ' A\t' | grep '\.\(skip\|add\|remove\|fix\|security\|change\)$'
+    grep ' A\t' | grep '\.\(add\|change\|deps\|fix\|remove\|security\)$'
 ret=$?
 
 if [ $ret -eq 0 ]; then
