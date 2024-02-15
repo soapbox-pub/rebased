@@ -114,14 +114,7 @@ config :pleroma, :uri_schemes,
 config :pleroma, Pleroma.Web.Endpoint,
   url: [host: "localhost"],
   http: [
-    ip: {127, 0, 0, 1},
-    dispatch: [
-      {:_,
-       [
-         {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
-         {:_, Plug.Cowboy.Handler, {Pleroma.Web.Endpoint, []}}
-       ]}
-    ]
+    ip: {127, 0, 0, 1}
   ],
   protocol: "https",
   secret_key_base: "aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl",
