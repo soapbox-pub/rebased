@@ -14,7 +14,8 @@ defmodule Pleroma.Web.Endpoint do
     websocket: [
       path: "/",
       compress: false,
-      error_handler: {Pleroma.Web.MastodonAPI.WebsocketHandler, :handle_error, []}
+      error_handler: {Pleroma.Web.MastodonAPI.WebsocketHandler, :handle_error, []},
+      fullsweep_after: 20
     ]
   )
 
@@ -27,7 +28,8 @@ defmodule Pleroma.Web.Endpoint do
       ],
       timeout: 60_000,
       transport_log: false,
-      compress: false
+      compress: false,
+      fullsweep_after: 20
     ],
     longpoll: false
   )
