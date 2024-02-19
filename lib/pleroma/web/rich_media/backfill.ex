@@ -78,8 +78,8 @@ defmodule Pleroma.Web.RichMedia.Backfill do
   end
 
   defp maybe_schedule_expiration(url, fields) do
-    case TTL.get_from_image(fields, url) do
-      ttl when is_number(ttl) ->
+    case TTL.process(fields, url) do
+      {:ok, ttl} when is_number(ttl) ->
         timestamp = DateTime.from_unix!(ttl)
 
         RichMediaExpirationWorker.new(%{"url" => url}, scheduled_at: timestamp)

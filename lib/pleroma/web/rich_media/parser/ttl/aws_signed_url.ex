@@ -15,7 +15,7 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl do
       |> format_query_params()
       |> get_expiration_timestamp()
     else
-      {:error, "Not aws signed url #{inspect(image)}"}
+      nil
     end
   end
 

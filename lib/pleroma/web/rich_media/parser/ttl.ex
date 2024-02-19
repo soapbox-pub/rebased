@@ -5,15 +5,16 @@
 defmodule Pleroma.Web.RichMedia.Parser.TTL do
   @callback ttl(map(), String.t()) :: integer() | nil
 
-  def get_from_image(data, url) do
+  @spec process(map(), String.t()) :: {:ok, integer() | nil}
+  def process(data, url) do
     [:rich_media, :ttl_setters]
     |> Pleroma.Config.get()
-    |> Enum.reduce({:ok, nil}, fn
-      module, {:ok, _ttl} ->
-        module.ttl(data, url)
-
-      _, error ->
-        error
+    |> Enum.reduce_while({:ok, nil}, fn
+      module, acc ->
+        case module.ttl(data, url) do
+          ttl when is_number(ttl) -> {:halt, {:ok, ttl}}
+          _ -> {:cont, acc}
+        end
     end)
   end
 end
