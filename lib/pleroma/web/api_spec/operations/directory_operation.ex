@@ -29,7 +29,7 @@ defmodule Pleroma.Web.ApiSpec.DirectoryOperation do
             "Order by recent activity or account creation",
             required: nil
           ),
-          Operation.parameter(:local, :query, BooleanLike, "Include local users only")
+          Operation.parameter(:local, :query, BooleanLike.schema(), "Include local users only")
         ] ++ pagination_params(),
       responses: %{
         200 =>

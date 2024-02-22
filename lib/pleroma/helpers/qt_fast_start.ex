@@ -126,9 +126,15 @@ defmodule Pleroma.Helpers.QtFastStart do
            <<pos::integer-big-size(unquote(size)), rest::bits>>,
            acc
          ) do
-      rewrite_entries(unquote(size), offset, rest, [
-        acc | <<pos + offset::integer-big-size(unquote(size))>>
-      ])
+      rewrite_entries(
+        unquote(size),
+        offset,
+        rest,
+        acc ++
+          [
+            <<pos + offset::integer-big-size(unquote(size))>>
+          ]
+      )
     end
   end
 

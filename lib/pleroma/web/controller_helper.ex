@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ControllerHelper do
     |> json(json)
   end
 
-  @spec fetch_integer_param(map(), String.t(), integer() | nil) :: integer() | nil
+  @spec fetch_integer_param(map(), String.t() | atom(), integer() | nil) :: integer() | nil
   def fetch_integer_param(params, name, default \\ nil) do
     params
     |> Map.get(name, default)
@@ -53,10 +53,15 @@ defmodule Pleroma.Web.ControllerHelper do
     end
   end
 
+  # TODO: Only fetch the params from open_api_spex when everything is converted
   @id_keys Pagination.page_keys() -- ["limit", "order"]
   defp build_pagination_fields(conn, min_id, max_id, extra_params) do
     params =
-      conn.params
+      if Map.has_key?(conn.private, :open_api_spex) do
+        get_in(conn, [Access.key(:private), Access.key(:open_api_spex), Access.key(:params)])
+      else
+        conn.params
+      end
       |> Map.drop(Map.keys(conn.path_params) |> Enum.map(&String.to_existing_atom/1))
       |> Map.merge(extra_params)
       |> Map.drop(@id_keys)
@@ -85,18 +90,15 @@ defmodule Pleroma.Web.ControllerHelper do
     end
   end
 
-  def assign_account_by_id(conn, _) do
-    case Pleroma.User.get_cached_by_id(conn.params.id) do
+  def assign_account_by_id(%{private: %{open_api_spex: %{params: %{id: id}}}} = conn, _) do
+    case Pleroma.User.get_cached_by_id(id) do
       %Pleroma.User{} = account -> assign(conn, :account, account)
       nil -> Pleroma.Web.MastodonAPI.FallbackController.call(conn, {:error, :not_found}) |> halt()
     end
   end
 
   def try_render(conn, target, params) when is_binary(target) do
-    case render(conn, target, params) do
-      nil -> render_error(conn, :not_implemented, "Can't display this activity")
-      res -> res
-    end
+    render(conn, target, params)
   end
 
   def try_render(conn, _, _) do

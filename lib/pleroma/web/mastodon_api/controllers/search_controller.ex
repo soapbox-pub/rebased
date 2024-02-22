@@ -18,7 +18,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
 
   @search_limit 40
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
 
   # Note: Mastodon doesn't allow unauthenticated access (requires read:accounts / read:search)
   plug(OAuthScopesPlug, %{scopes: ["read:search"], fallback: :proceed_unauthenticated})
@@ -29,7 +29,11 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.SearchOperation
 
-  def account_search(%{assigns: %{user: user}} = conn, %{q: query} = params) do
+  def account_search(
+        %{assigns: %{user: user}, private: %{open_api_spex: %{params: %{q: query} = params}}} =
+          conn,
+        _
+      ) do
     accounts = User.search(query, search_options(params, user))
 
     conn
@@ -44,7 +48,12 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   def search2(conn, params), do: do_search(:v2, conn, params)
   def search(conn, params), do: do_search(:v1, conn, params)
 
-  defp do_search(version, %{assigns: %{user: user}} = conn, %{q: query} = params) do
+  defp do_search(
+         version,
+         %{assigns: %{user: user}, private: %{open_api_spex: %{params: %{q: query} = params}}} =
+           conn,
+         _
+       ) do
     query = String.trim(query)
     options = search_options(params, user)
     timeout = Keyword.get(Repo.config(), :timeout, 15_000)
@@ -147,7 +156,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
         tags
       end
 
-    Pleroma.Pagination.paginate(tags, options)
+    Pleroma.Pagination.paginate_list(tags, options)
   end
 
   defp add_joined_tag(tags) do

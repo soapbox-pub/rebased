@@ -71,7 +71,7 @@ defmodule Pleroma.User.Query do
   @equal_criteria [:email]
   @contains_criteria [:ap_id, :nickname]
 
-  @spec build(Query.t(), criteria()) :: Query.t()
+  @spec build(Ecto.Query.t(), criteria()) :: Ecto.Query.t()
   def build(query \\ base_query(), criteria) do
     prepare_query(query, criteria)
   end

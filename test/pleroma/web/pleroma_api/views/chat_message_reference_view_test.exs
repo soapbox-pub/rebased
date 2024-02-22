@@ -49,6 +49,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
       :chat_message_id_idempotency_key_cache, ^id -> {:ok, "123"}
       cache, key -> NullCache.get(cache, key)
     end)
+    |> stub(:fetch, fn :rich_media_cache, _, _ -> {:ok, {:ok, %{}}} end)
 
     chat_message = MessageReferenceView.render("show.json", chat_message_reference: cm_ref)
 

@@ -336,10 +336,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_tag(object), do: object
 
-  def fix_content_map(%{"contentMap" => nil} = object) do
-    Map.drop(object, ["contentMap"])
-  end
-
   # content map usually only has one language so this will do for now.
   def fix_content_map(%{"contentMap" => content_map} = object) do
     content_groups = Map.to_list(content_map)
@@ -783,7 +779,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       |> Object.normalize(fetch: false)
 
     data =
-      if Visibility.is_private?(object) && object.data["actor"] == ap_id do
+      if Visibility.private?(object) && object.data["actor"] == ap_id do
         data |> Map.put("object", object |> Map.get(:data) |> prepare_object)
       else
         data |> maybe_fix_object_url

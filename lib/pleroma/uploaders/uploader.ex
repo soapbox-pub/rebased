@@ -5,8 +5,6 @@
 defmodule Pleroma.Uploaders.Uploader do
   import Pleroma.Web.Gettext
 
-  @mix_env Mix.env()
-
   @moduledoc """
   Defines the contract to put and get an uploaded file to any backend.
   """
@@ -75,10 +73,5 @@ defmodule Pleroma.Uploaders.Uploader do
     end
   end
 
-  defp callback_timeout do
-    case @mix_env do
-      :test -> 1_000
-      _ -> 30_000
-    end
-  end
+  defp callback_timeout, do: Application.get_env(:pleroma, __MODULE__)[:timeout]
 end

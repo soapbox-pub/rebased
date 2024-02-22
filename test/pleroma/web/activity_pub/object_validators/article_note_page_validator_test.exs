@@ -93,6 +93,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
     %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
   end
 
+  test "a Note from Convergence AP Bridge validates" do
+    insert(:user, ap_id: "https://cc.mkdir.uk/ap/acct/hiira")
+
+    note =
+      "test/fixtures/ccworld-ap-bridge_note.json"
+      |> File.read!()
+      |> Jason.decode!()
+
+    %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
+  end
+
   test "a note with an attachment should work", _ do
     insert(:user, %{ap_id: "https://owncast.localhost.localdomain/federation/user/streamer"})
 
