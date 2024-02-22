@@ -129,6 +129,10 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
           _ -> {:error, e}
         end
 
+      {:error, :pool_full} ->
+        Logger.debug("Publisher snoozing worker job due to full connection pool")
+        {:snooze, 30}
+
       e ->
         unless params[:unreachable_since], do: Instances.set_unreachable(inbox)
         Logger.metadata(activity: id, inbox: inbox)
