@@ -1059,7 +1059,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://example.com/malformed", _, _, _) do
+  def get("https://example.com/malformed", _, _, _) do
     {:ok,
      %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/malformed-data.html")}}
   end
@@ -1464,6 +1464,45 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://google.com/", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/google.html")}}
+  end
+
+  def get("https://yahoo.com/", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/yahoo.html")}}
+  end
+
+  def get("https://example.com/error", _, _, _), do: {:error, :overload}
+
+  def get("https://example.com/ogp-missing-title", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/rich_media/ogp-missing-title.html")
+     }}
+  end
+
+  def get("https://example.com/oembed", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/oembed.html")}}
+  end
+
+  def get("https://example.com/oembed.json", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/oembed.json")}}
+  end
+
+  def get("https://example.com/twitter-card", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/twitter_card.html")}}
+  end
+
+  def get("https://example.com/non-ogp", _, _, _) do
+    {:ok,
+     %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/non_ogp_embed.html")}}
+  end
+
+  def get("https://example.com/empty", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: "hello"}}
+  end
+
   def get(url, query, body, headers) do
     {:error,
      "Mock response not implemented for GET #{inspect(url)}, #{query}, #{inspect(body)}, #{inspect(headers)}"}
@@ -1537,12 +1576,39 @@ defmodule HttpRequestMock do
 
   # Most of the rich media mocks are missing HEAD requests, so we just return 404.
   @rich_media_mocks [
+    "https://example.com/empty",
+    "https://example.com/error",
+    "https://example.com/malformed",
+    "https://example.com/non-ogp",
+    "https://example.com/oembed",
+    "https://example.com/oembed.json",
     "https://example.com/ogp",
     "https://example.com/ogp-missing-data",
-    "https://example.com/twitter-card"
+    "https://example.com/ogp-missing-title",
+    "https://example.com/twitter-card",
+    "https://google.com/",
+    "https://pleroma.local/notice/9kCP7V",
+    "https://yahoo.com/"
   ]
+
   def head(url, _query, _body, _headers) when url in @rich_media_mocks do
     {:ok, %Tesla.Env{status: 404, body: ""}}
+  end
+
+  def head("https://example.com/pdf-file", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       headers: [{"content-length", "1000000"}, {"content-type", "application/pdf"}]
+     }}
+  end
+
+  def head("https://example.com/huge-page", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       headers: [{"content-length", "2000001"}, {"content-type", "text/html"}]
+     }}
   end
 
   def head(url, query, body, headers) do

@@ -4,7 +4,7 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.6.51"),
+      version: version("2.6.52"),
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: Mix.compilers(),
@@ -137,7 +137,7 @@ defmodule Pleroma.Mixfile do
       {:calendar, "~> 1.0"},
       {:cachex, "~> 3.2"},
       {:poison, "~> 3.0", override: true},
-      {:tesla, "~> 1.4.0", override: true},
+      {:tesla, "~> 1.8.0"},
       {:castore, "~> 0.1"},
       {:cowlib, "~> 2.9", override: true},
       {:gun, "~> 2.0.0-rc.1", override: true},
@@ -188,6 +188,7 @@ defmodule Pleroma.Mixfile do
       {:exile,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/exile.git",
        ref: "0d6337cf68e7fbc8a093cae000955aa93b067f91"},
+      {:bandit, "~> 1.2"},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},

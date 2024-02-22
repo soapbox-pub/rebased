@@ -256,7 +256,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     move_namespace_and_warn(@mrf_config_map, warning_preface)
   end
 
-  @spec move_namespace_and_warn([config_map()], String.t()) :: :ok | nil
+  @spec move_namespace_and_warn([config_map()], String.t()) :: :ok | :error
   def move_namespace_and_warn(config_map, warning_preface) do
     warning =
       Enum.reduce(config_map, "", fn
@@ -279,7 +279,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     end
   end
 
-  @spec check_media_proxy_whitelist_config() :: :ok | nil
+  @spec check_media_proxy_whitelist_config() :: :ok | :error
   def check_media_proxy_whitelist_config do
     whitelist = Config.get([:media_proxy, :whitelist])
 
@@ -340,7 +340,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     end
   end
 
-  @spec check_activity_expiration_config() :: :ok | nil
+  @spec check_activity_expiration_config() :: :ok | :error
   def check_activity_expiration_config do
     warning_preface = """
     !!!DEPRECATION WARNING!!!
@@ -356,7 +356,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     )
   end
 
-  @spec check_remote_ip_plug_name() :: :ok | nil
+  @spec check_remote_ip_plug_name() :: :ok | :error
   def check_remote_ip_plug_name do
     warning_preface = """
     !!!DEPRECATION WARNING!!!
@@ -372,7 +372,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     )
   end
 
-  @spec check_uploaders_s3_public_endpoint() :: :ok | nil
+  @spec check_uploaders_s3_public_endpoint() :: :ok | :error
   def check_uploaders_s3_public_endpoint do
     s3_config = Pleroma.Config.get([Pleroma.Uploaders.S3])
 
@@ -393,7 +393,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     end
   end
 
-  @spec check_old_chat_shoutbox() :: :ok | nil
+  @spec check_old_chat_shoutbox() :: :ok | :error
   def check_old_chat_shoutbox do
     instance_config = Pleroma.Config.get([:instance])
     chat_config = Pleroma.Config.get([:chat]) || []

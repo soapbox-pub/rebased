@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.HelpersTest do
-  use Pleroma.DataCase, async: true
+  use Pleroma.DataCase, async: false
 
   alias Pleroma.StaticStubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.CommonAPI
@@ -14,7 +14,7 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
   import Tesla.Mock
 
   setup do
-    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
 
     ConfigMock
     |> stub(:get, fn
@@ -83,8 +83,34 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
              Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
   end
 
-  # This does not seem to work. The urls are being fetched.
-  @tag skip: true
+  test "recrawls URLs on updates" do
+    original_url = "https://google.com/"
+    updated_url = "https://yahoo.com/"
+
+    Pleroma.StaticStubbedConfigMock
+    |> stub(:get, fn
+      [:rich_media, :enabled] -> true
+      path -> Pleroma.Test.StaticConfig.get(path)
+    end)
+
+    user = insert(:user)
+    {:ok, activity} = CommonAPI.post(user, %{status: "I like this site #{original_url}"})
+
+    assert match?(
+             %{page_url: ^original_url, rich_media: _},
+             Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+           )
+
+    {:ok, _} = CommonAPI.update(user, activity, %{status: "I like this site #{updated_url}"})
+
+    activity = Pleroma.Activity.get_by_id(activity.id)
+
+    assert match?(
+             %{page_url: ^updated_url, rich_media: _},
+             Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+           )
+  end
+
   test "refuses to crawl URLs of private network from posts" do
     user = insert(:user)
 
@@ -102,10 +128,10 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
       path -> Pleroma.Test.StaticConfig.get(path)
     end)
 
-    assert %{} = Helpers.fetch_data_for_activity(activity)
-    assert %{} = Helpers.fetch_data_for_activity(activity2)
-    assert %{} = Helpers.fetch_data_for_activity(activity3)
-    assert %{} = Helpers.fetch_data_for_activity(activity4)
-    assert %{} = Helpers.fetch_data_for_activity(activity5)
+    assert %{} == Helpers.fetch_data_for_activity(activity)
+    assert %{} == Helpers.fetch_data_for_activity(activity2)
+    assert %{} == Helpers.fetch_data_for_activity(activity3)
+    assert %{} == Helpers.fetch_data_for_activity(activity4)
+    assert %{} == Helpers.fetch_data_for_activity(activity5)
   end
 end

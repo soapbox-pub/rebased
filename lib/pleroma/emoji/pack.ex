@@ -100,7 +100,7 @@ defmodule Pleroma.Emoji.Pack do
         {:ok, _emoji_files} =
           :zip.unzip(
             to_charlist(file.path),
-            [{:file_list, Enum.map(emojies, & &1[:path])}, {:cwd, tmp_dir}]
+            [{:file_list, Enum.map(emojies, & &1[:path])}, {:cwd, String.to_charlist(tmp_dir)}]
           )
 
         {_, updated_pack} =

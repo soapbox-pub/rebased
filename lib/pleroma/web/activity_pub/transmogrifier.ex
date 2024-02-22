@@ -337,6 +337,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_tag(object), do: object
 
+  # prefer content over contentMap
   def fix_content_map(%{"content" => content} = object) when not_empty_string(content), do: object
 
   # content map usually only has one language so this will do for now.
