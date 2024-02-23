@@ -186,8 +186,8 @@ defmodule Pleroma.Mixfile do
       {:elixir_make, "~> 0.7.7", override: true},
       {:blurhash, "~> 0.1.0", hex: :rinpatch_blurhash},
       {:exile,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/exile.git",
-       ref: "0d6337cf68e7fbc8a093cae000955aa93b067f91"},
+       git: "https://github.com/akash-akya/exile.git",
+       ref: "be87c33b02a7c3c5d22d2ece01fbd462355b28ef"},
       {:bandit, "~> 1.2"},
 
       ## dev & test
