@@ -567,6 +567,14 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :status_page,
+        type: :string,
+        description: "A page where people can see the status of the server during an outage",
+        suggestions: [
+          "https://status.pleroma.example.org"
+        ]
+      },
+      %{
         key: :limit,
         type: :integer,
         description: "Posts character limit (CW/Subject included in the counter)",
