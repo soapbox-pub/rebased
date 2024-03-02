@@ -162,8 +162,10 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     cond do
       inbox == nil ->
         false
+
       public ->
         true
+
       true ->
         %{host: host} = URI.parse(inbox)
 
