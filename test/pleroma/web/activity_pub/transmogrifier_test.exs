@@ -384,6 +384,24 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert modified["object"]["quoteUrl"] == quote_id
       assert modified["object"]["quoteUri"] == quote_id
     end
+
+    test "it adds language of the object to its json-ld context" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "Cześć", language: "pl"})
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.object.data)
+
+      assert [_, _, %{"@language" => "pl"}] = modified["@context"]
+    end
+
+    test "it adds language of the object to Create activity json-ld context" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "Cześć", language: "pl"})
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert [_, _, %{"@language" => "pl"}] = modified["@context"]
+    end
   end
 
   describe "actor rewriting" do
