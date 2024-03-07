@@ -63,7 +63,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       registrations: %{
         enabled: Keyword.get(instance, :registrations_open),
         approval_required: Keyword.get(instance, :account_approval_required),
-        message: nil
+        message: nil,
+        url: nil
       },
       contact: %{
         email: Keyword.get(instance, :email),
@@ -78,7 +79,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     %{
       title: Keyword.get(instance, :name),
       version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
-      languages: Keyword.get(instance, :languages, ["en"])
+      languages: Keyword.get(instance, :languages, ["en"]),
+      rules: []
     }
   end
 
@@ -170,13 +172,17 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
   defp configuration do
     %{
+      accounts: %{
+        max_featured_tags: 0
+      },
       statuses: %{
         max_characters: Config.get([:instance, :limit]),
         max_media_attachments: Config.get([:instance, :max_media_attachments])
       },
       media_attachments: %{
         image_size_limit: Config.get([:instance, :upload_limit]),
-        video_size_limit: Config.get([:instance, :upload_limit])
+        video_size_limit: Config.get([:instance, :upload_limit]),
+        supported_mime_types: ["application/octet-stream"]
       },
       polls: %{
         max_options: Config.get([:instance, :poll_limits, :max_options]),
@@ -190,7 +196,13 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
   defp configuration2 do
     configuration()
     |> Map.merge(%{
-      urls: %{streaming: Pleroma.Web.Endpoint.websocket_url()}
+      urls: %{
+        streaming: Pleroma.Web.Endpoint.websocket_url(),
+        status: Config.get([:instance, :status_page])
+      },
+      vapid: %{
+        public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
+      }
     })
   end
 
