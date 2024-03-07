@@ -2015,10 +2015,8 @@ defmodule Pleroma.User do
            when not_empty_string(host) and scheme in ["http", "https"] <-
              URI.parse(value),
            {:not_idn, true} <- {:not_idn, to_string(:idna.encode(host)) == host},
-           attr <- Pleroma.Web.RelMe.maybe_put_rel_me(value, profile_urls) do
-        if attr == "me" do
-          CommonUtils.to_masto_date(NaiveDateTime.utc_now())
-        end
+           "me" <- Pleroma.Web.RelMe.maybe_put_rel_me(value, profile_urls) do
+        CommonUtils.to_masto_date(NaiveDateTime.utc_now())
       else
         {:verified_at, value} when not_empty_string(value) ->
           value
