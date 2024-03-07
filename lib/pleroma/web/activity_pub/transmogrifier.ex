@@ -763,12 +763,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       object_id
       |> Object.normalize(fetch: false)
       |> Map.get(:data)
-      |> prepare_object
 
     data =
       data
-      |> Map.put("object", object)
-      |> Map.merge(Utils.make_json_ld_header(data))
+      |> Map.put("object", prepare_object(object))
+      |> Map.merge(Utils.make_json_ld_header(object))
       |> Map.delete("bcc")
 
     {:ok, data}
@@ -776,14 +775,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def prepare_outgoing(%{"type" => "Update", "object" => %{"type" => objtype} = object} = data)
       when objtype in Pleroma.Constants.updatable_object_types() do
-    object =
-      object
-      |> prepare_object
-
     data =
       data
-      |> Map.put("object", object)
-      |> Map.merge(Utils.make_json_ld_header(data))
+      |> Map.put("object", prepare_object(object))
+      |> Map.merge(Utils.make_json_ld_header(object))
       |> Map.delete("bcc")
 
     {:ok, data}
@@ -804,7 +799,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     data =
       data
       |> strip_internal_fields
-      |> Map.merge(Utils.make_json_ld_header(data))
+      |> Map.merge(Utils.make_json_ld_header())
       |> Map.delete("bcc")
 
     {:ok, data}
@@ -824,7 +819,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       data =
         data
         |> Map.put("object", object)
-        |> Map.merge(Utils.make_json_ld_header(data))
+        |> Map.merge(Utils.make_json_ld_header())
 
       {:ok, data}
     end
@@ -842,7 +837,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       data =
         data
         |> Map.put("object", object)
-        |> Map.merge(Utils.make_json_ld_header(data))
+        |> Map.merge(Utils.make_json_ld_header())
 
       {:ok, data}
     end
