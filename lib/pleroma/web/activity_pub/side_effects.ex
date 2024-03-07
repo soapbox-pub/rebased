@@ -197,6 +197,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Increase replies count
   # - Set up ActivityExpiration
   # - Set up notifications
+  # - Index incoming posts for search (if needed)
   @impl true
   def handle(%{data: %{"type" => "Create"}} = activity, meta) do
     with {:ok, object, meta} <- handle_object_creation(meta[:object_data], activity, meta),
@@ -207,6 +208,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
       if in_reply_to = object.data["type"] != "Answer" && object.data["inReplyTo"] do
         Object.increase_replies_count(in_reply_to)
+      end
+
+      if quote_url = object.data["quoteUrl"] do
+        Object.increase_quotes_count(quote_url)
       end
 
       reply_depth = (meta[:depth] || 0) + 1
@@ -225,6 +230,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       ConcurrentLimiter.limit(Pleroma.Web.RichMedia.Helpers, fn ->
         Task.start(fn -> Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) end)
       end)
+
+      Pleroma.Search.add_to_index(Map.put(activity, :object, object))
+
+      Utils.maybe_handle_group_posts(activity)
 
       meta =
         meta
@@ -249,7 +258,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
     Utils.add_announce_to_object(object, announced_object)
 
-    if !User.is_internal_user?(user) do
+    if !User.internal?(user) do
       Notification.create_notifications(object)
 
       ap_streamer().stream_out(object)
@@ -285,6 +294,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Reduce the user note count
   # - Reduce the reply count
   # - Stream out the activity
+  # - Removes posts from search index (if needed)
   @impl true
   def handle(%{data: %{"type" => "Delete", "object" => deleted_object}} = object, meta) do
     deleted_object =
@@ -294,15 +304,19 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     result =
       case deleted_object do
         %Object{} ->
-          with {:ok, deleted_object, _activity} <- Object.delete(deleted_object),
+          with {_, {:ok, deleted_object, _activity}} <- {:object, Object.delete(deleted_object)},
                {_, actor} when is_binary(actor) <- {:actor, deleted_object.data["actor"]},
-               %User{} = user <- User.get_cached_by_ap_id(actor) do
+               {_, %User{} = user} <- {:user, User.get_cached_by_ap_id(actor)} do
             User.remove_pinned_object_id(user, deleted_object.data["id"])
 
             {:ok, user} = ActivityPub.decrease_note_count_if_public(user, deleted_object)
 
             if in_reply_to = deleted_object.data["inReplyTo"] do
               Object.decrease_replies_count(in_reply_to)
+            end
+
+            if quote_url = deleted_object.data["quoteUrl"] do
+              Object.decrease_quotes_count(quote_url)
             end
 
             MessageReference.delete_for_object(deleted_object)
@@ -314,6 +328,17 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
             {:actor, _} ->
               @logger.error("The object doesn't have an actor: #{inspect(deleted_object)}")
               :no_object_actor
+
+            {:user, _} ->
+              @logger.error(
+                "The object's actor could not be resolved to a user: #{inspect(deleted_object)}"
+              )
+
+              :no_object_user
+
+            {:object, _} ->
+              @logger.error("The object could not be deleted: #{inspect(deleted_object)}")
+              {:error, object}
           end
 
         %User{} ->
@@ -323,6 +348,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       end
 
     if result == :ok do
+      # Only remove from index when deleting actual objects, not users or anything else
+      with %Pleroma.Object{} <- deleted_object do
+        Pleroma.Search.remove_from_index(deleted_object)
+      end
+
       {:ok, object, meta}
     else
       {:error, result}
@@ -550,7 +580,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
   def handle_undoing(object), do: {:error, ["don't know how to handle", object]}
 
-  @spec delete_object(Object.t()) :: :ok | {:error, Ecto.Changeset.t()}
+  @spec delete_object(Activity.t()) :: :ok | {:error, Ecto.Changeset.t()}
   defp delete_object(object) do
     with {:ok, _} <- Repo.delete(object), do: :ok
   end

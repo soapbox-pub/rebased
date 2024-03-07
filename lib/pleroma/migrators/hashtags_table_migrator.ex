@@ -100,7 +100,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
     |> where([_o, hashtags_objects], is_nil(hashtags_objects.object_id))
   end
 
-  @spec transfer_object_hashtags(Map.t()) :: {:noop | :ok | :error, integer()}
+  @spec transfer_object_hashtags(map()) :: {:noop | :ok | :error, integer()}
   defp transfer_object_hashtags(object) do
     embedded_tags = if Map.has_key?(object, :tag), do: object.tag, else: object.data["tag"]
     hashtags = Object.object_data_hashtags(%{"tag" => embedded_tags})

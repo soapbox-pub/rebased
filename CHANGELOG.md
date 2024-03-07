@@ -4,24 +4,86 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## Unreleased
+## 2.6.2
 
+### Security
+- MRF StealEmojiPolicy: Sanitize shortcodes (thanks to Hazel K for the report
+
+## 2.6.1
 ### Changed
+- - Document maximum supported version of Erlang & Elixir
+
+### Added
+- [docs] add frontends management documentation
+
+### Fixed
+- TwitterAPI: Return proper error when healthcheck is disabled
+- Fix eblurhash and elixir-captcha not using system cflags
+
+## 2.6.0
+### Security
+- Preload: Make generated JSON html-safe. It already was html safe because it only consists of config data that is base64 encoded, but this will keep it safe it that ever changes.
+- CommonAPI: Prevent users from accessing media of other users by creating a status with reused attachment ID
+- Disable XML entity resolution completely to fix a dos vulnerability
 
 ### Added
 - Support for Image activities, namely from Hubzilla
+- Add OAuth scope descriptions
+- Allow lang attribute in status text
+- OnlyMedia Upload Filter
+- Implement MRF policy to reject or delist according to emojis
+- (hardening) Add no_new_privs=yes to OpenRC service files
+- Implement quotes
+- Add unified streaming endpoint
 
 ### Fixed
-
 - rel="me" was missing its cache
+- MediaProxy responses now return a sandbox CSP header
+- Filter context activities using Visibility.visible_for_user?
+- UploadedMedia: Add missing disposition_type to Content-Disposition
+- fix not being able to fetch flash file from remote instance
+- Fix abnormal behaviour when refetching a poll
+- Allow non-HTTP(s) URIs in "url" fields for compatibility with "FEP-fffd: Proxy Objects"
+- Fix opengraph and twitter card meta tags
+- ForceMentionsInContent: fix double mentions for Mastodon/Misskey posts
+- OEmbed HTML tags are now filtered
+- Restrict attachments to only uploaded files only
+- Fix error 404 when deleting status of a banned user
+- Fix config ownership in dockerfile to pass restriction test
+- Fix user fetch completely broken if featured collection is not in a supported form
+- Correctly handle the situation when a poll has both "anyOf" and "oneOf" but one of them being empty
+- Fix handling report from a deactivated user
+- Prevent using the .json format to bypass authorized fetch mode
+- Fix mentioning punycode domains when using Markdown
+- Show more informative errors when profile exceeds char limits
 
 ### Removed
 - BREAKING: Support for passwords generated with `crypt(3)` (Gnu Social migration artifact)
+- remove BBS/SSH feature, replaced by an external bridge.
+- Remove a few unused indexes.
+- Cleanup OStatus-era user upgrades and ap_enabled indicator
+- Deprecate Pleroma's audio scrobbling
 
 ## 2.5.4
 
 ## Security
-- Fix XML External Entity (XXE) loading vulnerability allowing to fetch arbitary files from the server's filesystem
+- Fix XML External Entity (XXE) loading vulnerability allowing to fetch arbitrary files from the server's filesystem
+
+## 2.5.3
+
+### Security
+- Emoji pack loader sanitizes pack names
+- Reduced permissions of config files and directories, distros requiring greater permissions like group-read need to pre-create the directories
+
+## 2.5.5
+
+## Security
+- Prevent users from accessing media of other users by creating a status with reused attachment ID
+
+## 2.5.4
+
+## Security
+- Fix XML External Entity (XXE) loading vulnerability allowing to fetch arbitrary files from the server's filesystem
 
 ## 2.5.3
 
@@ -61,7 +123,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix `block_from_stranger` setting
 - Fix rel="me"
 - Docker images will now run properly
-- Fix inproper content being cached in report content
+- Fix improper content being cached in report content
 - Notification filter on object content will not operate on the ones that inherently have no content
 - ZWNJ and double dots in links are parsed properly for Plain-text posts
 - OTP releases will work on systems with a newer libcrypt
@@ -727,7 +789,7 @@ switched to a new configuration mechanism, however it was not officially removed
 - Rate limiter crashes when there is no explicitly specified ip in the config
 - 500 errors when no `Accept` header is present if Static-FE is enabled
 - Instance panel not being updated immediately due to wrong `Cache-Control` headers
-- Statuses posted with BBCode/Markdown having unncessary newlines in Pleroma-FE
+- Statuses posted with BBCode/Markdown having unnecessary newlines in Pleroma-FE
 - OTP: Fix some settings not being migrated to in-database config properly
 - No `Cache-Control` headers on attachment/media proxy requests
 - Character limit enforcement being off by 1
@@ -1047,10 +1109,10 @@ curl -Lo ./bin/pleroma_ctl 'https://git.pleroma.social/pleroma/pleroma/raw/devel
 - Reverse Proxy limiting `max_body_length` was incorrectly defined and only checked `Content-Length` headers which may not be sufficient in some circumstances
 
 ### Added
-- Expiring/ephemeral activites. All activities can have expires_at value set, which controls when they should be deleted automatically.
+- Expiring/ephemeral activities. All activities can have expires_at value set, which controls when they should be deleted automatically.
 - Mastodon API: in post_status, the expires_in parameter lets you set the number of seconds until an activity expires. It must be at least one hour.
 - Mastodon API: all status JSON responses contain a `pleroma.expires_at` item which states when an activity will expire. The value is only shown to the user who created the activity. To everyone else it's empty.
-- Configuration: `ActivityExpiration.enabled` controls whether expired activites will get deleted at the appropriate time. Enabled by default.
+- Configuration: `ActivityExpiration.enabled` controls whether expired activities will get deleted at the appropriate time. Enabled by default.
 - Conversations: Add Pleroma-specific conversation endpoints and status posting extensions. Run the `bump_all_conversations` task again to create the necessary data.
 - MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)
 - MRF: Support for excluding specific domains from Transparency.

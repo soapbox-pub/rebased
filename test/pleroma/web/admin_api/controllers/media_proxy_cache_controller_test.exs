@@ -5,9 +5,11 @@
 defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
   use Pleroma.Web.ConnCase
 
-  import Pleroma.Factory
   import Mock
+  import Mox
+  import Pleroma.Factory
 
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.MediaProxy
 
   setup do: clear_config([:media_proxy])
@@ -128,6 +130,9 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
         "http://example.com/media/fb1f4d.jpg"
       ]
 
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
+
       with_mocks [
         {MediaProxy.Invalidation.Script, [],
          [
@@ -149,6 +154,9 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
         "http://example.com/media/a688346.jpg",
         "http://example.com/media/fb1f4d.jpg"
       ]
+
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
 
       with_mocks [{MediaProxy.Invalidation.Script, [], [purge: fn _, _ -> {"ok", 0} end]}] do
         conn

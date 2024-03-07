@@ -21,6 +21,11 @@ defmodule Pleroma.NotificationTest do
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   describe "create_notifications" do
     test "never returns nil" do
       user = insert(:user)

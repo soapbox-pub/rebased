@@ -136,7 +136,7 @@ defmodule Pleroma.Web do
         namespace: Pleroma.Web
 
       # Import convenience functions from controllers
-      import Phoenix.Controller, only: [get_csrf_token: 0, get_flash: 2, view_module: 1]
+      import Phoenix.Controller, only: [get_csrf_token: 0, view_module: 1]
 
       import Pleroma.Web.ErrorHelpers
       import Pleroma.Web.Gettext

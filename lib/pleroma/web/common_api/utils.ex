@@ -109,7 +109,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def get_to_and_cc(%{visibility: "direct"} = draft) do
     # If the OP is a DM already, add the implicit actor.
-    if draft.in_reply_to && Visibility.is_direct?(draft.in_reply_to) do
+    if draft.in_reply_to && Visibility.direct?(draft.in_reply_to) do
       {Enum.uniq([draft.in_reply_to.data["actor"] | draft.mentions]), []}
     else
       {draft.mentions, []}
@@ -321,13 +321,13 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       format_asctime(date)
     else
       _e ->
-        Logger.warn("Date #{date} in wrong format, must be ISO 8601")
+        Logger.warning("Date #{date} in wrong format, must be ISO 8601")
         ""
     end
   end
 
   def date_to_asctime(date) do
-    Logger.warn("Date #{date} in wrong format, must be ISO 8601")
+    Logger.warning("Date #{date} in wrong format, must be ISO 8601")
     ""
   end
 

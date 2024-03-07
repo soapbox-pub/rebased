@@ -18,7 +18,7 @@ defmodule Pleroma.Docs.JSON do
     :persistent_term.put(@term, Pleroma.Docs.Generator.convert_to_strings(descriptions))
   end
 
-  @spec compiled_descriptions :: Map.t()
+  @spec compiled_descriptions :: map()
   def compiled_descriptions do
     :persistent_term.get(@term)
   end

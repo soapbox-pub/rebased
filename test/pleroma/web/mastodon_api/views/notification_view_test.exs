@@ -22,6 +22,11 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
   alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
   import Pleroma.Factory
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   defp test_notifications_rendering(notifications, user, expected_result) do
     result = NotificationView.render("index.json", %{notifications: notifications, for: user})
 

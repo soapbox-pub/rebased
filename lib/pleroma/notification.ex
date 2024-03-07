@@ -88,7 +88,7 @@ defmodule Pleroma.Notification do
       where: q.seen == true,
       select: type(q.id, :string),
       limit: 1,
-      order_by: [desc: :id]
+      order_by: fragment("? desc nulls last", q.id)
     )
   end
 

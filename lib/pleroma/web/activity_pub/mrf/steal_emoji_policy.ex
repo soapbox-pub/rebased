@@ -34,14 +34,17 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
           |> Path.basename()
           |> Path.extname()
 
-        file_path = Path.join(emoji_dir_path, shortcode <> (extension || ".png"))
+        extension = if extension == "", do: ".png", else: extension
+
+        shortcode = Path.basename(shortcode)
+        file_path = Path.join(emoji_dir_path, shortcode <> extension)
 
         case File.write(file_path, response.body) do
           :ok ->
             shortcode
 
           e ->
-            Logger.warn("MRF.StealEmojiPolicy: Failed to write to #{file_path}: #{inspect(e)}")
+            Logger.warning("MRF.StealEmojiPolicy: Failed to write to #{file_path}: #{inspect(e)}")
             nil
         end
       else
@@ -53,7 +56,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
       end
     else
       e ->
-        Logger.warn("MRF.StealEmojiPolicy: Failed to fetch #{url}: #{inspect(e)}")
+        Logger.warning("MRF.StealEmojiPolicy: Failed to fetch #{url}: #{inspect(e)}")
         nil
     end
   end
@@ -76,6 +79,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
       new_emojis =
         foreign_emojis
         |> Enum.reject(fn {shortcode, _url} -> shortcode in installed_emoji end)
+        |> Enum.reject(fn {shortcode, _url} -> String.contains?(shortcode, ["/", "\\"]) end)
         |> Enum.filter(fn {shortcode, _url} ->
           reject_emoji? =
             [:mrf_steal_emoji, :rejected_shortcodes]
