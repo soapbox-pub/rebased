@@ -160,7 +160,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
   defp should_federate?(inbox, public) do
     cond do
-      inbox == nil ->
+      is_nil(inbox) ->
         false
 
       public ->
