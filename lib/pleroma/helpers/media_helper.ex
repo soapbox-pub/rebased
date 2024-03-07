@@ -40,28 +40,32 @@ defmodule Pleroma.Helpers.MediaHelper do
   end
 
   # Note: video thumbnail is intentionally not resized (always has original dimensions)
+  @spec video_framegrab(String.t()) :: {:ok, binary()} | {:error, any()}
   def video_framegrab(url) do
     with executable when is_binary(executable) <- System.find_executable("ffmpeg"),
          {:ok, env} <- HTTP.get(url, [], pool: :media),
          {:ok, pid} <- StringIO.open(env.body) do
       body_stream = IO.binstream(pid, 1)
 
-      Exile.stream!(
-        [
-          executable,
-          "-i",
-          "pipe:0",
-          "-vframes",
-          "1",
-          "-f",
-          "mjpeg",
-          "pipe:1"
-        ],
-        input: body_stream,
-        ignore_epipe: true,
-        stderr: :disable
-      )
-      |> Enum.into(<<>>)
+      result =
+        Exile.stream!(
+          [
+            executable,
+            "-i",
+            "pipe:0",
+            "-vframes",
+            "1",
+            "-f",
+            "mjpeg",
+            "pipe:1"
+          ],
+          input: body_stream,
+          ignore_epipe: true,
+          stderr: :disable
+        )
+        |> Enum.into(<<>>)
+
+      {:ok, result}
     else
       nil -> {:error, {:ffmpeg, :command_not_found}}
       {:error, _} = error -> error
