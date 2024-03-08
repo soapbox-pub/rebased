@@ -145,6 +145,7 @@ defmodule Pleroma.ActivityTest do
 
     setup do: clear_config([:instance, :limit_to_local_content])
 
+    @tag :skip_darwin
     test "finds utf8 text in statuses", %{
       japanese_activity: japanese_activity,
       user: user

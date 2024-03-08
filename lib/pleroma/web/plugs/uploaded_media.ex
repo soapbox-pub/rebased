@@ -105,7 +105,7 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
   end
 
   defp get_media(conn, unknown, _, _) do
-    Logger.error("#{__MODULE__}: Unknown get startegy: #{inspect(unknown)}")
+    Logger.error("#{__MODULE__}: Unknown get strategy: #{inspect(unknown)}")
 
     conn
     |> send_resp(:internal_server_error, dgettext("errors", "Internal Error"))

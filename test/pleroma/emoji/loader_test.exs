@@ -72,7 +72,7 @@ defmodule Pleroma.Emoji.LoaderTest do
       assert group == "special file"
     end
 
-    test "no mathing returns nil", %{groups: groups} do
+    test "no matching returns nil", %{groups: groups} do
       group =
         groups
         |> Loader.match_extra("/emoji/some_undefined.png")

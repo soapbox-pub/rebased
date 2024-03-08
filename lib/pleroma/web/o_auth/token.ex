@@ -56,7 +56,8 @@ defmodule Pleroma.Web.OAuth.Token do
     |> Repo.find_resource()
   end
 
-  @spec exchange_token(App.t(), Authorization.t()) :: {:ok, Token.t()} | {:error, Changeset.t()}
+  @spec exchange_token(App.t(), Authorization.t()) ::
+          {:ok, Token.t()} | {:error, Ecto.Changeset.t()}
   def exchange_token(app, auth) do
     with {:ok, auth} <- Authorization.use_token(auth),
          true <- auth.app_id == app.id do
@@ -95,7 +96,7 @@ defmodule Pleroma.Web.OAuth.Token do
     |> validate_required([:valid_until])
   end
 
-  @spec create(App.t(), User.t(), map()) :: {:ok, Token} | {:error, Changeset.t()}
+  @spec create(App.t(), User.t(), map()) :: {:ok, Token} | {:error, Ecto.Changeset.t()}
   def create(%App{} = app, %User{} = user, attrs \\ %{}) do
     with {:ok, token} <- do_create(app, user, attrs) do
       if Pleroma.Config.get([:oauth2, :clean_expired_tokens]) do
@@ -137,9 +138,9 @@ defmodule Pleroma.Web.OAuth.Token do
     |> Repo.all()
   end
 
-  def is_expired?(%__MODULE__{valid_until: valid_until}) do
+  def expired?(%__MODULE__{valid_until: valid_until}) do
     NaiveDateTime.diff(NaiveDateTime.utc_now(), valid_until) > 0
   end
 
-  def is_expired?(_), do: false
+  def expired?(_), do: false
 end

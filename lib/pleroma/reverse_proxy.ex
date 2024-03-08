@@ -8,7 +8,7 @@ defmodule Pleroma.ReverseProxy do
                       ~w(if-unmodified-since if-none-match) ++ @range_headers
   @resp_cache_headers ~w(etag date last-modified)
   @keep_resp_headers @resp_cache_headers ++
-                       ~w(content-length content-type content-disposition content-encoding) ++
+                       ~w(content-type content-disposition content-encoding) ++
                        ~w(content-range accept-ranges vary)
   @default_cache_control_header "public, max-age=1209600"
   @valid_resp_codes [200, 206, 304]
@@ -81,16 +81,16 @@ defmodule Pleroma.ReverseProxy do
   import Plug.Conn
 
   @type option() ::
-          {:max_read_duration, :timer.time() | :infinity}
+          {:max_read_duration, non_neg_integer() | :infinity}
           | {:max_body_length, non_neg_integer() | :infinity}
-          | {:failed_request_ttl, :timer.time() | :infinity}
-          | {:http, []}
+          | {:failed_request_ttl, non_neg_integer() | :infinity}
+          | {:http, keyword()}
           | {:req_headers, [{String.t(), String.t()}]}
           | {:resp_headers, [{String.t(), String.t()}]}
-          | {:inline_content_types, boolean() | [String.t()]}
+          | {:inline_content_types, boolean() | list(String.t())}
           | {:redirect_on_failure, boolean()}
 
-  @spec call(Plug.Conn.t(), url :: String.t(), [option()]) :: Plug.Conn.t()
+  @spec call(Plug.Conn.t(), String.t(), list(option())) :: Plug.Conn.t()
   def call(_conn, _url, _opts \\ [])
 
   def call(conn = %{method: method}, url, opts) when method in @methods do
@@ -388,8 +388,6 @@ defmodule Pleroma.ReverseProxy do
 
   defp body_size_constraint(_, _), do: :ok
 
-  defp check_read_duration(nil = _duration, max), do: check_read_duration(@max_read_duration, max)
-
   defp check_read_duration(duration, max)
        when is_integer(duration) and is_integer(max) and max > 0 do
     if duration > max do
@@ -405,10 +403,6 @@ defmodule Pleroma.ReverseProxy do
        when is_integer(previous_duration) and is_integer(started) do
     duration = :erlang.system_time(:millisecond) - started
     {:ok, previous_duration + duration}
-  end
-
-  defp increase_read_duration(_) do
-    {:ok, :no_duration_limit, :no_duration_limit}
   end
 
   defp client, do: Pleroma.ReverseProxy.Client.Wrapper

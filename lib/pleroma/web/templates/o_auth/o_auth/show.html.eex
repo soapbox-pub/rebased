@@ -13,7 +13,7 @@
     <div class="account-header__avatar" style="background-image: url('<%= Pleroma.User.avatar_url(@user) %>')"></div>
     <div class="account-header__meta">
       <div class="account-header__display-name"><%= @user.name %></div>
-      <div class="account-header__nickname">@<%= @user.nickname %>@<%= Pleroma.User.get_host(@user) %></div>
+      <div class="account-header__nickname">@<%= Pleroma.User.full_nickname(@user.nickname) %></div>
     </div>
   </div>
 <% end %>

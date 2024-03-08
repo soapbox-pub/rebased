@@ -85,12 +85,12 @@ defmodule Pleroma.Web.Gettext do
     Process.get({Pleroma.Web.Gettext, :locales}, [])
   end
 
-  def is_locale_list(locales) do
+  def locale_list?(locales) do
     Enum.all?(locales, &is_binary/1)
   end
 
   def put_locales(locales) do
-    if is_locale_list(locales) do
+    if locale_list?(locales) do
       Process.put({Pleroma.Web.Gettext, :locales}, Enum.uniq(locales))
       Gettext.put_locale(Enum.at(locales, 0, Gettext.get_locale()))
       :ok

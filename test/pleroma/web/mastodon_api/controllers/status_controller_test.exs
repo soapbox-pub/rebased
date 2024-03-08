@@ -12,6 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
+  alias Pleroma.Tests.Helpers
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -335,13 +336,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         path -> Pleroma.Test.StaticConfig.get(path)
       end)
 
-      Tesla.Mock.mock(fn
-        %{
-          method: :get,
-          url: "https://example.com/twitter-card"
-        } ->
-          %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/twitter_card.html")}
-
+      Tesla.Mock.mock_global(fn
         env ->
           apply(HttpRequestMock, :request, [env])
       end)
@@ -2191,7 +2186,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     # Using the header for pagination works correctly
     [next, _] = get_resp_header(result, "link") |> hd() |> String.split(", ")
-    [_, max_id] = Regex.run(~r/max_id=([^&]+)/, next)
+    [next_url, _next_rel] = String.split(next, ";")
+    next_url = String.trim_trailing(next_url, ">") |> String.trim_leading("<")
+
+    max_id = Helpers.get_query_parameter(next_url, "max_id")
 
     assert max_id == third_favorite.id
 

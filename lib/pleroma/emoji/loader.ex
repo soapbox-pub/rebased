@@ -15,8 +15,6 @@ defmodule Pleroma.Emoji.Loader do
 
   require Logger
 
-  @mix_env Mix.env()
-
   @type pattern :: Regex.t() | module() | String.t()
   @type patterns :: pattern() | [pattern()]
   @type group_patterns :: keyword(patterns())
@@ -79,7 +77,7 @@ defmodule Pleroma.Emoji.Loader do
 
     # for testing emoji.txt entries we do not want exposed in normal operation
     test_emoji =
-      if @mix_env == :test do
+      if Application.get_env(:pleroma, __MODULE__)[:test_emoji] do
         load_from_file("test/config/emoji.txt", emoji_groups)
       else
         []

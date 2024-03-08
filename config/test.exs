@@ -162,6 +162,18 @@ peer_module =
 
 config :pleroma, Pleroma.Cluster, peer_module: peer_module
 
+config :pleroma, Pleroma.Application,
+  background_migrators: false,
+  internal_fetch: false,
+  load_custom_modules: false,
+  max_restarts: 100,
+  streamer_registry: false,
+  test_http_pools: true
+
+config :pleroma, Pleroma.Uploaders.Uploader, timeout: 1_000
+
+config :pleroma, Pleroma.Emoji.Loader, test_emoji: true
+
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
 else

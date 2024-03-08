@@ -13,7 +13,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
 
   @oauth_read_actions [:show, :index]
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
 
   plug(
     OAuthScopesPlug,
@@ -24,8 +24,20 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.NotificationOperation
 
+  @default_notification_types ~w{
+      mention
+      follow
+      follow_request
+      reblog
+      favourite
+      move
+      pleroma:emoji_reaction
+      poll
+      update
+    }
+
   # GET /api/v1/notifications
-  def index(conn, %{account_id: account_id} = params) do
+  def index(%{private: %{open_api_spex: %{params: %{account_id: account_id} = params}}} = conn, _) do
     case Pleroma.User.get_cached_by_id(account_id) do
       %{ap_id: account_ap_id} ->
         params =
@@ -33,7 +45,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
           |> Map.delete(:account_id)
           |> Map.put(:account_ap_id, account_ap_id)
 
-        index(conn, params)
+        do_get_notifications(conn, params)
 
       _ ->
         conn
@@ -42,18 +54,11 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
     end
   end
 
-  @default_notification_types ~w{
-    mention
-    follow
-    follow_request
-    reblog
-    favourite
-    move
-    pleroma:emoji_reaction
-    poll
-    update
-  }
-  def index(%{assigns: %{user: user}} = conn, params) do
+  def index(%{private: %{open_api_spex: %{params: params}}} = conn, _) do
+    do_get_notifications(conn, params)
+  end
+
+  defp do_get_notifications(%{assigns: %{user: user}} = conn, params) do
     params =
       Map.new(params, fn {k, v} -> {to_string(k), v} end)
       |> Map.put_new("types", Map.get(params, :include_types, @default_notification_types))
@@ -69,7 +74,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
   end
 
   # GET /api/v1/notifications/:id
-  def show(%{assigns: %{user: user}} = conn, %{id: id}) do
+  def show(%{assigns: %{user: user}, private: %{open_api_spex: %{params: %{id: id}}}} = conn, _) do
     with {:ok, notification} <- Notification.get(user, id) do
       render(conn, "show.json", notification: notification, for: user)
     else
@@ -88,8 +93,20 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
 
   # POST /api/v1/notifications/:id/dismiss
 
-  def dismiss(%{assigns: %{user: user}} = conn, %{id: id} = _params) do
-    with {:ok, _notif} <- Notification.dismiss(user, id) do
+  def dismiss(%{private: %{open_api_spex: %{params: %{id: id}}}} = conn, _) do
+    do_dismiss(conn, id)
+  end
+
+  # POST /api/v1/notifications/dismiss (deprecated)
+  def dismiss_via_body(
+        %{private: %{open_api_spex: %{body_params: %{id: id}}}} = conn,
+        _
+      ) do
+    do_dismiss(conn, id)
+  end
+
+  defp do_dismiss(%{assigns: %{user: user}} = conn, notification_id) do
+    with {:ok, _notif} <- Notification.dismiss(user, notification_id) do
       json(conn, %{})
     else
       {:error, reason} ->
@@ -99,13 +116,11 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
     end
   end
 
-  # POST /api/v1/notifications/dismiss (deprecated)
-  def dismiss_via_body(%{body_params: params} = conn, _) do
-    dismiss(conn, params)
-  end
-
   # DELETE /api/v1/notifications/destroy_multiple
-  def destroy_multiple(%{assigns: %{user: user}} = conn, %{ids: ids} = _params) do
+  def destroy_multiple(
+        %{assigns: %{user: user}, private: %{open_api_spex: %{params: %{ids: ids}}}} = conn,
+        _
+      ) do
     Notification.destroy_multiple(user, ids)
     json(conn, %{})
   end

@@ -32,7 +32,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
     assert activity.data["type"] == "Undo"
   end
 
-  test "it returns an error for incoming unlikes wihout a like activity" do
+  test "it returns an error for incoming unlikes without a like activity" do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{status: "leave a like pls"})
 

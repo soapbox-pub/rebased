@@ -147,6 +147,21 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatValidationTest do
       assert object["attachment"]
     end
 
+    test "validates for a basic object with content but attachment set to empty array", %{
+      user: user,
+      recipient: recipient
+    } do
+      {:ok, valid_chat_message, _} = Builder.chat_message(user, recipient.ap_id, "Hello!")
+
+      valid_chat_message =
+        valid_chat_message
+        |> Map.put("attachment", [])
+
+      assert {:ok, object, _meta} = ObjectValidator.validate(valid_chat_message, [])
+
+      assert object == Map.drop(valid_chat_message, ["attachment"])
+    end
+
     test "does not validate if the message has no content", %{
       valid_chat_message: valid_chat_message
     } do

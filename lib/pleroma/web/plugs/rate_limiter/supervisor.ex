@@ -14,7 +14,7 @@ defmodule Pleroma.Web.Plugs.RateLimiter.Supervisor do
       Pleroma.Web.Plugs.RateLimiter.LimiterSupervisor
     ]
 
-    opts = [strategy: :one_for_one, name: Pleroma.Web.Streamer.Supervisor]
+    opts = [strategy: :one_for_one]
     Supervisor.init(children, opts)
   end
 end

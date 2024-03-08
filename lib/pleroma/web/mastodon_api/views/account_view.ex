@@ -194,6 +194,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp do_render("show.json", %{user: user} = opts) do
+    self = opts[:for] == user
+
     user = User.sanitize_html(user, User.html_filter_policy(opts[:for]))
     display_name = user.name || user.nickname
 
@@ -203,16 +205,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     header_static = User.banner_url(user) |> MediaProxy.preview_url(static: true)
 
     following_count =
-      if !user.hide_follows_count or !user.hide_follows or opts[:for] == user,
+      if !user.hide_follows_count or !user.hide_follows or self,
         do: user.following_count,
         else: 0
 
     followers_count =
-      if !user.hide_followers_count or !user.hide_followers or opts[:for] == user,
+      if !user.hide_followers_count or !user.hide_followers or self,
         do: user.follower_count,
         else: 0
 
-    bot = user.actor_type == "Service"
+    bot = bot?(user)
 
     emojis =
       Enum.map(user.emoji, fn {shortcode, raw_url} ->
@@ -468,4 +470,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
   defp image_url(_), do: nil
+
+  defp bot?(user) do
+    # Because older and/or Mastodon clients may not recognize a Group actor properly,
+    # and currently the group actor can only boost things, we should let these clients
+    # think groups are bots.
+    # See https://git.pleroma.social/pleroma/pleroma-meta/-/issues/14
+    user.actor_type == "Service" || user.actor_type == "Group"
+  end
 end

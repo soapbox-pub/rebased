@@ -51,6 +51,7 @@ defmodule Pleroma.Upload do
           | {:size_limit, nil | non_neg_integer()}
           | {:uploader, module()}
           | {:filters, [module()]}
+          | {:actor, String.t()}
 
   @type t :: %__MODULE__{
           id: String.t(),
@@ -86,7 +87,7 @@ defmodule Pleroma.Upload do
     end
   end
 
-  @spec store(source, options :: [option()]) :: {:ok, Map.t()} | {:error, any()}
+  @spec store(source, options :: [option()]) :: {:ok, map()} | {:error, any()}
   @doc "Store a file. If using a `Plug.Upload{}` as the source, be sure to use `Majic.Plug` to ensure its content_type and filename is correct."
   def store(upload, opts \\ []) do
     opts = get_opts(opts)
@@ -175,7 +176,7 @@ defmodule Pleroma.Upload do
   defp prepare_upload(%{img: "data:image/" <> image_data}, opts) do
     parsed = Regex.named_captures(~r/(?<filetype>jpeg|png|gif);base64,(?<data>.*)/, image_data)
     data = Base.decode64!(parsed["data"], ignore: :whitespace)
-    hash = Base.encode16(:crypto.hash(:sha256, data), lower: true)
+    hash = Base.encode16(:crypto.hash(:sha256, data), case: :upper)
 
     with :ok <- check_binary_size(data, opts.size_limit),
          tmp_path <- tempfile_for_image(data),

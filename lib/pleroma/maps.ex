@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2024 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Maps do
@@ -17,5 +17,18 @@ defmodule Pleroma.Maps do
     Kernel.put_in(data, keys, value)
   rescue
     _ -> data
+  end
+
+  def filter_empty_values(data) do
+    # TODO: Change to Map.filter in Elixir 1.13+
+    data
+    |> Enum.filter(fn
+      {_k, nil} -> false
+      {_k, ""} -> false
+      {_k, []} -> false
+      {_k, %{} = v} -> Map.keys(v) != []
+      {_k, _v} -> true
+    end)
+    |> Map.new()
   end
 end

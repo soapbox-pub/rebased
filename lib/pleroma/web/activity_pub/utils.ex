@@ -167,7 +167,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
     with true <- Config.get!([:instance, :federating]),
          true <- type != "Block" || outgoing_blocks,
-         false <- Visibility.is_local_public?(activity) do
+         false <- Visibility.local_public?(activity) do
       Pleroma.Web.Federator.publish(activity)
     end
 
@@ -277,7 +277,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     object_actor = User.get_cached_by_ap_id(object_actor_id)
 
     to =
-      if Visibility.is_public?(object) do
+      if Visibility.public?(object) do
         [actor.follower_address, object.data["actor"]]
       else
         [object.data["actor"]]
@@ -776,10 +776,9 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         build_flag_object(object)
 
       nil ->
-        if %Object{} = object = Object.get_by_ap_id(id) do
-          build_flag_object(object)
-        else
-          %{"id" => id, "deleted" => true}
+        case Object.get_by_ap_id(id) do
+          %Object{} = object -> build_flag_object(object)
+          _ -> %{"id" => id, "deleted" => true}
         end
     end
   end
@@ -934,5 +933,28 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> where([a, object: o], fragment("(?)->>'inReplyTo' = ?", o.data, ^to_string(id)))
     |> where([a, object: o], fragment("(?)->>'type' = 'Answer'", o.data))
     |> Repo.all()
+  end
+
+  def maybe_handle_group_posts(activity) do
+    poster = User.get_cached_by_ap_id(activity.actor)
+
+    mentions =
+      activity.data["to"]
+      |> Enum.filter(&(&1 != activity.actor))
+
+    mentioned_local_groups =
+      User.get_all_by_ap_id(mentions)
+      |> Enum.filter(fn user ->
+        user.actor_type == "Group" and
+          user.local and
+          not User.blocks?(user, poster)
+      end)
+
+    mentioned_local_groups
+    |> Enum.each(fn group ->
+      Pleroma.Web.CommonAPI.repeat(activity.id, group)
+    end)
+
+    :ok
   end
 end

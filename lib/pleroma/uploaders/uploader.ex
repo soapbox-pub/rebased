@@ -5,8 +5,6 @@
 defmodule Pleroma.Uploaders.Uploader do
   import Pleroma.Web.Gettext
 
-  @mix_env Mix.env()
-
   @moduledoc """
   Defines the contract to put and get an uploaded file to any backend.
   """
@@ -40,7 +38,7 @@ defmodule Pleroma.Uploaders.Uploader do
 
   @callback delete_file(file :: String.t()) :: :ok | {:error, String.t()}
 
-  @callback http_callback(Plug.Conn.t(), Map.t()) ::
+  @callback http_callback(Plug.Conn.t(), map()) ::
               {:ok, Plug.Conn.t()}
               | {:ok, Plug.Conn.t(), file_spec()}
               | {:error, Plug.Conn.t(), String.t()}
@@ -75,10 +73,5 @@ defmodule Pleroma.Uploaders.Uploader do
     end
   end
 
-  defp callback_timeout do
-    case @mix_env do
-      :test -> 1_000
-      _ -> 30_000
-    end
-  end
+  defp callback_timeout, do: Application.get_env(:pleroma, __MODULE__)[:timeout]
 end

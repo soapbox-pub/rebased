@@ -28,6 +28,7 @@ cache: &global_cache_policy
 stages:
   - check-changelog
   - build
+  - lint
   - test
   - benchmark
   - deploy
@@ -71,7 +72,7 @@ check-changelog:
   tags:
     - amd64
 
-build:
+build-1.12.3:
   extends:
   - .build_changes_policy
   - .using-ci-base
@@ -79,10 +80,20 @@ build:
   script:
   - mix compile --force
 
+build-1.15.7-otp-25:
+  extends:
+  - .build_changes_policy
+  - .using-ci-base
+  stage: build
+  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15
+  allow_failure: true
+  script:
+  - mix compile --force
+
 spec-build:
   extends:
   - .using-ci-base
-  stage: test
+  stage: build
   rules:
     - changes:
         - ".gitlab-ci.yml"
@@ -110,7 +121,7 @@ benchmark:
     - mix ecto.migrate
     - mix pleroma.load_testing
 
-unit-testing:
+unit-testing-1.12.3:
   extends:
   - .build_changes_policy
   - .using-ci-base
@@ -118,12 +129,11 @@ unit-testing:
   cache: &testing_cache_policy
     <<: *global_cache_policy
     policy: pull
-
-  services:
+  services: &testing_services
   - name: postgres:13-alpine
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-  script:
+  script: &testing_script
     - mix ecto.create
     - mix ecto.migrate
     - mix test --cover --preload-modules
@@ -134,27 +144,32 @@ unit-testing:
         coverage_format: cobertura
         path: coverage.xml
 
-unit-testing-erratic:
+unit-testing-1.15.7-otp-25:
+  extends:
+  - .build_changes_policy
+  - .using-ci-base
+  stage: test
+  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15-otp25
+  allow_failure: true
+  cache: *testing_cache_policy
+  services: *testing_services
+  script: *testing_script
+
+unit-testing-1.12-erratic:
   extends:
   - .build_changes_policy
   - .using-ci-base
   stage: test
   retry: 2
   allow_failure: true
-  cache: &testing_cache_policy
-    <<: *global_cache_policy
-    policy: pull
-
-  services:
-  - name: postgres:13-alpine
-    alias: postgres
-    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+  cache: *testing_cache_policy
+  services: *testing_services
   script:
     - mix ecto.create
     - mix ecto.migrate
     - mix test --only=erratic
 
-unit-testing-rum:
+unit-testing-1.12-rum:
   extends:
   - .build_changes_policy
   - .using-ci-base
@@ -173,10 +188,10 @@ unit-testing-rum:
     - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
     - mix test --preload-modules
 
-lint:
+formatting-1.13:
   extends: .build_changes_policy
-  image: &current_elixir elixir:1.13-alpine
-  stage: test
+  image: &formatting_elixir elixir:1.13-alpine
+  stage: lint
   cache: *testing_cache_policy
   before_script: &current_bfr_script
     - apk update
@@ -187,24 +202,37 @@ lint:
   script:
     - mix format --check-formatted
 
-analysis:
-  extends:
-  - .build_changes_policy
-  - .using-ci-base
-  stage: test
-  cache: *testing_cache_policy
-  script:
-    - mix credo --strict --only=warnings,todo,fixme,consistency,readability
-
-cycles:
+cycles-1.13:
   extends: .build_changes_policy
-  image: *current_elixir
-  stage: test
+  image: *formatting_elixir
+  stage: lint
   cache: {}
   before_script: *current_bfr_script
   script:
     - mix compile
     - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
+
+analysis:
+  extends:
+  - .build_changes_policy
+  - .using-ci-base
+  stage: lint
+  cache: *testing_cache_policy
+  script:
+    - mix credo --strict --only=warnings,todo,fixme,consistency,readability
+
+dialyzer:
+  extends:
+  - .build_changes_policy
+  - .using-ci-base
+  stage: lint
+  allow_failure: true
+  when: manual 
+  cache: *testing_cache_policy
+  tags:
+    - feld
+  script:
+    - mix dialyzer
 
 docs-deploy:
   stage: deploy
