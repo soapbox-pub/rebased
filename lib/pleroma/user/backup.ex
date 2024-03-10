@@ -14,6 +14,7 @@ defmodule Pleroma.User.Backup do
 
   alias Pleroma.Activity
   alias Pleroma.Bookmark
+  alias Pleroma.Chat
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.User.Backup.State
@@ -196,7 +197,14 @@ defmodule Pleroma.User.Backup do
     end
   end
 
-  @files ['actor.json', 'outbox.json', 'likes.json', 'bookmarks.json']
+  @files [
+    'actor.json',
+    'outbox.json',
+    'likes.json',
+    'bookmarks.json',
+    'chats.json',
+    'chat_messages.json'
+  ]
   @spec export(Pleroma.User.Backup.t(), pid()) :: {:ok, String.t()} | :error
   def export(%__MODULE__{} = backup, caller_pid) do
     backup = Repo.preload(backup, :user)
@@ -207,6 +215,8 @@ defmodule Pleroma.User.Backup do
          :ok <- statuses(dir, backup.user, caller_pid),
          :ok <- likes(dir, backup.user, caller_pid),
          :ok <- bookmarks(dir, backup.user, caller_pid),
+         :ok <- chats(dir, backup.user, caller_pid),
+         :ok <- chat_messages(dir, backup.user, caller_pid),
          {:ok, zip_path} <- :zip.create(backup.file_name, @files, cwd: dir),
          {:ok, _} <- File.rm_rf(dir) do
       {:ok, zip_path}
@@ -351,6 +361,56 @@ defmodule Pleroma.User.Backup do
       "outbox",
       fn a ->
         with {:ok, activity} <- Transmogrifier.prepare_outgoing(a.data) do
+          {:ok, Map.delete(activity, "@context")}
+        end
+      end,
+      caller_pid
+    )
+  end
+
+  defp chats(dir, user, caller_pid) do
+    Chat.for_user_query(user.id)
+    |> write(
+      dir,
+      "chats",
+      fn chat ->
+        {:ok,
+         %{
+           "type" => "Chat",
+           "id" => "#{Pleroma.Web.Endpoint.url()}/chats/#{chat.id}",
+           "actor" => user.ap_id,
+           "to" => [chat.recipient],
+           "published" =>
+             chat.inserted_at |> DateTime.from_naive!("Etc/UTC") |> DateTime.to_iso8601()
+         }}
+      end,
+      caller_pid
+    )
+  end
+
+  def chat_messages(dir, %{id: user_id}, caller_pid) do
+    chats_subquery =
+      from(c in Chat,
+        where: c.user_id == ^user_id,
+        select: c.id
+      )
+
+    from(cr in Chat.MessageReference,
+      where: cr.chat_id in subquery(chats_subquery),
+      preload: [:object]
+    )
+    |> write(
+      dir,
+      "chat_messages",
+      fn reference ->
+        with {:ok, activity} <- Transmogrifier.prepare_outgoing(reference.object.data),
+             {:ok, activity} <-
+               {:ok,
+                Map.put(
+                  activity,
+                  "context",
+                  "#{Pleroma.Web.Endpoint.url()}/chats/#{reference.chat_id}"
+                )} do
           {:ok, Map.delete(activity, "@context")}
         end
       end,
