@@ -575,6 +575,12 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :contact_username,
+        type: :string,
+        description: "Instance owner username",
+        suggestions: ["admin"]
+      },
+      %{
         key: :limit,
         type: :integer,
         description: "Posts character limit (CW/Subject included in the counter)",

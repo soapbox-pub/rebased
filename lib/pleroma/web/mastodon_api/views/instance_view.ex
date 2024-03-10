@@ -28,6 +28,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         |> to_string,
       registrations: Keyword.get(instance, :registrations_open),
       approval_required: Keyword.get(instance, :account_approval_required),
+      contact_account: contact_account(Keyword.get(instance, :contact_username)),
       configuration: configuration(),
       # Extra (not present in Mastodon):
       max_toot_chars: Keyword.get(instance, :limit),
@@ -68,7 +69,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       },
       contact: %{
         email: Keyword.get(instance, :email),
-        account: nil
+        account: contact_account(Keyword.get(instance, :contact_username))
       },
       # Extra (not present in Mastodon):
       pleroma: pleroma_configuration2(instance)
@@ -168,6 +169,22 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       name_length: Config.get([:instance, :account_field_name_length]),
       value_length: Config.get([:instance, :account_field_value_length])
     }
+  end
+
+  defp contact_account(nil), do: nil
+
+  defp contact_account("@" <> username) do
+    contact_account(username)
+  end
+
+  defp contact_account(username) do
+    user = Pleroma.User.get_cached_by_nickname(username)
+
+    if user do
+      Pleroma.Web.MastodonAPI.AccountView.render("show.json", %{user: user, for: nil})
+    else
+      nil
+    end
   end
 
   defp configuration do
