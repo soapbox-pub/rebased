@@ -39,11 +39,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.RemoteReportPolicy do
   end
 
   defp maybe_reject_third_party(%{"object" => objects} = object) do
-    {_, to} = case objects do
-      [head | tail] when is_binary(head) -> {tail, head}
-      s when is_binary(s) -> {[], s}
-      _ -> {[], ""}
-    end
+    {_, to} =
+      case objects do
+        [head | tail] when is_binary(head) -> {tail, head}
+        s when is_binary(s) -> {[], s}
+        _ -> {[], ""}
+      end
 
     with true <- Config.get([:mrf_remote_report, :reject_third_party]),
          String.starts_with?(to, Pleroma.Web.Endpoint.url()) do
