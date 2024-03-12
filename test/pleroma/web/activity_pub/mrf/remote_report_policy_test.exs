@@ -13,7 +13,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.RemoteReportPolicyTest do
 
     activity = %{
       "type" => "Flag",
-      "actor" => "http://localhost:4001/actor"
+      "actor" => "http://localhost:4001/actor",
+      "object" => ["https://mastodon.online/users/Gargron"]
     }
 
     assert {:ok, _} = RemoteReportPolicy.filter(activity)
@@ -25,7 +26,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.RemoteReportPolicyTest do
 
     activity = %{
       "type" => "Flag",
-      "actor" => "https://mastodon.social/actor"
+      "actor" => "https://mastodon.social/actor",
+      "object" => ["https://mastodon.online/users/Gargron"]
     }
 
     assert {:reject, _} = RemoteReportPolicy.filter(activity)
@@ -37,7 +39,34 @@ defmodule Pleroma.Web.ActivityPub.MRF.RemoteReportPolicyTest do
 
     activity = %{
       "type" => "Flag",
-      "actor" => "https://mastodon.social/actor"
+      "actor" => "https://mastodon.social/actor",
+      "object" => ["https://mastodon.online/users/Gargron"]
+    }
+
+    assert {:ok, _} = RemoteReportPolicy.filter(activity)
+  end
+
+  test "rejects report on third-party if `reject_third_party: true`" do
+    clear_config([:mrf_remote_report, :reject_third_party], true)
+    clear_config([:mrf_remote_report, :reject_empty_message], false)
+
+    activity = %{
+      "type" => "Flag",
+      "actor" => "https://mastodon.social/users/Gargron",
+      "object" => ["https://mastodon.online/users/Gargron"]
+    }
+
+    assert {:reject, _} = RemoteReportPolicy.filter(activity)
+  end
+
+  test "preserves report on third party if `reject_third_party: false`" do
+    clear_config([:mrf_remote_report, :reject_third_party], false)
+    clear_config([:mrf_remote_report, :reject_empty_message], false)
+
+    activity = %{
+      "type" => "Flag",
+      "actor" => "https://mastodon.social/users/Gargron",
+      "object" => ["https://mastodon.online/users/Gargron"]
     }
 
     assert {:ok, _} = RemoteReportPolicy.filter(activity)
@@ -49,7 +78,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.RemoteReportPolicyTest do
 
     activity = %{
       "type" => "Flag",
-      "actor" => "https://mastodon.social/users/Gargron"
+      "actor" => "https://mastodon.social/users/Gargron",
+      "object" => ["https://mastodon.online/users/Gargron"]
     }
 
     assert {:reject, _} = RemoteReportPolicy.filter(activity)
@@ -62,6 +92,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RemoteReportPolicyTest do
     activity = %{
       "type" => "Flag",
       "actor" => "https://mastodon.social/users/Gargron",
+      "object" => ["https://mastodon.online/users/Gargron"],
       "content" => ""
     }
 
@@ -74,7 +105,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.RemoteReportPolicyTest do
 
     activity = %{
       "type" => "Flag",
-      "actor" => "https://mastodon.social/users/Gargron"
+      "actor" => "https://mastodon.social/users/Gargron",
+      "object" => ["https://mastodon.online/users/Gargron"]
     }
 
     assert {:ok, _} = RemoteReportPolicy.filter(activity)
@@ -86,7 +118,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.RemoteReportPolicyTest do
 
     activity = %{
       "type" => "Flag",
-      "actor" => "https://mastodon.social/actor"
+      "actor" => "https://mastodon.social/actor",
+      "object" => ["https://mastodon.online/users/Gargron"]
     }
 
     assert {:ok, _} = RemoteReportPolicy.filter(activity)
@@ -100,7 +133,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.RemoteReportPolicyTest do
     activity = %{
       "type" => "Flag",
       "actor" => "https://mastodon.social/users/Gargron",
-      "content" => "Transphobia"
+      "content" => "Transphobia",
+      "object" => ["https://mastodon.online/users/Gargron"]
     }
 
     assert {:reject, _} = RemoteReportPolicy.filter(activity)
