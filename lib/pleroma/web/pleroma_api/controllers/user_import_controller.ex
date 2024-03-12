@@ -15,14 +15,21 @@ defmodule Pleroma.Web.PleromaAPI.UserImportController do
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:blocks"]} when action == :blocks)
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:mutes"]} when action == :mutes)
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
   defdelegate open_api_operation(action), to: ApiSpec.UserImportOperation
 
-  def follow(%{body_params: %{list: %Plug.Upload{path: path}}} = conn, _) do
-    follow(%Plug.Conn{conn | body_params: %{list: File.read!(path)}}, %{})
+  def follow(
+        %{private: %{open_api_spex: %{body_params: %{list: %Plug.Upload{path: path}}}}} = conn,
+        _
+      ) do
+    list = File.read!(path)
+    do_follow(conn, list)
   end
 
-  def follow(%{assigns: %{user: follower}, body_params: %{list: list}} = conn, _) do
+  def follow(%{private: %{open_api_spex: %{body_params: %{list: list}}}} = conn, _),
+    do: do_follow(conn, list)
+
+  def do_follow(%{assigns: %{user: follower}} = conn, list) do
     identifiers =
       list
       |> String.split("\n")
@@ -35,20 +42,34 @@ defmodule Pleroma.Web.PleromaAPI.UserImportController do
     json(conn, "job started")
   end
 
-  def blocks(%{body_params: %{list: %Plug.Upload{path: path}}} = conn, _) do
-    blocks(%Plug.Conn{conn | body_params: %{list: File.read!(path)}}, %{})
+  def blocks(
+        %{private: %{open_api_spex: %{body_params: %{list: %Plug.Upload{path: path}}}}} = conn,
+        _
+      ) do
+    list = File.read!(path)
+    do_block(conn, list)
   end
 
-  def blocks(%{assigns: %{user: blocker}, body_params: %{list: list}} = conn, _) do
+  def blocks(%{private: %{open_api_spex: %{body_params: %{list: list}}}} = conn, _),
+    do: do_block(conn, list)
+
+  defp do_block(%{assigns: %{user: blocker}} = conn, list) do
     User.Import.blocks_import(blocker, prepare_user_identifiers(list))
     json(conn, "job started")
   end
 
-  def mutes(%{body_params: %{list: %Plug.Upload{path: path}}} = conn, _) do
-    mutes(%Plug.Conn{conn | body_params: %{list: File.read!(path)}}, %{})
+  def mutes(
+        %{private: %{open_api_spex: %{body_params: %{list: %Plug.Upload{path: path}}}}} = conn,
+        _
+      ) do
+    list = File.read!(path)
+    do_mute(conn, list)
   end
 
-  def mutes(%{assigns: %{user: user}, body_params: %{list: list}} = conn, _) do
+  def mutes(%{private: %{open_api_spex: %{body_params: %{list: list}}}} = conn, _),
+    do: do_mute(conn, list)
+
+  defp do_mute(%{assigns: %{user: user}} = conn, list) do
     User.Import.mutes_import(user, prepare_user_identifiers(list))
     json(conn, "job started")
   end

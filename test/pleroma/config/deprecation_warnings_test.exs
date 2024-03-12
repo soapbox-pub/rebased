@@ -125,13 +125,12 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
         media_removal: ["some.removal", {"some.other.instance", "Some reason"}]
       )
 
-      expected_config = [
+      expected_config =
         {:media_removal, [{"some.removal", ""}, {"some.other.instance", "Some reason"}]}
-      ]
 
       capture_log(fn -> DeprecationWarnings.warn() end)
 
-      assert Config.get([:mrf_simple]) == expected_config
+      assert expected_config in Config.get([:mrf_simple])
     end
 
     test "doesn't give a warning with correct config" do
@@ -215,7 +214,7 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
 
                ```
                config :pleroma, :mrf,
-                 transparency_exclusions: [{"instance.tld", "Reason to exlude transparency"}]
+                 transparency_exclusions: [{"instance.tld", "Reason to exclude transparency"}]
                ```
                """
     end
@@ -327,11 +326,11 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
            end) =~ "Your config is using old namespace for activity expiration configuration."
   end
 
-  test "check_uploders_s3_public_endpoint/0" do
+  test "check_uploaders_s3_public_endpoint/0" do
     clear_config([Pleroma.Uploaders.S3], public_endpoint: "https://fake.amazonaws.com/bucket/")
 
     assert capture_log(fn ->
-             DeprecationWarnings.check_uploders_s3_public_endpoint()
+             DeprecationWarnings.check_uploaders_s3_public_endpoint()
            end) =~
              "Your config is using the old setting for controlling the URL of media uploaded to your S3 bucket."
   end

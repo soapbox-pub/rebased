@@ -188,10 +188,11 @@ defmodule Pleroma.Migrators.Support.BaseMigrator do
       end
 
       defp fault_rate do
-        with failures_count when is_integer(failures_count) <- failures_count() do
+        with failures_count when is_integer(failures_count) <- failures_count(),
+             true <- failures_count > 0 do
           failures_count / Enum.max([get_stat(:affected_count, 0), 1])
         else
-          _ -> :error
+          _ -> 0
         end
       end
 

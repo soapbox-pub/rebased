@@ -3,16 +3,18 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
-  use Pleroma.Web.ConnCase, async: true
+  use Pleroma.Web.ConnCase
 
   alias Pleroma.MFA
   alias Pleroma.MFA.TOTP
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
-  import ExUnit.CaptureLog
-  import Pleroma.Factory
   import Ecto.Query
+  import ExUnit.CaptureLog
+  import Mox
+  import Pleroma.Factory
 
   setup_all do: clear_config([:instance, :federating], true)
   setup do: clear_config([:user, :deny_follow_blocked])
@@ -135,7 +137,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
                  |> html_response(200)
 
                assert response =~ "Error fetching user"
-             end) =~ "Object has been deleted"
+             end) =~ ":not_found"
     end
   end
 
@@ -428,6 +430,9 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
 
     test "with media proxy" do
       clear_config([:media_proxy, :enabled], true)
+
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
 
       user =
         insert(:user, %{

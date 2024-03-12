@@ -20,7 +20,7 @@ defmodule Pleroma.Web.Plugs.Cache do
 
   - `ttl`:  An expiration time (time-to-live). This value should be in milliseconds or `nil` to disable expiration. Defaults to `nil`.
   - `query_params`: Take URL query string into account (`true`), ignore it (`false`) or limit to specific params only (list). Defaults to `true`.
-  - `tracking_fun`: A function that is called on successfull responses, no matter if the request is cached or not. It should accept a conn as the first argument and the value assigned to `tracking_fun_data` as the second.
+  - `tracking_fun`: A function that is called on successful responses, no matter if the request is cached or not. It should accept a conn as the first argument and the value assigned to `tracking_fun_data` as the second.
 
   Additionally, you can overwrite the TTL inside a controller action by assigning `cache_ttl` to the connection struct:
 

@@ -29,7 +29,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
   # GET /ostatus_subscribe
   #
   def follow(%{assigns: %{user: user}} = conn, %{"acct" => acct}) do
-    case is_status?(acct) do
+    case status?(acct) do
       true -> follow_status(conn, user, acct)
       _ -> follow_account(conn, user, acct)
     end
@@ -57,7 +57,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
   defp follow_template(%User{} = _user), do: "follow.html"
   defp follow_template(_), do: "follow_login.html"
 
-  defp is_status?(acct) do
+  defp status?(acct) do
     case Fetcher.fetch_and_contain_remote_object_from_id(acct) do
       {:ok, %{"type" => type}} when type in @status_types ->
         true

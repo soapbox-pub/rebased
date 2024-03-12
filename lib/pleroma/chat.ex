@@ -42,7 +42,7 @@ defmodule Pleroma.Chat do
     |> unique_constraint(:user_id, name: :chats_user_id_recipient_index)
   end
 
-  @spec get_by_user_and_id(User.t(), FlakeId.Ecto.CompatType.t()) ::
+  @spec get_by_user_and_id(User.t(), Ecto.UUID.t()) ::
           {:ok, t()} | {:error, :not_found}
   def get_by_user_and_id(%User{id: user_id}, id) do
     from(c in __MODULE__,
@@ -52,17 +52,17 @@ defmodule Pleroma.Chat do
     |> Repo.find_resource()
   end
 
-  @spec get_by_id(FlakeId.Ecto.CompatType.t()) :: t() | nil
+  @spec get_by_id(Ecto.UUID.t()) :: t() | nil
   def get_by_id(id) do
     Repo.get(__MODULE__, id)
   end
 
-  @spec get(FlakeId.Ecto.CompatType.t(), String.t()) :: t() | nil
+  @spec get(Ecto.UUID.t(), String.t()) :: t() | nil
   def get(user_id, recipient) do
     Repo.get_by(__MODULE__, user_id: user_id, recipient: recipient)
   end
 
-  @spec get_or_create(FlakeId.Ecto.CompatType.t(), String.t()) ::
+  @spec get_or_create(Ecto.UUID.t(), String.t()) ::
           {:ok, t()} | {:error, Ecto.Changeset.t()}
   def get_or_create(user_id, recipient) do
     %__MODULE__{}
@@ -75,7 +75,7 @@ defmodule Pleroma.Chat do
     )
   end
 
-  @spec bump_or_create(FlakeId.Ecto.CompatType.t(), String.t()) ::
+  @spec bump_or_create(Ecto.UUID.t(), String.t()) ::
           {:ok, t()} | {:error, Ecto.Changeset.t()}
   def bump_or_create(user_id, recipient) do
     %__MODULE__{}
@@ -87,7 +87,7 @@ defmodule Pleroma.Chat do
     )
   end
 
-  @spec for_user_query(FlakeId.Ecto.CompatType.t()) :: Ecto.Query.t()
+  @spec for_user_query(Ecto.UUID.t()) :: Ecto.Query.t()
   def for_user_query(user_id) do
     from(c in Chat,
       where: c.user_id == ^user_id,

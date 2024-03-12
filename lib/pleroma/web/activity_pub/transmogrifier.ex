@@ -799,7 +799,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       |> Object.normalize(fetch: false)
 
     data =
-      if Visibility.is_private?(object) && object.data["actor"] == ap_id do
+      if Visibility.private?(object) && object.data["actor"] == ap_id do
         data |> Map.put("object", object |> Map.get(:data) |> prepare_object)
       else
         data |> maybe_fix_object_url
@@ -869,8 +869,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            relative_object do
       Map.put(data, "object", external_url)
     else
-      {:fetch, e} ->
-        Logger.error("Couldn't fetch #{object} #{inspect(e)}")
+      {:fetch, _} ->
         data
 
       _ ->

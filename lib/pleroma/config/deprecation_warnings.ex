@@ -172,7 +172,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
 
       ```
       config :pleroma, :mrf,
-        transparency_exclusions: [{"instance.tld", "Reason to exlude transparency"}]
+        transparency_exclusions: [{"instance.tld", "Reason to exclude transparency"}]
       ```
       """)
 
@@ -213,7 +213,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
       check_gun_pool_options(),
       check_activity_expiration_config(),
       check_remote_ip_plug_name(),
-      check_uploders_s3_public_endpoint(),
+      check_uploaders_s3_public_endpoint(),
       check_quarantined_instances_tuples(),
       check_transparency_exclusions_tuples(),
       check_simple_policy_tuples(),
@@ -255,7 +255,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     move_namespace_and_warn(@mrf_config_map, warning_preface)
   end
 
-  @spec move_namespace_and_warn([config_map()], String.t()) :: :ok | nil
+  @spec move_namespace_and_warn([config_map()], String.t()) :: :ok | :error
   def move_namespace_and_warn(config_map, warning_preface) do
     warning =
       Enum.reduce(config_map, "", fn
@@ -278,7 +278,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     end
   end
 
-  @spec check_media_proxy_whitelist_config() :: :ok | nil
+  @spec check_media_proxy_whitelist_config() :: :ok | :error
   def check_media_proxy_whitelist_config do
     whitelist = Config.get([:media_proxy, :whitelist])
 
@@ -339,7 +339,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     end
   end
 
-  @spec check_activity_expiration_config() :: :ok | nil
+  @spec check_activity_expiration_config() :: :ok | :error
   def check_activity_expiration_config do
     warning_preface = """
     !!!DEPRECATION WARNING!!!
@@ -355,7 +355,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     )
   end
 
-  @spec check_remote_ip_plug_name() :: :ok | nil
+  @spec check_remote_ip_plug_name() :: :ok | :error
   def check_remote_ip_plug_name do
     warning_preface = """
     !!!DEPRECATION WARNING!!!
@@ -371,8 +371,8 @@ defmodule Pleroma.Config.DeprecationWarnings do
     )
   end
 
-  @spec check_uploders_s3_public_endpoint() :: :ok | nil
-  def check_uploders_s3_public_endpoint do
+  @spec check_uploaders_s3_public_endpoint() :: :ok | :error
+  def check_uploaders_s3_public_endpoint do
     s3_config = Pleroma.Config.get([Pleroma.Uploaders.S3])
 
     use_old_config = Keyword.has_key?(s3_config, :public_endpoint)

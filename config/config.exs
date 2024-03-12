@@ -114,14 +114,7 @@ config :pleroma, :uri_schemes,
 config :pleroma, Pleroma.Web.Endpoint,
   url: [host: "localhost"],
   http: [
-    ip: {127, 0, 0, 1},
-    dispatch: [
-      {:_,
-       [
-         {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
-         {:_, Plug.Cowboy.Handler, {Pleroma.Web.Endpoint, []}}
-       ]}
-    ]
+    ip: {127, 0, 0, 1}
   ],
   protocol: "https",
   secret_key_base: "aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl",
@@ -192,9 +185,6 @@ config :pleroma, :instance,
   federating: true,
   federation_incoming_replies_max_depth: 100,
   federation_reachability_timeout_days: 7,
-  federation_publisher_modules: [
-    Pleroma.Web.ActivityPub.Publisher
-  ],
   allow_relay: true,
   public: true,
   quarantined_instances: [],
@@ -349,6 +339,8 @@ config :pleroma, :manifest,
   icons: [
     %{
       src: "/static/logo.svg",
+      sizes: "144x144",
+      purpose: "any",
       type: "image/svg+xml"
     }
   ],
@@ -676,12 +668,26 @@ config :pleroma, Pleroma.Emails.UserEmail,
 
 config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: false
 
-config :prometheus, Pleroma.Web.Endpoint.MetricsExporter,
-  enabled: false,
-  auth: false,
-  ip_whitelist: [],
-  path: "/api/pleroma/app_metrics",
-  format: :text
+config :pleroma, Pleroma.PromEx,
+  disabled: false,
+  manual_metrics_start_delay: :no_delay,
+  drop_metrics_groups: [],
+  grafana: [
+    host: System.get_env("GRAFANA_HOST", "http://localhost:3000"),
+    auth_token: System.get_env("GRAFANA_TOKEN"),
+    upload_dashboards_on_start: false,
+    folder_name: "BEAM",
+    annotate_app_lifecycle: true
+  ],
+  metrics_server: [
+    port: 4021,
+    path: "/metrics",
+    protocol: :http,
+    pool_size: 5,
+    cowboy_opts: [],
+    auth_strategy: :none
+  ],
+  datasource: "Prometheus"
 
 config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 25,
@@ -938,6 +944,15 @@ config :pleroma, Pleroma.Search.Meilisearch,
   url: "http://127.0.0.1:7700/",
   private_key: nil,
   initial_indexing_chunk_size: 100_000
+
+config :pleroma, Pleroma.Application,
+  background_migrators: true,
+  internal_fetch: true,
+  load_custom_modules: true,
+  max_restarts: 3,
+  streamer_registry: true
+
+config :pleroma, Pleroma.Uploaders.Uploader, timeout: 30_000
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

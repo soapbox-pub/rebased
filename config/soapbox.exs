@@ -71,8 +71,7 @@ config :pleroma, :instance,
 # Background migration performance
 config :pleroma, :delete_context_objects, sleep_interval_ms: 3_000
 
-config :pleroma, :markup,
-  allow_inline_images: false
+config :pleroma, :markup, allow_inline_images: false
 
 # Pretend to be WhatsApp because some sites don't return link previews otherwise
 config :pleroma, :rich_media, user_agent: "WhatsApp/2"

@@ -3,84 +3,15 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.ParserTest do
-  use ExUnit.Case, async: true
+  use Pleroma.DataCase, async: false
 
   alias Pleroma.Web.RichMedia.Parser
   alias Pleroma.Web.RichMedia.Parser.Embed
 
+  import Tesla.Mock
+
   setup do
-    Tesla.Mock.mock(fn
-      %{
-        method: :get,
-        url: "http://example.com/ogp"
-      } ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}
-
-      %{
-        method: :get,
-        url: "http://example.com/non-ogp"
-      } ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/non_ogp_embed.html")}
-
-      %{
-        method: :get,
-        url: "http://example.com/ogp-missing-title"
-      } ->
-        %Tesla.Env{
-          status: 200,
-          body: File.read!("test/fixtures/rich_media/ogp-missing-title.html")
-        }
-
-      %{
-        method: :get,
-        url: "http://example.com/twitter-card"
-      } ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/twitter_card.html")}
-
-      %{
-        method: :get,
-        url: "http://example.com/oembed"
-      } ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/oembed.html")}
-
-      %{
-        method: :get,
-        url: "http://example.com/oembed.json"
-      } ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/oembed.json")}
-
-      %{method: :get, url: "http://example.com/empty"} ->
-        %Tesla.Env{status: 200, body: "hello"}
-
-      %{method: :get, url: "http://example.com/malformed"} ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/malformed-data.html")}
-
-      %{method: :get, url: "http://example.com/error"} ->
-        {:error, :overload}
-
-      %{
-        method: :head,
-        url: "http://example.com/huge-page"
-      } ->
-        %Tesla.Env{
-          status: 200,
-          headers: [{"content-length", "2000001"}, {"content-type", "text/html"}]
-        }
-
-      %{
-        method: :head,
-        url: "http://example.com/pdf-file"
-      } ->
-        %Tesla.Env{
-          status: 200,
-          headers: [{"content-length", "1000000"}, {"content-type", "application/pdf"}]
-        }
-
-      %{method: :head} ->
-        %Tesla.Env{status: 404, body: "", headers: []}
-    end)
-
-    :ok
+    mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
   end
 
   test "returns empty embed when no metadata present" do
@@ -88,14 +19,14 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
       meta: %{},
       oembed: nil,
       title: nil,
-      url: "http://example.com/empty"
+      url: "https://example.com/empty"
     }
 
-    assert Parser.parse("http://example.com/empty") == {:ok, expected}
+    assert Parser.parse("https://example.com/empty") == {:ok, expected}
   end
 
   test "parses ogp" do
-    url = "http://example.com/ogp"
+    url = "https://example.com/ogp"
 
     expected = %Embed{
       meta: %{
@@ -108,20 +39,20 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
       },
       oembed: nil,
       title: "The Rock (1996)",
-      url: "http://example.com/ogp"
+      url: "https://example.com/ogp"
     }
 
     assert Parser.parse(url) == {:ok, expected}
   end
 
   test "gets <title> tag" do
-    url = "http://example.com/ogp-missing-title"
+    url = "https://example.com/ogp-missing-title"
     expected = "The Rock (1996)"
     assert {:ok, %Embed{title: ^expected}} = Parser.parse(url)
   end
 
   test "parses twitter card" do
-    url = "http://example.com/twitter-card"
+    url = "https://example.com/twitter-card"
 
     expected = %Embed{
       meta: %{
@@ -133,14 +64,14 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
       },
       oembed: nil,
       title: nil,
-      url: "http://example.com/twitter-card"
+      url: "https://example.com/twitter-card"
     }
 
     assert Parser.parse(url) == {:ok, expected}
   end
 
   test "parses OEmbed" do
-    url = "http://example.com/oembed"
+    url = "https://example.com/oembed"
 
     expected = %Embed{
       meta: %{},
@@ -167,7 +98,7 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
         "web_page_short_url" => "https://flic.kr/p/4AK2sc",
         "width" => "1024"
       },
-      url: "http://example.com/oembed"
+      url: "https://example.com/oembed"
     }
 
     assert Parser.parse(url) == {:ok, expected}
@@ -196,21 +127,21 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
       },
       oembed: nil,
       title: nil,
-      url: "http://example.com/malformed"
+      url: "https://example.com/malformed"
     }
 
-    assert Parser.parse("http://example.com/malformed") == {:ok, expected}
+    assert Parser.parse("https://example.com/malformed") == {:ok, expected}
   end
 
   test "returns error if getting page was not successful" do
-    assert {:error, :overload} = Parser.parse("http://example.com/error")
+    assert {:error, :overload} = Parser.parse("https://example.com/error")
   end
 
   test "does a HEAD request to check if the body is too large" do
-    assert {:error, :body_too_large} = Parser.parse("http://example.com/huge-page")
+    assert {:error, :body_too_large} = Parser.parse("https://example.com/huge-page")
   end
 
   test "does a HEAD request to check if the body is html" do
-    assert {:error, {:content_type, _}} = Parser.parse("http://example.com/pdf-file")
+    assert {:error, {:content_type, _}} = Parser.parse("https://example.com/pdf-file")
   end
 end

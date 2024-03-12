@@ -56,7 +56,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     media_proxy_url = MediaProxy.url(url)
 
     with {:ok, %{status: status} = head_response} when status in 200..299 <-
-           Pleroma.HTTP.request("HEAD", media_proxy_url, [], [], pool: :media) do
+           Pleroma.HTTP.request(:head, media_proxy_url, "", [], pool: :media) do
       content_type = Tesla.get_header(head_response, "content-type")
       content_length = Tesla.get_header(head_response, "content-length")
       content_length = content_length && String.to_integer(content_length)

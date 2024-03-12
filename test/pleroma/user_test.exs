@@ -228,7 +228,7 @@ defmodule Pleroma.UserTest do
     assert [] = User.get_follow_requests(followed)
   end
 
-  test "follow_all follows mutliple users" do
+  test "follow_all follows multiple users" do
     user = insert(:user)
     followed_zero = insert(:user)
     followed_one = insert(:user)
@@ -252,7 +252,7 @@ defmodule Pleroma.UserTest do
     refute User.following?(user, reverse_blocked)
   end
 
-  test "follow_all follows mutliple users without duplicating" do
+  test "follow_all follows multiple users without duplicating" do
     user = insert(:user)
     followed_zero = insert(:user)
     followed_one = insert(:user)
@@ -883,7 +883,7 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "get_or_fetch/1 remote users with tld, while BE is ran on subdomain" do
+  describe "get_or_fetch/1 remote users with tld, while BE is running on a subdomain" do
     setup do: clear_config([Pleroma.Web.WebFinger, :update_nickname_on_user_fetch], true)
 
     test "for mastodon" do
@@ -938,13 +938,13 @@ defmodule Pleroma.UserTest do
 
     @tag capture_log: true
     test "returns nil if no user could be fetched" do
-      {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistant@social.heldscal.la")
-      assert fetched_user == "not found nonexistant@social.heldscal.la"
+      {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistent@social.heldscal.la")
+      assert fetched_user == "not found nonexistent@social.heldscal.la"
     end
 
-    test "returns nil for nonexistant local user" do
-      {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistant")
-      assert fetched_user == "not found nonexistant"
+    test "returns nil for nonexistent local user" do
+      {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistent")
+      assert fetched_user == "not found nonexistent"
     end
 
     test "updates an existing user, if stale" do
@@ -1052,7 +1052,7 @@ defmodule Pleroma.UserTest do
       assert cs.valid?
     end
 
-    test "it sets the follower_adress" do
+    test "it sets the follower_address" do
       cs = User.remote_user_changeset(@valid_remote)
       # remote users get a fake local follower address
       assert cs.changes.follower_address ==
@@ -1873,8 +1873,8 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  test "get_public_key_for_ap_id fetches a user that's not in the db" do
-    assert {:ok, _key} = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
+  test "get_public_key_for_ap_id returns correctly for user that's not in the db" do
+    assert :error = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
   end
 
   describe "per-user rich-text filtering" do
@@ -2348,20 +2348,20 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "is_internal_user?/1" do
+  describe "internal?/1" do
     test "non-internal user returns false" do
       user = insert(:user)
-      refute User.is_internal_user?(user)
+      refute User.internal?(user)
     end
 
     test "user with no nickname returns true" do
       user = insert(:user, %{nickname: nil})
-      assert User.is_internal_user?(user)
+      assert User.internal?(user)
     end
 
     test "user with internal-prefixed nickname returns true" do
       user = insert(:user, %{nickname: "internal.test"})
-      assert User.is_internal_user?(user)
+      assert User.internal?(user)
     end
   end
 
@@ -2890,5 +2890,27 @@ defmodule Pleroma.UserTest do
            ] = user.fields
 
     assert is_binary(verified_at)
+  end
+
+  test "updating fields does not invalidate previously validated links" do
+    user = insert(:user, ap_id: "https://social.example.org/users/lain")
+
+    user
+    |> User.update_and_set_cache(%{
+      raw_fields: [%{"name" => "verified link", "value" => "http://example.com/rel_me/link"}]
+    })
+
+    ObanHelpers.perform_all()
+
+    %User{fields: [%{"verified_at" => verified_at}]} = user = User.get_cached_by_id(user.id)
+
+    user
+    |> User.update_and_set_cache(%{
+      raw_fields: [%{"name" => "Verified link", "value" => "http://example.com/rel_me/link"}]
+    })
+
+    user = User.get_cached_by_id(user.id)
+
+    assert [%{"verified_at" => ^verified_at}] = user.fields
   end
 end

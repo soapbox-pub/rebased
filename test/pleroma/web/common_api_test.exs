@@ -13,6 +13,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Rule
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -21,11 +22,19 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Workers.PollWorker
 
-  import Pleroma.Factory
-  import Mock
   import Ecto.Query, only: [from: 2]
+  import Mock
+  import Mox
+  import Pleroma.Factory
 
+  require Pleroma.Activity.Queries
   require Pleroma.Constants
+
+  defp get_announces_of_object(%{data: %{"id" => id}} = _object) do
+    Pleroma.Activity.Queries.by_type("Announce")
+    |> Pleroma.Activity.Queries.by_object_id(id)
+    |> Pleroma.Repo.all()
+  end
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -33,6 +42,13 @@ defmodule Pleroma.Web.CommonAPITest do
 
   setup do
     Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
+  setup do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
     :ok
   end
 
@@ -495,7 +511,7 @@ defmodule Pleroma.Web.CommonAPITest do
     {:ok, convo_reply} =
       CommonAPI.post(user, %{status: ".", in_reply_to_conversation_id: participation.id})
 
-    assert Visibility.is_direct?(convo_reply)
+    assert Visibility.direct?(convo_reply)
 
     assert activity.data["context"] == convo_reply.data["context"]
   end
@@ -913,7 +929,7 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe"})
 
       {:ok, %Activity{} = announce_activity} = CommonAPI.repeat(activity.id, user)
-      assert Visibility.is_public?(announce_activity)
+      assert Visibility.public?(announce_activity)
     end
 
     test "can't repeat a repeat" do
@@ -935,7 +951,7 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, %Activity{} = announce_activity} =
         CommonAPI.repeat(activity.id, user, %{visibility: "private"})
 
-      assert Visibility.is_private?(announce_activity)
+      assert Visibility.private?(announce_activity)
       refute Visibility.visible_for_user?(announce_activity, nil)
     end
 
@@ -948,7 +964,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       {:ok, %Activity{} = announce_activity} = CommonAPI.repeat(activity.id, author)
 
-      assert Visibility.is_private?(announce_activity)
+      assert Visibility.private?(announce_activity)
       refute Visibility.visible_for_user?(announce_activity, nil)
 
       assert Visibility.visible_for_user?(activity, follower)
@@ -1664,7 +1680,7 @@ defmodule Pleroma.Web.CommonAPITest do
       with_mock Pleroma.Web.Federator, publish: fn _ -> :ok end do
         {:ok, activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
 
-        assert Visibility.is_local_public?(activity)
+        assert Visibility.local_public?(activity)
         assert_not_called(Pleroma.Web.Federator.publish(activity))
       end
     end
@@ -1679,7 +1695,7 @@ defmodule Pleroma.Web.CommonAPITest do
         assert {:ok, %Activity{data: %{"deleted_activity_id" => ^activity_id}} = activity} =
                  CommonAPI.delete(activity_id, user)
 
-        assert Visibility.is_local_public?(activity)
+        assert Visibility.local_public?(activity)
         assert_not_called(Pleroma.Web.Federator.publish(activity))
       end
     end
@@ -1695,7 +1711,7 @@ defmodule Pleroma.Web.CommonAPITest do
         assert {:ok, %Activity{data: %{"type" => "Announce"}} = activity} =
                  CommonAPI.repeat(activity_id, user)
 
-        assert Visibility.is_local_public?(activity)
+        assert Visibility.local_public?(activity)
         refute called(Pleroma.Web.Federator.publish(activity))
       end
     end
@@ -1713,7 +1729,7 @@ defmodule Pleroma.Web.CommonAPITest do
         assert {:ok, %Activity{data: %{"type" => "Undo"}} = activity} =
                  CommonAPI.unrepeat(activity_id, user)
 
-        assert Visibility.is_local_public?(activity)
+        assert Visibility.local_public?(activity)
         refute called(Pleroma.Web.Federator.publish(activity))
       end
     end
@@ -1728,7 +1744,7 @@ defmodule Pleroma.Web.CommonAPITest do
         assert {:ok, %Activity{data: %{"type" => "Like"}} = activity} =
                  CommonAPI.favorite(user, activity.id)
 
-        assert Visibility.is_local_public?(activity)
+        assert Visibility.local_public?(activity)
         refute called(Pleroma.Web.Federator.publish(activity))
       end
     end
@@ -1743,7 +1759,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       with_mock Pleroma.Web.Federator, publish: fn _ -> :ok end do
         assert {:ok, activity} = CommonAPI.unfavorite(activity.id, user)
-        assert Visibility.is_local_public?(activity)
+        assert Visibility.local_public?(activity)
         refute called(Pleroma.Web.Federator.publish(activity))
       end
     end
@@ -1757,7 +1773,7 @@ defmodule Pleroma.Web.CommonAPITest do
         assert {:ok, %Activity{data: %{"type" => "EmojiReact"}} = activity} =
                  CommonAPI.react_with_emoji(activity.id, user, "👍")
 
-        assert Visibility.is_local_public?(activity)
+        assert Visibility.local_public?(activity)
         refute called(Pleroma.Web.Federator.publish(activity))
       end
     end
@@ -1773,7 +1789,7 @@ defmodule Pleroma.Web.CommonAPITest do
         assert {:ok, %Activity{data: %{"type" => "Undo"}} = activity} =
                  CommonAPI.unreact_with_emoji(activity.id, user, "👍")
 
-        assert Visibility.is_local_public?(activity)
+        assert Visibility.local_public?(activity)
         refute called(Pleroma.Web.Federator.publish(activity))
       end
     end
@@ -1900,6 +1916,56 @@ defmodule Pleroma.Web.CommonAPITest do
       assert updated_object.data["content"] == "mewmew 2"
       assert Map.get(updated_object.data, "summary", "") == ""
       assert Map.has_key?(updated_object.data, "updated")
+    end
+  end
+
+  describe "Group actors" do
+    setup do
+      poster = insert(:user)
+      group = insert(:user, actor_type: "Group")
+      other_group = insert(:user, actor_type: "Group")
+      %{poster: poster, group: group, other_group: other_group}
+    end
+
+    test "it boosts public posts", %{poster: poster, group: group} do
+      {:ok, post} = CommonAPI.post(poster, %{status: "hey @#{group.nickname}"})
+
+      announces = get_announces_of_object(post.object)
+      assert [_] = announces
+    end
+
+    test "it does not boost private posts", %{poster: poster, group: group} do
+      {:ok, private_post} =
+        CommonAPI.post(poster, %{status: "hey @#{group.nickname}", visibility: "private"})
+
+      assert [] = get_announces_of_object(private_post.object)
+    end
+
+    test "remote groups do not boost any posts", %{poster: poster} do
+      remote_group =
+        insert(:user, actor_type: "Group", local: false, nickname: "remote@example.com")
+
+      {:ok, post} = CommonAPI.post(poster, %{status: "hey @#{User.full_nickname(remote_group)}"})
+      assert remote_group.ap_id in post.data["to"]
+
+      announces = get_announces_of_object(post.object)
+      assert [] = announces
+    end
+
+    test "multiple groups mentioned", %{poster: poster, group: group, other_group: other_group} do
+      {:ok, post} =
+        CommonAPI.post(poster, %{status: "hey @#{group.nickname} @#{other_group.nickname}"})
+
+      announces = get_announces_of_object(post.object)
+      assert [_, _] = announces
+    end
+
+    test "it does not boost if group is blocking poster", %{poster: poster, group: group} do
+      {:ok, _} = CommonAPI.block(group, poster)
+      {:ok, post} = CommonAPI.post(poster, %{status: "hey @#{group.nickname}"})
+
+      announces = get_announces_of_object(post.object)
+      assert [] = announces
     end
   end
 end

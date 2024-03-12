@@ -175,6 +175,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
       {:object_validation, e} ->
         e
+
+      {:error, %Ecto.Changeset{} = e} ->
+        {:error, e}
     end
   end
 

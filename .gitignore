@@ -55,5 +55,6 @@ docs/generated_config.md
 pleroma.iml
 
 # Editor temp files
-/*~
-/*#
+*~
+*#
+*.swp
