@@ -194,7 +194,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :allow_following_move,
         :also_known_as,
         :accepts_chat_messages,
-        :accepts_email_list,
         :show_birthday
       ]
       |> Enum.reduce(%{}, fn key, acc ->

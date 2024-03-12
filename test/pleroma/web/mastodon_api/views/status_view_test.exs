@@ -339,8 +339,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         emoji_reactions: [],
         parent_visible: false,
         pinned_at: nil,
-        content_type: nil,
         quotes_count: 0,
+        content_type: nil,
         event: nil
       }
     }

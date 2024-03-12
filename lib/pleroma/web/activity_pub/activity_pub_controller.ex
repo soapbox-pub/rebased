@@ -334,16 +334,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     |> represent_service_actor(conn)
   end
 
-  def internal_fetch(%Plug.Conn{host: host} = conn, _params) do
-    with fetch_actor_origin when is_binary(fetch_actor_origin) <-
-           Pleroma.Config.get([:activitypub, :fetch_actor_origin]),
-         %URI{host: fetch_actor_host} <- URI.parse(fetch_actor_origin),
-         true <- host == fetch_actor_host do
-      fetch_actor_origin
-    else
-      _ -> Pleroma.Web.Endpoint.url()
-    end
-    |> InternalFetchActor.get_actor()
+  def internal_fetch(conn, _params) do
+    InternalFetchActor.get_actor()
     |> represent_service_actor(conn)
   end
 

@@ -278,6 +278,10 @@ defmodule Pleroma.Object do
     end
   end
 
+  defp poll_is_multiple?(%Object{data: %{"anyOf" => [_ | _]}}), do: true
+
+  defp poll_is_multiple?(_), do: false
+
   def increase_replies_count(ap_id) do
     Object
     |> where([o], fragment("?->>'id' = ?::text", o.data, ^to_string(ap_id)))
@@ -369,10 +373,6 @@ defmodule Pleroma.Object do
       _ -> {:error, "Not found"}
     end
   end
-
-  defp poll_is_multiple?(%Object{data: %{"anyOf" => [_ | _]}}), do: true
-
-  defp poll_is_multiple?(_), do: false
 
   def increase_vote_count(ap_id, name, actor) do
     with %Object{} = object <- Object.normalize(ap_id, fetch: false),

@@ -11,24 +11,10 @@ defmodule Pleroma.Web.ActivityPub.InternalFetchActor do
     # Wait for everything to settle.
     Process.sleep(1000 * 5)
     get_actor()
-    get_actor(Pleroma.Web.Endpoint.url())
   end
 
-  def get_actor(origin) do
-    %URI{host: host} = URI.parse(origin)
-
-    nickname =
-      cond do
-        host == Pleroma.Web.Endpoint.host() -> "internal.fetch"
-        true -> "internal.fetch@#{host}"
-      end
-
-    "#{origin}/internal/fetch"
-    |> User.get_or_create_service_actor_by_ap_id(nickname)
-  end
-
-  def get_actor() do
-    (Pleroma.Config.get([:activitypub, :fetch_actor_origin]) || Pleroma.Web.Endpoint.url())
-    |> get_actor()
+  def get_actor do
+    "#{Pleroma.Web.Endpoint.url()}/internal/fetch"
+    |> User.get_or_create_service_actor_by_ap_id("internal.fetch")
   end
 end

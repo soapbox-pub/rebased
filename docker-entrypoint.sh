@@ -1,11 +1,9 @@
-#!/bin/bash
+#!/bin/ash
 
 set -e
 
-DATABASE_URL=${DATABASE_URL:-"postgres://${DB_USER:-postgres}:${DB_PASS:-postgres}@${DB_HOST:-db}:5432/${DB_NAME:-postgres}"}
-
 echo "-- Waiting for database..."
-while ! pg_isready -d $DATABASE_URL -t 1; do
+while ! pg_isready -U ${DB_USER:-pleroma} -d postgres://${DB_HOST:-db}:${DB_PORT:-5432}/${DB_NAME:-pleroma} -t 1; do
     sleep 1s
 done
 

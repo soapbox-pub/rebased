@@ -11,11 +11,6 @@ defmodule Pleroma.Web.Endpoint do
 
   socket("/live", Phoenix.LiveView.Socket)
 
-  plug(Unplug,
-    if: Pleroma.Web.Plugs.MetricsPredicate,
-    do: {PromEx.Plug, path: "/api/metrics", prom_ex_module: Pleroma.PromEx}
-  )
-
   plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
 
   plug(Pleroma.Web.Plugs.SetLocalePlug)

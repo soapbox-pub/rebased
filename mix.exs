@@ -19,11 +19,11 @@ defmodule Pleroma.Mixfile do
       deps: deps(),
       test_coverage: [tool: :covertool, summary: true],
       # Docs
-      homepage_url: "https://soapbox.pub/",
-      source_url: "https://gitlab.com/soapbox-pub/rebased",
+      homepage_url: "https://github.com/mkljczk/pleroma",
+      source_url: "https://github.com/mkljczk/pleroma",
       docs: [
         source_url_pattern:
-          "https://gitlab.com/soapbox-pub/rebased/blob/develop/%{path}#L%{line}",
+          "https://github.com/mkljczk/pleroma/blob/develop/%{path}#L%{line}",
         logo: "priv/static/images/logo.png",
         extras: ["README.md", "CHANGELOG.md"] ++ Path.wildcard("docs/**/*.md"),
         groups_for_extras: [
@@ -117,12 +117,10 @@ defmodule Pleroma.Mixfile do
   defp deps do
     [
       {:phoenix, "~> 1.7.3"},
-      {:tzdata, "~> 1.0.3"},
-      {:plug_cowboy, "~> 2.6.1"},
-      {:phoenix_pubsub, "~> 2.0"},
-      {:phoenix_ecto, "~> 4.4.0"},
-      {:ecto_enum, "~> 1.4"},
+      {:phoenix_ecto, "~> 4.4"},
       {:ecto_sql, "~> 3.10"},
+      {:phoenix_pubsub, "~> 2.0"},
+      {:ecto_enum, "~> 1.4"},
       {:postgrex, ">= 0.15.5"},
       {:phoenix_html, "~> 3.3"},
       {:phoenix_live_reload, "~> 1.3.3", only: :dev},
@@ -130,6 +128,8 @@ defmodule Pleroma.Mixfile do
       {:phoenix_live_dashboard, "~> 0.8.0"},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"},
+      {:tzdata, "~> 1.0.3"},
+      {:plug_cowboy, "~> 2.6.1"},
       # oban 2.14 requires Elixir 1.12+
       {:oban, "~> 2.13.4"},
       {:gettext, "~> 0.20"},
@@ -203,8 +203,6 @@ defmodule Pleroma.Mixfile do
       {:ecto_psql_extras, "~> 0.6"},
       {:icalendar, "~> 1.1"},
       {:geospatial, "~> 0.2.0"},
-      {:prom_ex, "~> 1.8.0"},
-      {:unplug, "~> 1.0"},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},

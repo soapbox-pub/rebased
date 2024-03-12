@@ -304,6 +304,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     reply_to = get_reply_to(activity, opts)
     reply_to_user = reply_to && CommonAPI.get_user(reply_to.data["actor"])
 
+    history_len =
+      1 +
+        (Object.Updater.history_for(object.data)
+         |> Map.get("orderedItems")
+         |> length())
+
+    # See render("history.json", ...) for more details
+    # Here the implicit index of the current content is 0
+    chrono_order = history_len - 1
+
     quote_activity = get_quote(activity, opts)
 
     quote_id =
@@ -319,16 +329,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       else
         nil
       end
-
-    history_len =
-      1 +
-        (Object.Updater.history_for(object.data)
-         |> Map.get("orderedItems")
-         |> length())
-
-    # See render("history.json", ...) for more details
-    # Here the implicit index of the current content is 0
-    chrono_order = history_len - 1
 
     content =
       object

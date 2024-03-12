@@ -170,7 +170,7 @@ config :pleroma, :instance,
   description: "Pleroma: An efficient and flexible fediverse server",
   short_description: "",
   background_image: "/images/city.jpg",
-  instance_thumbnail: "/instance/thumbnail.png",
+  instance_thumbnail: "/instance/thumbnail.jpeg",
   favicon: "/favicon.png",
   limit: 5_000,
   description_limit: 5_000,
@@ -188,7 +188,7 @@ config :pleroma, :instance,
   registrations_open: true,
   invites_enabled: false,
   account_activation_required: false,
-  account_approval_required: true,
+  account_approval_required: false,
   federating: true,
   federation_incoming_replies_max_depth: 100,
   federation_reachability_timeout_days: 7,
@@ -257,22 +257,7 @@ config :pleroma, :instance,
     :emoji_manage_emoji,
     :statistics_read
   ],
-  moderator_privileges: [
-    :users_read,
-    :users_manage_invites,
-    :users_manage_activation_state,
-    :users_manage_tags,
-    :users_manage_credentials,
-    :users_delete,
-    :messages_read,
-    :messages_delete,
-    :instances_delete,
-    :reports_manage_reports,
-    :moderation_log_read,
-    :announcements_manage_announcements,
-    :emoji_manage_emoji,
-    :statistics_read
-  ],
+  moderator_privileges: [:messages_delete, :reports_manage_reports],
   max_endorsed_users: 20,
   birthday_required: false,
   birthday_min_age: 0,
@@ -305,7 +290,9 @@ config :pleroma, :feed,
   }
 
 config :pleroma, :markup,
-  allow_inline_images: false,
+  # XXX - unfortunately, inline images must be enabled by default right now, because
+  # of custom emoji.  Issue #275 discusses defanging that somehow.
+  allow_inline_images: true,
   allow_headings: false,
   allow_tables: false,
   allow_fonts: false,
@@ -375,8 +362,7 @@ config :pleroma, :activitypub,
   follow_handshake_timeout: 500,
   note_replies_output_limit: 5,
   sign_object_fetches: true,
-  authorized_fetch_mode: false,
-  fetch_actor_origin: nil
+  authorized_fetch_mode: false
 
 config :pleroma, :streamer,
   workers: 3,
@@ -924,7 +910,7 @@ config :pleroma, ConcurrentLimiter, [
   {Pleroma.Webhook.Notify, [max_running: 5, max_waiting: 200]}
 ]
 
-config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fetch: false
+config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fetch: true
 
 config :pleroma, Pleroma.Language.Translation, allow_unauthenticated: false, allow_remote: true
 

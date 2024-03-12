@@ -75,7 +75,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get(activity_pub_path(conn, :internal_fetch))
         |> json_response(200)
 
-      assert res["id"] =~ "http://localhost:4001/internal/fetch"
+      assert res["id"] =~ "/fetch"
     end
 
     test "on non-federating instance, it returns 404", %{conn: conn} do

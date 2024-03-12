@@ -49,10 +49,30 @@ config :pleroma, :instance, max_media_attachments: 20
 config :pleroma, :instance,
   name: "Soapbox",
   description: "Social media owned by you",
-  instance_thumbnail: "/instance/thumbnail.png"
+  instance_thumbnail: "/instance/thumbnail.png",
+  account_approval_required: true,
+  moderator_privileges: [
+    :users_read,
+    :users_manage_invites,
+    :users_manage_activation_state,
+    :users_manage_tags,
+    :users_manage_credentials,
+    :users_delete,
+    :messages_read,
+    :messages_delete,
+    :instances_delete,
+    :reports_manage_reports,
+    :moderation_log_read,
+    :announcements_manage_announcements,
+    :emoji_manage_emoji,
+    :statistics_read
+  ]
 
 # Background migration performance
 config :pleroma, :delete_context_objects, sleep_interval_ms: 3_000
+
+config :pleroma, :markup,
+  allow_inline_images: false
 
 # Pretend to be WhatsApp because some sites don't return link previews otherwise
 config :pleroma, :rich_media, user_agent: "WhatsApp/2"
