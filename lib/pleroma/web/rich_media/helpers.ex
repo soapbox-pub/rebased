@@ -54,13 +54,12 @@ defmodule Pleroma.Web.RichMedia.Helpers do
         @cachex.fetch!(:scrubber_cache, key, fn _ ->
           result = fetch_data_for_object(object)
 
-          cond do
-            match?(%{page_url: _, rich_media: _}, result) ->
-              Activity.HTML.add_cache_key_for(activity.id, key)
-              {:commit, result}
-
-            true ->
-              {:ignore, %{}}
+          with %Embed{} <- result do
+            Activity.HTML.add_cache_key_for(activity.id, key)
+            {:commit, result}
+          else
+            _ ->
+              {:ignore, nil}
           end
         end)
       end

@@ -69,7 +69,7 @@ defmodule Pleroma.Web.AdminAPI.UserController do
   defp do_deletes(%{assigns: %{user: admin}} = conn, nicknames) when is_list(nicknames) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
 
-    if Enum.all?(users, &is_higher_role(admin, &1)) do
+    if Enum.all?(users, &higher_role?(admin, &1)) do
       Enum.each(users, fn user ->
         {:ok, delete_data, _} = Builder.delete(admin, user.ap_id)
         Pipeline.common_pipeline(delete_data, local: true)
@@ -90,7 +90,7 @@ defmodule Pleroma.Web.AdminAPI.UserController do
   end
 
   # true if actor is greater OR EQUAL in role to target
-  defp is_higher_role(%User{} = actor, %User{} = target) do
+  defp higher_role?(%User{} = actor, %User{} = target) do
     role_weight(actor) >= role_weight(target)
   end
 

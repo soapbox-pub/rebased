@@ -56,11 +56,6 @@ defmodule Pleroma.Web.WebFinger.WebFingerControllerTest do
   end
 
   test "reach user on tld, while pleroma is running on subdomain" do
-    Pleroma.Web.Endpoint.config_change(
-      [{Pleroma.Web.Endpoint, url: [host: "sub.example.com"]}],
-      []
-    )
-
     clear_config([Pleroma.Web.Endpoint, :url, :host], "sub.example.com")
 
     clear_config([Pleroma.Web.WebFinger, :domain], "example.com")

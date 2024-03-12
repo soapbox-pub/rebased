@@ -94,9 +94,18 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
     end
   end
 
-  def notes_create(%{assigns: %{user: user}, body_params: %{content: content}} = conn, %{
-        id: report_id
-      }) do
+  def notes_create(
+        %{
+          assigns: %{user: user},
+          private: %{
+            open_api_spex: %{
+              body_params: %{content: content},
+              params: %{id: report_id}
+            }
+          }
+        } = conn,
+        _
+      ) do
     with {:ok, _} <- ReportNote.create(user.id, report_id, content),
          report <- Activity.get_by_id_with_user_actor(report_id) do
       ModerationLog.insert_log(%{

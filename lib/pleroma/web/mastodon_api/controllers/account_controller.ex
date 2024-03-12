@@ -641,7 +641,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "GET /api/v1/accounts/familiar_followers"
-  def familiar_followers(%{assigns: %{user: user}} = conn, %{id: id}) do
+  def familiar_followers(
+        %{assigns: %{user: user}, private: %{open_api_spex: %{params: %{id: id}}}} = conn,
+        _
+      ) do
     users =
       User.get_all_by_ids(List.wrap(id))
       |> Enum.map(&%{id: &1.id, accounts: get_familiar_followers(&1, user)})

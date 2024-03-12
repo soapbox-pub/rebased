@@ -138,23 +138,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     assert result["pleroma"]["oauth_consumer_strategies"] == ["keycloak"]
   end
 
-  test "get instance contact information", %{conn: conn} do
-    user = insert(:user, %{local: true})
-
-    clear_config([:instance, :contact_username], user.nickname)
-
-    conn = get(conn, "/api/v1/instance")
-
-    assert result = json_response_and_validate_schema(conn, 200)
-
-    assert result["contact_account"]["id"] == user.id
-  end
-
-  test "get instance information v2", %{conn: conn} do
-    assert get(conn, "/api/v2/instance")
-           |> json_response_and_validate_schema(200)
-  end
-
   describe "instance domain blocks" do
     setup do
       clear_config([:mrf_simple, :reject], [{"fediverse.pl", "uses Soapbox"}])

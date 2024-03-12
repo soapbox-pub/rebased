@@ -125,7 +125,7 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
     end
   end
 
-  defp plaintext_header() do
+  defp plaintext_header do
     [{"content-type", "text/plain"}]
   end
 end

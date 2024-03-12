@@ -562,7 +562,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "POST /api/v1/statuses/:id/translate"
-  def translate(%{body_params: params, assigns: %{user: user}} = conn, %{id: status_id}) do
+  def translate(
+        %{
+          assigns: %{user: user},
+          private: %{open_api_spex: %{body_params: params, params: %{id: status_id}}}
+        } = conn,
+        _
+      ) do
     with {:authentication, true} <-
            {:authentication,
             !is_nil(user) ||

@@ -105,7 +105,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def assign_account_operation do
     %Operation{
-      tags: ["Report managment"],
+      tags: ["Report management"],
       summary: "Assign account to specified reports",
       operationId: "AdminAPI.ReportController.assign_account",
       security: [%{"oAuth" => ["admin:write:reports"]}],

@@ -97,7 +97,7 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
     {:ok, activity} = CommonAPI.post(user, %{status: "I like this site #{original_url}"})
 
     assert match?(
-             %{page_url: ^original_url, rich_media: _},
+             %{url: ^original_url, meta: _},
              Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
            )
 
@@ -106,7 +106,7 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
     activity = Pleroma.Activity.get_by_id(activity.id)
 
     assert match?(
-             %{page_url: ^updated_url, rich_media: _},
+             %{url: ^updated_url, meta: _},
              Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
            )
   end
@@ -128,10 +128,10 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
       path -> Pleroma.Test.StaticConfig.get(path)
     end)
 
-    assert %{} == Helpers.fetch_data_for_activity(activity)
-    assert %{} == Helpers.fetch_data_for_activity(activity2)
-    assert %{} == Helpers.fetch_data_for_activity(activity3)
-    assert %{} == Helpers.fetch_data_for_activity(activity4)
-    assert %{} == Helpers.fetch_data_for_activity(activity5)
+    assert Helpers.fetch_data_for_activity(activity) == nil
+    assert Helpers.fetch_data_for_activity(activity2) == nil
+    assert Helpers.fetch_data_for_activity(activity3) == nil
+    assert Helpers.fetch_data_for_activity(activity4) == nil
+    assert Helpers.fetch_data_for_activity(activity5) == nil
   end
 end
