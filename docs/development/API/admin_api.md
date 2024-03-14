@@ -1840,3 +1840,70 @@ Note that this differs from the Mastodon API variant: Mastodon API only returns 
 - Params:
   - `id`: **string** Webhook ID
 - Response: A webhook
+
+## `GET /api/v1/pleroma/admin/domains`
+
+### List of domains
+
+- Response: JSON, list of domains
+
+```json
+[
+  {
+    "id": "1",
+    "domain": "example.org",
+    "public": false,
+    "resolves": true,
+    "last_checked_at": "2023-11-17T12:13:05"
+  }
+]
+```
+
+## `POST /api/v1/pleroma/admin/domains`
+
+### Create a domain
+
+- Params:
+  - `domain`: string, required, domain name
+  - `public`: boolean, optional, defaults to false, whether it is possible to register an account under the domain by everyone
+
+- Response: JSON, created announcement
+
+```json
+{
+  "id": "1",
+  "domain": "example.org",
+  "public": true,
+  "resolves": false,
+  "last_checked_at": null
+}
+```
+
+## `POST /api/v1/pleroma/admin/domains/:id`
+
+### Change domain publicity
+
+- Params:
+  - `public`: boolean, whether it is possible to register an account under the domain by everyone
+
+- Response: JSON, updated domain
+
+```json
+{
+  "id": "1",
+  "domain": "example.org",
+  "public": false,
+  "resolves": true,
+  "last_checked_at": "2023-11-17T12:13:05"
+}
+```
+
+## `DELETE /api/v1/pleroma/admin/domains/:id`
+
+### Delete a domain
+
+- Response: JSON, empty object
+
+```json
+{}
+```

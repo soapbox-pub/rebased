@@ -323,7 +323,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         background_image: image_url(user.background) |> MediaProxy.url(),
         accepts_chat_messages: user.accepts_chat_messages,
         favicon: favicon,
-        location: user.location
+        location: user.location,
+        is_local: user.local
       }
     }
     |> maybe_put_role(user, opts[:for])

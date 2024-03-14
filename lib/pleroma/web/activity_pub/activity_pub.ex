@@ -952,6 +952,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_local(query, _), do: query
 
+  defp restrict_domain(query, %{domain_id: 0}) do
+    query
+    |> join(:inner, [activity], u in User,
+      as: :domain_user,
+      on: activity.actor == u.ap_id and is_nil(u.domain_id)
+    )
+  end
+
+  defp restrict_domain(query, %{domain_id: domain_id}) do
+    query
+    |> join(:inner, [activity], u in User,
+      as: :domain_user,
+      on: activity.actor == u.ap_id and u.domain_id == ^domain_id
+    )
+  end
+
+  defp restrict_domain(query, _), do: query
+
   defp restrict_remote(query, %{remote: true}) do
     from(activity in query, where: activity.local == false)
   end
@@ -1468,6 +1486,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_replies(opts)
       |> restrict_since(opts)
       |> restrict_local(opts)
+      |> restrict_domain(opts)
       |> restrict_remote(opts)
       |> restrict_actor(opts)
       |> restrict_type(opts)

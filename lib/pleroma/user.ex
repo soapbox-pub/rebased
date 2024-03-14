@@ -15,6 +15,7 @@ defmodule Pleroma.User do
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Delivery
+  alias Pleroma.Domain
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Emoji
   alias Pleroma.FollowingRelationship
@@ -161,6 +162,8 @@ defmodule Pleroma.User do
     field(:location, :string)
     field(:language, :string)
     field(:last_move_at, :naive_datetime)
+
+    belongs_to(:domain, Domain)
 
     embeds_one(
       :notification_settings,
@@ -813,16 +816,18 @@ defmodule Pleroma.User do
       :accepts_chat_messages,
       :registration_reason,
       :birthday,
-      :language
+      :language,
+      :domain_id
     ])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)
     |> unique_constraint(:email)
     |> validate_format(:email, @email_regex)
     |> validate_email_not_in_blacklisted_domain(:email)
-    |> unique_constraint(:nickname)
-    |> validate_not_restricted_nickname(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
+    |> fix_nickname(Map.get(params, :domain_id), opts[:from_admin])
+    |> validate_not_restricted_nickname(:nickname)
+    |> unique_constraint(:nickname)
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
     |> validate_length(:registration_reason, max: reason_limit)
@@ -835,6 +840,26 @@ defmodule Pleroma.User do
     |> put_following_and_follower_and_featured_address()
     |> put_private_key()
   end
+
+  defp fix_nickname(changeset, domain_id, from_admin) when not is_nil(domain_id) do
+    with {:domain, domain} <- {:domain, Domain.get(domain_id)},
+         {:domain_allowed, true} <- {:domain_allowed, from_admin || domain.public} do
+      nickname = get_field(changeset, :nickname)
+
+      changeset
+      |> put_change(:nickname, nickname <> "@" <> domain.domain)
+      |> put_change(:domain, domain)
+    else
+      {:domain_allowed, false} ->
+        changeset
+        |> add_error(:domain, "not allowed to use this domain")
+
+      _ ->
+        changeset
+    end
+  end
+
+  defp fix_nickname(changeset, _, _), do: changeset
 
   def validate_not_restricted_nickname(changeset, field) do
     validate_change(changeset, field, fn _, value ->
@@ -896,7 +921,9 @@ defmodule Pleroma.User do
   end
 
   defp put_ap_id(changeset) do
-    ap_id = ap_id(%User{nickname: get_field(changeset, :nickname)})
+    nickname = get_field(changeset, :nickname)
+    ap_id = ap_id(%User{nickname: nickname})
+
     put_change(changeset, :ap_id, ap_id)
   end
 
@@ -1308,6 +1335,13 @@ defmodule Pleroma.User do
 
       restrict_to_local == :unauthenticated and match?(%User{}, opts[:for]) ->
         get_cached_by_nickname(nickname_or_id)
+
+      String.contains?(nickname_or_id, "@") ->
+        with %User{local: true} = user <- get_cached_by_nickname(nickname_or_id) do
+          user
+        else
+          _ -> nil
+        end
 
       true ->
         nil

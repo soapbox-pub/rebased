@@ -96,7 +96,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         relationship: %{},
         skip_thread_containment: false,
         accepts_chat_messages: nil,
-        location: nil
+        location: nil,
+        is_local: true
       }
     }
 
@@ -304,7 +305,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         relationship: %{},
         skip_thread_containment: false,
         accepts_chat_messages: nil,
-        location: nil
+        location: nil,
+        is_local: true
       }
     }
 

@@ -6,8 +6,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
   use Pleroma.Web, :view
 
   alias Pleroma.Config
+  alias Pleroma.Domain
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
+  alias Pleroma.Web.AdminAPI.DomainView
   alias Pleroma.Web.MastodonAPI
 
   @mastodon_api_level "2.7.2"
@@ -175,7 +177,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       if Pleroma.Language.Translation.configured?() do
         "translation"
       end,
-      "events"
+      "events",
+      "multitenancy"
     ]
     |> Enum.filter(& &1)
   end
@@ -310,7 +313,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         migration_cooldown_period: Config.get([:instance, :migration_cooldown_period]),
         restrict_unauthenticated: restrict_unauthenticated(),
         translation: translation_configuration(),
-        markup: markup()
+        markup: markup(),
+        multitenancy: multitenancy()
       },
       stats: %{mau: Pleroma.User.active_user_count()},
       vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key),
@@ -373,5 +377,22 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       allow_headings: Config.get([:markup, :allow_headings]),
       allow_tables: Config.get([:markup, :allow_tables])
     }
+  end
+
+  defp multitenancy do
+    enabled = Config.get([:instance, :multitenancy, :enabled])
+
+    if enabled do
+      domains =
+        [%Domain{id: "", domain: Pleroma.Web.WebFinger.host(), public: true}] ++
+          Domain.cached_list()
+
+      %{
+        enabled: true,
+        domains: DomainView.render("index.json", domains: domains, admin: false)
+      }
+    else
+      nil
+    end
   end
 end

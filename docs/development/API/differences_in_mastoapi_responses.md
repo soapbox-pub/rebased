@@ -352,6 +352,7 @@ Has these additional parameters (which are the same as in Pleroma-API):
 - `captcha_answer_data`: optional, contains provider-specific captcha data
 - `token`: invite token required when the registrations aren't public.
 - `language`: optional, user's preferred language for receiving emails (digest, confirmation, etc.), default to the language set in the `userLanguage` cookies or `Accept-Language` header.
+- `domain`: optional, domain id, if multitenancy is enabled.
 
 ## Instance
 

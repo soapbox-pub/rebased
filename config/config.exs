@@ -252,7 +252,10 @@ config :pleroma, :instance,
   birthday_required: false,
   birthday_min_age: 0,
   max_media_attachments: 1_000,
-  migration_cooldown_period: 30
+  migration_cooldown_period: 30,
+  multitenancy: %{
+    enabled: false
+  }
 
 config :pleroma, :welcome,
   direct_message: [
@@ -587,10 +590,12 @@ config :pleroma, Oban,
     attachments_cleanup: 1,
     new_users_digest: 1,
     mute_expire: 5,
-    search_indexing: 10
+    search_indexing: 10,
+    check_domain_resolve: 1
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
+    {"0 0 * * 0", Pleroma.Workers.Cron.CheckDomainsResolveWorker},
     {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
     {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
   ]

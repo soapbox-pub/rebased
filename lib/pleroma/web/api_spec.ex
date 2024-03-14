@@ -106,14 +106,8 @@ defmodule Pleroma.Web.ApiSpec do
               "User administration",
               "Announcement management",
               "Instance rule managment",
-              "Webhooks"
-            ]
-          },
-          %{
-            "name" => "Administration (MastoAPI)",
-            "tags" => [
-              "User administration",
-              "Report methods"
+              "Webhooks",
+              "Domain managment"
             ]
           },
           %{

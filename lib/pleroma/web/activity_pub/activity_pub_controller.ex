@@ -52,6 +52,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     when action in [:activity, :object]
   )
 
+  plug(
+    Pleroma.Web.Plugs.SetDomainPlug
+    when action in [:following, :followers, :pinned, :inbox, :outbox, :update_outbox]
+  )
+
+  plug(
+    Pleroma.Web.Plugs.SetNicknameWithDomainPlug
+    when action in [:following, :followers, :pinned, :inbox, :outbox, :update_outbox]
+  )
+
   plug(:set_requester_reachable when action in [:inbox])
   plug(:relay_active? when action in [:relay])
 
@@ -525,7 +535,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     with {:ok, object} <-
            ActivityPub.upload(
              file,
-             actor: User.ap_id(user),
+             actor: user.ap_id,
              description: Map.get(data, "description")
            ) do
       Logger.debug(inspect(object))
