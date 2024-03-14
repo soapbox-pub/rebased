@@ -12,9 +12,11 @@ defmodule Pleroma.User.BackupTest do
   import Mox
 
   alias Pleroma.Bookmark
+  alias Pleroma.Chat
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Uploaders.S3.ExAwsMock
+  alias Pleroma.User
   alias Pleroma.User.Backup
   alias Pleroma.User.Backup.ProcessorMock
   alias Pleroma.Web.CommonAPI
@@ -165,8 +167,10 @@ defmodule Pleroma.User.BackupTest do
   end
 
   test "it creates a zip archive with user data" do
-    user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
-    %{ap_id: other_ap_id} = other_user = insert(:user)
+    %User{ap_id: ap_id} =
+      user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
+
+    %User{ap_id: other_ap_id} = other_user = insert(:user)
 
     {:ok, %{object: %{data: %{"id" => id1}}} = status1} =
       CommonAPI.post(user, %{status: "status1"})
@@ -184,6 +188,11 @@ defmodule Pleroma.User.BackupTest do
     Bookmark.create(user.id, status3.id)
 
     CommonAPI.follow(user, other_user)
+
+    {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
+
+    {:ok, _message_1} = CommonAPI.post_chat_message(user, other_user, "hey")
+    {:ok, _message_2} = CommonAPI.post_chat_message(other_user, user, "ho")
 
     assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
     assert {:ok, path} = Backup.export(backup, self())
@@ -271,6 +280,52 @@ defmodule Pleroma.User.BackupTest do
              "id" => "following.json",
              "orderedItems" => [^other_ap_id],
              "totalItems" => 1,
+             "type" => "OrderedCollection"
+           } = Jason.decode!(json)
+
+    assert {:ok, {'chats.json', json}} = :zip.zip_get('chats.json', zipfile)
+
+    chat_id = "http://localhost:4001/chats/#{chat.id}"
+
+    assert %{
+             "@context" => "https://www.w3.org/ns/activitystreams",
+             "id" => "chats.json",
+             "orderedItems" => [
+               %{
+                 "type" => "Chat",
+                 "id" => ^chat_id,
+                 "actor" => ^ap_id,
+                 "to" => [^other_ap_id]
+               }
+             ],
+             "totalItems" => 1,
+             "type" => "OrderedCollection"
+           } = Jason.decode!(json)
+
+    assert {:ok, {'chat_messages.json', json}} = :zip.zip_get('chat_messages.json', zipfile)
+
+    chat_id = "http://localhost:4001/chats/#{chat.id}"
+
+    assert %{
+             "@context" => "https://www.w3.org/ns/activitystreams",
+             "id" => "chat_messages.json",
+             "orderedItems" => [
+               %{
+                 "type" => "ChatMessage",
+                 "actor" => ^ap_id,
+                 "to" => [^other_ap_id],
+                 "context" => ^chat_id,
+                 "content" => "hey"
+               },
+               %{
+                 "type" => "ChatMessage",
+                 "actor" => ^other_ap_id,
+                 "to" => [^ap_id],
+                 "context" => ^chat_id,
+                 "content" => "ho"
+               }
+             ],
+             "totalItems" => 2,
              "type" => "OrderedCollection"
            } = Jason.decode!(json)
 
