@@ -676,6 +676,11 @@ defmodule Pleroma.Web.Router do
       get("/events/:id/ics", EventController, :export_ics)
 
       get("/search/location", SearchController, :location)
+
+      get("/bookmark_folders", BookmarkFolderController, :index)
+      post("/bookmark_folders", BookmarkFolderController, :create)
+      patch("/bookmark_folders/:id", BookmarkFolderController, :update)
+      delete("/bookmark_folders/:id", BookmarkFolderController, :delete)
     end
 
     scope [] do

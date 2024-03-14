@@ -394,6 +394,52 @@ See [Admin-API](admin_api.md)
 
 * Response: JSON. Returns a list of found locations.
 
+## `GET /api/v1/pleroma/bookmark_folders`
+### Gets user bookmark folders
+* Authentication: required
+
+* Response: JSON. Returns a list of bookmark folders.
+* Example response:
+```json
+[
+    {
+        "id": "9umDrYheeY451cQnEe",
+        "name": "Read later",
+        "emoji": "🕓",
+        "source": {
+          "emoji": "🕓"
+        }
+    }
+]
+```
+
+## `POST /api/v1/pleroma/bookmark_folders`
+### Creates a bookmark folder
+* Authentication: required
+
+* Params:
+    * `name`: folder name
+    * `emoji`: folder emoji (optional)
+* Response: JSON. Returns a single bookmark folder.
+
+## `PATCH /api/v1/pleroma/bookmark_folders/:id`
+### Updates a bookmark folder
+* Authentication: required
+
+* Params:
+    * `id`: folder id
+    * `name`: folder name (optional)
+    * `emoji`: folder emoji (optional)
+* Response: JSON. Returns a single bookmark folder.
+
+## `DELETE /api/v1/pleroma/bookmark_folders/:id`
+### Deletes a bookmark folder
+* Authentication: required
+
+* Params:
+    * `id`: folder id
+* Response: JSON. Returns a single bookmark folder.
+
 ## `/api/v1/pleroma/mascot`
 ### Gets user mascot image
 * Method `GET`

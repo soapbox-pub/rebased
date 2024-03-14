@@ -344,7 +344,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         pinned_at: nil,
         quotes_count: 0,
         content_type: nil,
-        event: nil
+        event: nil,
+        bookmark_folder: nil
       }
     }
 
