@@ -1235,7 +1235,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert user
       assert user.is_confirmed
       assert user.is_approved
-      refute user.accepts_
     end
 
     test "registers but does not log in with :account_activation_required", %{conn: conn} do

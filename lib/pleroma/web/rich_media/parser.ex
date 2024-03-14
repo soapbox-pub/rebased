@@ -173,9 +173,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
     validate_tld = @config_impl.get([Pleroma.Formatter, :validate_tld])
 
     page_url
-    |> IO.inspect()
     |> Linkify.Parser.url?(validate_tld: validate_tld)
-    |> IO.inspect()
     |> parse_uri(page_url)
   end
 
@@ -200,7 +198,6 @@ defmodule Pleroma.Web.RichMedia.Parser do
   defp parse_uri(true, url) do
     url
     |> URI.parse()
-    |> IO.inspect()
     |> validate_page_url
   end
 
