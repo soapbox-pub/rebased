@@ -33,7 +33,7 @@ defmodule Pleroma.Webhook do
 
   def changeset(%__MODULE__{} = webhook, params) do
     webhook
-    |> cast(params, [:url, :events, :enabled, :internal])
+    |> cast(params, [:url, :events, :enabled])
     |> validate_required([:url, :events])
     |> unique_constraint(:url)
     |> strip_events()
@@ -42,7 +42,7 @@ defmodule Pleroma.Webhook do
 
   def update_changeset(%__MODULE__{} = webhook, params \\ %{}) do
     webhook
-    |> cast(params, [:url, :events, :enabled, :internal])
+    |> cast(params, [:url, :events, :enabled])
     |> unique_constraint(:url)
     |> strip_events()
   end
