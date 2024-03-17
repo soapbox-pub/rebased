@@ -196,7 +196,14 @@ defmodule Pleroma.User.Backup do
     end
   end
 
-  @files ['actor.json', 'outbox.json', 'likes.json', 'bookmarks.json']
+  @files [
+    'actor.json',
+    'outbox.json',
+    'likes.json',
+    'bookmarks.json',
+    'followers.json',
+    'following.json'
+  ]
   @spec export(Pleroma.User.Backup.t(), pid()) :: {:ok, String.t()} | :error
   def export(%__MODULE__{} = backup, caller_pid) do
     backup = Repo.preload(backup, :user)
@@ -207,6 +214,8 @@ defmodule Pleroma.User.Backup do
          :ok <- statuses(dir, backup.user, caller_pid),
          :ok <- likes(dir, backup.user, caller_pid),
          :ok <- bookmarks(dir, backup.user, caller_pid),
+         :ok <- followers(dir, backup.user, caller_pid),
+         :ok <- following(dir, backup.user, caller_pid),
          {:ok, zip_path} <- :zip.create(backup.file_name, @files, cwd: dir),
          {:ok, _} <- File.rm_rf(dir) do
       {:ok, zip_path}
@@ -356,6 +365,16 @@ defmodule Pleroma.User.Backup do
       end,
       caller_pid
     )
+  end
+
+  defp followers(dir, user, caller_pid) do
+    User.get_followers_query(user)
+    |> write(dir, "followers", fn a -> {:ok, a.ap_id} end, caller_pid)
+  end
+
+  defp following(dir, user, caller_pid) do
+    User.get_friends_query(user)
+    |> write(dir, "following", fn a -> {:ok, a.ap_id} end, caller_pid)
   end
 end
 

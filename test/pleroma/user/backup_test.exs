@@ -166,6 +166,7 @@ defmodule Pleroma.User.BackupTest do
 
   test "it creates a zip archive with user data" do
     user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
+    %{ap_id: other_ap_id} = other_user = insert(:user)
 
     {:ok, %{object: %{data: %{"id" => id1}}} = status1} =
       CommonAPI.post(user, %{status: "status1"})
@@ -181,6 +182,8 @@ defmodule Pleroma.User.BackupTest do
 
     Bookmark.create(user.id, status2.id)
     Bookmark.create(user.id, status3.id)
+
+    CommonAPI.follow(user, other_user)
 
     assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
     assert {:ok, path} = Backup.export(backup, self())
@@ -258,6 +261,16 @@ defmodule Pleroma.User.BackupTest do
              "id" => "bookmarks.json",
              "orderedItems" => [^id2, ^id3],
              "totalItems" => 2,
+             "type" => "OrderedCollection"
+           } = Jason.decode!(json)
+
+    assert {:ok, {'following.json', json}} = :zip.zip_get('following.json', zipfile)
+
+    assert %{
+             "@context" => "https://www.w3.org/ns/activitystreams",
+             "id" => "following.json",
+             "orderedItems" => [^other_ap_id],
+             "totalItems" => 1,
              "type" => "OrderedCollection"
            } = Jason.decode!(json)
 

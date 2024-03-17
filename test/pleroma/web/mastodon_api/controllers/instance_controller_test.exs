@@ -107,6 +107,18 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              |> json_response_and_validate_schema(200)
   end
 
+  test "get instance contact information", %{conn: conn} do
+    user = insert(:user, %{local: true})
+
+    clear_config([:instance, :contact_username], user.nickname)
+
+    conn = get(conn, "/api/v1/instance")
+
+    assert result = json_response_and_validate_schema(conn, 200)
+
+    assert result["contact_account"]["id"] == user.id
+  end
+
   test "get instance information v2", %{conn: conn} do
     clear_config([:auth, :oauth_consumer_strategies], [])
 
