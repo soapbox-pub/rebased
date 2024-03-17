@@ -415,6 +415,10 @@ config :pleroma, :mrf_follow_bot, follower_nickname: nil
 
 config :pleroma, :mrf_inline_quote, template: "<bdi>RT:</bdi> {url}"
 
+config :pleroma, :mrf_force_mention,
+  mention_parent: true,
+  mention_quoted: true
+
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],
