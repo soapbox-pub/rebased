@@ -22,8 +22,11 @@ defmodule Pleroma.Workers.RemoteFetcherWorker do
       {:error, :allowed_depth} ->
         {:discard, :allowed_depth}
 
-      _ ->
-        :error
+      {:error, _} = e ->
+        e
+
+      e ->
+        {:error, e}
     end
   end
 

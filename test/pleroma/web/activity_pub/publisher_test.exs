@@ -25,6 +25,17 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
 
   setup_all do: clear_config([:instance, :federating], true)
 
+  describe "should_federate?/1" do
+    test "it returns false when the inbox is nil" do
+      refute Publisher.should_federate?(nil, false)
+      refute Publisher.should_federate?(nil, true)
+    end
+
+    test "it returns true when public is true" do
+      assert Publisher.should_federate?(false, true)
+    end
+  end
+
   describe "gather_webfinger_links/1" do
     test "it returns links" do
       user = insert(:user)
@@ -205,6 +216,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       refute called(Instances.set_reachable(inbox))
     end
 
+    @tag capture_log: true
     test_with_mock "calls `Instances.set_unreachable` on target inbox on non-2xx HTTP response code",
                    Instances,
                    [:passthrough],
