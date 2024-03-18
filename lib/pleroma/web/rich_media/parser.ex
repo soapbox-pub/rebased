@@ -6,6 +6,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
   require Logger
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+  @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
 
   defp parsers do
     Pleroma.Config.get([:rich_media, :parsers])
@@ -13,70 +14,66 @@ defmodule Pleroma.Web.RichMedia.Parser do
 
   def parse(nil), do: {:error, "No URL provided"}
 
-  if Pleroma.Config.get(:env) == :test do
-    @spec parse(String.t()) :: {:ok, map()} | {:error, any()}
-    def parse(url), do: parse_url(url)
-  else
-    @spec parse(String.t()) :: {:ok, map()} | {:error, any()}
-    def parse(url) do
-      with {:ok, data} <- get_cached_or_parse(url),
-           {:ok, _} <- set_ttl_based_on_image(data, url) do
-        {:ok, data}
-      end
+  @spec parse(String.t()) :: {:ok, map()} | {:error, any()}
+  def parse(url) do
+    with :ok <- validate_page_url(url),
+         {:ok, data} <- get_cached_or_parse(url),
+         {:ok, _} <- set_ttl_based_on_image(data, url) do
+      {:ok, data}
     end
+  end
 
-    defp get_cached_or_parse(url) do
-      case @cachex.fetch(:rich_media_cache, url, fn ->
-             case parse_url(url) do
-               {:ok, _} = res ->
-                 {:commit, res}
+  defp get_cached_or_parse(url) do
+    case @cachex.fetch(:rich_media_cache, url, fn ->
+           case parse_url(url) do
+             {:ok, _} = res ->
+               {:commit, res}
 
-               {:error, reason} = e ->
-                 # Unfortunately we have to log errors here, instead of doing that
-                 # along with ttl setting at the bottom. Otherwise we can get log spam
-                 # if more than one process was waiting for the rich media card
-                 # while it was generated. Ideally we would set ttl here as well,
-                 # so we don't override it number_of_waiters_on_generation
-                 # times, but one, obviously, can't set ttl for not-yet-created entry
-                 # and Cachex doesn't support returning ttl from the fetch callback.
-                 log_error(url, reason)
-                 {:commit, e}
-             end
-           end) do
-        {action, res} when action in [:commit, :ok] ->
-          case res do
-            {:ok, _data} = res ->
-              res
+             {:error, reason} = e ->
+               # Unfortunately we have to log errors here, instead of doing that
+               # along with ttl setting at the bottom. Otherwise we can get log spam
+               # if more than one process was waiting for the rich media card
+               # while it was generated. Ideally we would set ttl here as well,
+               # so we don't override it number_of_waiters_on_generation
+               # times, but one, obviously, can't set ttl for not-yet-created entry
+               # and Cachex doesn't support returning ttl from the fetch callback.
+               log_error(url, reason)
+               {:commit, e}
+           end
+         end) do
+      {action, res} when action in [:commit, :ok] ->
+        case res do
+          {:ok, _data} = res ->
+            res
 
-            {:error, reason} = e ->
-              if action == :commit, do: set_error_ttl(url, reason)
-              e
-          end
+          {:error, reason} = e ->
+            if action == :commit, do: set_error_ttl(url, reason)
+            e
+        end
 
-        {:error, e} ->
-          {:error, {:cachex_error, e}}
-      end
+      {:error, e} ->
+        {:error, {:cachex_error, e}}
     end
+  end
 
-    defp set_error_ttl(_url, :body_too_large), do: :ok
-    defp set_error_ttl(_url, {:content_type, _}), do: :ok
+  defp set_error_ttl(_url, :body_too_large), do: :ok
+  defp set_error_ttl(_url, {:content_type, _}), do: :ok
 
-    # The TTL is not set for the errors above, since they are unlikely to change
-    # with time
+  # The TTL is not set for the errors above, since they are unlikely to change
+  # with time
 
-    defp set_error_ttl(url, _reason) do
-      ttl = Pleroma.Config.get([:rich_media, :failure_backoff], 60_000)
-      @cachex.expire(:rich_media_cache, url, ttl)
-      :ok
-    end
+  defp set_error_ttl(url, _reason) do
+    ttl = Pleroma.Config.get([:rich_media, :failure_backoff], 60_000)
+    @cachex.expire(:rich_media_cache, url, ttl)
+    :ok
+  end
 
-    defp log_error(url, {:invalid_metadata, data}) do
-      Logger.debug(fn -> "Incomplete or invalid metadata for #{url}: #{inspect(data)}" end)
-    end
+  defp log_error(url, {:invalid_metadata, data}) do
+    Logger.debug(fn -> "Incomplete or invalid metadata for #{url}: #{inspect(data)}" end)
+  end
 
-    defp log_error(url, reason) do
-      Logger.warning(fn -> "Rich media error for #{url}: #{inspect(reason)}" end)
-    end
+  defp log_error(url, reason) do
+    Logger.warning(fn -> "Rich media error for #{url}: #{inspect(reason)}" end)
   end
 
   @doc """
@@ -102,10 +99,10 @@ defmodule Pleroma.Web.RichMedia.Parser do
         ttl_setters: [MyModule]
   """
   @spec set_ttl_based_on_image(map(), String.t()) ::
-          {:ok, Integer.t() | :noop} | {:error, :no_key}
+          {:ok, integer() | :noop} | {:error, :no_key}
   def set_ttl_based_on_image(data, url) do
     case get_ttl_from_image(data, url) do
-      {:ok, ttl} when is_number(ttl) ->
+      ttl when is_number(ttl) ->
         ttl = ttl * 1000
 
         case @cachex.expire_at(:rich_media_cache, url, ttl) do
@@ -165,5 +162,47 @@ defmodule Pleroma.Web.RichMedia.Parser do
       not match?({:ok, _}, Jason.encode(%{key => val}))
     end)
     |> Map.new()
+  end
+
+  @spec validate_page_url(URI.t() | binary()) :: :ok | :error
+  defp validate_page_url(page_url) when is_binary(page_url) do
+    validate_tld = @config_impl.get([Pleroma.Formatter, :validate_tld])
+
+    page_url
+    |> Linkify.Parser.url?(validate_tld: validate_tld)
+    |> parse_uri(page_url)
+  end
+
+  defp validate_page_url(%URI{host: host, scheme: "https"}) do
+    cond do
+      Linkify.Parser.ip?(host) ->
+        :error
+
+      host in @config_impl.get([:rich_media, :ignore_hosts], []) ->
+        :error
+
+      get_tld(host) in @config_impl.get([:rich_media, :ignore_tld], []) ->
+        :error
+
+      true ->
+        :ok
+    end
+  end
+
+  defp validate_page_url(_), do: :error
+
+  defp parse_uri(true, url) do
+    url
+    |> URI.parse()
+    |> validate_page_url
+  end
+
+  defp parse_uri(_, _), do: :error
+
+  defp get_tld(host) do
+    host
+    |> String.split(".")
+    |> Enum.reverse()
+    |> hd
   end
 end

@@ -16,7 +16,7 @@ defmodule Pleroma.Web.PleromaApi.InstancesControllerTest do
     {:ok, %Pleroma.Instances.Instance{unreachable_since: constant_unreachable}} =
       Instances.set_consistently_unreachable(constant)
 
-    _eventual_unrechable = Instances.set_unreachable(eventual)
+    _eventual_unreachable = Instances.set_unreachable(eventual)
 
     %{constant_unreachable: constant_unreachable, constant: constant}
   end

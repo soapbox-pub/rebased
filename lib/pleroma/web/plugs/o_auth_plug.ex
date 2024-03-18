@@ -23,14 +23,14 @@ defmodule Pleroma.Web.Plugs.OAuthPlug do
   def call(conn, _) do
     with {:ok, token_str} <- fetch_token_str(conn) do
       with {:ok, user, user_token} <- fetch_user_and_token(token_str),
-           false <- Token.is_expired?(user_token) do
+           false <- Token.expired?(user_token) do
         conn
         |> assign(:token, user_token)
         |> assign(:user, user)
       else
         _ ->
           with {:ok, app, app_token} <- fetch_app_and_token(token_str),
-               false <- Token.is_expired?(app_token) do
+               false <- Token.expired?(app_token) do
             conn
             |> assign(:token, app_token)
             |> assign(:app, app)

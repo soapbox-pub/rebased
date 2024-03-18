@@ -142,7 +142,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
   end
 
   defp id_param do
-    Operation.parameter(:id, :path, FlakeID, "Account ID",
+    Operation.parameter(:id, :path, FlakeID.schema(), "Account ID",
       example: "9umDrYheeY451cQnEe",
       required: true
     )

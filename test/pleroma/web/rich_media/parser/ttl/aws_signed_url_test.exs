@@ -22,7 +22,7 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrlTest do
     expire_time =
       Timex.parse!(timestamp, "{ISO:Basic:Z}") |> Timex.to_unix() |> Kernel.+(valid_till)
 
-    assert {:ok, expire_time} == Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl.ttl(metadata, url)
+    assert expire_time == Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl.ttl(metadata, url)
   end
 
   test "s3 signed url is parsed and correct ttl is set for rich media" do

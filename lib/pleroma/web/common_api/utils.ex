@@ -109,7 +109,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def get_to_and_cc(%{visibility: "direct"} = draft) do
     # If the OP is a DM already, add the implicit actor.
-    if draft.in_reply_to && Visibility.is_direct?(draft.in_reply_to) do
+    if draft.in_reply_to && Visibility.direct?(draft.in_reply_to) do
       {Enum.uniq([draft.in_reply_to.data["actor"] | draft.mentions]), []}
     else
       {draft.mentions, []}

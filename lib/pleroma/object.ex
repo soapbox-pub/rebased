@@ -177,7 +177,10 @@ defmodule Pleroma.Object do
         ap_id
 
       Keyword.get(options, :fetch) ->
-        Fetcher.fetch_object_from_id!(ap_id, options)
+        case Fetcher.fetch_object_from_id(ap_id, options) do
+          {:ok, object} -> object
+          _ -> nil
+        end
 
       true ->
         get_cached_by_ap_id(ap_id)
@@ -239,17 +242,17 @@ defmodule Pleroma.Object do
          {:ok, _} <- invalid_object_cache(object) do
       cleanup_attachments(
         Config.get([:instance, :cleanup_attachments]),
-        %{"object" => object}
+        object
       )
 
       {:ok, object, deleted_activity}
     end
   end
 
-  @spec cleanup_attachments(boolean(), %{required(:object) => map()}) ::
+  @spec cleanup_attachments(boolean(), Object.t()) ::
           {:ok, Oban.Job.t() | nil}
-  def cleanup_attachments(true, %{"object" => _} = params) do
-    AttachmentsCleanupWorker.enqueue("cleanup_attachments", params)
+  def cleanup_attachments(true, %Object{} = object) do
+    AttachmentsCleanupWorker.enqueue("cleanup_attachments", %{"object" => object})
   end
 
   def cleanup_attachments(_, _), do: {:ok, nil}
