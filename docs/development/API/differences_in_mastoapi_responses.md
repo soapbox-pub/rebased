@@ -41,6 +41,7 @@ Has these additional fields under the `pleroma` object:
 - `pinned_at`: a datetime (iso8601) when status was pinned, `null` otherwise.
 - `quotes_count`: the count of status quotes.
 - `event`: event information if the post is an event, `null` otherwise.
+- `non_anonymous`: true if the source post specifies the poll results are not anonymous. Currently only implemented by Smithereen.
 - `bookmark_folder`: the ID of the folder bookmark is stored within (if any).
 
 The `GET /api/v1/statuses/:id/source` endpoint additionally has the following attributes:

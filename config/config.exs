@@ -436,6 +436,10 @@ config :pleroma, :mrf_anti_duplication,
   ttl: 60_000,
   min_length: 50
 
+config :pleroma, :mrf_force_mention,
+  mention_parent: true,
+  mention_quoted: true
+
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],

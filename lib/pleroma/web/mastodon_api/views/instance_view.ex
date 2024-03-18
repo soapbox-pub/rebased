@@ -174,6 +174,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       end,
       "pleroma:get:main/ostatus",
       "pleroma:group_actors",
+      "pleroma:bookmark_folders",
       if Pleroma.Language.Translation.configured?() do
         "translation"
       end,

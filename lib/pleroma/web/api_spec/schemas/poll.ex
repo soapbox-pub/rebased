@@ -60,7 +60,10 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Poll do
       pleroma: %Schema{
         type: :object,
         properties: %{
-          non_anonymous: %Schema{type: :boolean, description: "Is the voters collection public?"}
+          non_anonymous: %Schema{
+            type: :boolean,
+            description: "Can voters be publicly identified?"
+          }
         }
       }
     },
