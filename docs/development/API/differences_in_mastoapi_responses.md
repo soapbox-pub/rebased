@@ -40,6 +40,7 @@ Has these additional fields under the `pleroma` object:
 - `parent_visible`: If the parent of this post is visible to the user or not.
 - `pinned_at`: a datetime (iso8601) when status was pinned, `null` otherwise.
 - `quotes_count`: the count of status quotes.
+- `non_anonymous`: true if the source post specifies the poll results are not anonymous. Currently only implemented by Smithereen.
 
 The `GET /api/v1/statuses/:id/source` endpoint additionally has the following attributes:
 
