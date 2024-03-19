@@ -26,10 +26,10 @@ cache: &global_cache_policy
     - _build
 
 stages:
-  - check-changelog
   - build
   - lint
   - test
+  - check-changelog
   - benchmark
   - deploy
   - release
