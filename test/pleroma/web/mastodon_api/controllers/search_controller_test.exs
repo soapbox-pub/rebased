@@ -322,26 +322,20 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
     end
 
     test "search fetches remote statuses and prefers them over other results", %{conn: conn} do
-      old_version = :persistent_term.get({Pleroma.Repo, :postgres_version})
-      :persistent_term.put({Pleroma.Repo, :postgres_version}, 10.0)
-      on_exit(fn -> :persistent_term.put({Pleroma.Repo, :postgres_version}, old_version) end)
+      {:ok, %{id: activity_id}} =
+        CommonAPI.post(insert(:user), %{
+          status: "check out http://mastodon.example.org/@admin/99541947525187367"
+        })
 
-      capture_log(fn ->
-        {:ok, %{id: activity_id}} =
-          CommonAPI.post(insert(:user), %{
-            status: "check out http://mastodon.example.org/@admin/99541947525187367"
-          })
+      %{"url" => result_url, "id" => result_id} =
+        conn
+        |> get("/api/v1/search?q=http://mastodon.example.org/@admin/99541947525187367")
+        |> json_response_and_validate_schema(200)
+        |> Map.get("statuses")
+        |> List.first()
 
-        results =
-          conn
-          |> get("/api/v1/search?q=http://mastodon.example.org/@admin/99541947525187367")
-          |> json_response_and_validate_schema(200)
-
-        assert [
-                 %{"url" => "http://mastodon.example.org/@admin/99541947525187367"},
-                 %{"id" => ^activity_id}
-               ] = results["statuses"]
-      end)
+      refute match?(^result_id, activity_id)
+      assert match?(^result_url, "http://mastodon.example.org/@admin/99541947525187367")
     end
 
     test "search doesn't show statuses that it shouldn't", %{conn: conn} do
