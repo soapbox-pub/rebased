@@ -158,19 +158,18 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     end
   end
 
-  defp should_federate?(inbox, public) do
-    if public do
-      true
-    else
-      %{host: host} = URI.parse(inbox)
+  def should_federate?(nil, _), do: false
+  def should_federate?(_, true), do: true
 
-      quarantined_instances =
-        Config.get([:instance, :quarantined_instances], [])
-        |> Pleroma.Web.ActivityPub.MRF.instance_list_from_tuples()
-        |> Pleroma.Web.ActivityPub.MRF.subdomains_regex()
+  def should_federate?(inbox, _) do
+    %{host: host} = URI.parse(inbox)
 
-      !Pleroma.Web.ActivityPub.MRF.subdomain_match?(quarantined_instances, host)
-    end
+    quarantined_instances =
+      Config.get([:instance, :quarantined_instances], [])
+      |> Pleroma.Web.ActivityPub.MRF.instance_list_from_tuples()
+      |> Pleroma.Web.ActivityPub.MRF.subdomains_regex()
+
+    !Pleroma.Web.ActivityPub.MRF.subdomain_match?(quarantined_instances, host)
   end
 
   @spec recipients(User.t(), Activity.t()) :: [[User.t()]]

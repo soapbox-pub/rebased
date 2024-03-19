@@ -184,7 +184,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     favorited = opts[:for] && opts[:for].ap_id in (object.data["likes"] || [])
 
-    bookmarked = Activity.get_bookmark(reblogged_parent_activity, opts[:for]) != nil
+    bookmark = Activity.get_bookmark(reblogged_parent_activity, opts[:for])
+
+    bookmark_folder =
+      if bookmark != nil do
+        bookmark.folder_id
+      else
+        nil
+      end
 
     mentions =
       activity.recipients
@@ -213,7 +220,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       favourites_count: 0,
       reblogged: reblogged?(reblogged_parent_activity, opts[:for]),
       favourited: present?(favorited),
-      bookmarked: present?(bookmarked),
+      bookmarked: present?(bookmark),
       muted: false,
       pinned: pinned?,
       sensitive: false,
@@ -227,7 +234,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       emojis: [],
       pleroma: %{
         local: activity.local,
-        pinned_at: pinned_at
+        pinned_at: pinned_at,
+        bookmark_folder: bookmark_folder
       }
     }
   end
@@ -264,7 +272,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     favorited = opts[:for] && opts[:for].ap_id in (object.data["likes"] || [])
 
-    bookmarked = Activity.get_bookmark(activity, opts[:for]) != nil
+    bookmark = Activity.get_bookmark(activity, opts[:for])
+
+    bookmark_folder =
+      if bookmark != nil do
+        bookmark.folder_id
+      else
+        nil
+      end
 
     client_posted_this_activity = opts[:for] && user.id == opts[:for].id
 
@@ -418,7 +433,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       favourites_count: like_count,
       reblogged: reblogged?(activity, opts[:for]),
       favourited: present?(favorited),
-      bookmarked: present?(bookmarked),
+      bookmarked: present?(bookmark),
       muted: muted,
       pinned: pinned?,
       sensitive: sensitive,
@@ -448,7 +463,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         emoji_reactions: emoji_reactions,
         parent_visible: visible_for_user?(reply_to, opts[:for]),
         pinned_at: pinned_at,
-        quotes_count: object.data["quotesCount"] || 0
+        quotes_count: object.data["quotesCount"] || 0,
+        bookmark_folder: bookmark_folder
       }
     }
   end

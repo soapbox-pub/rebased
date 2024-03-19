@@ -137,7 +137,7 @@ defmodule Pleroma.Notification do
     blocked_ap_ids = opts[:blocked_users_ap_ids] || User.blocked_users_ap_ids(user)
 
     query
-    |> where([n, a], a.actor not in ^blocked_ap_ids)
+    |> where([..., user_actor: user_actor], user_actor.ap_id not in ^blocked_ap_ids)
     |> FollowingRelationship.keep_following_or_not_domain_blocked(user)
   end
 
@@ -148,7 +148,7 @@ defmodule Pleroma.Notification do
       blocker_ap_ids = User.incoming_relationships_ungrouped_ap_ids(user, [:block])
 
       query
-      |> where([n, a], a.actor not in ^blocker_ap_ids)
+      |> where([..., user_actor: user_actor], user_actor.ap_id not in ^blocker_ap_ids)
     end
   end
 
@@ -161,7 +161,7 @@ defmodule Pleroma.Notification do
       opts[:notification_muted_users_ap_ids] || User.notification_muted_users_ap_ids(user)
 
     query
-    |> where([n, a], a.actor not in ^notification_muted_ap_ids)
+    |> where([..., user_actor: user_actor], user_actor.ap_id not in ^notification_muted_ap_ids)
     |> join(:left, [n, a], tm in ThreadMute,
       on: tm.user_id == ^user.id and tm.context == fragment("?->>'context'", a.data),
       as: :thread_mute

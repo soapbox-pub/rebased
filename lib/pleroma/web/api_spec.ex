@@ -137,7 +137,8 @@ defmodule Pleroma.Web.ApiSpec do
               "Scheduled statuses",
               "Search",
               "Status actions",
-              "Media attachments"
+              "Media attachments",
+              "Bookmark folders"
             ]
           },
           %{

@@ -415,6 +415,10 @@ config :pleroma, :mrf_follow_bot, follower_nickname: nil
 
 config :pleroma, :mrf_inline_quote, template: "<bdi>RT:</bdi> {url}"
 
+config :pleroma, :mrf_force_mention,
+  mention_parent: true,
+  mention_quoted: true
+
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],
@@ -795,7 +799,7 @@ config :pleroma, :modules, runtime_dir: "instance/modules"
 config :pleroma, configurable_from_database: false
 
 config :pleroma, Pleroma.Repo,
-  parameters: [gin_fuzzy_search_limit: "500"],
+  parameters: [gin_fuzzy_search_limit: "500", jit: "off"],
   prepare: :unnamed
 
 config :pleroma, :connections_pool,
