@@ -33,9 +33,7 @@ defmodule Pleroma.Web.PleromaAPI.BookmarkFolderControllerTest do
                  "id" => ^folder_id,
                  "name" => "Bookmark folder",
                  "emoji" => nil,
-                 "source" => %{
-                   "emoji" => nil
-                 }
+                 "emoji_url" => nil
                }
              ] = result
     end
@@ -57,9 +55,24 @@ defmodule Pleroma.Web.PleromaAPI.BookmarkFolderControllerTest do
       assert %{
                "name" => "Bookmark folder",
                "emoji" => "📁",
-               "source" => %{
-                 "emoji" => "📁"
-               }
+               "emoji_url" => nil
+             } = result
+    end
+
+    test "it creates a bookmark folder with custom emoji", %{conn: conn} do
+      result =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/pleroma/bookmark_folders", %{
+          name: "Bookmark folder",
+          emoji: ":firefox:"
+        })
+        |> json_response_and_validate_schema(200)
+
+      assert %{
+               "name" => "Bookmark folder",
+               "emoji" => ":firefox:",
+               "emoji_url" => "http://localhost:4001/emoji/Firefox.gif"
              } = result
     end
 
