@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
+  alias Pleroma.Language.LanguageDetector
   alias Pleroma.Maps
   alias Pleroma.Object
   alias Pleroma.Object.Containment

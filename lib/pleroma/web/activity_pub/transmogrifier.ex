@@ -8,7 +8,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   """
   alias Pleroma.Activity
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
-  alias Pleroma.Language.LanguageDetector
   alias Pleroma.Maps
   alias Pleroma.Object
   alias Pleroma.Object.Containment
