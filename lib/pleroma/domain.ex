@@ -13,7 +13,6 @@ defmodule Pleroma.Domain do
 
   schema "domains" do
     field(:domain, :string, default: "")
-    field(:service_domain, :string, default: "")
     field(:public, :boolean, default: false)
     field(:resolves, :boolean, default: false)
     field(:last_checked_at, :naive_datetime)
@@ -25,10 +24,8 @@ defmodule Pleroma.Domain do
     domain
     |> cast(params, [:domain, :public])
     |> validate_required([:domain])
-    |> maybe_add_service_domain()
     |> update_change(:domain, &String.downcase/1)
     |> unique_constraint(:domain)
-    |> unique_constraint(:service_domain)
   end
 
   def update_changeset(%__MODULE__{} = domain, params \\ %{}) do
@@ -47,12 +44,6 @@ defmodule Pleroma.Domain do
     )
   end
 
-  defp maybe_add_service_domain(%{changes: %{service_domain: _}} = changeset), do: changeset
-
-  defp maybe_add_service_domain(%{changes: %{domain: domain}} = changeset) do
-    change(changeset, service_domain: domain)
-  end
-
   def list do
     __MODULE__
     |> order_by(asc: :id)
@@ -61,9 +52,9 @@ defmodule Pleroma.Domain do
 
   def get(id), do: Repo.get(__MODULE__, id)
 
-  def get_by_service_domain(domain) do
+  def get_by_name(domain) do
     __MODULE__
-    |> where(service_domain: ^domain)
+    |> where(domain: ^domain)
     |> Repo.one()
   end
 

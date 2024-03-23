@@ -17,7 +17,7 @@ defmodule Pleroma.Web.Plugs.SetDomainPlug do
              Pleroma.Config.get([__MODULE__, :domain]),
              Pleroma.Web.Endpoint.host()
            ],
-         %Domain{} = domain <- Domain.get_by_service_domain(domain) do
+         %Domain{} = domain <- Domain.get_by_name(domain) do
       Map.put(conn, :domain, domain)
     else
       _ -> conn

@@ -40,7 +40,7 @@ defmodule Pleroma.Web.AdminAPI.DomainController do
     with {:domain_not_used, true} <-
            {:domain_not_used, params[:domain] !== Pleroma.Web.WebFinger.host()},
          {:ok, domain} <- Domain.create(params),
-         _ <- @cachex.del(:domain, :domains_list) do
+         _ <- @cachex.del(:domain_cache, :domains_list) do
       Pleroma.Workers.CheckDomainResolveWorker.enqueue("check_domain_resolve", %{
         "id" => domain.id
       })
@@ -62,14 +62,14 @@ defmodule Pleroma.Web.AdminAPI.DomainController do
       params
       |> Domain.update(id)
 
-    @cachex.del(:domain, :domains_list)
+    @cachex.del(:domain_cache, :domains_list)
 
     render(conn, "show.json", domain: domain)
   end
 
   def delete(conn, %{id: id}) do
     with {:ok, _} <- Domain.delete(id),
-         _ <- @cachex.del(:domain, :domains_list) do
+         _ <- @cachex.del(:domain_cache, :domains_list) do
       json(conn, %{})
     else
       _ -> json_response(conn, :bad_request, "")
