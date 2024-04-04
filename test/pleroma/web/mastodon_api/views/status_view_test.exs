@@ -773,6 +773,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       page_url = "http://example.com"
 
       card = %{
+        "image:alt" => "Example image description",
         url: page_url,
         site_name: "Example site name",
         title: "Example website",
@@ -780,7 +781,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         description: "Example description"
       }
 
-      %{provider_name: "example.com"} =
+      %{provider_name: "example.com", image_description: "Example image description"} =
         StatusView.render("card.json", %{page_url: page_url, rich_media: card})
     end
 
