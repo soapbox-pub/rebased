@@ -6,15 +6,17 @@ defmodule Pleroma.BookmarkTest do
   use Pleroma.DataCase, async: true
   import Pleroma.Factory
   alias Pleroma.Bookmark
+  alias Pleroma.BookmarkFolder
   alias Pleroma.Web.CommonAPI
 
-  describe "create/2" do
+  describe "create/3" do
     test "with valid params" do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{status: "Some cool information"})
       {:ok, bookmark} = Bookmark.create(user.id, activity.id)
       assert bookmark.user_id == user.id
       assert bookmark.activity_id == activity.id
+      assert bookmark.folder_id == nil
     end
 
     test "with invalid params" do
@@ -25,6 +27,19 @@ defmodule Pleroma.BookmarkTest do
                user_id: {"can't be blank", [validation: :required]},
                activity_id: {"can't be blank", [validation: :required]}
              ]
+    end
+
+    test "update existing bookmark folder" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{status: "Some cool information"})
+
+      {:ok, bookmark} = Bookmark.create(user.id, activity.id)
+      assert bookmark.folder_id == nil
+
+      {:ok, bookmark_folder} = BookmarkFolder.create(user.id, "Read later")
+
+      {:ok, bookmark} = Bookmark.create(user.id, activity.id, bookmark_folder.id)
+      assert bookmark.folder_id == bookmark_folder.id
     end
   end
 

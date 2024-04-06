@@ -799,7 +799,7 @@ config :pleroma, :modules, runtime_dir: "instance/modules"
 config :pleroma, configurable_from_database: false
 
 config :pleroma, Pleroma.Repo,
-  parameters: [gin_fuzzy_search_limit: "500"],
+  parameters: [gin_fuzzy_search_limit: "500", jit: "off"],
   prepare: :unnamed
 
 config :pleroma, :connections_pool,

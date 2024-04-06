@@ -119,28 +119,7 @@ defmodule Pleroma.Application do
     max_restarts = Application.get_env(:pleroma, __MODULE__)[:max_restarts]
 
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor, max_restarts: max_restarts]
-    result = Supervisor.start_link(children, opts)
-
-    set_postgres_server_version()
-
-    result
-  end
-
-  defp set_postgres_server_version do
-    version =
-      with %{rows: [[version]]} <- Ecto.Adapters.SQL.query!(Pleroma.Repo, "show server_version"),
-           {num, _} <- Float.parse(version) do
-        num
-      else
-        e ->
-          Logger.warning(
-            "Could not get the postgres version: #{inspect(e)}.\nSetting the default value of 9.6"
-          )
-
-          9.6
-      end
-
-    :persistent_term.put({Pleroma.Repo, :postgres_version}, version)
+    Supervisor.start_link(children, opts)
   end
 
   def load_custom_modules do
