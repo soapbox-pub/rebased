@@ -1919,7 +1919,8 @@ Note that this differs from the Mastodon API variant: Mastodon API only returns 
   {
     "id": "1",
     "priority": 1,
-    "text": "There are no rules"
+    "text": "There are no rules",
+    "hint": null
   }
 ]
 ```
@@ -1930,6 +1931,7 @@ Note that this differs from the Mastodon API variant: Mastodon API only returns 
 
 - Params:
   - `text`: string, required, rule content
+  - `hint`: string, optional, rule description
   - `priority`: integer, optional, rule ordering priority
 
 - Response: JSON, a single rule
@@ -1940,6 +1942,7 @@ Note that this differs from the Mastodon API variant: Mastodon API only returns 
 
 - Params:
   - `text`: string, optional, rule content
+  - `hint`: string, optional, rule description
   - `priority`: integer, optional, rule ordering priority
 
 - Response: JSON, a single rule

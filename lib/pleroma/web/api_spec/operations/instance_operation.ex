@@ -459,7 +459,8 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
         type: :object,
         properties: %{
           id: %Schema{type: :string},
-          text: %Schema{type: :string}
+          text: %Schema{type: :string},
+          hint: %Schema{type: :string}
         }
       }
     }

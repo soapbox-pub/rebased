@@ -105,17 +105,28 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
   end
 
   test "get instance rules", %{conn: conn} do
-    Rule.create(%{text: "Example rule"})
-    Rule.create(%{text: "Second rule"})
-    Rule.create(%{text: "Third rule"})
+    Rule.create(%{text: "Example rule", hint: "Rule description", priority: 1})
+    Rule.create(%{text: "Third rule", priority: 2})
+    Rule.create(%{text: "Second rule", priority: 1})
 
     conn = get(conn, "/api/v1/instance")
 
     assert result = json_response_and_validate_schema(conn, 200)
 
-    rules = result["rules"]
-
-    assert length(rules) == 3
+    assert [
+      %{
+        "text" => "Example rule",
+        "hint" => "Rule description"
+      },
+      %{
+        "text" => "Second rule",
+        "hint" => ""
+      },
+      %{
+        "text" => "Third rule",
+        "hint" => ""
+      }
+    ] = result["rules"]
   end
 
   test "get instance configuration", %{conn: conn} do

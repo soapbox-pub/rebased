@@ -94,7 +94,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
   def render("rule.json", %{rule: rule}) do
     %{
       id: to_string(rule.id),
-      text: rule.text
+      text: rule.text,
+      hint: rule.hint || ""
     }
   end
 
