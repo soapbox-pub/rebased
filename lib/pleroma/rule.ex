@@ -14,13 +14,14 @@ defmodule Pleroma.Rule do
   schema "rules" do
     field(:priority, :integer, default: 0)
     field(:text, :string)
+    field(:hint, :string)
 
     timestamps()
   end
 
   def changeset(%Rule{} = rule, params \\ %{}) do
     rule
-    |> cast(params, [:priority, :text])
+    |> cast(params, [:priority, :text, :hint])
     |> validate_required([:text])
   end
 

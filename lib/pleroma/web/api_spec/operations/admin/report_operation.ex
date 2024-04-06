@@ -182,7 +182,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
             type: :object,
             properties: %{
               id: %Schema{type: :string},
-              text: %Schema{type: :string}
+              text: %Schema{type: :string},
+              hint: %Schema{type: :string, nullable: true}
             }
           }
         }

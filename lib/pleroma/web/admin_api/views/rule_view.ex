@@ -15,7 +15,8 @@ defmodule Pleroma.Web.AdminAPI.RuleView do
     %{
       id: to_string(rule.id),
       priority: rule.priority,
-      text: rule.text
+      text: rule.text,
+      hint: rule.hint
     }
   end
 end
