@@ -52,7 +52,8 @@ defmodule Pleroma.Workers.ReceiverWorker do
       {:error, {:reject, reason}} -> {:cancel, reason}
       {:signature, false} -> {:cancel, :invalid_signature}
       {:error, {:error, reason = "Object has been deleted"}} -> {:cancel, reason}
-      e -> e
+      {:error, _} = e -> e
+      e -> {:error, e}
     end
   end
 end
