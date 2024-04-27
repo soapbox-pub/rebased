@@ -789,12 +789,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         url: "http://example.com",
         title: "Example website",
         meta: %{
+          "og:image:alt" => "Example image description",
           "twitter:title" => "Example site name",
           "twitter:image" => "http://example.com/example.jpg"
         }
       }
 
-      %{"provider_name" => "example.com"} = StatusView.render("card.json", %{embed: embed})
+      %{"provider_name" => "example.com", "image_description" => "Example image description"} =
+        StatusView.render("card.json", %{embed: embed})
     end
 
     test "a rich media card has all media proxied" do

@@ -21,6 +21,7 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
             width: 0,
             height: 0,
             image: nil,
+            image_description: "",
             embed_url: "",
             blurhash: nil
 
@@ -41,8 +42,10 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
       width: oembed["width"],
       height: oembed["height"],
       image: get_image(oembed) |> fix_uri(url) |> proxy(),
+      image_description: get_image_description(embed),
       embed_url: oembed["url"] |> fix_uri(url) |> proxy()
     }
+    |> IO.inspect
     |> validate()
   end
 
@@ -56,7 +59,8 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
       type: "link",
       provider_name: uri.host,
       provider_url: "#{uri.scheme}://#{uri.host}",
-      image: get_image(embed) |> fix_uri(url) |> proxy()
+      image: get_image(embed) |> fix_uri(url) |> proxy(),
+      image_description: get_image_description(embed),
     }
     |> validate()
   end
@@ -92,6 +96,9 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
   defp get_image(%{"thumbnail_url" => image}) when is_binary(image) and image != "", do: image
   defp get_image(%{"type" => "photo", "url" => image}), do: image
   defp get_image(_), do: ""
+
+  defp get_image_description(%{meta: %{"og:image:alt" => image_description}}), do: image_description
+  defp get_image_description(_), do: ""
 
   defp sanitize_html(html) do
     with {:ok, html} <- FastSanitize.Sanitizer.scrub(html, Pleroma.HTML.Scrubber.OEmbed),
