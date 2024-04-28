@@ -190,10 +190,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       title: Keyword.get(instance, :name),
       version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.compat_version()})",
       languages: Keyword.get(instance, :languages, ["en"]),
-      rules: render(__MODULE__, "rules.json"),
-      soapbox: %{
-        version: Soapbox.version()
-      }
+      rules: render(__MODULE__, "rules.json")
     }
   end
 

@@ -1,4 +1,4 @@
-A fork of Pleroma/Rebased. More information soon.
+`pl`. A fork of Pleroma/Rebased. More information soon.
 
 ---
 
