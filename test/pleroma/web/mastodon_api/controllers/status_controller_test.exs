@@ -1717,7 +1717,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       card_data = %{
         "image" => "http://ia.media-imdb.com/images/rock.jpg",
-        "image_description" => "",
         "provider_name" => "example.com",
         "provider_url" => "https://example.com",
         "title" => "The Rock",
@@ -1771,7 +1770,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                "title" => "Pleroma",
                "description" => "",
                "image" => nil,
-               "image_description" => "",
                "provider_name" => "example.com",
                "provider_url" => "https://example.com",
                "url" => "https://example.com/ogp-missing-data",
