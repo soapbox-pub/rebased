@@ -116,8 +116,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
       data =
         File.read!("test/fixtures/create-chat-message.json")
         |> Jason.decode!()
-        |> Map.put("actor", "http://mastodon.example.org/users/admin")
-        |> put_in(["object", "actor"], "http://mastodon.example.org/users/admin")
 
       _recipient = insert(:user, ap_id: List.first(data["to"]), local: true)
 
