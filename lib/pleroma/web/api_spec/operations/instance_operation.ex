@@ -272,6 +272,19 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
           type: :object,
           description: "Instance configuration",
           properties: %{
+            accounts: %Schema{
+              type: :object,
+              properties: %{
+                max_featured_tags: %Schema{
+                  type: :integer,
+                  description: "The maximum number of featured tags allowed for each account."
+                },
+                max_pinned_statuses: %Schema{
+                  type: :integer,
+                  description: "The maximum number of pinned statuses for each account."
+                }
+              }
+            },
             urls: %Schema{
               type: :object,
               properties: %{

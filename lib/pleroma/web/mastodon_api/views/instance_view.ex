@@ -213,6 +213,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
   defp configuration2 do
     configuration()
+    |> put_in([:accounts, :max_pinned_statuses], Config.get([:instance, :max_pinned_statuses], 0))
     |> put_in([:statuses, :characters_reserved_per_url], 0)
     |> Map.merge(%{
       urls: %{
