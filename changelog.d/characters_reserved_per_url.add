@@ -1,0 +1,1 @@
+Add configuration[statuses][characters_reserved_per_url] to /api/v2/instance (https://docs.joinmastodon.org/entities/Instance/#characters_reserved_per_url)

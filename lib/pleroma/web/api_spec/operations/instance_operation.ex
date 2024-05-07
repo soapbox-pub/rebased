@@ -285,6 +285,11 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
               type: :object,
               description: "A map with poll limits for local statuses",
               properties: %{
+                characters_reserved_per_url: %Schema{
+                  type: :integer,
+                  description:
+                    "Each URL in a status will be assumed to be exactly this many characters."
+                },
                 max_characters: %Schema{
                   type: :integer,
                   description: "Posts character limit (CW/Subject included in the counter)"

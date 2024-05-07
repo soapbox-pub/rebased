@@ -213,6 +213,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
   defp configuration2 do
     configuration()
+    |> put_in([:statuses, :characters_reserved_per_url], 0)
     |> Map.merge(%{
       urls: %{
         streaming: Pleroma.Web.Endpoint.websocket_url(),
