@@ -50,6 +50,15 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
     %Schema{
       type: :object,
       properties: %{
+        accounts: %Schema{
+          type: :object,
+          properties: %{
+            max_featured_tags: %Schema{
+              type: :integer,
+              description: "The maximum number of featured tags allowed for each account."
+            }
+          }
+        },
         uri: %Schema{type: :string, description: "The domain name of the instance"},
         title: %Schema{type: :string, description: "The title of the website"},
         description: %Schema{
