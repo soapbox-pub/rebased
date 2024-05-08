@@ -738,7 +738,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       {:ok, card} =
         Card.create(page_url, %{image: page_url <> "/example.jpg", title: "Example website"})
 
-      %{provider_name: "example.com"} = StatusView.render("card.json", card)
+      assert match?(%{provider_name: "example.com"}, StatusView.render("card.json", card))
     end
 
     test "a rich media card without a site name or image renders correctly" do
@@ -751,7 +751,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
       {:ok, card} = Card.create(page_url, fields)
 
-      %{provider_name: "example.com"} = StatusView.render("card.json", card)
+      assert match?(%{provider_name: "example.com"}, StatusView.render("card.json", card))
     end
 
     test "a rich media card without an image renders correctly" do
@@ -765,7 +765,24 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
       {:ok, card} = Card.create(page_url, fields)
 
-      %{provider_name: "example.com"} = StatusView.render("card.json", card)
+      assert match?(%{provider_name: "example.com"}, StatusView.render("card.json", card))
+    end
+
+    test "a rich media card without descriptions returns the fields with empty strings" do
+      page_url = "https://example.com"
+
+      fields = %{
+        "url" => page_url,
+        "site_name" => "Example site name",
+        "title" => "Example website"
+      }
+
+      {:ok, card} = Card.create(page_url, fields)
+
+      assert match?(
+               %{description: "", image_description: ""},
+               StatusView.render("card.json", card)
+             )
     end
 
     test "a rich media card with all relevant data renders correctly" do
@@ -781,7 +798,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
       {:ok, card} = Card.create(page_url, fields)
 
-      %{provider_name: "example.com"} = StatusView.render("card.json", card)
+      assert match?(%{provider_name: "example.com"}, StatusView.render("card.json", card))
     end
 
     test "a rich media card has all media proxied" do
