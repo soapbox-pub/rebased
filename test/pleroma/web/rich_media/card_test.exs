@@ -39,7 +39,7 @@ defmodule Pleroma.Web.RichMedia.CardTest do
     assert %Card{url_hash: ^url_hash, fields: _} = Card.get_by_activity(activity)
   end
 
-  test "recrawls URLs on updates" do
+  test "recrawls URLs on status edits/updates" do
     original_url = "https://google.com/"
     original_url_hash = Card.url_to_hash(original_url)
     updated_url = "https://yahoo.com/"
