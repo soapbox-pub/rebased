@@ -25,7 +25,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
-  alias Pleroma.Web.RichMedia.Card
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
 
@@ -39,7 +38,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     when action in [
            :index,
            :show,
-           :card,
            :context,
            :show_history,
            :show_source
@@ -471,21 +469,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     with %Activity{} = activity <- Activity.get_by_id(id),
          {:ok, activity} <- CommonAPI.remove_mute(user, activity) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
-    end
-  end
-
-  @doc "GET /api/v1/statuses/:id/card"
-  @deprecated "https://github.com/tootsuite/mastodon/pull/11213"
-  def card(
-        %{assigns: %{user: user}, private: %{open_api_spex: %{params: %{id: status_id}}}} = conn,
-        _
-      ) do
-    with %Activity{} = activity <- Activity.get_by_id(status_id),
-         true <- Visibility.visible_for_user?(activity, user),
-         %Card{} = card_data <- Card.get_by_activity(activity) do
-      render(conn, "card.json", card_data)
-    else
-      _ -> render_error(conn, :not_found, "Record not found")
     end
   end
 
