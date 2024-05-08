@@ -2,16 +2,6 @@
 # Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.RichMedia.Backfill.Task do
-  alias Pleroma.Web.RichMedia.Backfill
-
-  def run(args) do
-    Task.Supervisor.start_child(Pleroma.TaskSupervisor, Backfill, :run, [args],
-      name: {:global, {:rich_media, args.url_hash}}
-    )
-  end
-end
-
 defmodule Pleroma.Web.RichMedia.Backfill do
   alias Pleroma.Web.RichMedia.Card
   alias Pleroma.Web.RichMedia.Parser
@@ -98,4 +88,14 @@ defmodule Pleroma.Web.RichMedia.Backfill do
 
   defp warm_cache(key, val), do: @cachex.put(:rich_media_cache, key, val)
   defp negative_cache(key, ttl \\ nil), do: @cachex.put(:rich_media_cache, key, nil, ttl: ttl)
+end
+
+defmodule Pleroma.Web.RichMedia.Backfill.Task do
+  alias Pleroma.Web.RichMedia.Backfill
+
+  def run(args) do
+    Task.Supervisor.start_child(Pleroma.TaskSupervisor, Backfill, :run, [args],
+      name: {:global, {:rich_media, args.url_hash}}
+    )
+  end
 end
