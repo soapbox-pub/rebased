@@ -768,6 +768,23 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       assert match?(%{provider_name: "example.com"}, StatusView.render("card.json", card))
     end
 
+    test "a rich media card without descriptions returns the fields with empty strings" do
+      page_url = "https://example.com"
+
+      fields = %{
+        "url" => page_url,
+        "site_name" => "Example site name",
+        "title" => "Example website"
+      }
+
+      {:ok, card} = Card.create(page_url, fields)
+
+      assert match?(
+               %{description: "", image_description: ""},
+               StatusView.render("card.json", card)
+             )
+    end
+
     test "a rich media card with all relevant data renders correctly" do
       page_url = "https://example.com"
 
