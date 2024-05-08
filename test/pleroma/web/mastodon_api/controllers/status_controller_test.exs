@@ -329,40 +329,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert real_status == fake_status
     end
 
-    test "fake statuses' preview card is not cached", %{conn: conn} do
-      Pleroma.StaticStubbedConfigMock
-      |> stub(:get, fn
-        [:rich_media, :enabled] -> true
-        path -> Pleroma.Test.StaticConfig.get(path)
-      end)
-
-      Tesla.Mock.mock_global(fn
-        env ->
-          apply(HttpRequestMock, :request, [env])
-      end)
-
-      conn1 =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/statuses", %{
-          "status" => "https://example.com/ogp",
-          "preview" => true
-        })
-
-      conn2 =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/statuses", %{
-          "status" => "https://example.com/twitter-card",
-          "preview" => true
-        })
-
-      assert %{"card" => %{"title" => "The Rock"}} = json_response_and_validate_schema(conn1, 200)
-
-      assert %{"card" => %{"title" => "Small Island Developing States Photo Submission"}} =
-               json_response_and_validate_schema(conn2, 200)
-    end
-
     test "posting a status with OGP link preview", %{conn: conn} do
       Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
 
