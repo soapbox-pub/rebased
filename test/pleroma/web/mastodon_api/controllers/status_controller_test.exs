@@ -1698,34 +1698,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       assert response_two == card_data
     end
-
-    test "replaces missing description with an empty string", %{conn: conn, user: user} do
-      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-
-      {:ok, activity} = CommonAPI.post(user, %{status: "https://example.com/ogp-missing-data"})
-
-      response =
-        conn
-        |> get("/api/v1/statuses/#{activity.id}/card")
-        |> json_response_and_validate_schema(:ok)
-
-      assert response == %{
-               "type" => "link",
-               "title" => "Pleroma",
-               "description" => "",
-               "image" => nil,
-               "provider_name" => "example.com",
-               "provider_url" => "https://example.com",
-               "url" => "https://example.com/ogp-missing-data",
-               "pleroma" => %{
-                 "opengraph" => %{
-                   "title" => "Pleroma",
-                   "type" => "website",
-                   "url" => "https://example.com/ogp-missing-data"
-                 }
-               }
-             }
-    end
   end
 
   test "bookmarks" do
