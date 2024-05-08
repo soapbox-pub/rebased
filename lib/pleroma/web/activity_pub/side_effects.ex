@@ -227,9 +227,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         end
       end
 
-      ConcurrentLimiter.limit(Pleroma.Web.RichMedia.Helpers, fn ->
-        Task.start(fn -> Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) end)
-      end)
+      Pleroma.Web.RichMedia.Card.get_by_activity(activity)
 
       Pleroma.Search.add_to_index(Map.put(activity, :object, object))
 

@@ -768,7 +768,6 @@ defmodule Pleroma.Web.Router do
     get("/statuses", StatusController, :index)
     get("/statuses/:id", StatusController, :show)
     get("/statuses/:id/context", StatusController, :context)
-    get("/statuses/:id/card", StatusController, :card)
     get("/statuses/:id/favourited_by", StatusController, :favourited_by)
     get("/statuses/:id/reblogged_by", StatusController, :reblogged_by)
     get("/statuses/:id/history", StatusController, :show_history)

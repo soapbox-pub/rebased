@@ -428,7 +428,11 @@ config :pleroma, :rich_media,
     Pleroma.Web.RichMedia.Parsers.OEmbed
   ],
   failure_backoff: 60_000,
-  ttl_setters: [Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl]
+  ttl_setters: [
+    Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl,
+    Pleroma.Web.RichMedia.Parser.TTL.Opengraph
+  ],
+  max_body: 5_000_000
 
 config :pleroma, :media_proxy,
   enabled: false,
@@ -575,7 +579,8 @@ config :pleroma, Oban,
     attachments_cleanup: 1,
     new_users_digest: 1,
     mute_expire: 5,
-    search_indexing: 10
+    search_indexing: 10,
+    rich_media_expiration: 2
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [

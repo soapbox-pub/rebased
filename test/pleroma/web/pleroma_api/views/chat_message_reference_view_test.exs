@@ -9,7 +9,6 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
   alias Pleroma.Object
-  alias Pleroma.StaticStubbedConfigMock
   alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
@@ -17,6 +16,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
 
   import Mox
   import Pleroma.Factory
+
+  setup do: clear_config([:rich_media, :enabled], true)
 
   test "it displays a chat message" do
     user = insert(:user)
@@ -62,16 +63,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
     assert match?([%{shortcode: "firefox"}], chat_message[:emojis])
     assert chat_message[:idempotency_key] == "123"
 
-    StaticStubbedConfigMock
-    |> stub(:get, fn
-      [:rich_media, :enabled] -> true
-      path -> Pleroma.Test.StaticConfig.get(path)
-    end)
-
-    Tesla.Mock.mock_global(fn
-      %{url: "https://example.com/ogp"} ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}
-    end)
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
 
     {:ok, activity} =
       CommonAPI.post_chat_message(recipient, user, "gkgkgk https://example.com/ogp",
