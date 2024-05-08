@@ -47,7 +47,7 @@ defmodule Pleroma.Web.RichMedia.Card do
     @cachex.del(:rich_media_cache, url_hash)
 
     case get_by_url(url) do
-      %__MODULE{} = card -> Repo.delete(card)
+      %__MODULE__{} = card -> Repo.delete(card)
       nil -> :ok
     end
   end
