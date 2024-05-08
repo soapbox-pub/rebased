@@ -6,11 +6,12 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.Opengraph do
   @behaviour Pleroma.Web.RichMedia.Parser.TTL
 
   @impl true
-  def ttl(%{"ttl" => ttl_string}, _url) do
-    with ttl <- String.to_integer(ttl_string) do
+  def ttl(%{"ttl" => ttl_string}, _url) when is_binary(ttl_string) do
+    try do
+      ttl = String.to_integer(ttl_string)
       now = DateTime.utc_now() |> DateTime.to_unix()
       now + ttl
-    else
+    rescue
       _ -> nil
     end
   end
