@@ -17,6 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.RichMedia.Card
 
   require Bitwise
 
@@ -732,56 +733,72 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   describe "rich media cards" do
     test "a rich media card without a site name renders correctly" do
-      page_url = "http://example.com"
+      page_url = "https://example.com"
 
-      card = %{
-        url: page_url,
-        image: page_url <> "/example.jpg",
-        title: "Example website"
-      }
+      {:ok, card} =
+        Card.create(page_url, %{image: page_url <> "/example.jpg", title: "Example website"})
 
-      %{provider_name: "example.com"} =
-        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+      assert match?(%{provider_name: "example.com"}, StatusView.render("card.json", card))
     end
 
     test "a rich media card without a site name or image renders correctly" do
-      page_url = "http://example.com"
+      page_url = "https://example.com"
 
-      card = %{
-        url: page_url,
-        title: "Example website"
+      fields = %{
+        "url" => page_url,
+        "title" => "Example website"
       }
 
-      %{provider_name: "example.com"} =
-        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+      {:ok, card} = Card.create(page_url, fields)
+
+      assert match?(%{provider_name: "example.com"}, StatusView.render("card.json", card))
     end
 
     test "a rich media card without an image renders correctly" do
-      page_url = "http://example.com"
+      page_url = "https://example.com"
 
-      card = %{
-        url: page_url,
-        site_name: "Example site name",
-        title: "Example website"
+      fields = %{
+        "url" => page_url,
+        "site_name" => "Example site name",
+        "title" => "Example website"
       }
 
-      %{provider_name: "example.com"} =
-        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+      {:ok, card} = Card.create(page_url, fields)
+
+      assert match?(%{provider_name: "example.com"}, StatusView.render("card.json", card))
+    end
+
+    test "a rich media card without descriptions returns the fields with empty strings" do
+      page_url = "https://example.com"
+
+      fields = %{
+        "url" => page_url,
+        "site_name" => "Example site name",
+        "title" => "Example website"
+      }
+
+      {:ok, card} = Card.create(page_url, fields)
+
+      assert match?(
+               %{description: "", image_description: ""},
+               StatusView.render("card.json", card)
+             )
     end
 
     test "a rich media card with all relevant data renders correctly" do
-      page_url = "http://example.com"
+      page_url = "https://example.com"
 
-      card = %{
-        url: page_url,
-        site_name: "Example site name",
-        title: "Example website",
-        image: page_url <> "/example.jpg",
-        description: "Example description"
+      fields = %{
+        "url" => page_url,
+        "site_name" => "Example site name",
+        "title" => "Example website",
+        "image" => page_url <> "/example.jpg",
+        "description" => "Example description"
       }
 
-      %{provider_name: "example.com"} =
-        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+      {:ok, card} = Card.create(page_url, fields)
+
+      assert match?(%{provider_name: "example.com"}, StatusView.render("card.json", card))
     end
 
     test "a rich media card has all media proxied" do
@@ -791,25 +808,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       ConfigMock
       |> stub_with(Pleroma.Test.StaticConfig)
 
-      page_url = "http://example.com"
+      page_url = "https://example.com"
 
-      card = %{
-        url: page_url,
-        site_name: "Example site name",
-        title: "Example website",
-        image: page_url <> "/example.jpg",
-        audio: page_url <> "/example.ogg",
-        video: page_url <> "/example.mp4",
-        description: "Example description"
+      fields = %{
+        "url" => page_url,
+        "site_name" => "Example site name",
+        "title" => "Example website",
+        "image" => page_url <> "/example.jpg",
+        "audio" => page_url <> "/example.ogg",
+        "video" => page_url <> "/example.mp4",
+        "description" => "Example description"
       }
 
-      strcard = for {k, v} <- card, into: %{}, do: {to_string(k), v}
+      {:ok, card} = Card.create(page_url, fields)
 
       %{
         provider_name: "example.com",
         image: image,
         pleroma: %{opengraph: og}
-      } = StatusView.render("card.json", %{page_url: page_url, rich_media: strcard})
+      } = StatusView.render("card.json", card)
 
       assert String.match?(image, ~r/\/proxy\//)
       assert String.match?(og["image"], ~r/\/proxy\//)

@@ -147,9 +147,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       # Splice in the child object if we have one.
       activity = Maps.put_if_present(activity, :object, object)
 
-      ConcurrentLimiter.limit(Pleroma.Web.RichMedia.Helpers, fn ->
-        Task.start(fn -> Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) end)
-      end)
+      Pleroma.Web.RichMedia.Card.get_by_activity(activity)
 
       # Add local posts to search index
       if local, do: Pleroma.Search.add_to_index(activity)
@@ -177,7 +175,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           id: "pleroma:fakeid"
         }
 
-        Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+        Pleroma.Web.RichMedia.Card.get_by_activity(activity)
         {:ok, activity}
 
       {:remote_limit_pass, _} ->

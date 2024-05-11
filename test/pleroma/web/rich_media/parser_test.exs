@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.ParserTest do
-  use Pleroma.DataCase, async: false
+  use Pleroma.DataCase
 
   alias Pleroma.Web.RichMedia.Parser
 
@@ -103,5 +103,28 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
 
   test "does a HEAD request to check if the body is html" do
     assert {:error, {:content_type, _}} = Parser.parse("https://example.com/pdf-file")
+  end
+
+  test "refuses to crawl incomplete URLs" do
+    url = "example.com/ogp"
+    assert :error == Parser.parse(url)
+  end
+
+  test "refuses to crawl malformed URLs" do
+    url = "example.com[]/ogp"
+    assert :error == Parser.parse(url)
+  end
+
+  test "refuses to crawl URLs of private network from posts" do
+    [
+      "http://127.0.0.1:4000/notice/9kCP7VNyPJXFOXDrgO",
+      "https://10.111.10.1/notice/9kCP7V",
+      "https://172.16.32.40/notice/9kCP7V",
+      "https://192.168.10.40/notice/9kCP7V",
+      "https://pleroma.local/notice/9kCP7V"
+    ]
+    |> Enum.each(fn url ->
+      assert :error == Parser.parse(url)
+    end)
   end
 end
