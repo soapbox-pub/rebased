@@ -7,10 +7,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
   alias Pleroma.Config
   alias Pleroma.Domain
-  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.AdminAPI.DomainView
-  alias Pleroma.Web.MastodonAPI
 
   @mastodon_api_level "2.7.2"
 
@@ -37,8 +35,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         |> to_string,
       registrations: Keyword.get(instance, :registrations_open),
       approval_required: Keyword.get(instance, :account_approval_required),
-      configuration: configuration(),
       contact_account: contact_account(Keyword.get(instance, :contact_username)),
+      configuration: configuration(),
       rules: render(__MODULE__, "rules.json"),
       # Extra (not present in Mastodon):
       max_toot_chars: Keyword.get(instance, :limit),
@@ -239,10 +237,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
   end
 
   defp contact_account(username) do
-    user = User.get_cached_by_nickname(username)
+    user = Pleroma.User.get_cached_by_nickname(username)
 
     if user do
-      MastodonAPI.AccountView.render("show.json", %{user: user, for: nil})
+      Pleroma.Web.MastodonAPI.AccountView.render("show.json", %{user: user, for: nil})
     else
       nil
     end

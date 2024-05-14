@@ -17,7 +17,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
-  alias Pleroma.Web.RichMedia.Parser.Embed
 
   require Bitwise
 
@@ -448,7 +447,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert status.pleroma.quote_url == Object.normalize(quote_post).data["id"]
     assert status.pleroma.quote_visible
 
-    # Quotes don't go more than one level deep\
+    # Quotes don't go more than one level deep
     refute status.pleroma.quote.pleroma.quote
     assert status.pleroma.quote.pleroma.quote_id == to_string(post.id)
     assert status.pleroma.quote.pleroma.quote_url == Object.normalize(post).data["id"]
@@ -756,45 +755,57 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   describe "rich media cards" do
     test "a rich media card without a site name renders correctly" do
-      embed = %Embed{
-        url: "http://example.com",
-        title: "Example website",
-        meta: %{"twitter:image" => "http://example.com/example.jpg"}
-      }
+      page_url = "http://example.com"
 
-      %{"provider_name" => "example.com"} = StatusView.render("card.json", %{embed: embed})
-    end
-
-    test "a rich media card without a site name or image renders correctly" do
-      embed = %Embed{
-        url: "http://example.com",
+      card = %{
+        url: page_url,
+        image: page_url <> "/example.jpg",
         title: "Example website"
       }
 
-      %{"provider_name" => "example.com"} = StatusView.render("card.json", %{embed: embed})
+      %{provider_name: "example.com"} =
+        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+    end
+
+    test "a rich media card without a site name or image renders correctly" do
+      page_url = "http://example.com"
+
+      card = %{
+        url: page_url,
+        title: "Example website"
+      }
+
+      %{provider_name: "example.com"} =
+        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
     end
 
     test "a rich media card without an image renders correctly" do
-      embed = %Embed{
-        url: "http://example.com",
-        title: "Example website",
-        meta: %{"twitter:title" => "Example site name"}
+      page_url = "http://example.com"
+
+      card = %{
+        url: page_url,
+        site_name: "Example site name",
+        title: "Example website"
       }
 
-      %{"provider_name" => "example.com"} = StatusView.render("card.json", %{embed: embed})
+      %{provider_name: "example.com"} =
+        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
     end
 
     test "a rich media card with all relevant data renders correctly" do
-      embed = %Embed{
-        url: "http://example.com",
+      page_url = "http://example.com"
+
+      card = %{
+        "image:alt" => "Example image description",
+        url: page_url,
+        site_name: "Example site name",
         title: "Example website",
-        meta: %{
-          "twitter:title" => "Example site name",
-          "twitter:image" => "http://example.com/example.jpg"
-        }
+        image: page_url <> "/example.jpg",
+        description: "Example description"
       }
 
-      %{"provider_name" => "example.com"} = StatusView.render("card.json", %{embed: embed})
+      %{provider_name: "example.com", image_description: "Example image description"} =
+        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
     end
 
     test "a rich media card has all media proxied" do

@@ -197,7 +197,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
         "actor" => user.ap_id
       }
 
-      {:ok, _create_activity, meta} = ObjectValidator.validate(note_activity, []) |> IO.inspect()
+      {:ok, _create_activity, meta} = ObjectValidator.validate(note_activity, [])
 
       assert meta[:object_data]["language"] == "pl"
     end

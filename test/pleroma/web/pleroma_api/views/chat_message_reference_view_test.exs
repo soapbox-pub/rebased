@@ -3,37 +3,27 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
-  use Pleroma.DataCase, async: false
+  alias Pleroma.NullCache
+  use Pleroma.DataCase, async: true
 
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
   alias Pleroma.Object
-  alias Pleroma.StaticStubbedConfigMock, as: ConfigMock
+  alias Pleroma.StaticStubbedConfigMock
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
 
   import Mox
   import Pleroma.Factory
-  import Tesla.Mock
 
-  test "crawls valid, complete URLs" do
-    mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-
-    ConfigMock
-    |> stub(:get, fn
-      [:rich_media, :enabled] -> true
-      path -> Pleroma.Test.StaticConfig.get(path)
-    end)
-
-    Pleroma.UnstubbedConfigMock
-    |> stub(:get, fn
-      [:rich_media, :enabled] -> true
-      path -> Pleroma.Test.StaticConfig.get(path)
-    end)
-
+  test "it displays a chat message" do
     user = insert(:user)
     recipient = insert(:user)
+
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
 
     file = %Plug.Upload{
       content_type: "image/jpeg",
@@ -52,14 +42,14 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
 
     cm_ref = MessageReference.for_chat_and_object(chat, object)
 
-    {:ok, activity} =
-      CommonAPI.post(user, %{
-        status: "[test](https://example.com/ogp)",
-        content_type: "text/markdown"
-      })
+    id = cm_ref.id
 
-    assert %{url: "https://example.com/ogp", meta: %{} = _} =
-             Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+    Pleroma.CachexMock
+    |> stub(:get, fn
+      :chat_message_id_idempotency_key_cache, ^id -> {:ok, "123"}
+      cache, key -> NullCache.get(cache, key)
+    end)
+    |> stub(:fetch, fn :rich_media_cache, _, _ -> {:ok, {:ok, %{}}} end)
 
     chat_message = MessageReferenceView.render("show.json", chat_message_reference: cm_ref)
 
@@ -70,6 +60,18 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
     assert chat_message[:created_at]
     assert chat_message[:unread] == false
     assert match?([%{shortcode: "firefox"}], chat_message[:emojis])
+    assert chat_message[:idempotency_key] == "123"
+
+    StaticStubbedConfigMock
+    |> stub(:get, fn
+      [:rich_media, :enabled] -> true
+      path -> Pleroma.Test.StaticConfig.get(path)
+    end)
+
+    Tesla.Mock.mock_global(fn
+      %{url: "https://example.com/ogp"} ->
+        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}
+    end)
 
     {:ok, activity} =
       CommonAPI.post_chat_message(recipient, user, "gkgkgk https://example.com/ogp",

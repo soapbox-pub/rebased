@@ -7,7 +7,6 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Web.RichMedia.Parser
-  alias Pleroma.Web.RichMedia.Parser.Embed
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
 
@@ -36,10 +35,10 @@ defmodule Pleroma.Web.RichMedia.Helpers do
     with true <- @config_impl.get([:rich_media, :enabled]),
          {:ok, page_url} <-
            HTML.extract_first_external_url_from_object(object),
-         {:ok, %Embed{} = embed} <- Parser.parse(page_url) do
-      embed
+          {:ok, rich_media} <- Parser.parse(page_url) do
+      %{page_url: page_url, rich_media: rich_media}
     else
-      _ -> nil
+      _ -> %{}
     end
   end
 
@@ -54,17 +53,18 @@ defmodule Pleroma.Web.RichMedia.Helpers do
         @cachex.fetch!(:scrubber_cache, key, fn _ ->
           result = fetch_data_for_object(object)
 
-          with %Embed{} <- result do
-            Activity.HTML.add_cache_key_for(activity.id, key)
-            {:commit, result}
-          else
-            _ ->
-              {:ignore, nil}
+          cond do
+            match?(%{page_url: _, rich_media: _}, result) ->
+              Activity.HTML.add_cache_key_for(activity.id, key)
+              {:commit, result}
+
+            true ->
+              {:ignore, %{}}
           end
         end)
       end
     else
-      _ -> nil
+      _ -> %{}
     end
   end
 

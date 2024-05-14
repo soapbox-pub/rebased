@@ -30,7 +30,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
 
   def cast_and_apply(data) do
     data
-    |> cast_data()
+    |> cast_data
     |> apply_action(:insert)
   end
 

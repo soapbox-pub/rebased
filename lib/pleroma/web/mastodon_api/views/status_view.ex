@@ -21,8 +21,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.PleromaAPI.EmojiReactionController
-  alias Pleroma.Web.RichMedia.Parser.Card
-  alias Pleroma.Web.RichMedia.Parser.Embed
 
   import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1, visible_for_user?: 2]
 
@@ -366,10 +364,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     summary = object.data["summary"] || ""
 
-    card =
-      render("card.json", %{
-        embed: Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
-      })
+    card = render("card.json", Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity))
 
     url =
       if user.local do
@@ -478,14 +473,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   def render("show.json", _) do
     nil
-  end
-
-  def render("card.json", %{embed: %Embed{} = embed}) do
-    with {:ok, %Card{} = card} <- Card.parse(embed) do
-      Card.to_map(card)
-    else
-      _ -> nil
-    end
   end
 
   def render("history.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
@@ -617,7 +604,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
-  def render("card.json", %{embed: %Card{} = card}), do: Card.to_map(card)
   def render("card.json", _), do: nil
 
   def render("attachment.json", %{attachment: attachment}) do

@@ -37,7 +37,7 @@ defmodule Pleroma.Web.PleromaAPI.Chat.MessageReferenceView do
       card:
         StatusView.render(
           "card.json",
-          %{embed: Pleroma.Web.RichMedia.Helpers.fetch_data_for_object(object)}
+          Pleroma.Web.RichMedia.Helpers.fetch_data_for_object(object)
         )
     }
     |> put_idempotency_key()

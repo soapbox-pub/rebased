@@ -150,8 +150,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
       )
       when not is_nil(scheduled_at) do
     params =
-      params
-      |> Map.put(:in_reply_to_status_id, params[:in_reply_to_id])
+      Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
       |> Map.put(:generator, conn.assigns.application)
 
     attrs = %{
@@ -211,8 +210,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
          %{assigns: %{user: user}, private: %{open_api_spex: %{body_params: params}}} = conn
        ) do
     params =
-      params
-      |> Map.put(:in_reply_to_status_id, params[:in_reply_to_id])
+      Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
       |> Map.put(:generator, conn.assigns.application)
 
     with {:ok, activity} <- CommonAPI.post(user, params) do
@@ -489,7 +487,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     with %Activity{} = activity <- Activity.get_by_id(status_id),
          true <- Visibility.visible_for_user?(activity, user) do
       data = Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
-      render(conn, "card.json", %{embed: data})
+      render(conn, "card.json", data)
     else
       _ -> render_error(conn, :not_found, "Record not found")
     end
