@@ -21,4 +21,9 @@ defmodule Pleroma.Search.SearchBackend do
   from index.
   """
   @callback remove_from_index(object :: Pleroma.Object.t()) :: :ok | {:error, any()}
+
+  @doc """
+  Create the index
+  """
+  @callback create_index() :: :ok | {:error, any()}
 end

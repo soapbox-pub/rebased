@@ -8,6 +8,12 @@ defmodule Mix.Tasks.Pleroma.Search.Indexer do
 
   alias Pleroma.Workers.SearchIndexingWorker
 
+  def run(["create_index"]) do
+    Application.ensure_all_started(:pleroma)
+
+    Pleroma.Config.get([Pleroma.Search, :module]).create_index()
+  end
+
   def run(["index" | options]) do
     {options, [], []} =
       OptionParser.parse(

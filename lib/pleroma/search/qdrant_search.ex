@@ -8,7 +8,8 @@ defmodule Pleroma.Search.QdrantSearch do
 
   import Pleroma.Search.Meilisearch, only: [object_to_search_data: 1]
 
-  def initialize_index() do
+  @impl true
+  def create_index() do
     payload = Pleroma.Config.get([Pleroma.Search.QdrantSearch, :qdrant_index_configuration])
     QdrantClient.put("/collections/posts", payload)
   end
