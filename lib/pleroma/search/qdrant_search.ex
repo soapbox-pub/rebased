@@ -22,8 +22,7 @@ defmodule Pleroma.Search.QdrantSearch do
            OllamaClient.post("/api/embeddings", %{
              prompt: text,
              model: Pleroma.Config.get([Pleroma.Search.QdrantSearch, :ollama_model])
-           })
-           |> IO.inspect() do
+           }) do
       {:ok, embedding}
     else
       _ ->
@@ -53,7 +52,6 @@ defmodule Pleroma.Search.QdrantSearch do
   def add_to_index(activity) do
     # This will only index public or unlisted notes
     maybe_search_data = object_to_search_data(activity.object)
-    IO.puts("TRYING TO INDEX\n\n")
 
     if activity.data["type"] == "Create" and maybe_search_data do
       with {:ok, embedding} <- get_embedding(maybe_search_data.content),
