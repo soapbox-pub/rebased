@@ -71,27 +71,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
 
   defp fix_replies(data), do: data
 
-  defp fix_quote_url(%{"quoteUrl" => _quote_url} = data), do: data
-
-  # Fedibird
-  # https://github.com/fedibird/mastodon/commit/dbd7ae6cf58a92ec67c512296b4daaea0d01e6ac
-  defp fix_quote_url(%{"quoteUri" => quote_url} = data) do
-    Map.put(data, "quoteUrl", quote_url)
-  end
-
-  # Old Fedibird (bug)
-  # https://github.com/fedibird/mastodon/issues/9
-  defp fix_quote_url(%{"quoteURL" => quote_url} = data) do
-    Map.put(data, "quoteUrl", quote_url)
-  end
-
-  # Misskey fallback
-  defp fix_quote_url(%{"_misskey_quote" => quote_url} = data) do
-    Map.put(data, "quoteUrl", quote_url)
-  end
-
-  defp fix_quote_url(data), do: data
-
   def fix_attachments(%{"attachment" => attachment} = data) when is_map(attachment),
     do: Map.put(data, "attachment", [attachment])
 
@@ -104,7 +83,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
     |> fix_url()
     |> fix_tag()
     |> fix_replies()
-    |> fix_quote_url()
     |> fix_attachments()
     |> CommonFixes.fix_quote_url()
     |> Transmogrifier.fix_emoji()

@@ -445,8 +445,8 @@ config :pleroma, :rich_media,
   ignore_hosts: [],
   ignore_tld: ["local", "localdomain", "lan"],
   parsers: [
-    Pleroma.Web.RichMedia.Parsers.OEmbed,
-    Pleroma.Web.RichMedia.Parsers.TwitterCard
+    Pleroma.Web.RichMedia.Parsers.TwitterCard,
+    Pleroma.Web.RichMedia.Parsers.OEmbed
   ],
   oembed_providers_enabled: true,
   failure_backoff: 60_000,
