@@ -915,6 +915,15 @@ config :pleroma, Pleroma.Application,
 
 config :pleroma, Pleroma.Uploaders.Uploader, timeout: 30_000
 
+config :pleroma, Pleroma.Search.QdrantSearch,
+  qdrant_url: "http://127.0.0.1:6333/",
+  qdrant_api_key: nil,
+  ollama_url: "http://127.0.0.1:11434",
+  ollama_model: "snowflake-arctic-embed:xs",
+  qdrant_index_configuration: %{
+    vectors: %{size: 384, distance: "Cosine"}
+  }
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
