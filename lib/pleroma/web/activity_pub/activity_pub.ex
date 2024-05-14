@@ -1340,6 +1340,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_unauthenticated(query, _), do: query
 
+  defp restrict_rule(query, %{rule_id: rule_id}) do
+    from(
+      activity in query,
+      where: fragment("(?)->'rules' \\? (?)", activity.data, ^rule_id)
+    )
+  end
+
+  defp restrict_rule(query, _), do: query
+
   defp exclude_poll_votes(query, %{include_poll_votes: true}), do: query
 
   defp exclude_poll_votes(query, _) do
@@ -1507,6 +1516,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_object(opts)
       |> restrict_filtered(opts)
       |> restrict_quote_url(opts)
+      |> restrict_rule(opts)
       |> maybe_restrict_deactivated_users(opts)
       |> exclude_poll_votes(opts)
       |> exclude_chat_messages(opts)

@@ -16,13 +16,14 @@ defmodule Pleroma.Rule do
   schema "rules" do
     field(:priority, :integer, default: 0)
     field(:text, :string)
+    field(:hint, :string)
 
     timestamps()
   end
 
   def changeset(%Rule{} = rule, params \\ %{}) do
     rule
-    |> cast(params, [:priority, :text])
+    |> cast(params, [:priority, :text, :hint])
     |> validate_required([:text])
   end
 
@@ -38,6 +39,11 @@ defmodule Pleroma.Rule do
   end
 
   def get(id), do: Repo.get(__MODULE__, id)
+
+  def exists?(id) do
+    from(r in __MODULE__, where: r.id == ^id)
+    |> Repo.exists?()
+  end
 
   def create(params) do
     {:ok, rule} =

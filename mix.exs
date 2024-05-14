@@ -1,12 +1,12 @@
 defmodule Pleroma.Mixfile do
   use Mix.Project
 
-  @build_name "soapbox"
+  @build_name "pl"
 
   def project do
     [
       app: :pleroma,
-      name: "Rebased",
+      name: "pl",
       compat_name: "Pleroma",
       version: version("2.6.52"),
       elixir: "~> 1.11",

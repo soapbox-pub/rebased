@@ -31,6 +31,12 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
           "Filter by report state"
         ),
         Operation.parameter(
+          :rule_id,
+          :query,
+          %Schema{type: :string},
+          "Filter by selected rule id"
+        ),
+        Operation.parameter(
           :limit,
           :query,
           %Schema{type: :integer},
@@ -200,8 +206,9 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
           items: %Schema{
             type: :object,
             properties: %{
-              id: %Schema{type: :integer},
-              text: %Schema{type: :string}
+              id: %Schema{type: :string},
+              text: %Schema{type: :string},
+              hint: %Schema{type: :string, nullable: true}
             }
           }
         }

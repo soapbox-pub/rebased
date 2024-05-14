@@ -485,8 +485,9 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
       items: %Schema{
         type: :object,
         properties: %{
-          id: %Schema{type: :integer},
-          text: %Schema{type: :string}
+          id: %Schema{type: :string},
+          text: %Schema{type: :string},
+          hint: %Schema{type: :string}
         }
       }
     }

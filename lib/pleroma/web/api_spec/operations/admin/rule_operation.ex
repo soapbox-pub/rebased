@@ -84,7 +84,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.RuleOperation do
       required: [:text],
       properties: %{
         priority: %Schema{type: :integer},
-        text: %Schema{type: :string}
+        text: %Schema{type: :string},
+        hint: %Schema{type: :string}
       }
     }
   end
@@ -94,7 +95,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.RuleOperation do
       type: :object,
       properties: %{
         priority: %Schema{type: :integer},
-        text: %Schema{type: :string}
+        text: %Schema{type: :string},
+        hint: %Schema{type: :string}
       }
     }
   end
@@ -103,10 +105,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.RuleOperation do
     %Schema{
       type: :object,
       properties: %{
-        id: %Schema{type: :integer},
+        id: %Schema{type: :string},
         priority: %Schema{type: :integer},
         text: %Schema{type: :string},
-        created_at: %Schema{type: :string, format: :"date-time"}
+        hint: %Schema{type: :string, nullable: true}
       }
     }
   end
