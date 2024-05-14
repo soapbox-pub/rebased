@@ -3,8 +3,22 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrlTest do
-  # Relies on Cachex, needs to be synchronous
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: false
+  use Oban.Testing, repo: Pleroma.Repo
+
+  import Mox
+
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
+  alias Pleroma.Web.RichMedia.Card
+
+  setup do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
+    clear_config([:rich_media, :enabled], true)
+
+    :ok
+  end
 
   test "s3 signed url is parsed correct for expiration time" do
     url = "https://pleroma.social/amz"
@@ -43,26 +57,29 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrlTest do
     <meta name="twitter:site" content="Pleroma" />
     <meta name="twitter:title" content="Pleroma" />
     <meta name="twitter:description" content="Pleroma" />
-    <meta name="twitter:image" content="#{Map.get(metadata, :image)}" />
+    <meta name="twitter:image" content="#{Map.get(metadata, "image")}" />
     """
 
     Tesla.Mock.mock(fn
       %{
         method: :get,
-        url: "https://pleroma.social/amz"
+        url: ^url
       } ->
         %Tesla.Env{status: 200, body: body}
+
+      %{method: :head} ->
+        %Tesla.Env{status: 200}
     end)
 
-    Cachex.put(:rich_media_cache, url, metadata)
+    Card.get_or_backfill_by_url(url)
 
-    Pleroma.Web.RichMedia.Parser.set_ttl_based_on_image(metadata, url)
+    assert_enqueued(worker: Pleroma.Workers.RichMediaExpirationWorker, args: %{"url" => url})
 
-    {:ok, cache_ttl} = Cachex.ttl(:rich_media_cache, url)
+    [%Oban.Job{scheduled_at: scheduled_at}] = all_enqueued()
 
-    # as there is delay in setting and pulling the data from cache we ignore 1 second
-    # make it 2 seconds for flakyness
-    assert_in_delta(valid_till * 1000, cache_ttl, 2000)
+    timestamp_dt = Timex.parse!(timestamp, "{ISO:Basic:Z}")
+
+    assert DateTime.diff(scheduled_at, timestamp_dt) == valid_till
   end
 
   defp construct_s3_url(timestamp, valid_till) do
@@ -71,11 +88,11 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrlTest do
 
   defp construct_metadata(timestamp, valid_till, url) do
     %{
-      image: construct_s3_url(timestamp, valid_till),
-      site: "Pleroma",
-      title: "Pleroma",
-      description: "Pleroma",
-      url: url
+      "image" => construct_s3_url(timestamp, valid_till),
+      "site" => "Pleroma",
+      "title" => "Pleroma",
+      "description" => "Pleroma",
+      "url" => url
     }
   end
 end
