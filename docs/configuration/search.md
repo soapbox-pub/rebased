@@ -10,6 +10,12 @@ To use built-in search that has no external dependencies, set the search module 
 
 While it has no external dependencies, it has problems with performance and relevancy.
 
+## QdrantSearch
+
+This uses the vector search engine [Qdrant](https://qdrant.tech) to search the posts in a vector space. This needs a way to generate embeddings, for now only the [Ollama](Ollama) api is supported.
+
+The default settings will support a setup where both Ollama and Qdrant run on the same system as pleroma. The embedding model used by Ollama will need to be pulled first (e.g. `ollama pull snowflake-arctic-embed:xs`) for the embedding to work.
+
 ## Meilisearch
 
 Note that it's quite a bit more memory hungry than PostgreSQL (around 4-5G for ~1.2 million
