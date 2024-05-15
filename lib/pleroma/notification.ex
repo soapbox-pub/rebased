@@ -361,36 +361,32 @@ defmodule Pleroma.Notification do
     end
   end
 
-  @spec create_notifications(Activity.t(), keyword()) :: {:ok, [Notification.t()] | []}
-  def create_notifications(activity, options \\ [])
+  @spec create_notifications(Activity.t()) :: {:ok, [Notification.t()] | []}
+  def create_notifications(activity)
 
-  def create_notifications(%Activity{data: %{"to" => _, "type" => "Create"}} = activity, options) do
+  def create_notifications(%Activity{data: %{"to" => _, "type" => "Create"}} = activity) do
     object = Object.normalize(activity, fetch: false)
 
     if object && object.data["type"] == "Answer" do
       {:ok, []}
     else
-      do_create_notifications(activity, options)
+      do_create_notifications(activity)
     end
   end
 
-  def create_notifications(%Activity{data: %{"type" => type}} = activity, options)
+  def create_notifications(%Activity{data: %{"type" => type}} = activity)
       when type in ["Follow", "Like", "Announce", "Move", "EmojiReact", "Flag", "Update"] do
-    do_create_notifications(activity, options)
+    do_create_notifications(activity)
   end
 
-  def create_notifications(_, _), do: {:ok, []}
+  def create_notifications(_), do: {:ok, []}
 
-  defp do_create_notifications(%Activity{} = activity, options) do
-    do_send = Keyword.get(options, :do_send, true)
-
-    {enabled_receivers, disabled_receivers} = get_notified_from_activity(activity)
-    potential_receivers = enabled_receivers ++ disabled_receivers
+  defp do_create_notifications(%Activity{} = activity) do
+    enabled_receivers = get_notified_from_activity(activity)
 
     notifications =
-      Enum.map(potential_receivers, fn user ->
-        do_send = do_send && user in enabled_receivers
-        create_notification(activity, user, do_send: do_send)
+      Enum.map(enabled_receivers, fn user ->
+        create_notification(activity, user)
       end)
       |> Enum.reject(&is_nil/1)
 
@@ -450,7 +446,6 @@ defmodule Pleroma.Notification do
 
   # TODO move to sql, too.
   def create_notification(%Activity{} = activity, %User{} = user, opts \\ []) do
-    do_send = Keyword.get(opts, :do_send, true)
     type = Keyword.get(opts, :type, type_from_activity(activity))
 
     unless skip?(activity, user, opts) do
@@ -464,11 +459,6 @@ defmodule Pleroma.Notification do
         })
         |> Marker.multi_set_last_read_id(user, "notifications")
         |> Repo.transaction()
-
-      if do_send do
-        Streamer.stream(["user", "user:notification"], notification)
-        Push.send(notification)
-      end
 
       notification
     end
@@ -527,10 +517,7 @@ defmodule Pleroma.Notification do
       |> exclude_relationship_restricted_ap_ids(activity)
       |> exclude_thread_muter_ap_ids(activity)
 
-    notification_enabled_users =
-      Enum.filter(potential_receivers, fn u -> u.ap_id in notification_enabled_ap_ids end)
-
-    {notification_enabled_users, potential_receivers -- notification_enabled_users}
+    Enum.filter(potential_receivers, fn u -> u.ap_id in notification_enabled_ap_ids end)
   end
 
   def get_notified_from_activity(_, _local_only), do: {[], []}
@@ -643,6 +630,7 @@ defmodule Pleroma.Notification do
   def skip?(%Activity{} = activity, %User{} = user, opts) do
     [
       :self,
+      :internal,
       :invisible,
       :block_from_strangers,
       :recently_followed,
@@ -660,6 +648,12 @@ defmodule Pleroma.Notification do
       activity.data["actor"] == user.ap_id -> true
       true -> false
     end
+  end
+
+  def skip?(:internal, %Activity{} = activity, _user, _opts) do
+    actor = activity.data["actor"]
+    user = User.get_cached_by_ap_id(actor)
+    User.internal?(user)
   end
 
   def skip?(:invisible, %Activity{} = activity, _user, _opts) do
@@ -747,5 +741,13 @@ defmodule Pleroma.Notification do
       where: fragment("?->>'context'", a.data) == ^context
     )
     |> Repo.update_all(set: [seen: true])
+  end
+
+  @spec send(list(Notification.t())) :: :ok
+  def send(notifications) do
+    Enum.each(notifications, fn notification ->
+      Streamer.stream(["user", "user:notification"], notification)
+      Push.send(notification)
+    end)
   end
 end
