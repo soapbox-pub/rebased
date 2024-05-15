@@ -46,6 +46,17 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
     }
   end
 
+  def rules_operation do
+    %Operation{
+      tags: ["Instance misc"],
+      summary: "Retrieve list of instance rules",
+      operationId: "InstanceController.rules",
+      responses: %{
+        200 => Operation.response("Array of domains", "application/json", array_of_rules())
+      }
+    }
+  end
+
   defp instance do
     %Schema{
       type: :object,
@@ -181,7 +192,8 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
         "urls" => %{
           "streaming_api" => "wss://lain.com"
         },
-        "version" => "2.7.2 (compatible; Pleroma 2.0.50-536-g25eec6d7-develop)"
+        "version" => "2.7.2 (compatible; Pleroma 2.0.50-536-g25eec6d7-develop)",
+        "rules" => array_of_rules()
       }
     }
   end
@@ -369,6 +381,20 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
       type: :array,
       items: %Schema{type: :string},
       example: ["pleroma.site", "lain.com", "bikeshed.party"]
+    }
+  end
+
+  defp array_of_rules do
+    %Schema{
+      type: :array,
+      items: %Schema{
+        type: :object,
+        properties: %{
+          id: %Schema{type: :string},
+          text: %Schema{type: :string},
+          hint: %Schema{type: :string}
+        }
+      }
     }
   end
 end

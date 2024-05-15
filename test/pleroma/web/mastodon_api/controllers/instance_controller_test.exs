@@ -6,6 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
   # TODO: Should not need Cachex
   use Pleroma.Web.ConnCase
 
+  alias Pleroma.Rule
   alias Pleroma.User
   import Pleroma.Factory
 
@@ -40,7 +41,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              "banner_upload_limit" => _,
              "background_image" => from_config_background,
              "shout_limit" => _,
-             "description_limit" => _
+             "description_limit" => _,
+             "rules" => _
            } = result
 
     assert result["pleroma"]["metadata"]["account_activation_required"] != nil
@@ -124,5 +126,30 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
 
     assert get(conn, "/api/v2/instance")
            |> json_response_and_validate_schema(200)
+  end
+
+  test "get instance rules", %{conn: conn} do
+    Rule.create(%{text: "Example rule", hint: "Rule description", priority: 1})
+    Rule.create(%{text: "Third rule", priority: 2})
+    Rule.create(%{text: "Second rule", priority: 1})
+
+    conn = get(conn, "/api/v1/instance")
+
+    assert result = json_response_and_validate_schema(conn, 200)
+
+    assert [
+             %{
+               "text" => "Example rule",
+               "hint" => "Rule description"
+             },
+             %{
+               "text" => "Second rule",
+               "hint" => ""
+             },
+             %{
+               "text" => "Third rule",
+               "hint" => ""
+             }
+           ] = result["rules"]
   end
 end

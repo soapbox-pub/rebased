@@ -1751,3 +1751,53 @@ Note that this differs from the Mastodon API variant: Mastodon API only returns 
 ```json
 {}
 ```
+
+
+## `GET /api/v1/pleroma/admin/rules`
+
+### List rules
+
+- Response: JSON, list of rules
+
+```json
+[
+  {
+    "id": "1",
+    "priority": 1,
+    "text": "There are no rules",
+    "hint": null
+  }
+]
+```
+
+## `POST /api/v1/pleroma/admin/rules`
+
+### Create a rule
+
+- Params:
+  - `text`: string, required, rule content
+  - `hint`: string, optional, rule description
+  - `priority`: integer, optional, rule ordering priority
+
+- Response: JSON, a single rule
+
+## `PATCH /api/v1/pleroma/admin/rules/:id`
+
+### Update a rule
+
+- Params:
+  - `text`: string, optional, rule content
+  - `hint`: string, optional, rule description
+  - `priority`: integer, optional, rule ordering priority
+
+- Response: JSON, a single rule
+
+## `DELETE /api/v1/pleroma/admin/rules/:id`
+
+### Delete a rule
+
+- Response: JSON, empty object
+
+```json
+{}
+```
