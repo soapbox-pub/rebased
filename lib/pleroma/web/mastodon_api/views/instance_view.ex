@@ -185,10 +185,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
   defp common_information(instance) do
     %{
-      title: Keyword.get(instance, :name),
-      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.compat_version()})",
       languages: Keyword.get(instance, :languages, ["en"]),
-      rules: render(__MODULE__, "rules.json")
+      rules: render(__MODULE__, "rules.json"),
+      title: Keyword.get(instance, :name),
+      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.compat_version()})"
     }
   end
 

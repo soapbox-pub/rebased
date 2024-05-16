@@ -97,6 +97,7 @@ defmodule Pleroma.Web.ApiSpec do
               "Frontend management",
               "Instance configuration",
               "Instance documents",
+              "Instance rule managment",
               "Invites",
               "MediaProxy cache",
               "OAuth application management",

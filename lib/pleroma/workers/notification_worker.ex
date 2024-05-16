@@ -14,8 +14,9 @@ defmodule Pleroma.Workers.NotificationWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: {:error, :activity_not_found} | {:ok, [Pleroma.Notification.t()]}
   def perform(%Job{args: %{"op" => "create", "activity_id" => activity_id}}) do
-    with %Activity{} = activity <- find_activity(activity_id) do
-      Notification.create_notifications(activity)
+    with %Activity{} = activity <- find_activity(activity_id),
+         {:ok, notifications} <- Notification.create_notifications(activity) do
+      Notification.send(notifications)
     end
   end
 

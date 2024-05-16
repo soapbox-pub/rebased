@@ -9,6 +9,7 @@ defmodule Pleroma.Constants do
 
   const(object_internal_fields,
     do: [
+      "actor",
       "reactions",
       "reaction_count",
       "likes",
@@ -20,6 +21,7 @@ defmodule Pleroma.Constants do
       "deleted_activity_id",
       "pleroma_internal",
       "generator",
+      "rules",
       "assigned_account",
       "rules",
       "content_type",

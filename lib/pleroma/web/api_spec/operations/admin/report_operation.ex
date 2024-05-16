@@ -198,9 +198,6 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
             }
           }
         },
-        assigned_account:
-          account_admin()
-          |> Map.put(:nullable, true),
         rules: %Schema{
           type: :array,
           items: %Schema{
@@ -211,7 +208,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
               hint: %Schema{type: :string, nullable: true}
             }
           }
-        }
+        },
+        assigned_account:
+          account_admin()
+          |> Map.put(:nullable, true)
       }
     }
   end

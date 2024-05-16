@@ -60,8 +60,8 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
         }),
       state: report.data["state"],
       notes: render(__MODULE__, "index_notes.json", %{notes: report.report_notes}),
-      assigned_account: assigned_account,
-      rules: rules(Map.get(report.data, "rules", nil))
+      rules: rules(Map.get(report.data, "rules", nil)),
+      assigned_account: assigned_account
     }
   end
 

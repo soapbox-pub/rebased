@@ -6,7 +6,6 @@ defmodule Pleroma.NotificationTest do
   use Pleroma.DataCase, async: false
 
   import Pleroma.Factory
-  import Mock
 
   alias Pleroma.FollowingRelationship
   alias Pleroma.Notification
@@ -18,8 +17,6 @@ defmodule Pleroma.NotificationTest do
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.NotificationView
-  alias Pleroma.Web.Push
-  alias Pleroma.Web.Streamer
 
   setup do
     Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
@@ -392,83 +389,6 @@ defmodule Pleroma.NotificationTest do
   end
 
   describe "create_notification" do
-    @tag needs_streamer: true
-    test "it creates a notification for user and send to the 'user' and the 'user:notification' stream" do
-      %{user: user, token: oauth_token} = oauth_access(["read"])
-
-      task =
-        Task.async(fn ->
-          {:ok, _topic} = Streamer.get_topic_and_add_socket("user", user, oauth_token)
-          assert_receive {:render_with_user, _, _, _, _}, 4_000
-        end)
-
-      task_user_notification =
-        Task.async(fn ->
-          {:ok, _topic} =
-            Streamer.get_topic_and_add_socket("user:notification", user, oauth_token)
-
-          assert_receive {:render_with_user, _, _, _, _}, 4_000
-        end)
-
-      activity = insert(:note_activity)
-
-      notify = Notification.create_notification(activity, user)
-      assert notify.user_id == user.id
-      Task.await(task)
-      Task.await(task_user_notification)
-    end
-
-    test "it creates a notification for user if the user blocks the activity author" do
-      activity = insert(:note_activity)
-      author = User.get_cached_by_ap_id(activity.data["actor"])
-      user = insert(:user)
-      {:ok, _user_relationship} = User.block(user, author)
-
-      assert Notification.create_notification(activity, user)
-    end
-
-    test "it creates a notification for the user if the user mutes the activity author" do
-      muter = insert(:user)
-      muted = insert(:user)
-      {:ok, _} = User.mute(muter, muted)
-      muter = Repo.get(User, muter.id)
-      {:ok, activity} = CommonAPI.post(muted, %{status: "Hi @#{muter.nickname}"})
-
-      notification = Notification.create_notification(activity, muter)
-
-      assert notification.id
-      assert notification.seen
-    end
-
-    test "notification created if user is muted without notifications" do
-      muter = insert(:user)
-      muted = insert(:user)
-
-      {:ok, _user_relationships} = User.mute(muter, muted, %{notifications: false})
-
-      {:ok, activity} = CommonAPI.post(muted, %{status: "Hi @#{muter.nickname}"})
-
-      assert Notification.create_notification(activity, muter)
-    end
-
-    test "it creates a notification for an activity from a muted thread" do
-      muter = insert(:user)
-      other_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(muter, %{status: "hey"})
-      CommonAPI.add_mute(muter, activity)
-
-      {:ok, activity} =
-        CommonAPI.post(other_user, %{
-          status: "Hi @#{muter.nickname}",
-          in_reply_to_status_id: activity.id
-        })
-
-      notification = Notification.create_notification(activity, muter)
-
-      assert notification.id
-      assert notification.seen
-    end
-
     test "it disables notifications from strangers" do
       follower = insert(:user)
 
@@ -856,7 +776,7 @@ defmodule Pleroma.NotificationTest do
           status: "hey @#{other_user.nickname}!"
         })
 
-      {enabled_receivers, _disabled_receivers} = Notification.get_notified_from_activity(activity)
+      enabled_receivers = Notification.get_notified_from_activity(activity)
 
       assert other_user in enabled_receivers
     end
@@ -888,7 +808,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = Transmogrifier.handle_incoming(create_activity)
 
-      {enabled_receivers, _disabled_receivers} = Notification.get_notified_from_activity(activity)
+      enabled_receivers = Notification.get_notified_from_activity(activity)
 
       assert other_user in enabled_receivers
     end
@@ -915,7 +835,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = Transmogrifier.handle_incoming(create_activity)
 
-      {enabled_receivers, _disabled_receivers} = Notification.get_notified_from_activity(activity)
+      enabled_receivers = Notification.get_notified_from_activity(activity)
 
       assert other_user not in enabled_receivers
     end
@@ -932,8 +852,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity_two} = CommonAPI.favorite(third_user, activity_one.id)
 
-      {enabled_receivers, _disabled_receivers} =
-        Notification.get_notified_from_activity(activity_two)
+      enabled_receivers = Notification.get_notified_from_activity(activity_two)
 
       assert other_user not in enabled_receivers
     end
@@ -955,7 +874,7 @@ defmodule Pleroma.NotificationTest do
         |> Map.put("to", [other_user.ap_id | like_data["to"]])
         |> ActivityPub.persist(local: true)
 
-      {enabled_receivers, _disabled_receivers} = Notification.get_notified_from_activity(like)
+      enabled_receivers = Notification.get_notified_from_activity(like)
 
       assert other_user not in enabled_receivers
     end
@@ -972,39 +891,36 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity_two} = CommonAPI.repeat(activity_one.id, third_user)
 
-      {enabled_receivers, _disabled_receivers} =
-        Notification.get_notified_from_activity(activity_two)
+      enabled_receivers = Notification.get_notified_from_activity(activity_two)
 
       assert other_user not in enabled_receivers
     end
 
-    test "it returns blocking recipient in disabled recipients list" do
+    test "it does not return blocking recipient in recipients list" do
       user = insert(:user)
       other_user = insert(:user)
       {:ok, _user_relationship} = User.block(other_user, user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{other_user.nickname}!"})
 
-      {enabled_receivers, disabled_receivers} = Notification.get_notified_from_activity(activity)
+      enabled_receivers = Notification.get_notified_from_activity(activity)
 
       assert [] == enabled_receivers
-      assert [other_user] == disabled_receivers
     end
 
-    test "it returns notification-muting recipient in disabled recipients list" do
+    test "it does not return notification-muting recipient in recipients list" do
       user = insert(:user)
       other_user = insert(:user)
       {:ok, _user_relationships} = User.mute(other_user, user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{other_user.nickname}!"})
 
-      {enabled_receivers, disabled_receivers} = Notification.get_notified_from_activity(activity)
+      enabled_receivers = Notification.get_notified_from_activity(activity)
 
       assert [] == enabled_receivers
-      assert [other_user] == disabled_receivers
     end
 
-    test "it returns thread-muting recipient in disabled recipients list" do
+    test "it does not return thread-muting recipient in recipients list" do
       user = insert(:user)
       other_user = insert(:user)
 
@@ -1018,14 +934,12 @@ defmodule Pleroma.NotificationTest do
           in_reply_to_status_id: activity.id
         })
 
-      {enabled_receivers, disabled_receivers} =
-        Notification.get_notified_from_activity(same_context_activity)
+      enabled_receivers = Notification.get_notified_from_activity(same_context_activity)
 
-      assert [other_user] == disabled_receivers
       refute other_user in enabled_receivers
     end
 
-    test "it returns non-following domain-blocking recipient in disabled recipients list" do
+    test "it does not return non-following domain-blocking recipient in recipients list" do
       blocked_domain = "blocked.domain"
       user = insert(:user, %{ap_id: "https://#{blocked_domain}/@actor"})
       other_user = insert(:user)
@@ -1034,10 +948,9 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{other_user.nickname}!"})
 
-      {enabled_receivers, disabled_receivers} = Notification.get_notified_from_activity(activity)
+      enabled_receivers = Notification.get_notified_from_activity(activity)
 
       assert [] == enabled_receivers
-      assert [other_user] == disabled_receivers
     end
 
     test "it returns following domain-blocking recipient in enabled recipients list" do
@@ -1050,10 +963,9 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{other_user.nickname}!"})
 
-      {enabled_receivers, disabled_receivers} = Notification.get_notified_from_activity(activity)
+      enabled_receivers = Notification.get_notified_from_activity(activity)
 
       assert [other_user] == enabled_receivers
-      assert [] == disabled_receivers
     end
 
     test "it sends edited notifications to those who repeated a status" do
@@ -1073,11 +985,10 @@ defmodule Pleroma.NotificationTest do
           status: "hey @#{other_user.nickname}! mew mew"
         })
 
-      {enabled_receivers, _disabled_receivers} =
-        Notification.get_notified_from_activity(edit_activity)
+      enabled_receivers = Notification.get_notified_from_activity(edit_activity)
 
       assert repeated_user in enabled_receivers
-      assert other_user not in enabled_receivers
+      refute other_user in enabled_receivers
     end
   end
 
@@ -1354,7 +1265,7 @@ defmodule Pleroma.NotificationTest do
       assert Notification.for_user(user) == []
     end
 
-    test "it returns notifications from a muted user when with_muted is set", %{user: user} do
+    test "it doesn't return notifications from a muted user when with_muted is set", %{user: user} do
       muted = insert(:user)
       {:ok, _user_relationships} = User.mute(user, muted)
 
@@ -1362,7 +1273,7 @@ defmodule Pleroma.NotificationTest do
 
       Pleroma.Tests.ObanHelpers.perform_all()
 
-      assert length(Notification.for_user(user, %{with_muted: true})) == 1
+      assert Enum.empty?(Notification.for_user(user, %{with_muted: true}))
     end
 
     test "it doesn't return notifications from a blocked user when with_muted is set", %{

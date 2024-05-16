@@ -854,31 +854,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, announce, _} = SideEffects.handle(announce)
       assert Repo.get_by(Notification, user_id: poster.id, activity_id: announce.id)
     end
-
-    test "it streams out the announce", %{announce: announce} do
-      with_mocks([
-        {
-          Pleroma.Web.Streamer,
-          [],
-          [
-            stream: fn _, _ -> nil end
-          ]
-        },
-        {
-          Pleroma.Web.Push,
-          [],
-          [
-            send: fn _ -> nil end
-          ]
-        }
-      ]) do
-        {:ok, announce, _} = SideEffects.handle(announce)
-
-        assert called(Pleroma.Web.Streamer.stream(["user", "list"], announce))
-
-        assert called(Pleroma.Web.Push.send(:_))
-      end
-    end
   end
 
   describe "removing a follower" do
