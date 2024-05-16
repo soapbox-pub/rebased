@@ -23,8 +23,9 @@ defmodule Pleroma.Web.PleromaAPI.NotificationController do
         } = conn,
         _
       ) do
-    with {:ok, notification} <- Notification.read_one(user, notification_id) do
-      render(conn, "show.json", notification: notification, for: user)
+    with {:ok, _} <- Notification.read_one(user, notification_id) do
+      conn
+      |> json("ok")
     else
       {:error, message} ->
         conn
@@ -38,11 +39,14 @@ defmodule Pleroma.Web.PleromaAPI.NotificationController do
           conn,
         _
       ) do
-    notifications =
-      user
-      |> Notification.set_read_up_to(max_id)
-      |> Enum.take(80)
-
-    render(conn, "index.json", notifications: notifications, for: user)
+    with {:ok, _} <- Notification.set_read_up_to(user, max_id) do
+      conn
+      |> json("ok")
+    else
+      {:error, message} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{"error" => message})
+    end
   end
 end
