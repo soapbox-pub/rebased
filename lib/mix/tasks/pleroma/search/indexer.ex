@@ -9,9 +9,23 @@ defmodule Mix.Tasks.Pleroma.Search.Indexer do
   alias Pleroma.Workers.SearchIndexingWorker
 
   def run(["create_index"]) do
-    Application.ensure_all_started(:pleroma)
+    start_pleroma()
 
-    Pleroma.Config.get([Pleroma.Search, :module]).create_index()
+    with :ok <- Pleroma.Config.get([Pleroma.Search, :module]).create_index() do
+      IO.puts("Index created")
+    else
+      e -> IO.puts("Could not create index: #{inspect(e)}")
+    end
+  end
+
+  def run(["drop_index"]) do
+    start_pleroma()
+
+    with :ok <- Pleroma.Config.get([Pleroma.Search, :module]).drop_index() do
+      IO.puts("Index dropped")
+    else
+      e -> IO.puts("Could not drop index: #{inspect(e)}")
+    end
   end
 
   def run(["index" | options]) do

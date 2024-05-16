@@ -11,11 +11,21 @@ defmodule Pleroma.Search.QdrantSearch do
   @impl true
   def create_index() do
     payload = Pleroma.Config.get([Pleroma.Search.QdrantSearch, :qdrant_index_configuration])
-    QdrantClient.put("/collections/posts", payload)
+
+    with {:ok, %{status: 200}} <- QdrantClient.put("/collections/posts", payload) do
+      :ok
+    else
+      e -> {:error, e}
+    end
   end
 
+  @impl true
   def drop_index() do
-    QdrantClient.delete("/collections/posts")
+    with {:ok, %{status: 200}} <- QdrantClient.delete("/collections/posts") do
+      :ok
+    else
+      e -> {:error, e}
+    end
   end
 
   def get_embedding(text) do
