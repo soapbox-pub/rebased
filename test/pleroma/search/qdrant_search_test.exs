@@ -15,7 +15,7 @@ defmodule Pleroma.Search.QdrantSearchTest do
   alias Pleroma.Workers.SearchIndexingWorker
 
   describe "Qdrant search" do
-    test "indexes a public post on creation" do
+    test "indexes a public post on creation, deletes from the index on deletion" do
       user = insert(:user)
 
       Tesla.Mock.mock(fn
@@ -29,10 +29,14 @@ defmodule Pleroma.Search.QdrantSearchTest do
           assert match?(%{"points" => [%{"vector" => [1, 2, 3]}]}, Jason.decode!(body))
 
           Tesla.Mock.json("ok")
+
+        %{method: :post, url: "https://qdrant.url/collections/posts/points/delete"} ->
+          send(self(), "deleted_from_qdrant")
+          Tesla.Mock.json("ok")
       end)
 
       Config
-      |> expect(:get, 4, fn
+      |> expect(:get, 6, fn
         [Pleroma.Search, :module], nil ->
           QdrantSearch
 
@@ -60,6 +64,14 @@ defmodule Pleroma.Search.QdrantSearchTest do
       assert :ok = perform_job(SearchIndexingWorker, args)
       assert_received("posted_to_ollama")
       assert_received("posted_to_qdrant")
+
+      {:ok, _} = CommonAPI.delete(activity.id, user)
+
+      delete_args = %{"op" => "remove_from_index", "object" => activity.object.id}
+      assert_enqueued(worker: SearchIndexingWorker, args: delete_args)
+      assert :ok = perform_job(SearchIndexingWorker, delete_args)
+
+      assert_received("deleted_from_qdrant")
     end
   end
 end

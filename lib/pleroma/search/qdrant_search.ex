@@ -82,6 +82,19 @@ defmodule Pleroma.Search.QdrantSearch do
   end
 
   @impl true
+  def remove_from_index(object) do
+    activity = Activity.get_by_object_ap_id_with_object(object.data["id"])
+    id = activity.id |> FlakeId.from_string() |> Ecto.UUID.cast!()
+
+    with {:ok, %{status: 200}} <-
+           QdrantClient.post("/collections/posts/points/delete", %{"points" => [id]}) do
+      :ok
+    else
+      e -> {:error, e}
+    end
+  end
+
+  @impl true
   def search(_user, query, _options) do
     query = "Represent this sentence for searching relevant passages: #{query}"
 
@@ -102,11 +115,6 @@ defmodule Pleroma.Search.QdrantSearch do
       _ ->
         []
     end
-  end
-
-  @impl true
-  def remove_from_index(_object) do
-    :ok
   end
 end
 
