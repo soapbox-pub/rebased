@@ -18,10 +18,12 @@ defmodule Pleroma.Gun.ConnectionPool.WorkerSupervisor do
     )
   end
 
-  def start_worker(opts, retry \\ false) do
+  def start_worker(opts, last_attempt \\ false) do
     case DynamicSupervisor.start_child(__MODULE__, {Pleroma.Gun.ConnectionPool.Worker, opts}) do
       {:error, :max_children} ->
-        if Enum.any?([retry, free_pool()], &match?(&1, :error)) do
+        funs = [fn -> last_attempt end, fn -> match?(:error, free_pool()) end]
+
+        if Enum.any?(funs, fn fun -> fun.() end) do
           :telemetry.execute([:pleroma, :connection_pool, :provision_failure], %{opts: opts})
           {:error, :pool_full}
         else

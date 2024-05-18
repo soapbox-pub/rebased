@@ -26,10 +26,10 @@ cache: &global_cache_policy
     - _build
 
 stages:
-  - check-changelog
   - build
   - lint
   - test
+  - check-changelog
   - benchmark
   - deploy
   - release
@@ -113,7 +113,7 @@ benchmark:
   variables:
     MIX_ENV: benchmark
   services:
-  - name: postgres:9.6-alpine
+  - name: postgres:11.22-alpine
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
@@ -168,25 +168,6 @@ unit-testing-1.12-erratic:
     - mix ecto.create
     - mix ecto.migrate
     - mix test --only=erratic
-
-unit-testing-1.12-rum:
-  extends:
-  - .build_changes_policy
-  - .using-ci-base
-  stage: test
-  cache: *testing_cache_policy
-  services:
-  - name: git.pleroma.social:5050/pleroma/pleroma/postgres-with-rum-13
-    alias: postgres
-    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-  variables:
-    <<: *global_variables
-    RUM_ENABLED: "true"
-  script:
-    - mix ecto.create
-    - mix ecto.migrate
-    - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
-    - mix test --preload-modules
 
 formatting-1.13:
   extends: .build_changes_policy

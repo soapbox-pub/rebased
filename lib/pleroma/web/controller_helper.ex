@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ControllerHelper do
     |> json(json)
   end
 
-  @spec fetch_integer_param(map(), String.t(), integer() | nil) :: integer() | nil
+  @spec fetch_integer_param(map(), String.t() | atom(), integer() | nil) :: integer() | nil
   def fetch_integer_param(params, name, default \\ nil) do
     params
     |> Map.get(name, default)

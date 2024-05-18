@@ -4,6 +4,8 @@
 
 Code.put_compiler_option(:warnings_as_errors, true)
 
+ExUnit.configure(max_cases: System.schedulers_online())
+
 ExUnit.start(exclude: [:federated, :erratic])
 
 if match?({:unix, :darwin}, :os.type()) do

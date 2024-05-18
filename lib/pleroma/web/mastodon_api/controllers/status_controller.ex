@@ -12,6 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   alias Pleroma.Activity
   alias Pleroma.Bookmark
+  alias Pleroma.BookmarkFolder
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
@@ -37,7 +38,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     when action in [
            :index,
            :show,
-           :card,
            :context,
            :show_history,
            :show_source
@@ -411,13 +411,22 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   @doc "POST /api/v1/statuses/:id/bookmark"
   def bookmark(
-        %{assigns: %{user: user}, private: %{open_api_spex: %{params: %{id: id}}}} = conn,
+        %{
+          assigns: %{user: user},
+          private: %{open_api_spex: %{body_params: body_params, params: %{id: id}}}
+        } = conn,
         _
       ) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          %User{} = user <- User.get_cached_by_nickname(user.nickname),
          true <- Visibility.visible_for_user?(activity, user),
-         {:ok, _bookmark} <- Bookmark.create(user.id, activity.id) do
+         folder_id <- Map.get(body_params, :folder_id, nil),
+         folder_id <-
+           if(folder_id && BookmarkFolder.belongs_to_user?(folder_id, user.id),
+             do: folder_id,
+             else: nil
+           ),
+         {:ok, _bookmark} <- Bookmark.create(user.id, activity.id, folder_id) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
     end
   end
@@ -460,21 +469,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     with %Activity{} = activity <- Activity.get_by_id(id),
          {:ok, activity} <- CommonAPI.remove_mute(user, activity) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
-    end
-  end
-
-  @doc "GET /api/v1/statuses/:id/card"
-  @deprecated "https://github.com/tootsuite/mastodon/pull/11213"
-  def card(
-        %{assigns: %{user: user}, private: %{open_api_spex: %{params: %{id: status_id}}}} = conn,
-        _
-      ) do
-    with %Activity{} = activity <- Activity.get_by_id(status_id),
-         true <- Visibility.visible_for_user?(activity, user) do
-      data = Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
-      render(conn, "card.json", data)
-    else
-      _ -> render_error(conn, :not_found, "Record not found")
     end
   end
 
@@ -573,10 +567,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   @doc "GET /api/v1/bookmarks"
   def bookmarks(%{assigns: %{user: user}, private: %{open_api_spex: %{params: params}}} = conn, _) do
     user = User.get_cached_by_id(user.id)
+    folder_id = Map.get(params, :folder_id)
 
     bookmarks =
       user.id
-      |> Bookmark.for_user_query()
+      |> Bookmark.for_user_query(folder_id)
       |> Pleroma.Pagination.fetch_paginated(params)
 
     activities =

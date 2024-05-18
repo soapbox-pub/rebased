@@ -28,7 +28,7 @@ defmodule Pleroma.Web.PleromaAPI.MascotController do
         _
       ) do
     with {:content_type, "image" <> _} <- {:content_type, file.content_type},
-         {:ok, object} <- ActivityPub.upload(file, actor: User.ap_id(user)) do
+         {_, {:ok, object}} <- {:upload, ActivityPub.upload(file, actor: User.ap_id(user))} do
       attachment = render_attachment(object)
       {:ok, _user} = User.mascot_update(user, attachment)
 

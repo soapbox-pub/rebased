@@ -67,8 +67,13 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   def render("user.json", %{user: %User{nickname: nil} = user}),
     do: render("service.json", %{user: user})
 
-  def render("user.json", %{user: %User{nickname: "internal." <> _} = user}),
-    do: render("service.json", %{user: user}) |> Map.put("preferredUsername", user.nickname)
+  def render("user.json", %{user: %User{nickname: "internal." <> _} = user}) do
+    render("service.json", %{user: user})
+    |> Map.merge(%{
+      "preferredUsername" => user.nickname,
+      "webfinger" => "acct:#{User.full_nickname(user)}"
+    })
+  end
 
   def render("user.json", %{user: user}) do
     {:ok, _, public_key} = Keys.keys_from_pem(user.keys)
@@ -121,7 +126,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "discoverable" => user.is_discoverable,
       "capabilities" => capabilities,
       "alsoKnownAs" => user.also_known_as,
-      "vcard:bday" => birthday
+      "vcard:bday" => birthday,
+      "webfinger" => "acct:#{User.full_nickname(user)}"
     }
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))
     |> Map.merge(maybe_make_image(&User.banner_url/2, "image", user))

@@ -97,6 +97,7 @@ defmodule Pleroma.Web.ApiSpec do
               "Frontend management",
               "Instance configuration",
               "Instance documents",
+              "Instance rule managment",
               "Invites",
               "MediaProxy cache",
               "OAuth application management",
@@ -137,7 +138,8 @@ defmodule Pleroma.Web.ApiSpec do
               "Scheduled statuses",
               "Search",
               "Status actions",
-              "Media attachments"
+              "Media attachments",
+              "Bookmark folders"
             ]
           },
           %{

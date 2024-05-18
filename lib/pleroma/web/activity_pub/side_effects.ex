@@ -21,7 +21,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
   alias Pleroma.Workers.PollWorker
 
@@ -125,7 +124,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         nil
     end
 
-    {:ok, notifications} = Notification.create_notifications(object, do_send: false)
+    {:ok, notifications} = Notification.create_notifications(object)
 
     meta =
       meta
@@ -184,7 +183,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     liked_object = Object.get_by_ap_id(object.data["object"])
     Utils.add_like_to_object(object, liked_object)
 
-    Notification.create_notifications(object)
+    {:ok, notifications} = Notification.create_notifications(object)
+
+    meta =
+      meta
+      |> add_notifications(notifications)
 
     {:ok, object, meta}
   end
@@ -202,7 +205,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   def handle(%{data: %{"type" => "Create"}} = activity, meta) do
     with {:ok, object, meta} <- handle_object_creation(meta[:object_data], activity, meta),
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
-      {:ok, notifications} = Notification.create_notifications(activity, do_send: false)
+      {:ok, notifications} = Notification.create_notifications(activity)
       {:ok, _user} = ActivityPub.increase_note_count_if_public(user, object)
       {:ok, _user} = ActivityPub.update_last_status_at_if_public(user, object)
 
@@ -227,9 +230,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         end
       end
 
-      ConcurrentLimiter.limit(Pleroma.Web.RichMedia.Helpers, fn ->
-        Task.start(fn -> Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) end)
-      end)
+      Pleroma.Web.RichMedia.Card.get_by_activity(activity)
 
       Pleroma.Search.add_to_index(Map.put(activity, :object, object))
 
@@ -258,11 +259,13 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
     Utils.add_announce_to_object(object, announced_object)
 
-    if !User.internal?(user) do
-      Notification.create_notifications(object)
+    {:ok, notifications} = Notification.create_notifications(object)
 
-      ap_streamer().stream_out(object)
-    end
+    if !User.internal?(user), do: ap_streamer().stream_out(object)
+
+    meta =
+      meta
+      |> add_notifications(notifications)
 
     {:ok, object, meta}
   end
@@ -283,7 +286,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     reacted_object = Object.get_by_ap_id(object.data["object"])
     Utils.add_emoji_reaction_to_object(object, reacted_object)
 
-    Notification.create_notifications(object)
+    {:ok, notifications} = Notification.create_notifications(object)
+
+    meta =
+      meta
+      |> add_notifications(notifications)
 
     {:ok, object, meta}
   end
@@ -587,10 +594,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
   defp send_notifications(meta) do
     Keyword.get(meta, :notifications, [])
-    |> Enum.each(fn notification ->
-      Streamer.stream(["user", "user:notification"], notification)
-      Push.send(notification)
-    end)
+    |> Notification.send()
 
     meta
   end

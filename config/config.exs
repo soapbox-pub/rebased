@@ -114,14 +114,7 @@ config :pleroma, :uri_schemes,
 config :pleroma, Pleroma.Web.Endpoint,
   url: [host: "localhost"],
   http: [
-    ip: {127, 0, 0, 1},
-    dispatch: [
-      {:_,
-       [
-         {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
-         {:_, Plug.Cowboy.Handler, {Pleroma.Web.Endpoint, []}}
-       ]}
-    ]
+    ip: {127, 0, 0, 1}
   ],
   protocol: "https",
   secret_key_base: "aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl",
@@ -422,6 +415,10 @@ config :pleroma, :mrf_follow_bot, follower_nickname: nil
 
 config :pleroma, :mrf_inline_quote, template: "<bdi>RT:</bdi> {url}"
 
+config :pleroma, :mrf_force_mention,
+  mention_parent: true,
+  mention_quoted: true
+
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],
@@ -431,7 +428,11 @@ config :pleroma, :rich_media,
     Pleroma.Web.RichMedia.Parsers.OEmbed
   ],
   failure_backoff: 60_000,
-  ttl_setters: [Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl]
+  ttl_setters: [
+    Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl,
+    Pleroma.Web.RichMedia.Parser.TTL.Opengraph
+  ],
+  max_body: 5_000_000
 
 config :pleroma, :media_proxy,
   enabled: false,
@@ -578,7 +579,8 @@ config :pleroma, Oban,
     attachments_cleanup: 1,
     new_users_digest: 1,
     mute_expire: 5,
-    search_indexing: 10
+    search_indexing: 10,
+    rich_media_expiration: 2
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
@@ -802,7 +804,7 @@ config :pleroma, :modules, runtime_dir: "instance/modules"
 config :pleroma, configurable_from_database: false
 
 config :pleroma, Pleroma.Repo,
-  parameters: [gin_fuzzy_search_limit: "500"],
+  parameters: [gin_fuzzy_search_limit: "500", jit: "off"],
   prepare: :unnamed
 
 config :pleroma, :connections_pool,
