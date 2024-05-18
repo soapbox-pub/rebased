@@ -200,7 +200,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def notify_and_stream(activity) do
-    Notification.create_notifications(activity)
+    {:ok, notifications} = Notification.create_notifications(activity)
+    Notification.send(notifications)
 
     original_activity =
       case activity do
@@ -1259,6 +1260,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_quote_url(query, _), do: query
 
+  defp restrict_rule(query, %{rule_id: rule_id}) do
+    from(
+      activity in query,
+      where: fragment("(?)->'rules' \\? (?)", activity.data, ^rule_id)
+    )
+  end
+
+  defp restrict_rule(query, _), do: query
+
   defp exclude_poll_votes(query, %{include_poll_votes: true}), do: query
 
   defp exclude_poll_votes(query, _) do
@@ -1421,6 +1431,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_instance(opts)
       |> restrict_announce_object_actor(opts)
       |> restrict_filtered(opts)
+      |> restrict_rule(opts)
       |> restrict_quote_url(opts)
       |> maybe_restrict_deactivated_users(opts)
       |> exclude_poll_votes(opts)

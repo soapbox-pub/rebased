@@ -292,6 +292,11 @@ defmodule Pleroma.Web.Router do
     post("/frontends/install", FrontendController, :install)
 
     post("/backups", AdminAPIController, :create_backup)
+
+    get("/rules", RuleController, :index)
+    post("/rules", RuleController, :create)
+    patch("/rules/:id", RuleController, :update)
+    delete("/rules/:id", RuleController, :delete)
   end
 
   # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
@@ -764,6 +769,7 @@ defmodule Pleroma.Web.Router do
 
     get("/instance", InstanceController, :show)
     get("/instance/peers", InstanceController, :peers)
+    get("/instance/rules", InstanceController, :rules)
 
     get("/statuses", StatusController, :index)
     get("/statuses/:id", StatusController, :show)
