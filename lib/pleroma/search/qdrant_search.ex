@@ -1,16 +1,17 @@
 defmodule Pleroma.Search.QdrantSearch do
   @behaviour Pleroma.Search.SearchBackend
   import Ecto.Query
-  alias Pleroma.Activity
 
-  alias __MODULE__.QdrantClient
-  alias __MODULE__.OllamaClient
+  alias Pleroma.Activity
   alias Pleroma.Config.Getting, as: Config
+
+  alias __MODULE__.OllamaClient
+  alias __MODULE__.QdrantClient
 
   import Pleroma.Search.Meilisearch, only: [object_to_search_data: 1]
 
   @impl true
-  def create_index() do
+  def create_index do
     payload = Config.get([Pleroma.Search.QdrantSearch, :qdrant_index_configuration])
 
     with {:ok, %{status: 200}} <- QdrantClient.put("/collections/posts", payload) do
@@ -21,7 +22,7 @@ defmodule Pleroma.Search.QdrantSearch do
   end
 
   @impl true
-  def drop_index() do
+  def drop_index do
     with {:ok, %{status: 200}} <- QdrantClient.delete("/collections/posts") do
       :ok
     else

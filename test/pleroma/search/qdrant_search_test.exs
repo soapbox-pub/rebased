@@ -9,9 +9,9 @@ defmodule Pleroma.Search.QdrantSearchTest do
   import Pleroma.Factory
   import Mox
 
-  alias Pleroma.Web.CommonAPI
-  alias Pleroma.UnstubbedConfigMock, as: Config
   alias Pleroma.Search.QdrantSearch
+  alias Pleroma.UnstubbedConfigMock, as: Config
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Workers.SearchIndexingWorker
 
   describe "Qdrant search" do
