@@ -5,12 +5,13 @@ defmodule Pleroma.Search.QdrantSearch do
 
   alias __MODULE__.QdrantClient
   alias __MODULE__.OllamaClient
+  alias Pleroma.Config.Getting, as: Config
 
   import Pleroma.Search.Meilisearch, only: [object_to_search_data: 1]
 
   @impl true
   def create_index() do
-    payload = Pleroma.Config.get([Pleroma.Search.QdrantSearch, :qdrant_index_configuration])
+    payload = Config.get([Pleroma.Search.QdrantSearch, :qdrant_index_configuration])
 
     with {:ok, %{status: 200}} <- QdrantClient.put("/collections/posts", payload) do
       :ok
@@ -32,7 +33,7 @@ defmodule Pleroma.Search.QdrantSearch do
     with {:ok, %{body: %{"embedding" => embedding}}} <-
            OllamaClient.post("/api/embeddings", %{
              prompt: text,
-             model: Pleroma.Config.get([Pleroma.Search.QdrantSearch, :ollama_model])
+             model: Config.get([Pleroma.Search.QdrantSearch, :ollama_model])
            }) do
       {:ok, embedding}
     else
@@ -111,15 +112,17 @@ end
 
 defmodule Pleroma.Search.QdrantSearch.OllamaClient do
   use Tesla
+  alias Pleroma.Config.Getting, as: Config
 
-  plug(Tesla.Middleware.BaseUrl, Pleroma.Config.get([Pleroma.Search.QdrantSearch, :ollama_url]))
+  plug(Tesla.Middleware.BaseUrl, Config.get([Pleroma.Search.QdrantSearch, :ollama_url]))
   plug(Tesla.Middleware.JSON)
 end
 
 defmodule Pleroma.Search.QdrantSearch.QdrantClient do
   use Tesla
+  alias Pleroma.Config.Getting, as: Config
 
-  plug(Tesla.Middleware.BaseUrl, Pleroma.Config.get([Pleroma.Search.QdrantSearch, :qdrant_url]))
+  plug(Tesla.Middleware.BaseUrl, Config.get([Pleroma.Search.QdrantSearch, :qdrant_url]))
   plug(Tesla.Middleware.JSON)
 
   plug(Tesla.Middleware.Headers, [
