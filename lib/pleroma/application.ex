@@ -119,28 +119,7 @@ defmodule Pleroma.Application do
     max_restarts = Application.get_env(:pleroma, __MODULE__)[:max_restarts]
 
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor, max_restarts: max_restarts]
-    result = Supervisor.start_link(children, opts)
-
-    set_postgres_server_version()
-
-    result
-  end
-
-  defp set_postgres_server_version do
-    version =
-      with %{rows: [[version]]} <- Ecto.Adapters.SQL.query!(Pleroma.Repo, "show server_version"),
-           {num, _} <- Float.parse(version) do
-        num
-      else
-        e ->
-          Logger.warning(
-            "Could not get the postgres version: #{inspect(e)}.\nSetting the default value of 9.6"
-          )
-
-          9.6
-      end
-
-    :persistent_term.put({Pleroma.Repo, :postgres_version}, version)
+    Supervisor.start_link(children, opts)
   end
 
   def load_custom_modules do
@@ -177,6 +156,7 @@ defmodule Pleroma.Application do
       build_cachex("web_resp", limit: 2500),
       build_cachex("emoji_packs", expiration: emoji_packs_expiration(), limit: 10),
       build_cachex("failed_proxy_url", limit: 2500),
+      build_cachex("failed_media_helper_url", default_ttl: :timer.minutes(15), limit: 2_500),
       build_cachex("banned_urls", default_ttl: :timer.hours(24 * 30), limit: 5_000),
       build_cachex("chat_message_id_idempotency_key",
         expiration: chat_message_id_idempotency_key_expiration(),

@@ -1,0 +1,1 @@
+Handle cases when users.inbox is nil.

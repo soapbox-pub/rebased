@@ -49,7 +49,7 @@ config :pleroma, Pleroma.Repo,
   hostname: System.get_env("DB_HOST") || "localhost",
   port: System.get_env("DB_PORT") || "5432",
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: 50
+  pool_size: System.schedulers_online() * 2
 
 config :pleroma, :dangerzone, override_repo_pool_size: true
 
@@ -61,7 +61,8 @@ config :tesla, adapter: Tesla.Mock
 config :pleroma, :rich_media,
   enabled: false,
   ignore_hosts: [],
-  ignore_tld: ["local", "localdomain", "lan"]
+  ignore_tld: ["local", "localdomain", "lan"],
+  max_body: 2_000_000
 
 config :pleroma, :instance,
   multi_factor_authentication: [
@@ -173,6 +174,8 @@ config :pleroma, Pleroma.Application,
 config :pleroma, Pleroma.Uploaders.Uploader, timeout: 1_000
 
 config :pleroma, Pleroma.Emoji.Loader, test_emoji: true
+
+config :pleroma, Pleroma.Web.RichMedia.Backfill, provider: Pleroma.Web.RichMedia.Backfill
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

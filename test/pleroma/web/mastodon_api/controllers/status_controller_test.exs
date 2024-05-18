@@ -329,62 +329,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert real_status == fake_status
     end
 
-    test "fake statuses' preview card is not cached", %{conn: conn} do
-      Pleroma.StaticStubbedConfigMock
-      |> stub(:get, fn
-        [:rich_media, :enabled] -> true
-        path -> Pleroma.Test.StaticConfig.get(path)
-      end)
-
-      Tesla.Mock.mock_global(fn
-        env ->
-          apply(HttpRequestMock, :request, [env])
-      end)
-
-      conn1 =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/statuses", %{
-          "status" => "https://example.com/ogp",
-          "preview" => true
-        })
-
-      conn2 =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/statuses", %{
-          "status" => "https://example.com/twitter-card",
-          "preview" => true
-        })
-
-      assert %{"card" => %{"title" => "The Rock"}} = json_response_and_validate_schema(conn1, 200)
-
-      assert %{"card" => %{"title" => "Small Island Developing States Photo Submission"}} =
-               json_response_and_validate_schema(conn2, 200)
-    end
-
-    test "posting a status with OGP link preview", %{conn: conn} do
-      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-
-      Pleroma.StaticStubbedConfigMock
-      |> stub(:get, fn
-        [:rich_media, :enabled] -> true
-        path -> Pleroma.Test.StaticConfig.get(path)
-      end)
-
-      conn =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/statuses", %{
-          "status" => "https://example.com/ogp"
-        })
-
-      assert %{"id" => id, "card" => %{"title" => "The Rock"}} =
-               json_response_and_validate_schema(conn, 200)
-
-      assert Activity.get_by_id(id)
-    end
-
     test "posting a direct status", %{conn: conn} do
       user2 = insert(:user)
       content = "direct cofe @#{user2.nickname}"
@@ -1699,91 +1643,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
   end
 
-  describe "cards" do
-    setup do
-      Pleroma.StaticStubbedConfigMock
-      |> stub(:get, fn
-        [:rich_media, :enabled] -> true
-        path -> Pleroma.Test.StaticConfig.get(path)
-      end)
-
-      oauth_access(["read:statuses"])
-    end
-
-    test "returns rich-media card", %{conn: conn, user: user} do
-      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-
-      {:ok, activity} = CommonAPI.post(user, %{status: "https://example.com/ogp"})
-
-      card_data = %{
-        "image" => "http://ia.media-imdb.com/images/rock.jpg",
-        "provider_name" => "example.com",
-        "provider_url" => "https://example.com",
-        "title" => "The Rock",
-        "type" => "link",
-        "url" => "https://example.com/ogp",
-        "description" =>
-          "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
-        "pleroma" => %{
-          "opengraph" => %{
-            "image" => "http://ia.media-imdb.com/images/rock.jpg",
-            "title" => "The Rock",
-            "type" => "video.movie",
-            "url" => "https://example.com/ogp",
-            "description" =>
-              "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer."
-          }
-        }
-      }
-
-      response =
-        conn
-        |> get("/api/v1/statuses/#{activity.id}/card")
-        |> json_response_and_validate_schema(200)
-
-      assert response == card_data
-
-      # works with private posts
-      {:ok, activity} =
-        CommonAPI.post(user, %{status: "https://example.com/ogp", visibility: "direct"})
-
-      response_two =
-        conn
-        |> get("/api/v1/statuses/#{activity.id}/card")
-        |> json_response_and_validate_schema(200)
-
-      assert response_two == card_data
-    end
-
-    test "replaces missing description with an empty string", %{conn: conn, user: user} do
-      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-
-      {:ok, activity} = CommonAPI.post(user, %{status: "https://example.com/ogp-missing-data"})
-
-      response =
-        conn
-        |> get("/api/v1/statuses/#{activity.id}/card")
-        |> json_response_and_validate_schema(:ok)
-
-      assert response == %{
-               "type" => "link",
-               "title" => "Pleroma",
-               "description" => "",
-               "image" => nil,
-               "provider_name" => "example.com",
-               "provider_url" => "https://example.com",
-               "url" => "https://example.com/ogp-missing-data",
-               "pleroma" => %{
-                 "opengraph" => %{
-                   "title" => "Pleroma",
-                   "type" => "website",
-                   "url" => "https://example.com/ogp-missing-data"
-                 }
-               }
-             }
-    end
-  end
-
   test "bookmarks" do
     bookmarks_uri = "/api/v1/bookmarks"
 
@@ -1826,6 +1685,60 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     assert [json_response_and_validate_schema(response2, 200)] ==
              json_response_and_validate_schema(bookmarks, 200)
+  end
+
+  test "bookmark folders" do
+    %{conn: conn, user: user} = oauth_access(["write:bookmarks", "read:bookmarks"])
+
+    {:ok, folder} = Pleroma.BookmarkFolder.create(user.id, "folder")
+    author = insert(:user)
+
+    folder_bookmarks_uri = "/api/v1/bookmarks?folder_id=#{folder.id}"
+
+    {:ok, activity1} = CommonAPI.post(author, %{status: "heweoo?"})
+    {:ok, activity2} = CommonAPI.post(author, %{status: "heweoo!"})
+
+    # Add bookmark with a folder
+    response =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/statuses/#{activity1.id}/bookmark", %{folder_id: folder.id})
+
+    assert json_response_and_validate_schema(response, 200)["bookmarked"] == true
+
+    assert json_response_and_validate_schema(response, 200)["pleroma"]["bookmark_folder"] ==
+             folder.id
+
+    response =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/statuses/#{activity2.id}/bookmark")
+
+    assert json_response_and_validate_schema(response, 200)["bookmarked"] == true
+    assert json_response_and_validate_schema(response, 200)["pleroma"]["bookmark_folder"] == nil
+
+    bookmarks =
+      get(conn, folder_bookmarks_uri)
+      |> json_response_and_validate_schema(200)
+
+    assert length(bookmarks) == 1
+
+    # Update folder for existing bookmark
+    response =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/statuses/#{activity2.id}/bookmark", %{folder_id: folder.id})
+
+    assert json_response_and_validate_schema(response, 200)["bookmarked"] == true
+
+    assert json_response_and_validate_schema(response, 200)["pleroma"]["bookmark_folder"] ==
+             folder.id
+
+    bookmarks =
+      get(conn, folder_bookmarks_uri)
+      |> json_response_and_validate_schema(200)
+
+    assert length(bookmarks) == 2
   end
 
   describe "conversation muting" do

@@ -12,6 +12,8 @@ defmodule Pleroma.Helpers.MediaHelper do
 
   require Logger
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   def missing_dependencies do
     Enum.reduce([ffmpeg: "ffmpeg"], [], fn {sym, executable}, acc ->
       if Pleroma.Utils.command_available?(executable) do
@@ -40,28 +42,43 @@ defmodule Pleroma.Helpers.MediaHelper do
   end
 
   # Note: video thumbnail is intentionally not resized (always has original dimensions)
+  @spec video_framegrab(String.t()) :: {:ok, binary()} | {:error, any()}
   def video_framegrab(url) do
     with executable when is_binary(executable) <- System.find_executable("ffmpeg"),
+         false <- @cachex.exists?(:failed_media_helper_cache, url),
          {:ok, env} <- HTTP.get(url, [], pool: :media),
          {:ok, pid} <- StringIO.open(env.body) do
       body_stream = IO.binstream(pid, 1)
 
-      Exile.stream!(
-        [
-          executable,
-          "-i",
-          "pipe:0",
-          "-vframes",
-          "1",
-          "-f",
-          "mjpeg",
-          "pipe:1"
-        ],
-        input: body_stream,
-        ignore_epipe: true,
-        stderr: :disable
-      )
-      |> Enum.into(<<>>)
+      task =
+        Task.async(fn ->
+          Exile.stream!(
+            [
+              executable,
+              "-i",
+              "pipe:0",
+              "-vframes",
+              "1",
+              "-f",
+              "mjpeg",
+              "pipe:1"
+            ],
+            input: body_stream,
+            ignore_epipe: true,
+            stderr: :disable
+          )
+          |> Enum.into(<<>>)
+        end)
+
+      case Task.yield(task, 5_000) do
+        nil ->
+          Task.shutdown(task)
+          @cachex.put(:failed_media_helper_cache, url, nil)
+          {:error, {:ffmpeg, :timeout}}
+
+        result ->
+          {:ok, result}
+      end
     else
       nil -> {:error, {:ffmpeg, :command_not_found}}
       {:error, _} = error -> error

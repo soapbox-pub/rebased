@@ -65,20 +65,16 @@ defmodule Pleroma.HTML do
     end
   end
 
-  @spec extract_first_external_url_from_object(Pleroma.Object.t()) ::
-          {:ok, String.t()} | {:error, :no_content}
+  @spec extract_first_external_url_from_object(Pleroma.Object.t()) :: String.t() | nil
   def extract_first_external_url_from_object(%{data: %{"content" => content}})
       when is_binary(content) do
-    url =
-      content
-      |> Floki.parse_fragment!()
-      |> Floki.find("a:not(.mention,.hashtag,.attachment,[rel~=\"tag\"])")
-      |> Enum.take(1)
-      |> Floki.attribute("href")
-      |> Enum.at(0)
-
-    {:ok, url}
+    content
+    |> Floki.parse_fragment!()
+    |> Floki.find("a:not(.mention,.hashtag,.attachment,[rel~=\"tag\"])")
+    |> Enum.take(1)
+    |> Floki.attribute("href")
+    |> Enum.at(0)
   end
 
-  def extract_first_external_url_from_object(_), do: {:error, :no_content}
+  def extract_first_external_url_from_object(_), do: nil
 end

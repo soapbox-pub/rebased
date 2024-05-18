@@ -28,6 +28,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         |> to_string,
       registrations: Keyword.get(instance, :registrations_open),
       approval_required: Keyword.get(instance, :account_approval_required),
+      contact_account: contact_account(Keyword.get(instance, :contact_username)),
       configuration: configuration(),
       # Extra (not present in Mastodon):
       max_toot_chars: Keyword.get(instance, :limit),
@@ -68,19 +69,33 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       },
       contact: %{
         email: Keyword.get(instance, :email),
-        account: nil
+        account: contact_account(Keyword.get(instance, :contact_username))
       },
       # Extra (not present in Mastodon):
       pleroma: pleroma_configuration2(instance)
     })
   end
 
+  def render("rules.json", _) do
+    Pleroma.Rule.query()
+    |> Pleroma.Repo.all()
+    |> render_many(__MODULE__, "rule.json", as: :rule)
+  end
+
+  def render("rule.json", %{rule: rule}) do
+    %{
+      id: to_string(rule.id),
+      text: rule.text,
+      hint: rule.hint || ""
+    }
+  end
+
   defp common_information(instance) do
     %{
-      title: Keyword.get(instance, :name),
-      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
       languages: Keyword.get(instance, :languages, ["en"]),
-      rules: []
+      rules: render(__MODULE__, "rules.json"),
+      title: Keyword.get(instance, :name),
+      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})"
     }
   end
 
@@ -129,7 +144,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         "profile_directory"
       end,
       "pleroma:get:main/ostatus",
-      "pleroma:group_actors"
+      "pleroma:group_actors",
+      "pleroma:bookmark_folders"
     ]
     |> Enum.filter(& &1)
   end
@@ -170,6 +186,22 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     }
   end
 
+  defp contact_account(nil), do: nil
+
+  defp contact_account("@" <> username) do
+    contact_account(username)
+  end
+
+  defp contact_account(username) do
+    user = Pleroma.User.get_cached_by_nickname(username)
+
+    if user do
+      Pleroma.Web.MastodonAPI.AccountView.render("show.json", %{user: user, for: nil})
+    else
+      nil
+    end
+  end
+
   defp configuration do
     %{
       accounts: %{
@@ -195,6 +227,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
   defp configuration2 do
     configuration()
+    |> put_in([:accounts, :max_pinned_statuses], Config.get([:instance, :max_pinned_statuses], 0))
+    |> put_in([:statuses, :characters_reserved_per_url], 0)
     |> Map.merge(%{
       urls: %{
         streaming: Pleroma.Web.Endpoint.websocket_url(),

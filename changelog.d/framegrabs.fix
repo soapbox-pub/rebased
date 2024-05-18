@@ -1,0 +1,1 @@
+Video framegrabs were not working correctly after the change to use Exile to execute ffmpeg
