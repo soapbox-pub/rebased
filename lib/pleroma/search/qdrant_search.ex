@@ -54,10 +54,11 @@ defmodule Pleroma.Search.QdrantSearch do
     }
   end
 
-  defp build_search_payload(embedding) do
+  defp build_search_payload(embedding, options) do
     %{
       vector: embedding,
-      limit: 20
+      limit: options[:limit] || 20,
+      offset: options[:offset] || 0
     }
   end
 
@@ -96,12 +97,15 @@ defmodule Pleroma.Search.QdrantSearch do
   end
 
   @impl true
-  def search(_user, query, _options) do
+  def search(_user, query, options) do
     query = "Represent this sentence for searching relevant passages: #{query}"
 
     with {:ok, embedding} <- get_embedding(query),
          {:ok, %{body: %{"result" => result}}} <-
-           QdrantClient.post("/collections/posts/points/search", build_search_payload(embedding)) do
+           QdrantClient.post(
+             "/collections/posts/points/search",
+             build_search_payload(embedding, options)
+           ) do
       ids =
         Enum.map(result, fn %{"id" => id} ->
           Ecto.UUID.dump!(id)
