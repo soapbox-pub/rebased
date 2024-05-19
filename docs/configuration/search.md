@@ -26,7 +26,7 @@ You will also need to create the Qdrant index once by running `mix pleroma.searc
 
 To see the available configuration options, check out the QdrantSearch section in `config/config.exs`.
 
-The default indexing option work for the default model (`snowflake-arctic-embed-xs`). To optimize for a low memory footprint, adjust the index configuration as described in the [Qdrant docs](https://qdrant.tech/documentation/guides/optimize/).
+The default indexing option work for the default model (`snowflake-arctic-embed-xs`). To optimize for a low memory footprint, adjust the index configuration as described in the [Qdrant docs](https://qdrant.tech/documentation/guides/optimize/). See also [this blog post](https://qdrant.tech/articles/memory-consumption/) that goes into detail.
 
 Different embedding models will need different vector size settings. You can see a list of the models supported by the fastembed server [here](https://qdrant.github.io/fastembed/examples/Supported_Models), including their vector dimensions. These vector dimensions need to be set in the `qdrant_index_configuration`. 
 
