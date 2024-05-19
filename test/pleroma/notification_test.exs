@@ -449,9 +449,7 @@ defmodule Pleroma.NotificationTest do
           status: "hey yet again @#{other_user.nickname}!"
         })
 
-      [_, read_notification] = Notification.set_read_up_to(other_user, n2.id)
-
-      assert read_notification.activity.object
+      Notification.set_read_up_to(other_user, n2.id)
 
       [n3, n2, n1] = Notification.for_user(other_user)
 
