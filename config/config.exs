@@ -917,9 +917,10 @@ config :pleroma, Pleroma.Uploaders.Uploader, timeout: 30_000
 
 config :pleroma, Pleroma.Search.QdrantSearch,
   qdrant_url: "http://127.0.0.1:6333/",
-  qdrant_api_key: nil,
-  ollama_url: "http://127.0.0.1:11434",
-  ollama_model: "snowflake-arctic-embed:xs",
+  qdrant_api_key: "",
+  openai_url: "http://127.0.0.1:11345",
+  openai_model: "snowflake",
+  openai_api_key: "",
   qdrant_index_configuration: %{
     vectors: %{size: 384, distance: "Cosine"}
   }

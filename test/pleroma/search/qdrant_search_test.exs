@@ -19,9 +19,12 @@ defmodule Pleroma.Search.QdrantSearchTest do
       user = insert(:user)
 
       Tesla.Mock.mock(fn
-        %{method: :post, url: "https://ollama.url/api/embeddings"} ->
-          send(self(), "posted_to_ollama")
-          Tesla.Mock.json(%{embedding: [1, 2, 3]})
+        %{method: :post, url: "https://openai.url/v1/embeddings"} ->
+          send(self(), "posted_to_openai")
+
+          Tesla.Mock.json(%{
+            data: [%{embedding: [1, 2, 3]}]
+          })
 
         %{method: :put, url: "https://qdrant.url/collections/posts/points", body: body} ->
           send(self(), "posted_to_qdrant")
@@ -42,8 +45,8 @@ defmodule Pleroma.Search.QdrantSearchTest do
 
         [Pleroma.Search.QdrantSearch, key], nil ->
           %{
-            ollama_model: "a_model",
-            ollama_url: "https://ollama.url",
+            openai_model: "a_model",
+            openai_url: "https://openai.url",
             qdrant_url: "https://qdrant.url"
           }[key]
       end)
@@ -62,7 +65,7 @@ defmodule Pleroma.Search.QdrantSearchTest do
       )
 
       assert :ok = perform_job(SearchIndexingWorker, args)
-      assert_received("posted_to_ollama")
+      assert_received("posted_to_openai")
       assert_received("posted_to_qdrant")
 
       {:ok, _} = CommonAPI.delete(activity.id, user)

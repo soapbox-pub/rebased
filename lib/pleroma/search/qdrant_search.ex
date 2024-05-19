@@ -5,7 +5,7 @@ defmodule Pleroma.Search.QdrantSearch do
   alias Pleroma.Activity
   alias Pleroma.Config.Getting, as: Config
 
-  alias __MODULE__.OllamaClient
+  alias __MODULE__.OpenAIClient
   alias __MODULE__.QdrantClient
 
   import Pleroma.Search.Meilisearch, only: [object_to_search_data: 1]
@@ -31,10 +31,10 @@ defmodule Pleroma.Search.QdrantSearch do
   end
 
   def get_embedding(text) do
-    with {:ok, %{body: %{"embedding" => embedding}}} <-
-           OllamaClient.post("/api/embeddings", %{
-             prompt: text,
-             model: Config.get([Pleroma.Search.QdrantSearch, :ollama_model])
+    with {:ok, %{body: %{"data" => [%{"embedding" => embedding}]}}} <-
+           OpenAIClient.post("/v1/embeddings", %{
+             input: text,
+             model: Config.get([Pleroma.Search.QdrantSearch, :openai_model])
            }) do
       {:ok, embedding}
     else
@@ -119,12 +119,17 @@ defmodule Pleroma.Search.QdrantSearch do
   end
 end
 
-defmodule Pleroma.Search.QdrantSearch.OllamaClient do
+defmodule Pleroma.Search.QdrantSearch.OpenAIClient do
   use Tesla
   alias Pleroma.Config.Getting, as: Config
 
-  plug(Tesla.Middleware.BaseUrl, Config.get([Pleroma.Search.QdrantSearch, :ollama_url]))
+  plug(Tesla.Middleware.BaseUrl, Config.get([Pleroma.Search.QdrantSearch, :openai_url]))
   plug(Tesla.Middleware.JSON)
+
+  plug(Tesla.Middleware.Headers, [
+    {"Authorization",
+     "Bearer #{Pleroma.Config.get([Pleroma.Search.QdrantSearch, :openai_api_key])}"}
+  ])
 end
 
 defmodule Pleroma.Search.QdrantSearch.QdrantClient do
