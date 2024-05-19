@@ -16,9 +16,9 @@ This uses the vector search engine [Qdrant](https://qdrant.tech) to search the p
 
 The default settings will support a setup where both the fastembed server and Qdrant run on the same system as pleroma. To use it, set the search provider and run the fastembed server, see the README in `supplemental/search/fastembed-api`:
 
-https://qdrant.github.io/fastembed/examples/Supported_Models/
-
 > config :pleroma, Pleroma.Search, module: Pleroma.Search.QdrantSearch
+
+Then, start the Qdrant server, see [here](https://qdrant.tech/documentation/quick-start/) for instructions.
 
 You will also need to create the Qdrant index once by running `mix pleroma.search.indexer create_index`. Running `mix pleroma.search.indexer index` will retroactively index the last 100_000 activities.
 
