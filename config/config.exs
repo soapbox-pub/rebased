@@ -919,7 +919,7 @@ config :pleroma, Pleroma.Search.QdrantSearch,
   qdrant_url: "http://127.0.0.1:6333/",
   qdrant_api_key: "",
   openai_url: "http://127.0.0.1:11345",
-  openai_model: "snowflake",
+  openai_model: "snowflake/snowflake-arctic-embed-xs",
   openai_api_key: "",
   qdrant_index_configuration: %{
     vectors: %{size: 384, distance: "Cosine"}
