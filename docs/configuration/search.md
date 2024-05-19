@@ -12,9 +12,9 @@ While it has no external dependencies, it has problems with performance and rele
 
 ## QdrantSearch
 
-This uses the vector search engine [Qdrant](https://qdrant.tech) to search the posts in a vector space. This needs a way to generate embeddings, for now only the [Ollama](Ollama) api is supported.
+This uses the vector search engine [Qdrant](https://qdrant.tech) to search the posts in a vector space. This needs a way to generate embeddings and uses the [OpenAI API](https://platform.openai.com/docs/guides/embeddings/what-are-embeddings). This is implemented by several project besides OpenAI itself, including the python-based fastembed-server found in `supplemental/search/fastembed-api`.
 
-The default settings will support a setup where both Ollama and Qdrant run on the same system as pleroma. The embedding model used by Ollama will need to be pulled first (e.g. `ollama pull snowflake-arctic-embed:xs`) for the embedding to work.
+The default settings will support a setup where both the fastembed server and Qdrant run on the same system as pleroma.
 
 ## Meilisearch
 
