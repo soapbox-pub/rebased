@@ -321,7 +321,7 @@ defmodule Pleroma.ConfigDBTest do
              }) == {:proxy_url, {:socks5, {127, 0, 0, 1}, 1234}}
     end
 
-    test "tuple with n childs" do
+    test "tuple with n children" do
       assert ConfigDB.to_elixir_types(%{
                "tuple" => [
                  "v1",
@@ -399,7 +399,7 @@ defmodule Pleroma.ConfigDBTest do
       assert ConfigDB.to_elixir_types(a: 1, b: 2, c: "string") == [a: 1, b: 2, c: "string"]
     end
 
-    test "complex keyword with nested mixed childs" do
+    test "complex keyword with nested mixed children" do
       assert ConfigDB.to_elixir_types([
                %{"tuple" => [":uploader", "Pleroma.Uploaders.Local"]},
                %{"tuple" => [":filters", ["Pleroma.Upload.Filter.Dedupe"]]},

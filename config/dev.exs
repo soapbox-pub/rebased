@@ -8,8 +8,7 @@ import Config
 # with brunch.io to recompile .js and .css sources.
 config :pleroma, Pleroma.Web.Endpoint,
   http: [
-    port: 4000,
-    protocol_options: [max_request_line_length: 8192, max_header_value_length: 8192]
+    port: 4000
   ],
   protocol: "http",
   debug_errors: true,

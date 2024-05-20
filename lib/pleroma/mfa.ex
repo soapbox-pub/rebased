@@ -77,7 +77,7 @@ defmodule Pleroma.MFA do
       {:ok, codes}
     else
       {:error, msg} ->
-        %{error: msg}
+        {:error, msg}
     end
   end
 

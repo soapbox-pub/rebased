@@ -39,7 +39,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
         Operation.parameter(
           :with_muted,
           :query,
-          BooleanLike,
+          BooleanLike.schema(),
           "Include reactions from muted acccounts."
         )
       ],
@@ -82,7 +82,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
         Operation.parameter(
           :with_muted,
           :query,
-          BooleanLike,
+          BooleanLike.schema(),
           "Include reactions from muted acccounts."
         )
       ],
@@ -256,6 +256,18 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
       description: "Privately bookmark a status",
       operationId: "StatusController.bookmark",
       parameters: [id_param()],
+      requestBody:
+        request_body("Parameters", %Schema{
+          title: "StatusUpdateRequest",
+          type: :object,
+          properties: %{
+            folder_id: %Schema{
+              nullable: true,
+              allOf: [FlakeID],
+              description: "ID of bookmarks folder, if any"
+            }
+          }
+        }),
       responses: %{
         200 => status_response()
       }
@@ -430,7 +442,15 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
       summary: "Bookmarked statuses",
       description: "Statuses the user has bookmarked",
       operationId: "StatusController.bookmarks",
-      parameters: pagination_params(),
+      parameters: [
+        Operation.parameter(
+          :folder_id,
+          :query,
+          FlakeID.schema(),
+          "If provided, only display bookmarks from given folder"
+        )
+        | pagination_params()
+      ],
       security: [%{"oAuth" => ["read:bookmarks"]}],
       responses: %{
         200 => Operation.response("Array of Statuses", "application/json", array_of_statuses())
@@ -534,7 +554,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           format: :"date-time",
           nullable: true,
           description:
-            "ISO 8601 Datetime at which to schedule a status. Providing this paramter will cause ScheduledStatus to be returned instead of Status. Must be at least 5 minutes in the future."
+            "ISO 8601 Datetime at which to schedule a status. Providing this parameter will cause ScheduledStatus to be returned instead of Status. Must be at least 5 minutes in the future."
         },
         language: %Schema{
           type: :string,
@@ -546,7 +566,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           allOf: [BooleanLike],
           nullable: true,
           description:
-            "If set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example"
+            "If set to `true` the post won't be actually posted, but the status entity would still be rendered back. This could be useful for previewing rich text/custom emoji, for example"
         },
         content_type: %Schema{
           type: :string,
@@ -685,7 +705,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
   end
 
   def id_param do
-    Operation.parameter(:id, :path, FlakeID, "Status ID",
+    Operation.parameter(:id, :path, FlakeID.schema(), "Status ID",
       example: "9umDrYheeY451cQnEe",
       required: true
     )

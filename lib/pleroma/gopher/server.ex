@@ -114,7 +114,7 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
 
   def response("/notices/" <> id) do
     with %Activity{} = activity <- Activity.get_by_id(id),
-         true <- Visibility.is_public?(activity) do
+         true <- Visibility.public?(activity) do
       activities =
         ActivityPub.fetch_activities_for_context(activity.data["context"])
         |> render_activities

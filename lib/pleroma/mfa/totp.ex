@@ -14,6 +14,7 @@ defmodule Pleroma.MFA.TOTP do
   @doc """
   https://github.com/google/google-authenticator/wiki/Key-Uri-Format
   """
+  @spec provisioning_uri(String.t(), String.t(), list()) :: String.t()
   def provisioning_uri(secret, label, opts \\ []) do
     query =
       %{
@@ -27,7 +28,7 @@ defmodule Pleroma.MFA.TOTP do
       |> URI.encode_query()
 
     %URI{scheme: "otpauth", host: "totp", path: "/" <> label, query: query}
-    |> URI.to_string()
+    |> to_string()
   end
 
   defp default_period, do: Config.get(@config_ns ++ [:period])

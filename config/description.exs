@@ -567,6 +567,20 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :status_page,
+        type: :string,
+        description: "A page where people can see the status of the server during an outage",
+        suggestions: [
+          "https://status.pleroma.example.org"
+        ]
+      },
+      %{
+        key: :contact_username,
+        type: :string,
+        description: "Instance owner username",
+        suggestions: ["admin"]
+      },
+      %{
         key: :limit,
         type: :integer,
         description: "Posts character limit (CW/Subject included in the counter)",
@@ -1444,7 +1458,7 @@ config :pleroma, :config_description, [
             label: "Subject line behavior",
             type: :string,
             description: "Allows changing the default behaviour of subject lines in replies.
-          `email`: copy and preprend re:, as in email,
+          `email`: copy and prepend re:, as in email,
           `masto`: copy verbatim, as in Mastodon,
           `noop`: don't copy the subject.",
             suggestions: ["email", "masto", "noop"]
@@ -3096,7 +3110,7 @@ config :pleroma, :config_description, [
               key: :max_waiting,
               type: :integer,
               description:
-                "Maximum number of requests waiting for other requests to finish. After this number is reached, the pool will start returning errrors when a new request is made",
+                "Maximum number of requests waiting for other requests to finish. After this number is reached, the pool will start returning errors when a new request is made",
               suggestions: [10]
             },
             %{
@@ -3362,7 +3376,7 @@ config :pleroma, :config_description, [
       %{
         key: :purge_after_days,
         type: :integer,
-        description: "Remove backup achives after N days",
+        description: "Remove backup archives after N days",
         suggestions: [30]
       },
       %{
@@ -3508,7 +3522,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :initial_indexing_chunk_size,
-        type: :int,
+        type: :integer,
         description:
           "Amount of posts in a batch when running the initial indexing operation. Should probably not be more than 100000" <>
             " since there's a limit on maximum insert size",

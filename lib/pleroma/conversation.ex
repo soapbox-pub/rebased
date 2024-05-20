@@ -57,7 +57,7 @@ defmodule Pleroma.Conversation do
   3. Bump all relevant participations to 'unread'
   """
   def create_or_bump_for(activity, opts \\ []) do
-    with true <- Pleroma.Web.ActivityPub.Visibility.is_direct?(activity),
+    with true <- Pleroma.Web.ActivityPub.Visibility.direct?(activity),
          "Create" <- activity.data["type"],
          %Object{} = object <- Object.normalize(activity, fetch: false),
          true <- object.data["type"] in ["Note", "Question"],

@@ -91,6 +91,13 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     assert %{"alsoKnownAs" => ^akas} = UserView.render("user.json", %{user: user})
   end
 
+  test "renders full nickname" do
+    clear_config([Pleroma.Web.WebFinger, :domain], "plemora.dev")
+
+    user = insert(:user, nickname: "user")
+    assert %{"webfinger" => "acct:user@plemora.dev"} = UserView.render("user.json", %{user: user})
+  end
+
   describe "endpoints" do
     test "local users have a usable endpoints structure" do
       user = insert(:user)

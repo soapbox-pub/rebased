@@ -303,7 +303,7 @@ Removes the user(s) from follower recommendations.
 
 ## `GET /api/v1/pleroma/admin/users/:nickname_or_id`
 
-### Retrive the details of a user
+### Retrieve the details of a user
 
 - Params:
   - `nickname` or `id`
@@ -313,7 +313,7 @@ Removes the user(s) from follower recommendations.
 
 ## `GET /api/v1/pleroma/admin/users/:nickname_or_id/statuses`
 
-### Retrive user's latest statuses
+### Retrieve user's latest statuses
 
 - Params:
   - `nickname` or `id`
@@ -337,7 +337,7 @@ Removes the user(s) from follower recommendations.
 
 ## `GET /api/v1/pleroma/admin/instances/:instance/statuses`
 
-### Retrive instance's latest statuses
+### Retrieve instance's latest statuses
 
 - Params:
   - `instance`: instance name
@@ -377,7 +377,7 @@ It may take some time.
 
 ## `GET /api/v1/pleroma/admin/statuses`
 
-### Retrives all latest statuses
+### Retrieves all latest statuses
 
 - Params:
   - *optional* `page_size`: number of statuses to return (default is `20`)
@@ -541,7 +541,7 @@ Response:
 
 ## `PATCH /api/v1/pleroma/admin/users/force_password_reset`
 
-### Force passord reset for a user with a given nickname
+### Force password reset for a user with a given nickname
 
 - Params:
   - `nicknames`
@@ -1745,6 +1745,56 @@ Note that this differs from the Mastodon API variant: Mastodon API only returns 
 ## `DELETE /api/v1/pleroma/admin/announcements/:id`
 
 ### Delete an announcement
+
+- Response: JSON, empty object
+
+```json
+{}
+```
+
+
+## `GET /api/v1/pleroma/admin/rules`
+
+### List rules
+
+- Response: JSON, list of rules
+
+```json
+[
+  {
+    "id": "1",
+    "priority": 1,
+    "text": "There are no rules",
+    "hint": null
+  }
+]
+```
+
+## `POST /api/v1/pleroma/admin/rules`
+
+### Create a rule
+
+- Params:
+  - `text`: string, required, rule content
+  - `hint`: string, optional, rule description
+  - `priority`: integer, optional, rule ordering priority
+
+- Response: JSON, a single rule
+
+## `PATCH /api/v1/pleroma/admin/rules/:id`
+
+### Update a rule
+
+- Params:
+  - `text`: string, optional, rule content
+  - `hint`: string, optional, rule description
+  - `priority`: integer, optional, rule ordering priority
+
+- Response: JSON, a single rule
+
+## `DELETE /api/v1/pleroma/admin/rules/:id`
+
+### Delete a rule
 
 - Response: JSON, empty object
 

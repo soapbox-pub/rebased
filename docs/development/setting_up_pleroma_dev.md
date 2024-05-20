@@ -15,7 +15,7 @@ Pleroma requires some adjustments from the defaults for running the instance loc
 2. Change the dev.secret.exs
     * Change the scheme in `config :pleroma, Pleroma.Web.Endpoint` to http (see examples below)
     * If you want to change other settings, you can do that too
-3. You can now start the server `mix phx.server`. Once it's build and started, you can access the instance on `http://<host>:<port>` (e.g.http://localhost:4000 ) and should be able to do everything locally you normaly can.
+3. You can now start the server `mix phx.server`. Once it's build and started, you can access the instance on `http://<host>:<port>` (e.g.http://localhost:4000 ) and should be able to do everything locally you normally can.
 
 Example config to change the scheme to http. Change the port if you want to run on another port.
 ```elixir

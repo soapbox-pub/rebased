@@ -14,10 +14,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidator do
 
     embeds_one :replies, Replies, primary_key: false do
       field(:totalItems, :integer)
-      field(:type, :string)
+      field(:type, :string, default: "Collection")
     end
 
-    field(:type, :string)
+    field(:type, :string, default: "Note")
   end
 
   def changeset(struct, data) do

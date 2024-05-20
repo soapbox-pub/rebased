@@ -23,19 +23,12 @@ defmodule Pleroma.Search.DatabaseSearch do
     offset = Keyword.get(options, :offset, 0)
     author = Keyword.get(options, :author)
 
-    search_function =
-      if :persistent_term.get({Pleroma.Repo, :postgres_version}) >= 11 do
-        :websearch
-      else
-        :plain
-      end
-
     try do
       Activity
       |> Activity.with_preloaded_object()
       |> Activity.restrict_deactivated_users()
       |> restrict_public(user)
-      |> query_with(index_type, search_query, search_function)
+      |> query_with(index_type, search_query, :websearch)
       |> maybe_restrict_local(user)
       |> maybe_restrict_author(author)
       |> maybe_restrict_blocked(user)

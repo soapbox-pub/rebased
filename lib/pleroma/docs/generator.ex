@@ -15,7 +15,7 @@ defmodule Pleroma.Docs.Generator do
     :code.all_loaded()
     |> Enum.filter(fn {module, _} ->
       # This shouldn't be needed as all modules are expected to have module_info/1,
-      # but in test enviroments some transient modules `:elixir_compiler_XX`
+      # but in test environments some transient modules `:elixir_compiler_XX`
       # are loaded for some reason (where XX is a random integer).
       Code.ensure_loaded(module)
 

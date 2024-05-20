@@ -182,7 +182,7 @@ defmodule Pleroma.Web.Router do
   end
 
   pipeline :well_known do
-    plug(:accepts, ["json", "jrd+json", "xml", "xrd+xml"])
+    plug(:accepts, ["json", "jrd", "jrd+json", "xml", "xrd+xml"])
   end
 
   pipeline :config do
@@ -292,6 +292,11 @@ defmodule Pleroma.Web.Router do
     post("/frontends/install", FrontendController, :install)
 
     post("/backups", AdminAPIController, :create_backup)
+
+    get("/rules", RuleController, :index)
+    post("/rules", RuleController, :create)
+    patch("/rules/:id", RuleController, :update)
+    delete("/rules/:id", RuleController, :delete)
   end
 
   # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
@@ -481,7 +486,7 @@ defmodule Pleroma.Web.Router do
     post("/change_email", UtilController, :change_email)
     post("/change_password", UtilController, :change_password)
     post("/delete_account", UtilController, :delete_account)
-    put("/notification_settings", UtilController, :update_notificaton_settings)
+    put("/notification_settings", UtilController, :update_notification_settings)
     post("/disable_account", UtilController, :disable_account)
     post("/move_account", UtilController, :move_account)
 
@@ -580,6 +585,11 @@ defmodule Pleroma.Web.Router do
 
       get("/backups", BackupController, :index)
       post("/backups", BackupController, :create)
+
+      get("/bookmark_folders", BookmarkFolderController, :index)
+      post("/bookmark_folders", BookmarkFolderController, :create)
+      patch("/bookmark_folders/:id", BookmarkFolderController, :update)
+      delete("/bookmark_folders/:id", BookmarkFolderController, :delete)
     end
 
     scope [] do
@@ -628,6 +638,7 @@ defmodule Pleroma.Web.Router do
     patch("/accounts/update_credentials", AccountController, :update_credentials)
 
     get("/accounts/relationships", AccountController, :relationships)
+    get("/accounts/familiar_followers", AccountController, :familiar_followers)
     get("/accounts/:id/lists", AccountController, :lists)
     get("/accounts/:id/identity_proofs", AccountController, :identity_proofs)
     get("/endorsements", AccountController, :endorsements)
@@ -759,11 +770,11 @@ defmodule Pleroma.Web.Router do
 
     get("/instance", InstanceController, :show)
     get("/instance/peers", InstanceController, :peers)
+    get("/instance/rules", InstanceController, :rules)
 
     get("/statuses", StatusController, :index)
     get("/statuses/:id", StatusController, :show)
     get("/statuses/:id/context", StatusController, :context)
-    get("/statuses/:id/card", StatusController, :card)
     get("/statuses/:id/favourited_by", StatusController, :favourited_by)
     get("/statuses/:id/reblogged_by", StatusController, :reblogged_by)
     get("/statuses/:id/history", StatusController, :show_history)
@@ -783,11 +794,14 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/v2", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
+
     get("/search", SearchController, :search2)
 
     post("/media", MediaController, :create2)
 
     get("/suggestions", SuggestionController, :index2)
+
+    get("/instance", InstanceController, :show2)
   end
 
   scope "/api", Pleroma.Web do

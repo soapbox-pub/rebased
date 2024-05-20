@@ -12,6 +12,8 @@ defmodule Pleroma.Helpers.MediaHelper do
 
   require Logger
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   def missing_dependencies do
     Enum.reduce([ffmpeg: "ffmpeg"], [], fn {sym, executable}, acc ->
       if Pleroma.Utils.command_available?(executable) do
@@ -40,92 +42,46 @@ defmodule Pleroma.Helpers.MediaHelper do
   end
 
   # Note: video thumbnail is intentionally not resized (always has original dimensions)
+  @spec video_framegrab(String.t()) :: {:ok, binary()} | {:error, any()}
   def video_framegrab(url) do
     with executable when is_binary(executable) <- System.find_executable("ffmpeg"),
+         false <- @cachex.exists?(:failed_media_helper_cache, url),
          {:ok, env} <- HTTP.get(url, [], pool: :media),
-         {:ok, fifo_path} <- mkfifo(),
-         args = [
-           "-y",
-           "-i",
-           fifo_path,
-           "-vframes",
-           "1",
-           "-f",
-           "mjpeg",
-           "-loglevel",
-           "error",
-           "-"
-         ] do
-      run_fifo(fifo_path, env, executable, args)
+         {:ok, pid} <- StringIO.open(env.body) do
+      body_stream = IO.binstream(pid, 1)
+
+      task =
+        Task.async(fn ->
+          Exile.stream!(
+            [
+              executable,
+              "-i",
+              "pipe:0",
+              "-vframes",
+              "1",
+              "-f",
+              "mjpeg",
+              "pipe:1"
+            ],
+            input: body_stream,
+            ignore_epipe: true,
+            stderr: :disable
+          )
+          |> Enum.into(<<>>)
+        end)
+
+      case Task.yield(task, 5_000) do
+        nil ->
+          Task.shutdown(task)
+          @cachex.put(:failed_media_helper_cache, url, nil)
+          {:error, {:ffmpeg, :timeout}}
+
+        result ->
+          {:ok, result}
+      end
     else
       nil -> {:error, {:ffmpeg, :command_not_found}}
       {:error, _} = error -> error
-    end
-  end
-
-  defp run_fifo(fifo_path, env, executable, args) do
-    pid =
-      Port.open({:spawn_executable, executable}, [
-        :use_stdio,
-        :stream,
-        :exit_status,
-        :binary,
-        args: args
-      ])
-
-    fifo = Port.open(to_charlist(fifo_path), [:eof, :binary, :stream, :out])
-    fix = Pleroma.Helpers.QtFastStart.fix(env.body)
-    true = Port.command(fifo, fix)
-    :erlang.port_close(fifo)
-    loop_recv(pid)
-  after
-    File.rm(fifo_path)
-  end
-
-  defp mkfifo do
-    path = Path.join(System.tmp_dir!(), "pleroma-media-preview-pipe-#{Ecto.UUID.generate()}")
-
-    case System.cmd("mkfifo", [path]) do
-      {_, 0} ->
-        spawn(fifo_guard(path))
-        {:ok, path}
-
-      {_, err} ->
-        {:error, {:fifo_failed, err}}
-    end
-  end
-
-  defp fifo_guard(path) do
-    pid = self()
-
-    fn ->
-      ref = Process.monitor(pid)
-
-      receive do
-        {:DOWN, ^ref, :process, ^pid, _} ->
-          File.rm(path)
-      end
-    end
-  end
-
-  defp loop_recv(pid) do
-    loop_recv(pid, <<>>)
-  end
-
-  defp loop_recv(pid, acc) do
-    receive do
-      {^pid, {:data, data}} ->
-        loop_recv(pid, acc <> data)
-
-      {^pid, {:exit_status, 0}} ->
-        {:ok, acc}
-
-      {^pid, {:exit_status, status}} ->
-        {:error, status}
-    after
-      5000 ->
-        :erlang.port_close(pid)
-        {:error, :timeout}
     end
   end
 end

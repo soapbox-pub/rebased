@@ -4,12 +4,13 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.6.51"),
+      version: version("2.6.52"),
       elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: Mix.compilers(),
       elixirc_options: [warnings_as_errors: warnings_as_errors()],
       xref: [exclude: [:eldap]],
+      dialyzer: [plt_add_apps: [:mix, :eldap]],
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
@@ -136,7 +137,7 @@ defmodule Pleroma.Mixfile do
       {:calendar, "~> 1.0"},
       {:cachex, "~> 3.2"},
       {:poison, "~> 3.0", override: true},
-      {:tesla, "~> 1.4.0", override: true},
+      {:tesla, "~> 1.8.0"},
       {:castore, "~> 0.1"},
       {:cowlib, "~> 2.9", override: true},
       {:gun, "~> 2.0.0-rc.1", override: true},
@@ -156,11 +157,11 @@ defmodule Pleroma.Mixfile do
       {:phoenix_swoosh, "~> 1.1"},
       {:gen_smtp, "~> 0.13"},
       {:ex_syslogger, "~> 1.4"},
-      {:floki, "~> 0.27"},
+      {:floki, "~> 0.35"},
       {:timex, "~> 3.6"},
       {:ueberauth, "~> 0.4"},
       {:linkify, "~> 0.5.3"},
-      {:http_signatures, "~> 0.1.1"},
+      {:http_signatures, "~> 0.1.2"},
       {:telemetry, "~> 1.0.0", override: true},
       {:poolboy, "~> 1.5"},
       {:prom_ex, "~> 1.9"},
@@ -184,6 +185,10 @@ defmodule Pleroma.Mixfile do
       {:vix, "~> 0.26.0"},
       {:elixir_make, "~> 0.7.7", override: true},
       {:blurhash, "~> 0.1.0", hex: :rinpatch_blurhash},
+      {:exile,
+       git: "https://github.com/akash-akya/exile.git",
+       ref: "be87c33b02a7c3c5d22d2ece01fbd462355b28ef"},
+      {:bandit, "~> 1.2"},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
@@ -194,7 +199,8 @@ defmodule Pleroma.Mixfile do
       {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
       {:websockex, "~> 0.4.3", only: :test},
-      {:benchee, "~> 1.0", only: :benchmark}
+      {:benchee, "~> 1.0", only: :benchmark},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ] ++ oauth_deps()
   end
 

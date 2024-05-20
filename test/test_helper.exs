@@ -4,7 +4,15 @@
 
 Code.put_compiler_option(:warnings_as_errors, true)
 
+ExUnit.configure(max_cases: System.schedulers_online())
+
 ExUnit.start(exclude: [:federated, :erratic])
+
+if match?({:unix, :darwin}, :os.type()) do
+  excluded = ExUnit.configuration() |> Keyword.get(:exclude, [])
+  excluded = excluded ++ [:skip_darwin]
+  ExUnit.configure(exclude: excluded)
+end
 
 Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, :manual)
 

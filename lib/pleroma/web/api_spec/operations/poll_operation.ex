@@ -47,7 +47,7 @@ defmodule Pleroma.Web.ApiSpec.PollOperation do
   end
 
   defp id_param do
-    Operation.parameter(:id, :path, FlakeID, "Poll ID",
+    Operation.parameter(:id, :path, FlakeID.schema(), "Poll ID",
       example: "123",
       required: true
     )
