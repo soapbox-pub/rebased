@@ -169,7 +169,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, modified} = Transmogrifier.prepare_outgoing(announce_activity.data)
 
       assert modified["object"]["content"] == "hey"
-      assert activity.actor == modified["object"]["attributedTo"]
+      assert modified["object"]["actor"] == modified["object"]["attributedTo"]
     end
 
     test "it turns mentions into tags" do
@@ -220,7 +220,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
-      assert activity.actor == modified["object"]["attributedTo"]
+      assert modified["object"]["actor"] == modified["object"]["attributedTo"]
     end
 
     test "it strips internal hashtag data" do
@@ -266,7 +266,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
       assert is_nil(modified["object"]["generator"])
-      assert is_nil(modified["object"]["actor"])
     end
 
     test "it strips internal fields of article" do

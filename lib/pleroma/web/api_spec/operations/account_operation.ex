@@ -524,9 +524,10 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   def familiar_followers_operation do
     %Operation{
       tags: ["Retrieve account information"],
-      summary: "Followers you know",
-      operationId: "AccountController.relationships",
-      description: "Returns followers of given account you know.",
+      summary: "Followers that you follow",
+      operationId: "AccountController.familiar_followers",
+      description:
+        "Obtain a list of all accounts that follow a given account, filtered for accounts you follow.",
       security: [%{"oAuth" => ["read:follows"]}],
       parameters: [
         Operation.parameter(

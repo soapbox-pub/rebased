@@ -1,10 +1,10 @@
 {
-  "actor": "http://mastodon.example.org/users/admin",
-  "id": "http://mastodon.example.org/objects/1",
+  "actor": "http://2hu.gensokyo/users/raymoo",
+  "id": "http://2hu.gensokyo/objects/1",
   "object": {
-    "attributedTo": "http://mastodon.example.org/users/admin",
+    "attributedTo": "http://2hu.gensokyo/users/raymoo",
     "content": "You expected a cute girl? Too bad. <script>alert('XSS')</script>",
-    "id": "http://mastodon.example.org/objects/2",
+    "id": "http://2hu.gensokyo/objects/2",
     "published": "2020-02-12T14:08:20Z",
     "to": [
       "http://2hu.gensokyo/users/marisa"

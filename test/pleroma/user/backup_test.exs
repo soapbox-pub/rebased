@@ -230,6 +230,7 @@ defmodule Pleroma.User.BackupTest do
              "orderedItems" => [
                %{
                  "object" => %{
+                   "actor" => "http://cofe.io/users/cofe",
                    "content" => "status1",
                    "type" => "Note"
                  },
@@ -237,6 +238,7 @@ defmodule Pleroma.User.BackupTest do
                },
                %{
                  "object" => %{
+                   "actor" => "http://cofe.io/users/cofe",
                    "content" => "status2"
                  }
                },

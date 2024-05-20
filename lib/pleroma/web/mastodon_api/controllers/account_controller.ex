@@ -643,7 +643,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   @doc "GET /api/v1/accounts/familiar_followers"
   def familiar_followers(
         %{assigns: %{user: user}, private: %{open_api_spex: %{params: %{id: id}}}} = conn,
-        _
+        _id
       ) do
     users =
       User.get_all_by_ids(List.wrap(id))

@@ -28,6 +28,7 @@ defmodule Pleroma.ApplicationRequirements do
     |> check_welcome_message_config!()
     |> check_rum!()
     |> check_repo_pool_size!()
+    |> check_mrfs()
     |> handle_result()
   end
 
@@ -268,4 +269,25 @@ defmodule Pleroma.ApplicationRequirements do
       true
     end
   end
+
+  defp check_mrfs(:ok) do
+    mrfs = Config.get!([:mrf, :policies])
+
+    missing_mrfs =
+      Enum.reduce(mrfs, [], fn x, acc ->
+        if Code.ensure_compiled(x) do
+          acc
+        else
+          acc ++ [x]
+        end
+      end)
+
+    if Enum.empty?(missing_mrfs) do
+      :ok
+    else
+      {:error, "The following MRF modules are configured but missing: #{inspect(missing_mrfs)}"}
+    end
+  end
+
+  defp check_mrfs(result), do: result
 end
