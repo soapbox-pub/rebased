@@ -38,7 +38,7 @@ indexes faster when it can process many posts in a single batch.
 Information about setting up meilisearch can be found in the
 [official documentation](https://docs.meilisearch.com/learn/getting_started/installation.html).
 You probably want to start it with `MEILI_NO_ANALYTICS=true` environment variable to disable analytics.
-At least version 0.25.0 is required, but you are strongly adviced to use at least 0.26.0, as it introduces
+At least version 0.25.0 is required, but you are strongly advised to use at least 0.26.0, as it introduces
 the `--enable-auto-batching` option which drastically improves performance. Without this option, the search
 is hardly usable on a somewhat big instance.
 
@@ -61,7 +61,7 @@ You will see a "Default Admin API Key", this is the key you actually put into yo
 
 ### Initial indexing
 
-After setting up the configuration, you'll want to index all of your already existsing posts. Only public posts are indexed.  You'll only
+After setting up the configuration, you'll want to index all of your already existing posts. Only public posts are indexed.  You'll only
 have to do it one time, but it might take a while, depending on the amount of posts your instance has seen. This is also a fairly RAM
 consuming process for `meilisearch`, and it will take a lot of RAM when running if you have a lot of posts (seems to be around 5G for ~1.2
 million posts while idle and up to 7G while indexing initially, but your experience may be different).

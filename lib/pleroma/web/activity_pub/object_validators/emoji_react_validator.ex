@@ -74,10 +74,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
     new_emoji = Pleroma.Emoji.fully_qualify_emoji(emoji)
 
     cond do
-      Pleroma.Emoji.is_unicode_emoji?(emoji) ->
+      Pleroma.Emoji.unicode?(emoji) ->
         data
 
-      Pleroma.Emoji.is_unicode_emoji?(new_emoji) ->
+      Pleroma.Emoji.unicode?(new_emoji) ->
         data |> Map.put("content", new_emoji)
 
       true ->
@@ -90,7 +90,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
   defp validate_emoji(cng) do
     content = get_field(cng, :content)
 
-    if Emoji.is_unicode_emoji?(content) || Emoji.is_custom_emoji?(content) do
+    if Emoji.unicode?(content) || Emoji.custom?(content) do
       cng
     else
       cng
@@ -101,7 +101,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
   defp maybe_validate_tag_presence(cng) do
     content = get_field(cng, :content)
 
-    if Emoji.is_unicode_emoji?(content) do
+    if Emoji.unicode?(content) do
       cng
     else
       tag = get_field(cng, :tag)

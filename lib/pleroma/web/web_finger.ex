@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.WebFinger do
   alias Pleroma.HTTP
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Publisher
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Web.XML
   alias Pleroma.XmlBuilder
   require Jason
@@ -70,7 +70,7 @@ defmodule Pleroma.Web.WebFinger do
 
   def represent_user(user, "JSON") do
     %{
-      "subject" => "acct:#{user.nickname}@#{domain()}",
+      "subject" => "acct:#{user.nickname}@#{host()}",
       "aliases" => gather_aliases(user),
       "links" => gather_links(user)
     }
@@ -90,13 +90,13 @@ defmodule Pleroma.Web.WebFinger do
       :XRD,
       %{xmlns: "http://docs.oasis-open.org/ns/xri/xrd-1.0"},
       [
-        {:Subject, "acct:#{user.nickname}@#{domain()}"}
+        {:Subject, "acct:#{user.nickname}@#{host()}"}
       ] ++ aliases ++ links
     }
     |> XmlBuilder.to_doc()
   end
 
-  defp domain do
+  def host do
     Pleroma.Config.get([__MODULE__, :domain]) || Pleroma.Web.Endpoint.host()
   end
 
@@ -163,7 +163,7 @@ defmodule Pleroma.Web.WebFinger do
       get_template_from_xml(body)
     else
       error ->
-        Logger.warn("Can't find LRDD template in #{inspect(meta_url)}: #{inspect(error)}")
+        Logger.warning("Can't find LRDD template in #{inspect(meta_url)}: #{inspect(error)}")
         {:error, :lrdd_not_found}
     end
   end

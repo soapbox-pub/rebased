@@ -9,10 +9,14 @@ defmodule Pleroma.User.BackupTest do
   import Mock
   import Pleroma.Factory
   import Swoosh.TestAssertions
+  import Mox
 
   alias Pleroma.Bookmark
   alias Pleroma.Tests.ObanHelpers
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
+  alias Pleroma.Uploaders.S3.ExAwsMock
   alias Pleroma.User.Backup
+  alias Pleroma.User.Backup.ProcessorMock
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Workers.BackupWorker
 
@@ -20,6 +24,14 @@ defmodule Pleroma.User.BackupTest do
     clear_config([Pleroma.Upload, :uploader])
     clear_config([Backup, :limit_days])
     clear_config([Pleroma.Emails.Mailer, :enabled], true)
+
+    ConfigMock
+    |> stub_with(Pleroma.Config)
+
+    ProcessorMock
+    |> stub_with(Pleroma.User.Backup.Processor)
+
+    :ok
   end
 
   test "it does not requrie enabled email" do
@@ -154,6 +166,7 @@ defmodule Pleroma.User.BackupTest do
 
   test "it creates a zip archive with user data" do
     user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
+    %{ap_id: other_ap_id} = other_user = insert(:user)
 
     {:ok, %{object: %{data: %{"id" => id1}}} = status1} =
       CommonAPI.post(user, %{status: "status1"})
@@ -169,6 +182,8 @@ defmodule Pleroma.User.BackupTest do
 
     Bookmark.create(user.id, status2.id)
     Bookmark.create(user.id, status3.id)
+
+    CommonAPI.follow(user, other_user)
 
     assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
     assert {:ok, path} = Backup.export(backup, self())
@@ -249,6 +264,16 @@ defmodule Pleroma.User.BackupTest do
              "type" => "OrderedCollection"
            } = Jason.decode!(json)
 
+    assert {:ok, {'following.json', json}} = :zip.zip_get('following.json', zipfile)
+
+    assert %{
+             "@context" => "https://www.w3.org/ns/activitystreams",
+             "id" => "following.json",
+             "orderedItems" => [^other_ap_id],
+             "totalItems" => 1,
+             "type" => "OrderedCollection"
+           } = Jason.decode!(json)
+
     :zip.zip_close(zipfile)
     File.rm!(path)
   end
@@ -302,24 +327,6 @@ defmodule Pleroma.User.BackupTest do
     end
   end
 
-  test "it handles unrecoverable exceptions" do
-    user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
-
-    assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
-
-    with_mock Backup, [:passthrough], do_process: fn _, _ -> raise "mock exception" end do
-      {:error, %{backup: backup, reason: :exit}} = Backup.process(backup)
-
-      assert backup.state == :failed
-    end
-
-    with_mock Backup, [:passthrough], do_process: fn _, _ -> Process.sleep(:timer.seconds(32)) end do
-      {:error, %{backup: backup, reason: :timeout}} = Backup.process(backup)
-
-      assert backup.state == :failed
-    end
-  end
-
   describe "it uploads and deletes a backup archive" do
     setup do
       clear_config([Pleroma.Upload, :base_url], "https://s3.amazonaws.com")
@@ -345,14 +352,14 @@ defmodule Pleroma.User.BackupTest do
       clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.S3)
       clear_config([Pleroma.Uploaders.S3, :streaming_enabled], false)
 
-      with_mock ExAws,
-        request: fn
-          %{http_method: :put} -> {:ok, :ok}
-          %{http_method: :delete} -> {:ok, %{status_code: 204}}
-        end do
-        assert {:ok, %Pleroma.Upload{}} = Backup.upload(backup, path)
-        assert {:ok, _backup} = Backup.delete(backup)
-      end
+      ExAwsMock
+      |> expect(:request, 2, fn
+        %{http_method: :put} -> {:ok, :ok}
+        %{http_method: :delete} -> {:ok, %{status_code: 204}}
+      end)
+
+      assert {:ok, %Pleroma.Upload{}} = Backup.upload(backup, path)
+      assert {:ok, _backup} = Backup.delete(backup)
     end
 
     test "Local", %{path: path, backup: backup} do

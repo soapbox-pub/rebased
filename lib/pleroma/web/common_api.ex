@@ -8,6 +8,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Formatter
   alias Pleroma.ModerationLog
   alias Pleroma.Object
+  alias Pleroma.Rule
   alias Pleroma.ThreadMute
   alias Pleroma.User
   alias Pleroma.UserRelationship
@@ -372,7 +373,7 @@ defmodule Pleroma.Web.CommonAPI do
       do: visibility in ~w(public unlisted)
 
   def public_announce?(object, _) do
-    Visibility.is_public?(object)
+    Visibility.public?(object)
   end
 
   def get_visibility(_, _, %Participation{}), do: {"direct", "direct"}
@@ -500,12 +501,12 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   defp activity_is_public(activity) do
-    with false <- Visibility.is_public?(activity) do
+    with false <- Visibility.public?(activity) do
       {:error, :visibility_error}
     end
   end
 
-  @spec unpin(String.t(), User.t()) :: {:ok, User.t()} | {:error, term()}
+  @spec unpin(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, term()}
   def unpin(id, user) do
     with %Activity{} = activity <- create_activity_by_id(id),
          {:ok, unpin_data, _} <- Builder.unpin(user, activity.object),
@@ -550,7 +551,7 @@ defmodule Pleroma.Web.CommonAPI do
       remove_mute(user, activity)
     else
       {what, result} = error ->
-        Logger.warn(
+        Logger.warning(
           "CommonAPI.remove_mute/2 failed. #{what}: #{result}, user_id: #{user_id}, activity_id: #{activity_id}"
         )
 
@@ -568,14 +569,16 @@ defmodule Pleroma.Web.CommonAPI do
   def report(user, data) do
     with {:ok, account} <- get_reported_account(data.account_id),
          {:ok, {content_html, _, _}} <- make_report_content_html(data[:comment]),
-         {:ok, statuses} <- get_report_statuses(account, data) do
+         {:ok, statuses} <- get_report_statuses(account, data),
+         rules <- get_report_rules(Map.get(data, :rule_ids, nil)) do
       ActivityPub.flag(%{
         context: Utils.generate_context_id(),
         actor: user,
         account: account,
         statuses: statuses,
         content: content_html,
-        forward: Map.get(data, :forward, false)
+        forward: Map.get(data, :forward, false),
+        rules: rules
       })
     end
   end
@@ -585,6 +588,15 @@ defmodule Pleroma.Web.CommonAPI do
       %User{} = account -> {:ok, account}
       _ -> {:error, dgettext("errors", "Account not found")}
     end
+  end
+
+  defp get_report_rules(nil) do
+    nil
+  end
+
+  defp get_report_rules(rule_ids) do
+    rule_ids
+    |> Enum.filter(&Rule.exists?/1)
   end
 
   def update_report_state(activity_ids, state) when is_list(activity_ids) do

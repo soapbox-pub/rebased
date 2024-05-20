@@ -62,7 +62,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
           Operation.parameter(
             :with_muted,
             :query,
-            BooleanLike,
+            BooleanLike.schema(),
             "Include the notifications from muted users"
           )
         ] ++ pagination_params(),

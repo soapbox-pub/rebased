@@ -52,60 +52,60 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
     }
   end
 
-  test "is_direct?", %{
+  test "direct?", %{
     public: public,
     private: private,
     direct: direct,
     unlisted: unlisted,
     list: list
   } do
-    assert Visibility.is_direct?(direct)
-    refute Visibility.is_direct?(public)
-    refute Visibility.is_direct?(private)
-    refute Visibility.is_direct?(unlisted)
-    assert Visibility.is_direct?(list)
+    assert Visibility.direct?(direct)
+    refute Visibility.direct?(public)
+    refute Visibility.direct?(private)
+    refute Visibility.direct?(unlisted)
+    assert Visibility.direct?(list)
   end
 
-  test "is_public?", %{
+  test "public?", %{
     public: public,
     private: private,
     direct: direct,
     unlisted: unlisted,
     list: list
   } do
-    refute Visibility.is_public?(direct)
-    assert Visibility.is_public?(public)
-    refute Visibility.is_public?(private)
-    assert Visibility.is_public?(unlisted)
-    refute Visibility.is_public?(list)
+    refute Visibility.public?(direct)
+    assert Visibility.public?(public)
+    refute Visibility.public?(private)
+    assert Visibility.public?(unlisted)
+    refute Visibility.public?(list)
   end
 
-  test "is_private?", %{
+  test "private?", %{
     public: public,
     private: private,
     direct: direct,
     unlisted: unlisted,
     list: list
   } do
-    refute Visibility.is_private?(direct)
-    refute Visibility.is_private?(public)
-    assert Visibility.is_private?(private)
-    refute Visibility.is_private?(unlisted)
-    refute Visibility.is_private?(list)
+    refute Visibility.private?(direct)
+    refute Visibility.private?(public)
+    assert Visibility.private?(private)
+    refute Visibility.private?(unlisted)
+    refute Visibility.private?(list)
   end
 
-  test "is_list?", %{
+  test "list?", %{
     public: public,
     private: private,
     direct: direct,
     unlisted: unlisted,
     list: list
   } do
-    refute Visibility.is_list?(direct)
-    refute Visibility.is_list?(public)
-    refute Visibility.is_list?(private)
-    refute Visibility.is_list?(unlisted)
-    assert Visibility.is_list?(list)
+    refute Visibility.list?(direct)
+    refute Visibility.list?(public)
+    refute Visibility.list?(private)
+    refute Visibility.list?(unlisted)
+    assert Visibility.list?(list)
   end
 
   test "visible_for_user? Activity", %{
@@ -227,7 +227,7 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
        } do
     Repo.delete(user)
     Pleroma.User.invalidate_cache(user)
-    refute Visibility.is_private?(direct)
+    refute Visibility.private?(direct)
   end
 
   test "get_visibility", %{

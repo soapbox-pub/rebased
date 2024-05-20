@@ -268,17 +268,6 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       end)
     end
 
-    test "accepts valid token on Sec-WebSocket-Protocol header", %{token: token} do
-      assert {:ok, _} = start_socket("?stream=user", [{"Sec-WebSocket-Protocol", token.token}])
-
-      capture_log(fn ->
-        assert {:error, %WebSockex.RequestError{code: 401}} =
-                 start_socket("?stream=user", [{"Sec-WebSocket-Protocol", "I am a friend"}])
-
-        Process.sleep(30)
-      end)
-    end
-
     test "accepts valid token on client-sent event", %{token: token} do
       assert {:ok, pid} = start_socket()
 

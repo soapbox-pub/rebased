@@ -1,0 +1,1 @@
+Connection pool errors when publishing an activity is a soft-error that will be retried shortly.

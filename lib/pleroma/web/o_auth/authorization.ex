@@ -28,7 +28,7 @@ defmodule Pleroma.Web.OAuth.Authorization do
   end
 
   @spec create_authorization(App.t(), User.t() | %{}, [String.t()] | nil) ::
-          {:ok, Authorization.t()} | {:error, Changeset.t()}
+          {:ok, Authorization.t()} | {:error, Ecto.Changeset.t()}
   def create_authorization(%App{} = app, %User{} = user, scopes \\ nil) do
     %{
       scopes: scopes || app.scopes,
@@ -39,7 +39,7 @@ defmodule Pleroma.Web.OAuth.Authorization do
     |> Repo.insert()
   end
 
-  @spec create_changeset(map()) :: Changeset.t()
+  @spec create_changeset(map()) :: Ecto.Changeset.t()
   def create_changeset(attrs \\ %{}) do
     %Authorization{}
     |> cast(attrs, [:user_id, :app_id, :scopes, :valid_until])
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.OAuth.Authorization do
     put_change(changeset, :valid_until, NaiveDateTime.add(NaiveDateTime.utc_now(), lifespan))
   end
 
-  @spec use_changeset(Authtorizatiton.t(), map()) :: Changeset.t()
+  @spec use_changeset(Authorization.t(), map()) :: Ecto.Changeset.t()
   def use_changeset(%Authorization{} = auth, params) do
     auth
     |> cast(params, [:used])
@@ -66,7 +66,7 @@ defmodule Pleroma.Web.OAuth.Authorization do
   end
 
   @spec use_token(Authorization.t()) ::
-          {:ok, Authorization.t()} | {:error, Changeset.t()} | {:error, String.t()}
+          {:ok, Authorization.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def use_token(%Authorization{used: false, valid_until: valid_until} = auth) do
     if NaiveDateTime.diff(NaiveDateTime.utc_now(), valid_until) < 0 do
       Repo.update(use_changeset(auth, %{used: true}))

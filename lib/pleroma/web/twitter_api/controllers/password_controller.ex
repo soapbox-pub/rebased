@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.TwitterAPI.PasswordController do
   @moduledoc """
-  The module containts functions for reset password.
+  The module contains functions for password reset.
   """
 
   use Pleroma.Web, :controller

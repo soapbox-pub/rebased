@@ -8,10 +8,12 @@ defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.BareUri do
   def type, do: :string
 
   def cast(uri) when is_binary(uri) do
-    case URI.parse(uri) do
-      %URI{scheme: nil} -> :error
-      %URI{} -> {:ok, uri}
-      _ -> :error
+    parsed = URI.parse(uri)
+
+    if is_nil(parsed.scheme) do
+      :error
+    else
+      {:ok, uri}
     end
   end
 
