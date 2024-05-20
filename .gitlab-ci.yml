@@ -1,4 +1,4 @@
-image: git.pleroma.social:5050/pleroma/pleroma/ci-base:1.13.4-otp24
+image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.13.4-otp-24
 
 variables: &global_variables
   # Only used for the release
