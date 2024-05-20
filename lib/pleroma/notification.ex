@@ -571,7 +571,7 @@ defmodule Pleroma.Notification do
     Enum.filter(potential_receivers, fn u -> u.ap_id in notification_enabled_ap_ids end)
   end
 
-  def get_notified_from_activity(_, _local_only), do: {[], []}
+  def get_notified_from_activity(_, _local_only), do: []
 
   def get_notified_subscribers_from_activity(activity, local_only \\ true)
 
@@ -589,7 +589,7 @@ defmodule Pleroma.Notification do
     Enum.filter(potential_receivers, fn u -> u.ap_id in notification_enabled_ap_ids end)
   end
 
-  def get_notified_subscribers_from_activity(_, _), do: {[], []}
+  def get_notified_subscribers_from_activity(_, _), do: []
 
   def get_notified_participants_from_activity(activity, local_only \\ true)
 
