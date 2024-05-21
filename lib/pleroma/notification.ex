@@ -73,6 +73,7 @@ defmodule Pleroma.Notification do
     pleroma:report
     reblog
     poll
+    status
   }
 
   def changeset(%Notification{} = notification, attrs) do
@@ -375,10 +376,15 @@ defmodule Pleroma.Notification do
   defp do_create_notifications(%Activity{} = activity) do
     enabled_receivers = get_notified_from_activity(activity)
 
+    enabled_subscribers = get_notified_subscribers_from_activity(activity)
+
     notifications =
-      Enum.map(enabled_receivers, fn user ->
-        create_notification(activity, user)
-      end)
+      (Enum.map(enabled_receivers, fn user ->
+         create_notification(activity, user)
+       end) ++
+         Enum.map(enabled_subscribers -- enabled_receivers, fn user ->
+           create_notification(activity, user, type: "status")
+         end))
       |> Enum.reject(&is_nil/1)
 
     {:ok, notifications}
@@ -511,7 +517,25 @@ defmodule Pleroma.Notification do
     Enum.filter(potential_receivers, fn u -> u.ap_id in notification_enabled_ap_ids end)
   end
 
-  def get_notified_from_activity(_, _local_only), do: {[], []}
+  def get_notified_from_activity(_, _local_only), do: []
+
+  def get_notified_subscribers_from_activity(activity, local_only \\ true)
+
+  def get_notified_subscribers_from_activity(
+        %Activity{data: %{"type" => "Create"}} = activity,
+        local_only
+      ) do
+    notification_enabled_ap_ids =
+      []
+      |> Utils.maybe_notify_subscribers(activity)
+
+    potential_receivers =
+      User.get_users_from_set(notification_enabled_ap_ids, local_only: local_only)
+
+    Enum.filter(potential_receivers, fn u -> u.ap_id in notification_enabled_ap_ids end)
+  end
+
+  def get_notified_subscribers_from_activity(_, _), do: []
 
   # For some activities, only notify the author of the object
   def get_potential_receiver_ap_ids(%{data: %{"type" => type, "object" => object_id}})
@@ -554,7 +578,6 @@ defmodule Pleroma.Notification do
     []
     |> Utils.maybe_notify_to_recipients(activity)
     |> Utils.maybe_notify_mentioned_recipients(activity)
-    |> Utils.maybe_notify_subscribers(activity)
     |> Utils.maybe_notify_followers(activity)
     |> Enum.uniq()
   end
