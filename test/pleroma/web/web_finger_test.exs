@@ -213,6 +213,7 @@ defmodule Pleroma.Web.WebFingerTest do
     end
   end
 
+  @tag capture_log: true
   test "prevents forgeries" do
     Tesla.Mock.mock(fn
       %{url: "https://fba.ryona.agency/.well-known/webfinger?resource=acct:graf@fba.ryona.agency"} ->
@@ -225,6 +226,6 @@ defmodule Pleroma.Web.WebFingerTest do
         {:ok, %Tesla.Env{status: 404}}
     end)
 
-    refute {:ok, _} = WebFinger.finger("graf@fba.ryona.agency")
+    assert {:error, _} = WebFinger.finger("graf@fba.ryona.agency")
   end
 end
