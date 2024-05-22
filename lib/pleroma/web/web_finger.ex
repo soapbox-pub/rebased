@@ -230,7 +230,7 @@ defmodule Pleroma.Web.WebFinger do
   defp validate_webfinger(url, %{"subject" => "acct:" <> acct} = data) do
     with %URI{host: request_host} <- URI.parse(url),
          [_name, acct_host] <- String.split(acct, "@"),
-         {_, true} <- {:hosts_match_or_subdomain, String.ends_with?(request_host, acct_host)} do
+         {_, true} <- {:hosts_match, acct_host == request_host} do
       {:ok, data}
     else
       _ -> {:error, {:webfinger_invalid, url, data}}
