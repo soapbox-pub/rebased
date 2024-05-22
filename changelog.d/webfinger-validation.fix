@@ -1,0 +1,1 @@
+Fix validate_webfinger when running a different domain for Webfinger
