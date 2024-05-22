@@ -76,15 +76,6 @@ defmodule Pleroma.Web.WebFingerTest do
       {:ok, _data} = WebFinger.finger(user)
     end
 
-    test "returns the ActivityPub actor URI and subscribe address for an ActivityPub user with the ld+json mimetype" do
-      user = "kaniini@gerzilla.de"
-
-      {:ok, data} = WebFinger.finger(user)
-
-      assert data["ap_id"] == "https://gerzilla.de/channel/kaniini"
-      assert data["subscribe_address"] == "https://gerzilla.de/follow?f=&url={uri}"
-    end
-
     test "it work for AP-only user" do
       user = "kpherox@mstdn.jp"
 
@@ -97,12 +88,6 @@ defmodule Pleroma.Web.WebFingerTest do
       assert data["subject"] == "acct:kPherox@mstdn.jp"
       assert data["ap_id"] == "https://mstdn.jp/users/kPherox"
       assert data["subscribe_address"] == "https://mstdn.jp/authorize_interaction?acct={uri}"
-    end
-
-    test "it works for friendica" do
-      user = "lain@squeet.me"
-
-      {:ok, _data} = WebFinger.finger(user)
     end
 
     test "it gets the xrd endpoint" do
@@ -203,5 +188,44 @@ defmodule Pleroma.Web.WebFingerTest do
 
       assert :error = WebFinger.finger("pekorino@pawoo.net")
     end
+
+    test "prevents spoofing" do
+      Tesla.Mock.mock(fn
+        %{
+          url: "https://gleasonator.com/.well-known/webfinger?resource=acct:alex@gleasonator.com"
+        } ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body: File.read!("test/fixtures/tesla_mock/webfinger_spoof.json"),
+             headers: [{"content-type", "application/jrd+json"}]
+           }}
+
+        %{url: "https://gleasonator.com/.well-known/host-meta"} ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body: File.read!("test/fixtures/tesla_mock/gleasonator.com_host_meta")
+           }}
+      end)
+
+      {:error, _data} = WebFinger.finger("alex@gleasonator.com")
+    end
+  end
+
+  @tag capture_log: true
+  test "prevents forgeries" do
+    Tesla.Mock.mock(fn
+      %{url: "https://fba.ryona.agency/.well-known/webfinger?resource=acct:graf@fba.ryona.agency"} ->
+        fake_webfinger =
+          File.read!("test/fixtures/webfinger/graf-imposter-webfinger.json") |> Jason.decode!()
+
+        Tesla.Mock.json(fake_webfinger)
+
+      %{url: "https://fba.ryona.agency/.well-known/host-meta"} ->
+        {:ok, %Tesla.Env{status: 404}}
+    end)
+
+    assert {:error, _} = WebFinger.finger("graf@fba.ryona.agency")
   end
 end

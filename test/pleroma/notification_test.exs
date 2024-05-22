@@ -112,6 +112,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, [notification]} = Notification.create_notifications(status)
 
       assert notification.user_id == subscriber.id
+      assert notification.type == "status"
     end
 
     test "does not create a notification for subscribed users if status is a reply" do
@@ -134,6 +135,21 @@ defmodule Pleroma.NotificationTest do
 
       subscriber_notifications = Notification.for_user(subscriber)
       assert Enum.empty?(subscriber_notifications)
+    end
+
+    test "does not create subscriber notification if mentioned" do
+      user = insert(:user)
+      subscriber = insert(:user)
+
+      User.subscribe(subscriber, user)
+
+      {:ok, status} = CommonAPI.post(user, %{status: "mentioning @#{subscriber.nickname}"})
+      {:ok, [notification] = notifications} = Notification.create_notifications(status)
+
+      assert length(notifications) == 1
+
+      assert notification.user_id == subscriber.id
+      assert notification.type == "mention"
     end
 
     test "it sends edited notifications to those who repeated a status" do
