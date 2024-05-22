@@ -332,4 +332,31 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
 
     test_notifications_rendering([notification], user, [expected])
   end
+
+  test "Subscribed status notification" do
+    user = insert(:user)
+    subscriber = insert(:user)
+
+    User.subscribe(subscriber, user)
+
+    {:ok, activity} = CommonAPI.post(user, %{status: "hi"})
+    {:ok, [notification]} = Notification.create_notifications(activity)
+
+    user = User.get_cached_by_id(user.id)
+
+    expected = %{
+      id: to_string(notification.id),
+      pleroma: %{is_seen: false, is_muted: false},
+      type: "status",
+      account:
+        AccountView.render("show.json", %{
+          user: user,
+          for: subscriber
+        }),
+      status: StatusView.render("show.json", %{activity: activity, for: subscriber}),
+      created_at: Utils.to_masto_date(notification.inserted_at)
+    }
+
+    test_notifications_rendering([notification], subscriber, [expected])
+  end
 end

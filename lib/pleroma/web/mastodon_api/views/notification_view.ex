@@ -108,6 +108,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       type when type in ["mention", "status", "poll", "pleroma:event_reminder"] ->
         put_status(response, activity, reading_user, status_render_opts)
 
+      "status" ->
+        put_status(response, activity, reading_user, status_render_opts)
+
       "favourite" ->
         put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
 

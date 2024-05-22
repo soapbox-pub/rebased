@@ -399,6 +399,8 @@ defmodule Pleroma.Notification do
       get_notified_subscribers_from_activity(activity) --
         (enabled_participants ++ enabled_receivers)
 
+    enabled_subscribers = get_notified_subscribers_from_activity(activity)
+
     notifications =
       (Enum.map(enabled_receivers, fn user ->
          create_notification(activity, user)
@@ -607,7 +609,7 @@ defmodule Pleroma.Notification do
     Enum.filter(potential_receivers, fn u -> u.ap_id in notification_enabled_ap_ids end)
   end
 
-  def get_notified_participants_from_activity(_, _), do: {[], []}
+  def get_notified_participants_from_activity(_, _), do: []
 
   # For some activities, only notify the author of the object
   def get_potential_receiver_ap_ids(%{data: %{"type" => type, "object" => object_id}})
