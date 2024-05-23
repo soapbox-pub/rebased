@@ -43,23 +43,41 @@ defmodule Pleroma.Search.QdrantSearch do
     end
   end
 
+  defp actor_from_activity(%{data: %{"actor" => actor}}) do
+    actor
+  end
+
+  defp actor_from_activity(_), do: nil
+
   defp build_index_payload(activity, embedding) do
+    actor = actor_from_activity(activity)
+    published_at = activity.data["published"]
+
     %{
       points: [
         %{
           id: activity.id |> FlakeId.from_string() |> Ecto.UUID.cast!(),
-          vector: embedding
+          vector: embedding,
+          payload: %{actor: actor, published_at: published_at}
         }
       ]
     }
   end
 
   defp build_search_payload(embedding, options) do
-    %{
+    base = %{
       vector: embedding,
       limit: options[:limit] || 20,
       offset: options[:offset] || 0
     }
+
+    if options[:actor] do
+      Map.put(base, :filter, %{
+        must: [%{key: "actor", match: %{value: options[:actor].ap_id}}]
+      })
+    else
+      base
+    end
   end
 
   @impl true

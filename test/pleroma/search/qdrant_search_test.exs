@@ -15,6 +15,94 @@ defmodule Pleroma.Search.QdrantSearchTest do
   alias Pleroma.Workers.SearchIndexingWorker
 
   describe "Qdrant search" do
+    test "searches for a term by encoding it and sending it to qdrant" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          status: "guys i just don't wanna leave the swamp",
+          visibility: "public"
+        })
+
+      Config
+      |> expect(:get, 3, fn
+        [Pleroma.Search, :module], nil ->
+          QdrantSearch
+
+        [Pleroma.Search.QdrantSearch, key], nil ->
+          %{
+            openai_model: "a_model",
+            openai_url: "https://openai.url",
+            qdrant_url: "https://qdrant.url"
+          }[key]
+      end)
+
+      Tesla.Mock.mock(fn
+        %{url: "https://openai.url/v1/embeddings", method: :post} ->
+          Tesla.Mock.json(%{
+            data: [%{embedding: [1, 2, 3]}]
+          })
+
+        %{url: "https://qdrant.url/collections/posts/points/search", method: :post, body: body} ->
+          data = Jason.decode!(body)
+          refute data["filter"]
+
+          Tesla.Mock.json(%{
+            result: [%{"id" => activity.id |> FlakeId.from_string() |> Ecto.UUID.cast!()}]
+          })
+      end)
+
+      results = QdrantSearch.search(nil, "guys i just don't wanna leave the swamp", %{})
+
+      assert results == [activity]
+    end
+
+    test "for a given actor, ask for only relevant matches" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          status: "guys i just don't wanna leave the swamp",
+          visibility: "public"
+        })
+
+      Config
+      |> expect(:get, 3, fn
+        [Pleroma.Search, :module], nil ->
+          QdrantSearch
+
+        [Pleroma.Search.QdrantSearch, key], nil ->
+          %{
+            openai_model: "a_model",
+            openai_url: "https://openai.url",
+            qdrant_url: "https://qdrant.url"
+          }[key]
+      end)
+
+      Tesla.Mock.mock(fn
+        %{url: "https://openai.url/v1/embeddings", method: :post} ->
+          Tesla.Mock.json(%{
+            data: [%{embedding: [1, 2, 3]}]
+          })
+
+        %{url: "https://qdrant.url/collections/posts/points/search", method: :post, body: body} ->
+          data = Jason.decode!(body)
+
+          assert data["filter"] == %{
+                   "must" => [%{"key" => "actor", "match" => %{"value" => user.ap_id}}]
+                 }
+
+          Tesla.Mock.json(%{
+            result: [%{"id" => activity.id |> FlakeId.from_string() |> Ecto.UUID.cast!()}]
+          })
+      end)
+
+      results =
+        QdrantSearch.search(nil, "guys i just don't wanna leave the swamp", %{actor: user})
+
+      assert results == [activity]
+    end
+
     test "indexes a public post on creation, deletes from the index on deletion" do
       user = insert(:user)
 
@@ -29,7 +117,12 @@ defmodule Pleroma.Search.QdrantSearchTest do
         %{method: :put, url: "https://qdrant.url/collections/posts/points", body: body} ->
           send(self(), "posted_to_qdrant")
 
-          assert match?(%{"points" => [%{"vector" => [1, 2, 3]}]}, Jason.decode!(body))
+          data = Jason.decode!(body)
+          %{"points" => [%{"vector" => vector, "payload" => payload}]} = data
+
+          assert vector == [1, 2, 3]
+          assert payload["actor"]
+          assert payload["published_at"]
 
           Tesla.Mock.json("ok")
 
