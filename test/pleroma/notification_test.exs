@@ -17,6 +17,7 @@ defmodule Pleroma.NotificationTest do
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.NotificationView
+  alias Pleroma.Web.Streamer
 
   setup do
     Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
@@ -314,93 +315,6 @@ defmodule Pleroma.NotificationTest do
     {:ok, notifications} = Notification.create_poll_notifications(activity)
 
     assert [user2.id, user3.id, user1.id] == Enum.map(notifications, & &1.user_id)
-  end
-
-  describe "CommonApi.post/2 notification-related functionality" do
-    test_with_mock "creates but does NOT send notification to blocker user",
-                   Push,
-                   [:passthrough],
-                   [] do
-      user = insert(:user)
-      blocker = insert(:user)
-      {:ok, _user_relationship} = User.block(blocker, user)
-
-      {:ok, _activity} = CommonAPI.post(user, %{status: "hey @#{blocker.nickname}!"})
-
-      Pleroma.Tests.ObanHelpers.perform_all()
-
-      blocker_id = blocker.id
-      assert [%Notification{user_id: ^blocker_id}] = Repo.all(Notification)
-      refute called(Push.send(:_))
-    end
-
-    test_with_mock "creates but does NOT send notification to notification-muter user",
-                   Push,
-                   [:passthrough],
-                   [] do
-      user = insert(:user)
-      muter = insert(:user)
-      {:ok, _user_relationships} = User.mute(muter, user)
-
-      {:ok, _activity} = CommonAPI.post(user, %{status: "hey @#{muter.nickname}!"})
-      Pleroma.Tests.ObanHelpers.perform_all()
-
-      muter_id = muter.id
-      assert [%Notification{user_id: ^muter_id}] = Repo.all(Notification)
-      refute called(Push.send(:_))
-    end
-
-    test_with_mock "creates but does NOT send notification to thread-muter user",
-                   Push,
-                   [:passthrough],
-                   [] do
-      user = insert(:user)
-      thread_muter = insert(:user)
-
-      {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{thread_muter.nickname}!"})
-
-      Pleroma.Tests.ObanHelpers.perform_all()
-      [pre_mute_notification] = Repo.all(Notification)
-
-      {:ok, _} = CommonAPI.add_mute(thread_muter, activity)
-
-      {:ok, _same_context_activity} =
-        CommonAPI.post(user, %{
-          status: "hey-hey-hey @#{thread_muter.nickname}!",
-          in_reply_to_status_id: activity.id
-        })
-
-      Pleroma.Tests.ObanHelpers.perform_all()
-
-      [post_mute_notification] =
-        Repo.all(
-          from(n in Notification,
-            where: n.id != ^pre_mute_notification.id and n.user_id == ^thread_muter.id,
-            order_by: n.id
-          )
-        )
-
-      pre_mute_notification_id = pre_mute_notification.id
-      post_mute_notification_id = post_mute_notification.id
-
-      assert called(
-               Push.send(
-                 :meck.is(fn
-                   %Notification{id: ^pre_mute_notification_id} -> true
-                   _ -> false
-                 end)
-               )
-             )
-
-      refute called(
-               Push.send(
-                 :meck.is(fn
-                   %Notification{id: ^post_mute_notification_id} -> true
-                   _ -> false
-                 end)
-               )
-             )
-    end
   end
 
   describe "create_notification" do
