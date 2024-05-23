@@ -1389,6 +1389,33 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://gleasonator.com/users/macgirvin", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/macgirvin@gleasonator.com.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://mk.absturztau.be/users/8ozbzjs3o8", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mametsuko@mk.absturztau.be.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://p.helene.moe/users/helene", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/helene@p.helene.moe.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
   def get("https://misskey.io/notes/8vs6wxufd0", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -1406,15 +1433,6 @@ defmodule HttpRequestMock do
          File.read!(
            "test/fixtures/tesla_mock/mitra.social_01830912-1357-d4c5-e4a2-76eab347e749.json"
          ),
-       headers: activitypub_object_headers()
-     }}
-  end
-
-  def get("https://gleasonator.com/users/macgirvin", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/macgirvin@gleasonator.com.json"),
        headers: activitypub_object_headers()
      }}
   end
@@ -1440,29 +1458,11 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://mk.absturztau.be/users/8ozbzjs3o8", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/mametsuko@mk.absturztau.be.json"),
-       headers: activitypub_object_headers()
-     }}
-  end
-
   def get("https://friends.grishka.me/users/1", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/smithereen_user.json"),
-       headers: activitypub_object_headers()
-     }}
-  end
-
-  def get("https://p.helene.moe/users/helene", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/helene@p.helene.moe.json"),
        headers: activitypub_object_headers()
      }}
   end
@@ -1673,43 +1673,6 @@ defmodule HttpRequestMock do
 
   def get("https://example.com/empty", _, _, _) do
     {:ok, %Tesla.Env{status: 200, body: "hello"}}
-  end
-
-  def get("https://friends.grishka.me/posts/54642", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/smithereen_non_anonymous_poll.json"),
-       headers: activitypub_object_headers()
-     }}
-  end
-
-  def get("https://friends.grishka.me/users/1", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/smithereen_user.json"),
-       headers: activitypub_object_headers()
-     }}
-  end
-
-  def get("https://mastodon.example/.well-known/host-meta", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 302,
-       headers: [{"location", "https://sub.mastodon.example/.well-known/host-meta"}]
-     }}
-  end
-
-  def get("https://sub.mastodon.example/.well-known/host-meta", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body:
-         "test/fixtures/webfinger/masto-host-meta.xml"
-         |> File.read!()
-         |> String.replace("{{domain}}", "sub.mastodon.example")
-     }}
   end
 
   def get(

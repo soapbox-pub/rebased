@@ -399,8 +399,6 @@ defmodule Pleroma.Notification do
       get_notified_subscribers_from_activity(activity) --
         (enabled_participants ++ enabled_receivers)
 
-    enabled_subscribers = get_notified_subscribers_from_activity(activity)
-
     notifications =
       (Enum.map(enabled_receivers, fn user ->
          create_notification(activity, user)
