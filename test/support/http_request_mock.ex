@@ -1398,6 +1398,18 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://gleasonator.com/users/macgirvin/collections/featured", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!("test/fixtures/users_mock/masto_featured.json")
+         |> String.replace("{{domain}}", "gleasonator.com")
+         |> String.replace("{{nickname}}", "macgirvin"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
   def get("https://mk.absturztau.be/users/8ozbzjs3o8", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -1412,57 +1424,6 @@ defmodule HttpRequestMock do
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/helene@p.helene.moe.json"),
-       headers: activitypub_object_headers()
-     }}
-  end
-
-  def get("https://misskey.io/notes/8vs6wxufd0", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/misskey.io_8vs6wxufd0.json"),
-       headers: activitypub_object_headers()
-     }}
-  end
-
-  def get("https://mitra.social/objects/01830912-1357-d4c5-e4a2-76eab347e749", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body:
-         File.read!(
-           "test/fixtures/tesla_mock/mitra.social_01830912-1357-d4c5-e4a2-76eab347e749.json"
-         ),
-       headers: activitypub_object_headers()
-     }}
-  end
-
-  def get("https://gleasonator.com/users/macgirvin/collections/featured", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body:
-         File.read!("test/fixtures/users_mock/masto_featured.json")
-         |> String.replace("{{domain}}", "gleasonator.com")
-         |> String.replace("{{nickname}}", "macgirvin"),
-       headers: activitypub_object_headers()
-     }}
-  end
-
-  def get("https://friends.grishka.me/posts/54642", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/smithereen_non_anonymous_poll.json"),
-       headers: activitypub_object_headers()
-     }}
-  end
-
-  def get("https://friends.grishka.me/users/1", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/smithereen_user.json"),
        headers: activitypub_object_headers()
      }}
   end
@@ -1494,31 +1455,69 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get(
-        "https://nominatim.openstreetmap.org/search?format=geocodejson&q=Benis&limit=10&accept-language=en&addressdetails=1&namedetails=1",
-        _,
-        _,
-        _
-      ) do
+  def get("https://misskey.io/notes/8vs6wxufd0", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!("test/fixtures/tesla_mock/nominatim_search_results.json"),
-       headers: [{"content-type", "application/json"}]
+       body: File.read!("test/fixtures/tesla_mock/misskey.io_8vs6wxufd0.json"),
+       headers: activitypub_object_headers()
      }}
   end
 
-  def get(
-        "https://nominatim.openstreetmap.org/lookup?format=geocodejson&osm_ids=N3726208425,R3726208425,W3726208425&accept-language=en&addressdetails=1&namedetails=1",
-        _,
-        _,
-        _
-      ) do
+  def get("https://google.com/", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/google.html")}}
+  end
+
+  def get("https://yahoo.com/", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/yahoo.html")}}
+  end
+
+  def get("https://example.com/error", _, _, _), do: {:error, :overload}
+
+  def get("https://example.com/ogp-missing-title", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!("test/fixtures/tesla_mock/nominatim_single_result.json"),
-       headers: [{"content-type", "application/json"}]
+       body: File.read!("test/fixtures/rich_media/ogp-missing-title.html")
+     }}
+  end
+
+  def get("https://example.com/oembed", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/oembed.html")}}
+  end
+
+  def get("https://example.com/oembed.json", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/oembed.json")}}
+  end
+
+  def get("https://example.com/twitter-card", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/twitter_card.html")}}
+  end
+
+  def get("https://example.com/non-ogp", _, _, _) do
+    {:ok,
+     %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/non_ogp_embed.html")}}
+  end
+
+  def get("https://example.com/empty", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: "hello"}}
+  end
+
+  def get("https://friends.grishka.me/posts/54642", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/smithereen_non_anonymous_poll.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://friends.grishka.me/users/1", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/smithereen_user.json"),
+       headers: activitypub_object_headers()
      }}
   end
 
@@ -1636,47 +1635,20 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://google.com/", _, _, _) do
-    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/google.html")}}
-  end
-
-  def get("https://yahoo.com/", _, _, _) do
-    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/yahoo.html")}}
-  end
-
-  def get("https://example.com/error", _, _, _), do: {:error, :overload}
-
-  def get("https://example.com/ogp-missing-title", _, _, _) do
+  def get("https://mitra.social/objects/01830912-1357-d4c5-e4a2-76eab347e749", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!("test/fixtures/rich_media/ogp-missing-title.html")
+       body:
+         File.read!(
+           "test/fixtures/tesla_mock/mitra.social_01830912-1357-d4c5-e4a2-76eab347e749.json"
+         ),
+       headers: activitypub_object_headers()
      }}
   end
 
-  def get("https://example.com/oembed", _, _, _) do
-    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/oembed.html")}}
-  end
-
-  def get("https://example.com/oembed.json", _, _, _) do
-    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/oembed.json")}}
-  end
-
-  def get("https://example.com/twitter-card", _, _, _) do
-    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/twitter_card.html")}}
-  end
-
-  def get("https://example.com/non-ogp", _, _, _) do
-    {:ok,
-     %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/non_ogp_embed.html")}}
-  end
-
-  def get("https://example.com/empty", _, _, _) do
-    {:ok, %Tesla.Env{status: 200, body: "hello"}}
-  end
-
   def get(
-        "https://sub.mastodon.example/.well-known/webfinger?resource=acct:a@mastodon.example",
+        "https://nominatim.openstreetmap.org/search?format=geocodejson&q=Benis&limit=10&accept-language=en&addressdetails=1&namedetails=1",
         _,
         _,
         _
@@ -1684,62 +1656,13 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body:
-         "test/fixtures/webfinger/masto-webfinger.json"
-         |> File.read!()
-         |> String.replace("{{nickname}}", "a")
-         |> String.replace("{{domain}}", "mastodon.example")
-         |> String.replace("{{subdomain}}", "sub.mastodon.example"),
-       headers: [{"content-type", "application/jrd+json"}]
-     }}
-  end
-
-  def get("https://sub.mastodon.example/users/a", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body:
-         "test/fixtures/webfinger/masto-user.json"
-         |> File.read!()
-         |> String.replace("{{nickname}}", "a")
-         |> String.replace("{{domain}}", "sub.mastodon.example"),
-       headers: [{"content-type", "application/activity+json"}]
-     }}
-  end
-
-  def get("https://sub.mastodon.example/users/a/collections/featured", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body:
-         File.read!("test/fixtures/users_mock/masto_featured.json")
-         |> String.replace("{{domain}}", "sub.mastodon.example")
-         |> String.replace("{{nickname}}", "a"),
-       headers: [{"content-type", "application/activity+json"}]
-     }}
-  end
-
-  def get("https://pleroma.example/.well-known/host-meta", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 302,
-       headers: [{"location", "https://sub.pleroma.example/.well-known/host-meta"}]
-     }}
-  end
-
-  def get("https://sub.pleroma.example/.well-known/host-meta", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body:
-         "test/fixtures/webfinger/pleroma-host-meta.xml"
-         |> File.read!()
-         |> String.replace("{{domain}}", "sub.pleroma.example")
+       body: File.read!("test/fixtures/tesla_mock/nominatim_search_results.json"),
+       headers: [{"content-type", "application/json"}]
      }}
   end
 
   def get(
-        "https://sub.pleroma.example/.well-known/webfinger?resource=acct:a@pleroma.example",
+        "https://nominatim.openstreetmap.org/lookup?format=geocodejson&osm_ids=N3726208425,R3726208425,W3726208425&accept-language=en&addressdetails=1&namedetails=1",
         _,
         _,
         _
@@ -1747,26 +1670,8 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body:
-         "test/fixtures/webfinger/pleroma-webfinger.json"
-         |> File.read!()
-         |> String.replace("{{nickname}}", "a")
-         |> String.replace("{{domain}}", "pleroma.example")
-         |> String.replace("{{subdomain}}", "sub.pleroma.example"),
-       headers: [{"content-type", "application/jrd+json"}]
-     }}
-  end
-
-  def get("https://sub.pleroma.example/users/a", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body:
-         "test/fixtures/webfinger/pleroma-user.json"
-         |> File.read!()
-         |> String.replace("{{nickname}}", "a")
-         |> String.replace("{{domain}}", "sub.pleroma.example"),
-       headers: [{"content-type", "application/activity+json"}]
+       body: File.read!("test/fixtures/tesla_mock/nominatim_single_result.json"),
+       headers: [{"content-type", "application/json"}]
      }}
   end
 
