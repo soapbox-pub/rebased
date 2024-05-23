@@ -31,35 +31,44 @@ defmodule Pleroma.Webhook do
     |> Repo.all()
   end
 
-  def changeset(%__MODULE__{} = webhook, params) do
+  def changeset(%__MODULE__{} = webhook, params, opts \\ []) do
     webhook
     |> cast(params, [:url, :events, :enabled])
+    |> maybe_update_internal(params, opts)
     |> validate_required([:url, :events])
     |> unique_constraint(:url)
     |> strip_events()
     |> put_secret()
   end
 
-  def update_changeset(%__MODULE__{} = webhook, params \\ %{}) do
+  def update_changeset(%__MODULE__{} = webhook, params \\ %{}, opts \\ []) do
     webhook
     |> cast(params, [:url, :events, :enabled])
+    |> maybe_update_internal(params, opts)
     |> unique_constraint(:url)
     |> strip_events()
   end
 
-  def create(params) do
+  defp maybe_update_internal(webhook, params, update_internal: true) do
+    webhook
+    |> cast(params, [:internal])
+  end
+
+  defp maybe_update_internal(webhook, _params, _opts), do: webhook
+
+  def create(params, opts \\ []) do
     {:ok, webhook} =
       %__MODULE__{}
-      |> changeset(params)
+      |> changeset(params, opts)
       |> Repo.insert()
 
     webhook
   end
 
-  def update(%__MODULE__{} = webhook, params) do
+  def update(%__MODULE__{} = webhook, params, opts \\ []) do
     {:ok, webhook} =
       webhook
-      |> update_changeset(params)
+      |> update_changeset(params, opts)
       |> Repo.update()
 
     webhook

@@ -215,7 +215,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_attachments(%{"attachment" => attachment} = object) when is_list(attachment) do
     attachments =
       attachment
-      |> Enum.filter(fn data -> Map.has_key?(data, "url") end)
+      |> Enum.filter(fn data -> Map.has_key?(data, "url") or Map.has_key?(data, "href") end)
       |> Enum.map(fn data ->
         url =
           cond do
@@ -342,6 +342,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_tag(object), do: object
 
+  # prefer content over contentMap
   def fix_content_map(%{"content" => content} = object) when not_empty_string(content), do: object
 
   # content map usually only has one language so this will do for now.

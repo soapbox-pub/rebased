@@ -67,7 +67,9 @@ defmodule Pleroma.Web.AdminAPI.WebhookControllerTest do
 
     test "can't edit an internal webhook", %{conn: conn} do
       %{id: id} =
-        Webhook.create(%{url: "https://example.com/webhook1", events: [], internal: true})
+        Webhook.create(%{url: "https://example.com/webhook1", events: [], internal: true},
+          update_internal: true
+        )
 
       conn
       |> put_req_header("content-type", "application/json")

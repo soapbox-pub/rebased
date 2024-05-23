@@ -142,7 +142,7 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
   end
 
   defp rejected_domains do
-    Config.get([:instance, :rejected_instances])
+    Config.get([:instance, :rejected_instances], [])
     |> Pleroma.Web.ActivityPub.MRF.instance_list_from_tuples()
     |> Pleroma.Web.ActivityPub.MRF.subdomains_regex()
   end

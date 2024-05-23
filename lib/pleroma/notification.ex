@@ -292,16 +292,22 @@ defmodule Pleroma.Notification do
       |> Repo.transaction()
 
     Streamer.stream(["user", "user:notification"], marker)
+
+    {:ok, %{marker: marker}}
   end
 
   @spec read_one(User.t(), String.t()) ::
           {:ok, Notification.t()} | {:error, Ecto.Changeset.t()} | nil
   def read_one(%User{} = user, notification_id) do
-    with {:ok, %Notification{} = notification} <- get(user, notification_id) do
-      Multi.new()
-      |> Multi.update(:update, changeset(notification, %{seen: true}))
-      |> Marker.multi_set_last_read_id(user, "notifications")
-      |> Repo.transaction()
+    with {:ok, %Notification{} = notification} <- get(user, notification_id),
+         {:ok, %{marker: marker}} <-
+           Multi.new()
+           |> Multi.update(:update, changeset(notification, %{seen: true}))
+           |> Marker.multi_set_last_read_id(user, "notifications")
+           |> Repo.transaction() do
+      Streamer.stream(["user", "user:notification"], marker)
+
+      {:ok, %{marker: marker}}
     end
   end
 

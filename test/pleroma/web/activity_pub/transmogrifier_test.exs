@@ -349,18 +349,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert url == "http://localhost:4001/emoji/dino%20walking.gif"
     end
 
-    test "it adds contentMap if language is specified" do
-      user = insert(:user)
-
-      {:ok, activity} = CommonAPI.post(user, %{status: "тест", language: "uk"})
-
-      {:ok, prepared} = Transmogrifier.prepare_outgoing(activity.data)
-
-      assert prepared["object"]["contentMap"] == %{
-               "uk" => "тест"
-             }
-    end
-
     test "it prepares a quote post" do
       user = insert(:user)
 

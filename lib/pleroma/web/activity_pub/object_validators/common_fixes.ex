@@ -188,6 +188,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
 
   defp get_language_from_content(_), do: nil
 
+  def maybe_add_content_map(%{"contentMap" => %{}} = object), do: object
+
   def maybe_add_content_map(%{"language" => language, "content" => content} = object)
       when not_empty_string(language) do
     Map.put(object, "contentMap", Map.put(%{}, language, content))
