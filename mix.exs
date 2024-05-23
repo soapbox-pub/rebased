@@ -1,7 +1,7 @@
 defmodule Pleroma.Mixfile do
   use Mix.Project
 
-  @build_name "pl"
+  @build_name "soapbox"
 
   def project do
     [
