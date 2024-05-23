@@ -15,7 +15,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   require Pleroma.Constants
 
   import Pleroma.EctoType.ActivityPub.ObjectValidators.LanguageCode,
-    only: [is_good_locale_code?: 1]
+    only: [good_locale_code?: 1]
 
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
@@ -149,7 +149,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
         get_language_from_content_map(object),
         get_language_from_content(object)
       ]
-      |> Enum.find(&is_good_locale_code?(&1))
+      |> Enum.find(&good_locale_code?(&1))
 
     if language do
       Map.put(object, "language", language)
