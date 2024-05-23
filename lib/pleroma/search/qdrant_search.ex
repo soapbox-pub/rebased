@@ -71,9 +71,9 @@ defmodule Pleroma.Search.QdrantSearch do
       offset: options[:offset] || 0
     }
 
-    if options[:actor] do
+    if author = options[:author] do
       Map.put(base, :filter, %{
-        must: [%{key: "actor", match: %{value: options[:actor].ap_id}}]
+        must: [%{key: "actor", match: %{value: author.ap_id}}]
       })
     else
       base

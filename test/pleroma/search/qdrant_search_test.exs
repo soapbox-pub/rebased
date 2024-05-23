@@ -98,7 +98,7 @@ defmodule Pleroma.Search.QdrantSearchTest do
       end)
 
       results =
-        QdrantSearch.search(nil, "guys i just don't wanna leave the swamp", %{actor: user})
+        QdrantSearch.search(nil, "guys i just don't wanna leave the swamp", %{author: user})
 
       assert results == [activity]
     end
