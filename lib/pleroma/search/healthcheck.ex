@@ -8,7 +8,7 @@ defmodule Pleroma.Search.Healthcheck do
   use GenServer
   require Logger
 
-  @tick :timer.seconds(60)
+  @tick :timer.seconds(5)
   @queue :search_indexing
 
   def start_link(_) do
