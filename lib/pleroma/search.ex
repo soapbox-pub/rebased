@@ -14,4 +14,9 @@ defmodule Pleroma.Search do
 
     search_module.search(options[:for_user], query, options)
   end
+
+  def healthcheck_endpoints do
+    search_module = Pleroma.Config.get([Pleroma.Search, :module], Pleroma.Activity)
+    search_module.healthcheck_endpoints
+  end
 end
