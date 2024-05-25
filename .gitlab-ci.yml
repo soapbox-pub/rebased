@@ -1,8 +1,8 @@
-image: git.pleroma.social:5050/pleroma/pleroma/ci-base
+image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.13.4-otp-24
 
 variables: &global_variables
   # Only used for the release
-  ELIXIR_VER: 1.12.3
+  ELIXIR_VER: 1.13.4
   POSTGRES_DB: pleroma_test
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
@@ -72,7 +72,7 @@ check-changelog:
   tags:
     - amd64
 
-build-1.12.3:
+build-1.13.4:
   extends:
   - .build_changes_policy
   - .using-ci-base
@@ -85,7 +85,7 @@ build-1.15.7-otp-25:
   - .build_changes_policy
   - .using-ci-base
   stage: build
-  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15
+  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15-otp25
   allow_failure: true
   script:
   - mix compile --force

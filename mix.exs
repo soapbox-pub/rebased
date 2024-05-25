@@ -9,7 +9,7 @@ defmodule Pleroma.Mixfile do
       name: "pl",
       compat_name: "Pleroma",
       version: version("2.6.52"),
-      elixir: "~> 1.11",
+      elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: Mix.compilers(),
       elixirc_options: [warnings_as_errors: warnings_as_errors()],
