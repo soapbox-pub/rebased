@@ -32,7 +32,7 @@ defmodule Pleroma.Search.Healthcheck do
     urls = Pleroma.Search.healthcheck_endpoints()
 
     new_state =
-      if healthy?(urls) do
+      if check(urls) do
         Oban.resume_queue(queue: @queue)
         Map.put(state, :healthy, true)
       else
@@ -47,15 +47,15 @@ defmodule Pleroma.Search.Healthcheck do
   end
 
   @impl true
-  def handle_call(:check, _from, state) do
-    status = Map.get(state, :healthy)
-
-    {:reply, status, state, :hibernate}
+  def handle_call(:state, _from, state) do
+    {:reply, state, state, :hibernate}
   end
 
-  defp healthy?([]), do: true
+  def state, do: GenServer.call(__MODULE__, :state)
 
-  defp healthy?(urls) when is_list(urls) do
+  def check([]), do: true
+
+  def check(urls) when is_list(urls) do
     Enum.all?(
       urls,
       fn url ->
@@ -67,7 +67,7 @@ defmodule Pleroma.Search.Healthcheck do
     )
   end
 
-  defp healthy?(_), do: true
+  def check(_), do: true
 
   defp tick do
     Process.send_after(self(), :check, @tick)
