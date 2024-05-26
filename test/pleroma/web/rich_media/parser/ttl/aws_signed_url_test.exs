@@ -10,6 +10,7 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrlTest do
 
   alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.RichMedia.Card
+  alias Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl
 
   setup do
     ConfigMock
@@ -80,6 +81,12 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrlTest do
     timestamp_dt = Timex.parse!(timestamp, "{ISO:Basic:Z}")
 
     assert DateTime.diff(scheduled_at, timestamp_dt) == valid_till
+  end
+
+  test "AWS URL for an image without expiration works" do
+    og_data = %{"image" => "https://amazonaws.com/image.png"}
+
+    assert is_nil(AwsSignedUrl.ttl(og_data, ""))
   end
 
   defp construct_s3_url(timestamp, valid_till) do
