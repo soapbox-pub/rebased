@@ -8,8 +8,9 @@ defmodule Pleroma.Search.Healthcheck do
   use GenServer
   require Logger
 
-  @tick :timer.seconds(5)
   @queue :search_indexing
+  @tick :timer.seconds(5)
+  @timeout :timer.seconds(2)
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
@@ -59,7 +60,7 @@ defmodule Pleroma.Search.Healthcheck do
     Enum.all?(
       urls,
       fn url ->
-        case Pleroma.HTTP.get(url) do
+        case Pleroma.HTTP.get(url, [], recv_timeout: @timeout) do
           {:ok, %{status: 200}} -> true
           _ -> false
         end
