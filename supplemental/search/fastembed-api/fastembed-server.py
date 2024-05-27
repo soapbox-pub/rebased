@@ -17,6 +17,10 @@ def embeddings(request: EmbeddingRequest):
     embeddings = next(model.embed(request.input)).tolist()
     return {"data": [{"embedding": embeddings}]}
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 if __name__ == "__main__":
     import uvicorn
 
