@@ -116,7 +116,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
       end
 
     connect_src =
-      if @config_impl.get(:env) == :dev do
+      if @config_impl.get([:env]) == :dev do
         [connect_src, " http://localhost:3035/"]
       else
         connect_src
@@ -124,7 +124,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
 
     script_src =
       if @config_impl.get([:http_security, :allow_unsafe_eval]) do
-        if @config_impl.get(:env) == :dev do
+        if @config_impl.get([:env]) == :dev do
           "script-src 'self' 'unsafe-eval'"
         else
           "script-src 'self' 'wasm-unsafe-eval'"

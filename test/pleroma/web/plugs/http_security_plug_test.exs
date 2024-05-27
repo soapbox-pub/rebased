@@ -15,7 +15,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
   end
 
   defp mock_config(config, additional \\ %{}) do
-    Pleroma.UnstubbedConfigMock
+    Pleroma.StaticStubbedConfigMock
     |> stub(:get, fn
       [:http_security, key] -> config[key]
       key -> additional[key]
