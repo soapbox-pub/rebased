@@ -11,6 +11,7 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
   alias Pleroma.ReportNote
+  alias Pleroma.Rule
   alias Pleroma.Web.CommonAPI
 
   setup do
@@ -123,6 +124,7 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
         })
 
       %{
+        reporter: reporter,
         id: report_id,
         second_report_id: second_report_id
       }
@@ -265,6 +267,26 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
 
       assert ModerationLog.get_log_entry_message(second_log_entry) ==
                "@#{admin.nickname} updated report ##{second_report_id} (on user @#{second_activity.user_actor.nickname}) with 'closed' state"
+    end
+
+    test "works if reporter is deactivated", %{
+      conn: conn,
+      id: id,
+      reporter: reporter
+    } do
+      Pleroma.User.set_activation(reporter, false)
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> patch("/api/pleroma/admin/reports", %{
+        "reports" => [
+          %{"state" => "resolved", "id" => id}
+        ]
+      })
+      |> json_response_and_validate_schema(:no_content)
+
+      activity = Activity.get_by_id_with_user_actor(id)
+      assert activity.data["state"] == "resolved"
     end
   end
 
@@ -414,6 +436,34 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
       assert json_response(conn, :forbidden) == %{
                "error" => "Invalid credentials."
              }
+    end
+
+    test "returns reports with specified role_id", %{conn: conn} do
+      [reporter, target_user] = insert_pair(:user)
+
+      %{id: rule_id} = Rule.create(%{text: "Example rule"})
+
+      rule_id = to_string(rule_id)
+
+      {:ok, %{id: report_id}} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id,
+          comment: "",
+          rule_ids: [rule_id]
+        })
+
+      {:ok, _report} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id,
+          comment: ""
+        })
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/reports?rule_id=#{rule_id}")
+        |> json_response_and_validate_schema(:ok)
+
+      assert %{"reports" => [%{"id" => ^report_id}]} = response
     end
   end
 

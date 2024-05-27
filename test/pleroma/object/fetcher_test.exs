@@ -9,8 +9,12 @@ defmodule Pleroma.Object.FetcherTest do
   alias Pleroma.Instances
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
+  alias Pleroma.Web.ActivityPub.ObjectValidator
+
+  require Pleroma.Constants
 
   import Mock
+  import Pleroma.Factory
   import Tesla.Mock
 
   setup do
@@ -97,8 +101,7 @@ defmodule Pleroma.Object.FetcherTest do
     test "it returns thread depth exceeded error if thread depth is exceeded" do
       clear_config([:instance, :federation_incoming_replies_max_depth], 0)
 
-      assert {:error, "Max thread distance exceeded."} =
-               Fetcher.fetch_object_from_id(@ap_id, depth: 1)
+      assert {:error, :allowed_depth} = Fetcher.fetch_object_from_id(@ap_id, depth: 1)
     end
 
     test "it fetches object if max thread depth is restricted to 0 and depth is not specified" do
@@ -216,14 +219,14 @@ defmodule Pleroma.Object.FetcherTest do
     end
 
     test "handle HTTP 410 Gone response" do
-      assert {:error, "Object has been deleted"} ==
+      assert {:error, :not_found} ==
                Fetcher.fetch_and_contain_remote_object_from_id(
                  "https://mastodon.example.org/users/userisgone"
                )
     end
 
     test "handle HTTP 404 response" do
-      assert {:error, "Object has been deleted"} ==
+      assert {:error, :not_found} ==
                Fetcher.fetch_and_contain_remote_object_from_id(
                  "https://mastodon.example.org/users/userisgone404"
                )
@@ -284,6 +287,8 @@ defmodule Pleroma.Object.FetcherTest do
 
   describe "refetching" do
     setup do
+      insert(:user, ap_id: "https://mastodon.social/users/emelie")
+
       object1 = %{
         "id" => "https://mastodon.social/1",
         "actor" => "https://mastodon.social/users/emelie",
@@ -293,9 +298,13 @@ defmodule Pleroma.Object.FetcherTest do
         "bcc" => [],
         "bto" => [],
         "cc" => [],
-        "to" => [],
-        "summary" => ""
+        "to" => [Pleroma.Constants.as_public()],
+        "summary" => "",
+        "published" => "2023-05-08 23:43:20Z",
+        "updated" => "2023-05-09 23:43:20Z"
       }
+
+      {:ok, local_object1, _} = ObjectValidator.validate(object1, [])
 
       object2 = %{
         "id" => "https://mastodon.social/2",
@@ -306,8 +315,10 @@ defmodule Pleroma.Object.FetcherTest do
         "bcc" => [],
         "bto" => [],
         "cc" => [],
-        "to" => [],
+        "to" => [Pleroma.Constants.as_public()],
         "summary" => "",
+        "published" => "2023-05-08 23:43:20Z",
+        "updated" => "2023-05-09 23:43:25Z",
         "formerRepresentations" => %{
           "type" => "OrderedCollection",
           "orderedItems" => [
@@ -319,13 +330,17 @@ defmodule Pleroma.Object.FetcherTest do
               "bcc" => [],
               "bto" => [],
               "cc" => [],
-              "to" => [],
-              "summary" => ""
+              "to" => [Pleroma.Constants.as_public()],
+              "summary" => "",
+              "published" => "2023-05-08 23:43:20Z",
+              "updated" => "2023-05-09 23:43:21Z"
             }
           ],
           "totalItems" => 1
         }
       }
+
+      {:ok, local_object2, _} = ObjectValidator.validate(object2, [])
 
       mock(fn
         %{
@@ -335,7 +350,7 @@ defmodule Pleroma.Object.FetcherTest do
           %Tesla.Env{
             status: 200,
             headers: [{"content-type", "application/activity+json"}],
-            body: Jason.encode!(object1)
+            body: Jason.encode!(object1 |> Map.put("updated", "2023-05-09 23:44:20Z"))
           }
 
         %{
@@ -345,7 +360,7 @@ defmodule Pleroma.Object.FetcherTest do
           %Tesla.Env{
             status: 200,
             headers: [{"content-type", "application/activity+json"}],
-            body: Jason.encode!(object2)
+            body: Jason.encode!(object2 |> Map.put("updated", "2023-05-09 23:44:20Z"))
           }
 
         %{
@@ -370,7 +385,7 @@ defmodule Pleroma.Object.FetcherTest do
           apply(HttpRequestMock, :request, [env])
       end)
 
-      %{object1: object1, object2: object2}
+      %{object1: local_object1, object2: local_object2}
     end
 
     test "it keeps formerRepresentations if remote does not have this attr", %{object1: object1} do
@@ -388,8 +403,9 @@ defmodule Pleroma.Object.FetcherTest do
                 "bcc" => [],
                 "bto" => [],
                 "cc" => [],
-                "to" => [],
-                "summary" => ""
+                "to" => [Pleroma.Constants.as_public()],
+                "summary" => "",
+                "published" => "2023-05-08 23:43:20Z"
               }
             ],
             "totalItems" => 1
@@ -466,6 +482,53 @@ defmodule Pleroma.Object.FetcherTest do
                  "totalItems" => 2
                }
              } = refetched.data
+    end
+
+    test "it keeps the history intact if only updated time has changed",
+         %{object1: object1} do
+      full_object1 =
+        object1
+        |> Map.merge(%{
+          "updated" => "2023-05-08 23:43:47Z",
+          "formerRepresentations" => %{
+            "type" => "OrderedCollection",
+            "orderedItems" => [
+              %{"type" => "Note", "content" => "mew mew 1"}
+            ],
+            "totalItems" => 1
+          }
+        })
+
+      {:ok, o} = Object.create(full_object1)
+
+      assert {:ok, refetched} = Fetcher.refetch_object(o)
+
+      assert %{
+               "content" => "test 1",
+               "formerRepresentations" => %{
+                 "orderedItems" => [
+                   %{"content" => "mew mew 1"}
+                 ],
+                 "totalItems" => 1
+               }
+             } = refetched.data
+    end
+
+    test "it goes through ObjectValidator and MRF", %{object2: object2} do
+      with_mock Pleroma.Web.ActivityPub.MRF, [:passthrough],
+        filter: fn
+          %{"type" => "Note"} = object ->
+            {:ok, Map.put(object, "content", "MRFd content")}
+
+          arg ->
+            passthrough([arg])
+        end do
+        {:ok, o} = Object.create(object2)
+
+        assert {:ok, refetched} = Fetcher.refetch_object(o)
+
+        assert %{"content" => "MRFd content"} = refetched.data
+      end
     end
   end
 

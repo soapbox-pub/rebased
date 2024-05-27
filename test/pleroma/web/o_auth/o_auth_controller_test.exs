@@ -186,7 +186,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       assert html_response(conn, 302)
       assert redirected_to(conn) == app.redirect_uris
-      assert get_flash(conn, :error) == "Failed to authenticate: (error description)."
+      assert conn.assigns.flash["error"] == "Failed to authenticate: (error description)."
     end
 
     test "GET /oauth/registration_details renders registration details form", %{
@@ -307,7 +307,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           |> post("/oauth/register", bad_params)
 
         assert html_response(conn, 403) =~ ~r/name="op" type="submit" value="register"/
-        assert get_flash(conn, :error) == "Error: #{bad_param} has already been taken."
+        assert conn.assigns.flash["error"] == "Error: #{bad_param} has already been taken."
       end
     end
 
@@ -398,7 +398,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         |> post("/oauth/register", params)
 
       assert html_response(conn, 401) =~ ~r/name="op" type="submit" value="connect"/
-      assert get_flash(conn, :error) == "Invalid Username/Password"
+      assert conn.assigns.flash["error"] == "Invalid Username/Password"
     end
   end
 

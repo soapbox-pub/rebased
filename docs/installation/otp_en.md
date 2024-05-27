@@ -2,15 +2,16 @@
 
 {! backend/installation/otp_vs_from_source.include !}
 
-This guide covers a installation using an OTP release. To install Pleroma from source, please check out the corresponding guide for your distro.
+This guide covers a installation using OTP releases as built by the Pleroma project, it is meant as a fallback to distribution packages/recipes which are the preferred installation method.  
+To install Pleroma from source, please check out the corresponding guide for your distro.
 
 ## Pre-requisites
-* A machine running Linux with GNU (e.g. Debian, Ubuntu) or musl (e.g. Alpine) libc and `x86_64`, `aarch64` or `armv7l` CPU, you have root access to. If you are not sure if it's compatible see [Detecting flavour section](#detecting-flavour) below
+* A machine you have root access to running Debian GNU/Linux or compatible (eg. Ubuntu), or Alpine on `x86_64`, `aarch64` or `armv7l` CPU. If you are not sure what you are running see [Detecting flavour section](#detecting-flavour) below
 * A (sub)domain pointed to the machine
 
-You will be running commands as root. If you aren't root already, please elevate your privileges by executing `sudo su`/`su`.
+You will be running commands as root. If you aren't root already, please elevate your privileges by executing `sudo -i`/`su`.
 
-While in theory OTP releases are possbile to install on any compatible machine, for the sake of simplicity this guide focuses only on Debian/Ubuntu and Alpine.
+Similarly to other binaries, OTP releases tend to be only compatible with the distro they are built on, as such this guide focuses only on Debian/Ubuntu and Alpine.
 
 ### Detecting flavour
 
@@ -19,7 +20,7 @@ Paste the following into the shell:
 arch="$(uname -m)";if [ "$arch" = "x86_64" ];then arch="amd64";elif [ "$arch" = "armv7l" ];then arch="arm";elif [ "$arch" = "aarch64" ];then arch="arm64";else echo "Unsupported arch: $arch">&2;fi;if getconf GNU_LIBC_VERSION>/dev/null;then libc_postfix="";elif [ "$(ldd 2>&1|head -c 9)" = "musl libc" ];then libc_postfix="-musl";elif [ "$(find /lib/libc.musl*|wc -l)" ];then libc_postfix="-musl";else echo "Unsupported libc">&2;fi;echo "$arch$libc_postfix"
 ```
 
-If your platform is supported the output will contain the flavour string, you will need it later. If not, this just means that we don't build releases for your platform, you can still try installing from source.
+This should give your flavour string. If not this just means that we don't build releases for your platform, you can still try installing from source.
 
 ### Installing the required packages
 
@@ -114,13 +115,13 @@ adduser --system --shell  /bin/false --home /opt/pleroma pleroma
 export FLAVOUR="amd64-musl"
 
 # Clone the release build into a temporary directory and unpack it
-su pleroma -s $SHELL -lc "
+sudo -Hu pleroma "
 curl 'https://git.pleroma.social/api/v4/projects/2/jobs/artifacts/stable/download?job=$FLAVOUR' -o /tmp/pleroma.zip
 unzip /tmp/pleroma.zip -d /tmp/
 "
 
 # Move the release to the home directory and delete temporary files
-su pleroma -s $SHELL -lc "
+sudo -Hu pleroma "
 mv /tmp/release/* /opt/pleroma
 rmdir /tmp/release
 rm /tmp/pleroma.zip
@@ -141,25 +142,25 @@ mkdir -p /etc/pleroma
 chown -R pleroma /etc/pleroma
 
 # Run the config generator
-su pleroma -s $SHELL -lc "./bin/pleroma_ctl instance gen --output /etc/pleroma/config.exs --output-psql /tmp/setup_db.psql"
+sudo -Hu pleroma "./bin/pleroma_ctl instance gen --output /etc/pleroma/config.exs --output-psql /tmp/setup_db.psql"
 
 # Create the postgres database
-su postgres -s $SHELL -lc "psql -f /tmp/setup_db.psql"
+sudo -u postgres -s $SHELL -lc "psql -f /tmp/setup_db.psql"
 
 # Create the database schema
-su pleroma -s $SHELL -lc "./bin/pleroma_ctl migrate"
+sudo -Hu pleroma "./bin/pleroma_ctl migrate"
 
 # If you have installed RUM indexes uncommend and run
-# su pleroma -s $SHELL -lc "./bin/pleroma_ctl migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
+# sudo -Hu pleroma "./bin/pleroma_ctl migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
 
 # Start the instance to verify that everything is working as expected
-su pleroma -s $SHELL -lc "./bin/pleroma daemon"
+sudo -Hu pleroma "./bin/pleroma daemon"
 
 # Wait for about 20 seconds and query the instance endpoint, if it shows your uri, name and email correctly, you are configured correctly
 sleep 20 && curl http://localhost:4000/api/v1/instance
 
 # Stop the instance
-su pleroma -s $SHELL -lc "./bin/pleroma stop"
+sudo -Hu pleroma "./bin/pleroma stop"
 ```
 
 ### Setting up nginx and getting Let's Encrypt SSL certificaties
@@ -197,6 +198,10 @@ $EDITOR path-to-nginx-config
 # Verify that the config is valid
 nginx -t
 ```
+#### (Strongly recommended) serve media on another domain
+
+Refer to the [Hardening your instance](../configuration/hardening.md) document on how to serve media on another domain. We STRONGLY RECOMMEND you to do this to minimize attack vectors.
+
 #### Start nginx
 
 === "Alpine"
@@ -233,7 +238,7 @@ At this point if you open your (sub)domain in a browser you should see a 502 err
     systemctl enable pleroma
     ```
 
-If everything worked, you should see Pleroma-FE when visiting your domain. If that didn't happen, try reviewing the installation steps, starting Pleroma in the foreground and seeing if there are any errrors.
+If everything worked, you should see Pleroma-FE when visiting your domain. If that didn't happen, try reviewing the installation steps, starting Pleroma in the foreground and seeing if there are any errors.
 
 Questions about the installation or didn’t it work as it should be, ask in [#pleroma:libera.chat](https://matrix.to/#/#pleroma:libera.chat) via Matrix or **#pleroma** on **libera.chat** via IRC, you can also [file an issue on our Gitlab](https://git.pleroma.social/pleroma/pleroma-support/issues/new).
 

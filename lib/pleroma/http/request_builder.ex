@@ -54,12 +54,12 @@ defmodule Pleroma.HTTP.RequestBuilder do
   @doc """
   Add optional parameters to the request
   """
-  @spec add_param(Request.t(), atom(), atom(), any()) :: Request.t()
+  @spec add_param(Request.t(), atom(), atom() | String.t(), any()) :: Request.t()
   def add_param(request, :query, :query, values), do: %{request | query: values}
 
   def add_param(request, :body, :body, value), do: %{request | body: value}
 
-  def add_param(request, :body, key, value) do
+  def add_param(request, :body, key, value) when is_binary(key) do
     request
     |> Map.put(:body, Multipart.new())
     |> Map.update!(

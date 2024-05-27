@@ -9,7 +9,7 @@ defmodule Mix.Tasks.Pleroma.Ecto.MigrateTest do
 
   test "ecto.migrate info message" do
     level = Logger.level()
-    Logger.configure(level: :warn)
+    Logger.configure(level: :warning)
 
     assert capture_log(fn ->
              Mix.Tasks.Pleroma.Ecto.Migrate.run()

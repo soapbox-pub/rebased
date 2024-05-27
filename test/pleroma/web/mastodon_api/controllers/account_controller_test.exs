@@ -18,6 +18,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
   import Pleroma.Factory
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   describe "account fetching" do
     test "works by id" do
       %User{id: user_id} = insert(:user)
@@ -1355,7 +1360,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert user.registration_reason == "I'm a cool dude, bro"
     end
 
-    test "returns error when user already registred", %{conn: conn, valid_params: valid_params} do
+    test "returns error when user already registered", %{conn: conn, valid_params: valid_params} do
       _user = insert(:user, email: "lain@example.org")
       app_token = insert(:oauth_token, user: nil)
 
@@ -1490,7 +1495,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         |> Plug.Conn.put_req_header("authorization", "Bearer " <> token)
         |> put_req_header("content-type", "multipart/form-data")
         |> post("/api/v1/accounts", %{
-          nickname: "nickanme",
+          nickname: "nickname",
           agreement: true,
           email: "email@example.com",
           fullname: "Lain",
@@ -1776,7 +1781,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert %{language: "ru_RU"} = Pleroma.User.get_by_nickname("foo")
     end
 
-    test "createing an account without language parameter should fallback to cookie/header language",
+    test "creating an account without language parameter should fallback to cookie/header language",
          %{conn: conn} do
       params = %{
         username: "foo2",
@@ -2031,6 +2036,39 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     assert [%{"id" => ^id1}] = result
   end
 
+  test "list of blocks with with_relationships parameter" do
+    %{user: user, conn: conn} = oauth_access(["read:blocks"])
+    %{id: id1} = other_user1 = insert(:user)
+    %{id: id2} = other_user2 = insert(:user)
+    %{id: id3} = other_user3 = insert(:user)
+
+    {:ok, _, _} = User.follow(other_user1, user)
+    {:ok, _, _} = User.follow(other_user2, user)
+    {:ok, _, _} = User.follow(other_user3, user)
+
+    {:ok, _} = User.block(user, other_user1)
+    {:ok, _} = User.block(user, other_user2)
+    {:ok, _} = User.block(user, other_user3)
+
+    assert [
+             %{
+               "id" => ^id3,
+               "pleroma" => %{"relationship" => %{"blocking" => true, "followed_by" => false}}
+             },
+             %{
+               "id" => ^id2,
+               "pleroma" => %{"relationship" => %{"blocking" => true, "followed_by" => false}}
+             },
+             %{
+               "id" => ^id1,
+               "pleroma" => %{"relationship" => %{"blocking" => true, "followed_by" => false}}
+             }
+           ] =
+             conn
+             |> get("/api/v1/blocks?with_relationships=true")
+             |> json_response_and_validate_schema(200)
+  end
+
   test "account lookup", %{conn: conn} do
     %{nickname: acct} = insert(:user, %{nickname: "nickname"})
     %{nickname: acct_two} = insert(:user, %{nickname: "nickname@notlocaldoma.in"})
@@ -2131,6 +2169,55 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                |> assign(:user, user)
                |> post("/api/v1/accounts/#{id2}/pin")
                |> json_response_and_validate_schema(400)
+    end
+  end
+
+  describe "familiar followers" do
+    setup do: oauth_access(["read:follows"])
+
+    test "fetch user familiar followers", %{user: user, conn: conn} do
+      %{id: id1} = other_user1 = insert(:user)
+      %{id: id2} = other_user2 = insert(:user)
+      _ = insert(:user)
+
+      User.follow(user, other_user1)
+      User.follow(other_user1, other_user2)
+
+      assert [%{"accounts" => [%{"id" => ^id1}], "id" => ^id2}] =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> get("/api/v1/accounts/familiar_followers?id[]=#{id2}")
+               |> json_response_and_validate_schema(200)
+    end
+
+    test "returns empty array if followers are hidden", %{user: user, conn: conn} do
+      other_user1 = insert(:user, hide_follows: true)
+      %{id: id2} = other_user2 = insert(:user)
+      _ = insert(:user)
+
+      User.follow(user, other_user1)
+      User.follow(other_user1, other_user2)
+
+      assert [%{"accounts" => [], "id" => ^id2}] =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> get("/api/v1/accounts/familiar_followers?id[]=#{id2}")
+               |> json_response_and_validate_schema(200)
+    end
+
+    test "it respects hide_followers", %{user: user, conn: conn} do
+      other_user1 = insert(:user)
+      %{id: id2} = other_user2 = insert(:user, hide_followers: true)
+      _ = insert(:user)
+
+      User.follow(user, other_user1)
+      User.follow(other_user1, other_user2)
+
+      assert [%{"accounts" => [], "id" => ^id2}] =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> get("/api/v1/accounts/familiar_followers?id[]=#{id2}")
+               |> json_response_and_validate_schema(200)
     end
   end
 

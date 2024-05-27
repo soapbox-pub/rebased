@@ -154,12 +154,15 @@ To add configuration to your config file, you can copy it from the base config. 
     * `Pleroma.Web.ActivityPub.MRF.MentionPolicy`: Drops posts mentioning configurable users. (See [`:mrf_mention`](#mrf_mention)).
     * `Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`: Restricts activities to a configured set of vocabulary. (See [`:mrf_vocabulary`](#mrf_vocabulary)).
     * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
-    * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.Workers.PurgeExpiredActivity` to be enabled for processing the scheduled delections.
+    * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.Workers.PurgeExpiredActivity` to be enabled for processing the scheduled deletions.
     * `Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy`: Makes all bot posts to disappear from public timelines.
     * `Pleroma.Web.ActivityPub.MRF.FollowBotPolicy`: Automatically follows newly discovered users from the specified bot account. Local accounts, locked accounts, and users with "#nobot" in their bio are respected and excluded from being followed.
     * `Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicy`: Drops follow requests from followbots. Users can still allow bots to follow them by first following the bot.
     * `Pleroma.Web.ActivityPub.MRF.KeywordPolicy`: Rejects or removes from the federated timeline or replaces keywords. (See [`:mrf_keyword`](#mrf_keyword)).
     * `Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent`: Forces every mentioned user to be reflected in the post content.
+    * `Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy`: Forces quote post URLs to be reflected in the message content inline.
+    * `Pleroma.Web.ActivityPub.MRF.QuoteToLinkTagPolicy`: Force a Link tag for posts quoting another post. (may break outgoing federation of quote posts with older Pleroma versions).
+    * `Pleroma.Web.ActivityPub.MRF.ForceMention`: Forces posts to include a mention of the author of parent post or the author of quoted post.
 * `transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
 
@@ -261,6 +264,18 @@ Notes:
 
 * `follower_nickname`: The name of the bot account to use for following newly discovered users. Using `followbot` or similar is strongly suggested.
 
+#### :mrf_emoji
+* `remove_url`: A list of patterns which result in emoji whose URL matches being removed from the message. This will apply to statuses, emoji reactions, and user profiles. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
+* `remove_shortcode`: A list of patterns which result in emoji whose shortcode matches being removed from the message. This will apply to statuses, emoji reactions, and user profiles. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
+* `federated_timeline_removal_url`: A list of patterns which result in message with emojis whose URLs match being removed from federated timelines (a.k.a unlisted). This will apply only to statuses. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
+* `federated_timeline_removal_shortcode`: A list of patterns which result in message with emojis whose shortcodes match being removed from federated timelines (a.k.a unlisted). This will apply only to statuses. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
+
+#### :mrf_inline_quote
+* `template`: The template to append to the post. `{url}` will be replaced with the actual link to the quoted post. Default: `<bdi>RT:</bdi> {url}`
+
+#### :mrf_force_mention
+* `mention_parent`: Whether to append mention of parent post author
+* `mention_quoted`: Whether to append mention of parent quoted author
 
 ### :activitypub
 * `unfollow_blocked`: Whether blocks result in people getting unfollowed
@@ -496,7 +511,7 @@ config :pleroma, :rate_limit,
 Means that:
 
 1. In 60 seconds, 15 authentication attempts can be performed from the same IP address.
-2. In 1 second, 10 search requests can be performed from the same IP adress by unauthenticated users, while authenticated users can perform 30 search requests per second.
+2. In 1 second, 10 search requests can be performed from the same IP address by unauthenticated users, while authenticated users can perform 30 search requests per second.
 
 Supported rate limiters:
 
@@ -646,6 +661,19 @@ config :ex_aws, :s3,
   host: "s3.eu-central-1.amazonaws.com"
 ```
 
+#### Pleroma.Uploaders.IPFS
+
+* `post_gateway_url`: URL with port of POST Gateway (unauthenticated)
+* `get_gateway_url`: URL of public GET Gateway
+
+Example:
+
+```elixir
+config :pleroma, Pleroma.Uploaders.IPFS,
+  post_gateway_url: "http://localhost:5001",
+  get_gateway_url: "http://{CID}.ipfs.mydomain.com"
+```
+
 ### Upload filters
 
 #### Pleroma.Upload.Filter.AnonymizeFilename
@@ -668,6 +696,12 @@ No specific configuration.
 #### Pleroma.Upload.Filter.Exiftool.ReadDescription
 
 This filter reads the ImageDescription and iptc:Caption-Abstract fields with Exiftool so clients can prefill the media description field.
+
+No specific configuration.
+
+#### Pleroma.Upload.Filter.OnlyMedia
+
+This filter rejects uploads that are not identified with Content-Type matching audio/\*, image/\*, or video/\*
 
 No specific configuration.
 
@@ -873,21 +907,8 @@ This will probably take a long time.
 
 ### BBS / SSH access
 
-To enable simple command line interface accessible over ssh, add a setting like this to your configuration file:
-
-```exs
-app_dir = File.cwd!
-priv_dir = Path.join([app_dir, "priv/ssh_keys"])
-
-config :esshd,
-  enabled: true,
-  priv_dir: priv_dir,
-  handler: "Pleroma.BBS.Handler",
-  port: 10_022,
-  password_authenticator: "Pleroma.BBS.Authenticator"
-```
-
-Feel free to adjust the priv_dir and port number. Then you will have to create the key for the keys (in the example `priv/ssh_keys`) and create the host keys with `ssh-keygen -m PEM -N "" -b 2048 -t rsa -f ssh_host_rsa_key`. After restarting, you should be able to connect to your Pleroma instance with `ssh username@server -p $PORT`
+This feature has been removed from Pleroma core.
+However, a client has been made and is available at https://git.pleroma.social/Duponin/sshocial.
 
 ### :gopher
 * `enabled`: Enables the gopher interface
@@ -1078,7 +1099,7 @@ config :pleroma, Pleroma.Formatter,
 
 ## :configurable_from_database
 
-Boolean, enables/disables in-database configuration. Read [Transfering the config to/from the database](../administration/CLI_tasks/config.md) for more information.
+Boolean, enables/disables in-database configuration. Read [Transferring the config to/from the database](../administration/CLI_tasks/config.md) for more information.
 
 ## :database_config_whitelist
 
@@ -1139,7 +1160,7 @@ Control favicons for instances.
 !!! note
     Requires enabled email
 
-* `:purge_after_days` an integer, remove backup achives after N days.
+* `:purge_after_days` an integer, remove backup achieves after N days.
 * `:limit_days` an integer, limit user to export not more often than once per N days.
 * `:dir` a string with a path to backup temporary directory or `nil` to let Pleroma choose temporary directory in the following order:
     1. the directory named by the TMPDIR environment variable

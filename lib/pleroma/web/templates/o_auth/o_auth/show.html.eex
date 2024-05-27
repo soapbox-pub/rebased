@@ -1,8 +1,8 @@
-<%= if get_flash(@conn, :info) do %>
-<p class="alert alert-info" role="alert"><%= get_flash(@conn, :info) %></p>
+<%= if Phoenix.Flash.get(@flash, :info) do %>
+<p class="alert alert-info" role="alert"><%= Phoenix.Flash.get(@flash, :info) %></p>
 <% end %>
-<%= if get_flash(@conn, :error) do %>
-<p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
+<%= if Phoenix.Flash.get(@flash, :error) do %>
+<p class="alert alert-danger" role="alert"><%= Phoenix.Flash.get(@flash, :error) %></p>
 <% end %>
 
 <%= form_for @conn, Routes.o_auth_path(@conn, :authorize), [as: "authorization"], fn f -> %>
@@ -13,7 +13,7 @@
     <div class="account-header__avatar" style="background-image: url('<%= Pleroma.User.avatar_url(@user) %>')"></div>
     <div class="account-header__meta">
       <div class="account-header__display-name"><%= @user.name %></div>
-      <div class="account-header__nickname">@<%= @user.nickname %>@<%= Pleroma.User.get_host(@user) %></div>
+      <div class="account-header__nickname">@<%= Pleroma.User.full_nickname(@user.nickname) %></div>
     </div>
   </div>
 <% end %>

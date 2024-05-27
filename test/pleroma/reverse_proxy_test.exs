@@ -306,7 +306,7 @@ defmodule Pleroma.ReverseProxyTest do
   end
 
   describe "response content disposition header" do
-    test "not atachment", %{conn: conn} do
+    test "not attachment", %{conn: conn} do
       disposition_headers_mock([
         {"content-type", "image/gif"},
         {"content-length", "0"}

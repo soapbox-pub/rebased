@@ -76,10 +76,26 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     assert %{"invisible" => true} = UserView.render("service.json", %{user: user})
   end
 
+  test "service has a few essential fields" do
+    user = insert(:user)
+    result = UserView.render("service.json", %{user: user})
+    assert result["id"]
+    assert result["type"] == "Application"
+    assert result["inbox"]
+    assert result["outbox"]
+  end
+
   test "renders AKAs" do
     akas = ["https://i.tusooa.xyz/users/test-pleroma"]
     user = insert(:user, also_known_as: akas)
     assert %{"alsoKnownAs" => ^akas} = UserView.render("user.json", %{user: user})
+  end
+
+  test "renders full nickname" do
+    clear_config([Pleroma.Web.WebFinger, :domain], "plemora.dev")
+
+    user = insert(:user, nickname: "user")
+    assert %{"webfinger" => "acct:user@plemora.dev"} = UserView.render("user.json", %{user: user})
   end
 
   describe "endpoints" do

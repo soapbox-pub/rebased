@@ -29,12 +29,18 @@ defmodule Pleroma.NullCache do
   end
 
   @impl true
+  def fetch(_, key, func), do: func.(key)
+
+  @impl true
   def get_and_update(_, _, func) do
     func.(nil)
   end
 
   @impl true
   def expire_at(_, _, _), do: {:ok, true}
+
+  @impl true
+  def expire(_, _, _), do: {:ok, true}
 
   @impl true
   def exists?(_, _), do: {:ok, false}

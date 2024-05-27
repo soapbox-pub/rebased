@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.Config
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
@@ -19,11 +20,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   import ExUnit.CaptureLog
   import Mock
+  import Mox
   import Pleroma.Factory
   import Tesla.Mock
 
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
     :ok
   end
 
@@ -174,7 +180,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
       assert user.ap_id == user_id
       assert user.nickname == "admin@mastodon.example.org"
-      assert user.ap_enabled
       assert user.follower_address == "http://mastodon.example.org/users/admin/followers"
     end
 
@@ -771,6 +776,34 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 2
     end
+
+    test "increates quotes count", %{user: user} do
+      user2 = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "1", visibility: "public"})
+      ap_id = activity.data["id"]
+      quote_data = %{status: "1", quote_id: activity.id}
+
+      # public
+      {:ok, _} = CommonAPI.post(user2, Map.put(quote_data, :visibility, "public"))
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert object.data["quotesCount"] == 1
+
+      # unlisted
+      {:ok, _} = CommonAPI.post(user2, Map.put(quote_data, :visibility, "unlisted"))
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert object.data["quotesCount"] == 2
+
+      # private
+      {:ok, _} = CommonAPI.post(user2, Map.put(quote_data, :visibility, "private"))
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert object.data["quotesCount"] == 2
+
+      # direct
+      {:ok, _} = CommonAPI.post(user2, Map.put(quote_data, :visibility, "direct"))
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert object.data["quotesCount"] == 2
+    end
   end
 
   describe "fetch activities for recipients" do
@@ -995,7 +1028,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     refute repeat_activity in activities
   end
 
-  test "see your own posts even when they adress actors from blocked domains" do
+  test "see your own posts even when they address actors from blocked domains" do
     user = insert(:user)
 
     domain = "dogwhistle.zone"
@@ -2652,5 +2685,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, user} = ActivityPub.make_user_from_ap_id("https://princess.cat/users/mewmew")
     assert user.name == " "
+  end
+
+  @tag capture_log: true
+  test "pin_data_from_featured_collection will ignore unsupported values" do
+    assert %{} ==
+             ActivityPub.pin_data_from_featured_collection(%{
+               "type" => "OrderedCollection",
+               "first" => "https://social.example/users/alice/collections/featured?page=true"
+             })
   end
 end

@@ -93,6 +93,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
     %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
   end
 
+  test "a Note from Convergence AP Bridge validates" do
+    insert(:user, ap_id: "https://cc.mkdir.uk/ap/acct/hiira")
+
+    note =
+      "test/fixtures/ccworld-ap-bridge_note.json"
+      |> File.read!()
+      |> Jason.decode!()
+
+    %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
+  end
+
   test "a note with an attachment should work", _ do
     insert(:user, %{ap_id: "https://owncast.localhost.localdomain/federation/user/streamer"})
 
@@ -115,5 +126,54 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
       |> elem(1)
 
     %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
+  end
+
+  test "Fedibird quote post" do
+    insert(:user, ap_id: "https://fedibird.com/users/noellabo")
+
+    data = File.read!("test/fixtures/quote_post/fedibird_quote_post.json") |> Jason.decode!()
+    cng = ArticleNotePageValidator.cast_and_validate(data)
+
+    assert cng.valid?
+    assert cng.changes.quoteUrl == "https://misskey.io/notes/8vsn2izjwh"
+  end
+
+  test "Fedibird quote post with quoteUri field" do
+    insert(:user, ap_id: "https://fedibird.com/users/noellabo")
+
+    data = File.read!("test/fixtures/quote_post/fedibird_quote_uri.json") |> Jason.decode!()
+    cng = ArticleNotePageValidator.cast_and_validate(data)
+
+    assert cng.valid?
+    assert cng.changes.quoteUrl == "https://fedibird.com/users/yamako/statuses/107699333438289729"
+  end
+
+  test "Misskey quote post" do
+    insert(:user, ap_id: "https://misskey.io/users/7rkrarq81i")
+
+    data = File.read!("test/fixtures/quote_post/misskey_quote_post.json") |> Jason.decode!()
+    cng = ArticleNotePageValidator.cast_and_validate(data)
+
+    assert cng.valid?
+    assert cng.changes.quoteUrl == "https://misskey.io/notes/8vs6wxufd0"
+  end
+
+  test "Parse tag as quote" do
+    # https://codeberg.org/fediverse/fep/src/branch/main/fep/e232/fep-e232.md
+
+    insert(:user, ap_id: "https://server.example/users/1")
+
+    data = File.read!("test/fixtures/quote_post/fep-e232-tag-example.json") |> Jason.decode!()
+    cng = ArticleNotePageValidator.cast_and_validate(data)
+
+    assert cng.valid?
+    assert cng.changes.quoteUrl == "https://server.example/objects/123"
+
+    assert Enum.at(cng.changes.tag, 0).changes == %{
+             type: "Link",
+             mediaType: "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+             href: "https://server.example/objects/123",
+             name: "RE: https://server.example/objects/123"
+           }
   end
 end

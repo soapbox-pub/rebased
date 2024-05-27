@@ -12,14 +12,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   @primary_key false
   embedded_schema do
     field(:id, :string)
-    field(:type, :string)
+    field(:type, :string, default: "Link")
     field(:mediaType, ObjectValidators.MIME, default: "application/octet-stream")
     field(:name, :string)
     field(:summary, :string)
     field(:blurhash, :string)
 
     embeds_many :url, UrlObjectValidator, primary_key: false do
-      field(:type, :string)
+      field(:type, :string, default: "Link")
       field(:href, ObjectValidators.Uri)
       field(:mediaType, ObjectValidators.MIME, default: "application/octet-stream")
       field(:width, :integer)

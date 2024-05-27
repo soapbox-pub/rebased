@@ -6,8 +6,6 @@ defmodule Pleroma.HTML do
   # Scrubbers are compiled on boot so they can be configured in OTP releases
   #  @on_load :compile_scrubbers
 
-  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
-
   def compile_scrubbers do
     dir = Path.join(:code.priv_dir(:pleroma), "scrubbers")
 
@@ -67,22 +65,9 @@ defmodule Pleroma.HTML do
     end
   end
 
-  def extract_first_external_url_from_object(%{data: %{"content" => content}} = object)
+  @spec extract_first_external_url_from_object(Pleroma.Object.t()) :: String.t() | nil
+  def extract_first_external_url_from_object(%{data: %{"content" => content}})
       when is_binary(content) do
-    unless object.data["fake"] do
-      key = "URL|#{object.id}"
-
-      @cachex.fetch!(:scrubber_cache, key, fn _key ->
-        {:commit, {:ok, extract_first_external_url(content)}}
-      end)
-    else
-      {:ok, extract_first_external_url(content)}
-    end
-  end
-
-  def extract_first_external_url_from_object(_), do: {:error, :no_content}
-
-  def extract_first_external_url(content) do
     content
     |> Floki.parse_fragment!()
     |> Floki.find("a:not(.mention,.hashtag,.attachment,[rel~=\"tag\"])")
@@ -90,4 +75,6 @@ defmodule Pleroma.HTML do
     |> Floki.attribute("href")
     |> Enum.at(0)
   end
+
+  def extract_first_external_url_from_object(_), do: nil
 end

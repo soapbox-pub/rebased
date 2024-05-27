@@ -17,6 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
 
   defp object_id_for(%{data: %{"object" => %{"id" => id}}}) when is_binary(id), do: id
@@ -107,6 +108,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       "mention" ->
         put_status(response, activity, reading_user, status_render_opts)
 
+      "status" ->
+        put_status(response, activity, reading_user, status_render_opts)
+
       "favourite" ->
         put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
 
@@ -145,7 +149,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   end
 
   defp put_emoji(response, activity) do
-    Map.put(response, :emoji, activity.data["content"])
+    response
+    |> Map.put(:emoji, activity.data["content"])
+    |> Map.put(:emoji_url, MediaProxy.url(Pleroma.Emoji.emoji_url(activity.data)))
   end
 
   defp put_chat_message(response, activity, reading_user, opts) do

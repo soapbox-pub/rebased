@@ -55,12 +55,6 @@ defmodule Pleroma.ReleaseTasks do
 
       {:error, term} when is_binary(term) ->
         IO.puts(:stderr, "The database for #{inspect(@repo)} couldn't be created: #{term}")
-
-      {:error, term} ->
-        IO.puts(
-          :stderr,
-          "The database for #{inspect(@repo)} couldn't be created: #{inspect(term)}"
-        )
     end
   end
 end

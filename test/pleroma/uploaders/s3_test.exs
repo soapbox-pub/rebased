@@ -3,22 +3,27 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Uploaders.S3Test do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Uploaders.S3
+  alias Pleroma.Uploaders.S3.ExAwsMock
 
-  import Mock
+  import Mox
   import ExUnit.CaptureLog
 
-  setup do
-    clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.S3)
-    clear_config([Pleroma.Upload, :base_url], "https://s3.amazonaws.com")
-    clear_config([Pleroma.Uploaders.S3])
-    clear_config([Pleroma.Uploaders.S3, :bucket], "test_bucket")
-  end
-
   describe "get_file/1" do
-    test "it returns path to local folder for files" do
+    test "it returns url for files" do
+      ConfigMock
+      |> expect(:get, 6, fn key ->
+        [
+          {Pleroma.Upload,
+           [uploader: Pleroma.Uploaders.S3, base_url: "https://s3.amazonaws.com"]},
+          {Pleroma.Uploaders.S3, [bucket: "test_bucket"]}
+        ]
+        |> get_in(key)
+      end)
+
       assert S3.get_file("test_image.jpg") == {
                :ok,
                {:url, "https://s3.amazonaws.com/test_bucket/test_image.jpg"}
@@ -26,13 +31,16 @@ defmodule Pleroma.Uploaders.S3Test do
     end
 
     test "it returns path without bucket when truncated_namespace set to ''" do
-      clear_config([Pleroma.Uploaders.S3],
-        bucket: "test_bucket",
-        bucket_namespace: "myaccount",
-        truncated_namespace: ""
-      )
-
-      clear_config([Pleroma.Upload, :base_url], "https://s3.amazonaws.com")
+      ConfigMock
+      |> expect(:get, 6, fn key ->
+        [
+          {Pleroma.Upload,
+           [uploader: Pleroma.Uploaders.S3, base_url: "https://s3.amazonaws.com"]},
+          {Pleroma.Uploaders.S3,
+           [bucket: "test_bucket", truncated_namespace: "", bucket_namespace: "myaccount"]}
+        ]
+        |> get_in(key)
+      end)
 
       assert S3.get_file("test_image.jpg") == {
                :ok,
@@ -41,10 +49,15 @@ defmodule Pleroma.Uploaders.S3Test do
     end
 
     test "it returns path with bucket namespace when namespace is set" do
-      clear_config([Pleroma.Uploaders.S3],
-        bucket: "test_bucket",
-        bucket_namespace: "family"
-      )
+      ConfigMock
+      |> expect(:get, 6, fn key ->
+        [
+          {Pleroma.Upload,
+           [uploader: Pleroma.Uploaders.S3, base_url: "https://s3.amazonaws.com"]},
+          {Pleroma.Uploaders.S3, [bucket: "test_bucket", bucket_namespace: "family"]}
+        ]
+        |> get_in(key)
+      end)
 
       assert S3.get_file("test_image.jpg") == {
                :ok,
@@ -62,28 +75,42 @@ defmodule Pleroma.Uploaders.S3Test do
         tempfile: Path.absname("test/instance_static/add/shortcode.png")
       }
 
+      ConfigMock
+      |> expect(:get, fn [Pleroma.Uploaders.S3] ->
+        [
+          bucket: "test_bucket"
+        ]
+      end)
+
       [file_upload: file_upload]
     end
 
     test "save file", %{file_upload: file_upload} do
-      with_mock ExAws, request: fn _ -> {:ok, :ok} end do
-        assert S3.put_file(file_upload) == {:ok, {:file, "test_folder/image-tet.jpg"}}
-      end
+      ExAwsMock
+      |> expect(:request, fn _req -> {:ok, %{status_code: 200}} end)
+
+      assert S3.put_file(file_upload) == {:ok, {:file, "test_folder/image-tet.jpg"}}
     end
 
     test "returns error", %{file_upload: file_upload} do
-      with_mock ExAws, request: fn _ -> {:error, "S3 Upload failed"} end do
-        assert capture_log(fn ->
-                 assert S3.put_file(file_upload) == {:error, "S3 Upload failed"}
-               end) =~ "Elixir.Pleroma.Uploaders.S3: {:error, \"S3 Upload failed\"}"
-      end
+      ExAwsMock
+      |> expect(:request, fn _req -> {:error, "S3 Upload failed"} end)
+
+      assert capture_log(fn ->
+               assert S3.put_file(file_upload) == {:error, "S3 Upload failed"}
+             end) =~ "Elixir.Pleroma.Uploaders.S3: {:error, \"S3 Upload failed\"}"
     end
   end
 
   describe "delete_file/1" do
-    test_with_mock "deletes file", ExAws, request: fn _req -> {:ok, %{status_code: 204}} end do
+    test "deletes file" do
+      ExAwsMock
+      |> expect(:request, fn _req -> {:ok, %{status_code: 204}} end)
+
+      ConfigMock
+      |> expect(:get, fn [Pleroma.Uploaders.S3, :bucket] -> "test_bucket" end)
+
       assert :ok = S3.delete_file("image.jpg")
-      assert_called(ExAws.request(:_))
     end
   end
 end

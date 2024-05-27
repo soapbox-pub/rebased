@@ -29,7 +29,7 @@ HiddenServiceDir /var/lib/tor/pleroma_hidden_service/
 HiddenServicePort 80 127.0.0.1:8099
 HiddenServiceVersion 3  # Remove if Tor version is below 0.3 ( tor --version )
 ```
-Restart Tor to generate an adress:
+Restart Tor to generate an address:
 ```
 systemctl restart tor@default.service
 ```
