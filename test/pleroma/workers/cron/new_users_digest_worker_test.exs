@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.Cron.NewUsersDigestWorkerTest do
@@ -9,6 +9,11 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorkerTest do
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Workers.Cron.NewUsersDigestWorker
+
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
 
   test "it sends new users digest emails" do
     yesterday = NaiveDateTime.utc_now() |> Timex.shift(days: -1)

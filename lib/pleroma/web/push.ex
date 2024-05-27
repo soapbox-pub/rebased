@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Push do
@@ -9,7 +9,7 @@ defmodule Pleroma.Web.Push do
 
   def init do
     unless enabled() do
-      Logger.warn("""
+      Logger.warning("""
       VAPID key pair is not found. If you wish to enabled web push, please run
 
           mix web_push.gen.keypair

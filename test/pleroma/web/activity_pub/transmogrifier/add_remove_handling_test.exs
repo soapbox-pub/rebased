@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.AddRemoveHandlingTest do
   use Oban.Testing, repo: Pleroma.Repo
   use Pleroma.DataCase, async: true
@@ -67,7 +71,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AddRemoveHandlingTest do
       "target" => "https://example.com/users/lain/collections/featured",
       "type" => "Add",
       "to" => [Pleroma.Constants.as_public()],
-      "cc" => ["https://example.com/users/lain/followers"]
+      "cc" => ["https://example.com/users/lain/followers"],
+      "bcc" => [],
+      "bto" => []
     }
 
     assert {:ok, activity} = Transmogrifier.handle_incoming(message)
@@ -82,7 +88,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AddRemoveHandlingTest do
       "target" => "https://example.com/users/lain/collections/featured",
       "type" => "Remove",
       "to" => [Pleroma.Constants.as_public()],
-      "cc" => ["https://example.com/users/lain/followers"]
+      "cc" => ["https://example.com/users/lain/followers"],
+      "bcc" => [],
+      "bto" => []
     }
 
     assert {:ok, activity} = Transmogrifier.handle_incoming(remove)
@@ -161,7 +169,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AddRemoveHandlingTest do
       "target" => "https://#{host}/users/#{user.nickname}/collections/featured",
       "type" => "Add",
       "to" => [Pleroma.Constants.as_public()],
-      "cc" => ["https://#{host}/users/#{user.nickname}/followers"]
+      "cc" => ["https://#{host}/users/#{user.nickname}/followers"],
+      "bcc" => [],
+      "bto" => []
     }
 
     assert {:ok, activity} = Transmogrifier.handle_incoming(message)

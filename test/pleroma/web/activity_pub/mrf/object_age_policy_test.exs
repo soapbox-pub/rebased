@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
@@ -22,6 +22,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
   defp get_old_message do
     File.read!("test/fixtures/mastodon-post-activity.json")
     |> Jason.decode!()
+    |> Map.drop(["published"])
   end
 
   defp get_new_message do

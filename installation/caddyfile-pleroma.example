@@ -5,34 +5,13 @@
 # 2. Copy this section into your Caddyfile and restart Caddy.
 
 example.tld  {
-  log /var/log/caddy/pleroma_access.log
-  errors /var/log/caddy/pleroma_error.log
+  log {
+    output file /var/log/caddy/pleroma.log
+  }
 
-  gzip
+  encode gzip
 
   # this is explicitly IPv4 since Pleroma.Web.Endpoint binds on IPv4 only
   # and `localhost.` resolves to [::0] on some systems: see issue #930
-  proxy / 127.0.0.1:4000 {
-    websocket
-    transparent
-  }
-
-  tls {
-    # Remove the rest of the lines in here, if you want to support older devices
-    key_type p256
-    ciphers ECDHE-ECDSA-WITH-CHACHA20-POLY1305 ECDHE-RSA-WITH-CHACHA20-POLY1305 ECDHE-ECDSA-AES256-GCM-SHA384 ECDHE-RSA-AES256-GCM-SHA384 ECDHE-ECDSA-AES128-GCM-SHA256 ECDHE-RSA-AES128-GCM-SHA256
-  }
-
-  # If you do not want to use the mediaproxy function, remove these lines.
-  # To use this directive, you need the http.cache plugin for Caddy.
-  cache {
-    match_path /media
-    default_max_age 720m
-  }
-
-  cache {
-    match_path /proxy
-    default_max_age 720m
-  }
-  # Stop removing lines here.
+  reverse_proxy 127.0.0.1:4000
 }

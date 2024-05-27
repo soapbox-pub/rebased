@@ -1,12 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
   alias Pleroma.Config
   alias Pleroma.Stats
   alias Pleroma.User
-  alias Pleroma.Web.Federator.Publisher
+  alias Pleroma.Web.ActivityPub.Publisher
   alias Pleroma.Web.MastodonAPI.InstanceView
 
   # returns a nodeinfo 2.0 map, since 2.1 just adds a repository field
@@ -35,7 +35,9 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
       openRegistrations: Config.get([:instance, :registrations_open]),
       usage: %{
         users: %{
-          total: Map.get(stats, :user_count, 0)
+          total: Map.get(stats, :user_count, 0),
+          activeMonth: Pleroma.User.active_user_count(30),
+          activeHalfyear: Pleroma.User.active_user_count(180)
         },
         localPosts: Map.get(stats, :status_count, 0)
       },
@@ -47,6 +49,10 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
           enabled: false
         },
         staffAccounts: staff_accounts,
+        roles: %{
+          admin: Config.get([:instance, :admin_privileges]),
+          moderator: Config.get([:instance, :moderator_privileges])
+        },
         federation: federation,
         pollLimits: Config.get([:instance, :poll_limits]),
         postFormats: Config.get([:instance, :allowed_post_formats]),

@@ -1,27 +1,12 @@
 # Installing on Debian Based Distributions
+
+{! backend/installation/otp_vs_from_source_source.include !}
+
 ## Installation
 
-This guide will assume you are on Debian Stretch. This guide should also work with Ubuntu 16.04 and 18.04. It also assumes that you have administrative rights, either as root or a user with [sudo permissions](https://www.digitalocean.com/community/tutorials/how-to-add-delete-and-grant-sudo-privileges-to-users-on-a-debian-vps). If you want to run this guide with root, ignore the `sudo` at the beginning of the lines, unless it calls a user like `sudo -Hu pleroma`; in this case, use `su <username> -s $SHELL -c 'command'` instead.
+This guide will assume you are on Debian 12 (“bookworm”) or later. This guide should also work with Ubuntu 22.04 (“jammy”) and later. It also assumes that you have administrative rights, either as root or a user with [sudo permissions](https://www.digitalocean.com/community/tutorials/how-to-add-delete-and-grant-sudo-privileges-to-users-on-a-debian-vps). If you want to run this guide with root, ignore the `sudo` at the beginning of the lines, unless it calls a user like `sudo -Hu pleroma`; in this case, use `su <username> -s $SHELL -c 'command'` instead.
 
-### Required packages
-
-* `postgresql` (9.6+, Ubuntu 16.04 comes with 9.5, you can get a newer version from [here](https://www.postgresql.org/download/linux/ubuntu/))
-* `postgresql-contrib` (9.6+, same situtation as above)
-* `elixir` (1.8+, Follow the guide to install from the Erlang Solutions repo or use [asdf](https://github.com/asdf-vm/asdf) as the pleroma user)
-* `erlang-dev`
-* `erlang-nox`
-* `libmagic-dev`
-* `git`
-* `build-essential`
-* `cmake`
-
-#### Optional packages used in this guide
-
-* `nginx` (preferred, example configs for other reverse proxies can be found in the repo)
-* `certbot` (or any other ACME client for Let’s Encrypt certificates)
-* `ImageMagick`
-* `ffmpeg`
-* `exiftool`
+{! backend/installation/generic_dependencies.include !}
 
 ### Prepare the system
 
@@ -40,19 +25,13 @@ sudo apt install git build-essential postgresql postgresql-contrib cmake libmagi
 
 ### Install Elixir and Erlang
 
-* Download and add the Erlang repository:
-
-```shell
-wget -P /tmp/ https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb
-sudo dpkg -i /tmp/erlang-solutions_2.0_all.deb
-```
-
-* Install Elixir and Erlang:
+* Install Elixir and Erlang (you might need to use backports or [asdf](https://github.com/asdf-vm/asdf) on old systems):
 
 ```shell
 sudo apt update
 sudo apt install elixir erlang-dev erlang-nox
 ```
+
 
 ### Optional packages: [`docs/installation/optional/media_graphics_packages.md`](../installation/optional/media_graphics_packages.md)
 
@@ -157,6 +136,11 @@ sudo ln -s /etc/nginx/sites-available/pleroma.nginx /etc/nginx/sites-enabled/ple
 ```
 
 * Before starting nginx edit the configuration and change it to your needs (e.g. change servername, change cert paths)
+
+* (Strongly recommended) serve media on another domain
+
+Refer to the [Hardening your instance](../configuration/hardening.md) document on how to serve media on another domain. We STRONGLY RECOMMEND you to do this to minimize attack vectors.
+
 * Enable and start nginx:
 
 ```shell

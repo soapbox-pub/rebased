@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.RateLimiterTest do
@@ -53,32 +53,37 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
     scale = 80
     limit = 5
 
-    clear_config([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
+    clear_config([Pleroma.Web.Endpoint, :http, :ip], {127, 0, 0, 1})
     clear_config([:rate_limit, limiter_name], {scale, limit})
 
     plug_opts = RateLimiter.init(name: limiter_name)
     conn = build_conn(:get, "/")
 
-    for i <- 1..5 do
-      conn = RateLimiter.call(conn, plug_opts)
-      assert {^i, _} = RateLimiter.inspect_bucket(conn, limiter_name, plug_opts)
-      Process.sleep(10)
+    for _ <- 1..5 do
+      conn_limited = RateLimiter.call(conn, plug_opts)
+
+      refute conn_limited.status == Conn.Status.code(:too_many_requests)
+      refute conn_limited.resp_body
+      refute conn_limited.halted
     end
 
-    conn = RateLimiter.call(conn, plug_opts)
-    assert %{"error" => "Throttled"} = ConnTest.json_response(conn, :too_many_requests)
-    assert conn.halted
+    conn_limited = RateLimiter.call(conn, plug_opts)
+    assert %{"error" => "Throttled"} = ConnTest.json_response(conn_limited, :too_many_requests)
+    assert conn_limited.halted
 
-    Process.sleep(50)
+    expire_ttl(conn, limiter_name)
 
-    conn = build_conn(:get, "/")
+    for _ <- 1..5 do
+      conn_limited = RateLimiter.call(conn, plug_opts)
 
-    conn = RateLimiter.call(conn, plug_opts)
-    assert {1, 4} = RateLimiter.inspect_bucket(conn, limiter_name, plug_opts)
+      refute conn_limited.status == Conn.Status.code(:too_many_requests)
+      refute conn_limited.resp_body
+      refute conn_limited.halted
+    end
 
-    refute conn.status == Conn.Status.code(:too_many_requests)
-    refute conn.resp_body
-    refute conn.halted
+    conn_limited = RateLimiter.call(conn, plug_opts)
+    assert %{"error" => "Throttled"} = ConnTest.json_response(conn_limited, :too_many_requests)
+    assert conn_limited.halted
   end
 
   describe "options" do
@@ -137,6 +142,7 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
   end
 
   describe "unauthenticated users" do
+    @tag :erratic
     test "are restricted based on remote IP" do
       limiter_name = :test_unauthenticated
       clear_config([:rate_limit, limiter_name], [{1000, 5}, {1, 10}])
@@ -174,6 +180,7 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
       :ok
     end
 
+    @tag :erratic
     test "can have limits separate from unauthenticated connections" do
       limiter_name = :test_authenticated1
 
@@ -199,6 +206,7 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
       assert conn.halted
     end
 
+    @tag :erratic
     test "different users are counted independently" do
       limiter_name = :test_authenticated2
       clear_config([:rate_limit, limiter_name], [{1, 10}, {1000, 5}])
@@ -258,5 +266,13 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
     Task.await(task2)
 
     refute {:err, :not_found} == RateLimiter.inspect_bucket(conn, limiter_name, opts)
+  end
+
+  def expire_ttl(%{remote_ip: remote_ip} = _conn, bucket_name_root) do
+    bucket_name = "anon:#{bucket_name_root}" |> String.to_atom()
+    key_name = "ip::#{remote_ip |> Tuple.to_list() |> Enum.join(".")}"
+
+    {:ok, bucket_value} = Cachex.get(bucket_name, key_name)
+    Cachex.put(bucket_name, key_name, bucket_value, ttl: -1)
   end
 end

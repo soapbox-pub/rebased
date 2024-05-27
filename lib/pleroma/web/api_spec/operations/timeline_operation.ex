@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.TimelineOperation do
@@ -176,7 +176,12 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
   end
 
   defp with_muted_param do
-    Operation.parameter(:with_muted, :query, BooleanLike, "Include activities by muted users")
+    Operation.parameter(
+      :with_muted,
+      :query,
+      BooleanLike.schema(),
+      "Include activities by muted users"
+    )
   end
 
   defp exclude_visibilities_param do

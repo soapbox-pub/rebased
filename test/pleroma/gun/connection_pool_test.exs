@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Gun.ConnectionPoolTest do
@@ -46,6 +46,7 @@ defmodule Pleroma.Gun.ConnectionPoolTest do
       end
   end
 
+  @tag :erratic
   test "connection limit is respected with concurrent requests" do
     clear_config([:connections_pool, :max_connections]) do
       clear_config([:connections_pool, :max_connections], 1)

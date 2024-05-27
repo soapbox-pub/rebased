@@ -1,6 +1,8 @@
 # Installing on NetBSD
 
-## Required software
+{! backend/installation/generic_dependencies.include !}
+
+## Installing software used in this guide
 
 pkgin should have been installed by the NetBSD installer if you selected
 the right options. If it isn't installed, install it using pkg_add.
@@ -120,6 +122,10 @@ Edit the defaults:
 `/etc/nginx/tls/fullchain`.
 * Change `ssl_certificate_key` to `/etc/nginx/tls/key`.
 * Change `example.tld` to your instance's domain name.
+
+### (Strongly recommended) serve media on another domain
+
+Refer to the [Hardening your instance](../configuration/hardening.md) document on how to serve media on another domain. We STRONGLY RECOMMEND you to do this to minimize attack vectors.
 
 ## Configuring acme.sh
 

@@ -1,0 +1,8 @@
+## Packaged (OTP) installation vs Manual (from-source) installations
+
+There is multiple ways to install Pleroma.
+<dl>
+<dt>Distro-provided packages</dt><dd>This is the recommended method, where you can get the strongest compatibility guarantees and the best dependency-management</dd>
+<dt>Pleroma-provided OTP binaries</dt><dd>Intended as fallback for Alpine/Debian-compatible systems lacking a proper Pleroma package, they are heavier than proper distro packages as they also contain Erlang/Elixir and can break after system updates</dd>
+<dt>Manual from-source installation</dt><dd>Needs build-dependencies to be installed and manual updates+rebuilds. Allows for easier source-customisations.</dd>
+</dl>

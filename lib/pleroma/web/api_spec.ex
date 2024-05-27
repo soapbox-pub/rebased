@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec do
@@ -9,6 +9,14 @@ defmodule Pleroma.Web.ApiSpec do
   alias Pleroma.Web.Router
 
   @behaviour OpenApi
+
+  defp streaming_paths do
+    %{
+      "/api/v1/streaming" => %OpenApiSpex.PathItem{
+        get: Pleroma.Web.ApiSpec.StreamingOperation.streaming_operation()
+      }
+    }
+  end
 
   @impl OpenApi
   def spec(opts \\ []) do
@@ -35,7 +43,7 @@ defmodule Pleroma.Web.ApiSpec do
         - [Mastodon API documentation](https://docs.joinmastodon.org/client/intro/)
         - [Differences in Mastodon API responses from vanilla Mastodon](https://docs-develop.pleroma.social/backend/development/API/differences_in_mastoapi_responses/)
 
-        Please report such occurences on our [issue tracker](https://git.pleroma.social/pleroma/pleroma/-/issues). Feel free to submit API questions or proposals there too!
+        Please report such occurrences on our [issue tracker](https://git.pleroma.social/pleroma/pleroma/-/issues). Feel free to submit API questions or proposals there too!
         """,
         # Strip environment from the version
         version: Application.spec(:pleroma, :vsn) |> to_string() |> String.replace(~r/\+.*$/, ""),
@@ -45,7 +53,7 @@ defmodule Pleroma.Web.ApiSpec do
         }
       },
       # populate the paths from a phoenix router
-      paths: OpenApiSpex.Paths.from_router(Router),
+      paths: Map.merge(streaming_paths(), OpenApiSpex.Paths.from_router(Router)),
       components: %OpenApiSpex.Components{
         parameters: %{
           "accountIdOrNickname" =>
@@ -86,16 +94,18 @@ defmodule Pleroma.Web.ApiSpec do
             "tags" => [
               "Chat administration",
               "Emoji pack administration",
-              "Frontend managment",
+              "Frontend management",
               "Instance configuration",
               "Instance documents",
+              "Instance rule managment",
               "Invites",
               "MediaProxy cache",
-              "OAuth application managment",
+              "OAuth application management",
               "Relays",
-              "Report managment",
+              "Report management",
               "Status administration",
-              "User administration"
+              "User administration",
+              "Announcement management"
             ]
           },
           %{"name" => "Applications", "tags" => ["Applications", "Push subscriptions"]},
@@ -110,10 +120,12 @@ defmodule Pleroma.Web.ApiSpec do
               "Follow requests",
               "Mascot",
               "Markers",
-              "Notifications"
+              "Notifications",
+              "Filters",
+              "Settings"
             ]
           },
-          %{"name" => "Instance", "tags" => ["Custom emojis"]},
+          %{"name" => "Instance", "tags" => ["Custom emojis", "Instance misc"]},
           %{"name" => "Messaging", "tags" => ["Chats", "Conversations"]},
           %{
             "name" => "Statuses",
@@ -125,10 +137,22 @@ defmodule Pleroma.Web.ApiSpec do
               "Retrieve status information",
               "Scheduled statuses",
               "Search",
-              "Status actions"
+              "Status actions",
+              "Media attachments",
+              "Bookmark folders"
             ]
           },
-          %{"name" => "Miscellaneous", "tags" => ["Emoji packs", "Reports", "Suggestions"]}
+          %{
+            "name" => "Miscellaneous",
+            "tags" => [
+              "Emoji packs",
+              "Reports",
+              "Suggestions",
+              "Announcements",
+              "Remote interaction",
+              "Others"
+            ]
+          }
         ]
       }
     }

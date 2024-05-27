@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.PublisherWorker do
@@ -18,8 +18,11 @@ defmodule Pleroma.Workers.PublisherWorker do
     Federator.perform(:publish, activity)
   end
 
-  def perform(%Job{args: %{"op" => "publish_one", "module" => module_name, "params" => params}}) do
+  def perform(%Job{args: %{"op" => "publish_one", "params" => params}}) do
     params = Map.new(params, fn {k, v} -> {String.to_atom(k), v} end)
-    Federator.perform(:publish_one, String.to_atom(module_name), params)
+    Federator.perform(:publish_one, params)
   end
+
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(10)
 end

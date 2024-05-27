@@ -1,11 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.MFAView do
   use Pleroma.Web, :view
   import Phoenix.HTML.Form
   alias Pleroma.MFA
+  alias Pleroma.Web.Gettext
 
   def render("mfa_response.json", %{token: token, user: user}) do
     %{

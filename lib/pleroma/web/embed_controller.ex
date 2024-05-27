@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.EmbedController do
@@ -11,12 +11,10 @@ defmodule Pleroma.Web.EmbedController do
 
   alias Pleroma.Web.ActivityPub.Visibility
 
-  plug(:put_layout, :embed)
-
   def show(conn, %{"id" => id}) do
     with %Activity{local: true} = activity <-
            Activity.get_by_id_with_object(id),
-         true <- Visibility.is_public?(activity.object) do
+         true <- Visibility.public?(activity.object) do
       {:ok, author} = User.get_or_fetch(activity.object.data["actor"])
 
       conn

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Gopher.Server do
@@ -114,7 +114,7 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
 
   def response("/notices/" <> id) do
     with %Activity{} = activity <- Activity.get_by_id(id),
-         true <- Visibility.is_public?(activity) do
+         true <- Visibility.public?(activity) do
       activities =
         ActivityPub.fetch_activities_for_context(activity.data["context"])
         |> render_activities

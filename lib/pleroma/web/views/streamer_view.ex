@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.StreamerView do
@@ -11,8 +11,11 @@ defmodule Pleroma.Web.StreamerView do
   alias Pleroma.User
   alias Pleroma.Web.MastodonAPI.NotificationView
 
-  def render("update.json", %Activity{} = activity, %User{} = user) do
+  require Pleroma.Constants
+
+  def render("update.json", %Activity{} = activity, %User{} = user, topic) do
     %{
+      stream: render("stream.json", %{topic: topic}),
       event: "update",
       payload:
         Pleroma.Web.MastodonAPI.StatusView.render(
@@ -25,8 +28,24 @@ defmodule Pleroma.Web.StreamerView do
     |> Jason.encode!()
   end
 
-  def render("notification.json", %Notification{} = notify, %User{} = user) do
+  def render("status_update.json", %Activity{} = activity, %User{} = user, topic) do
     %{
+      stream: render("stream.json", %{topic: topic}),
+      event: "status.update",
+      payload:
+        Pleroma.Web.MastodonAPI.StatusView.render(
+          "show.json",
+          activity: activity,
+          for: user
+        )
+        |> Jason.encode!()
+    }
+    |> Jason.encode!()
+  end
+
+  def render("notification.json", %Notification{} = notify, %User{} = user, topic) do
+    %{
+      stream: render("stream.json", %{topic: topic}),
       event: "notification",
       payload:
         NotificationView.render(
@@ -38,8 +57,9 @@ defmodule Pleroma.Web.StreamerView do
     |> Jason.encode!()
   end
 
-  def render("update.json", %Activity{} = activity) do
+  def render("update.json", %Activity{} = activity, topic) do
     %{
+      stream: render("stream.json", %{topic: topic}),
       event: "update",
       payload:
         Pleroma.Web.MastodonAPI.StatusView.render(
@@ -51,7 +71,21 @@ defmodule Pleroma.Web.StreamerView do
     |> Jason.encode!()
   end
 
-  def render("chat_update.json", %{chat_message_reference: cm_ref}) do
+  def render("status_update.json", %Activity{} = activity, topic) do
+    %{
+      stream: render("stream.json", %{topic: topic}),
+      event: "status.update",
+      payload:
+        Pleroma.Web.MastodonAPI.StatusView.render(
+          "show.json",
+          activity: activity
+        )
+        |> Jason.encode!()
+    }
+    |> Jason.encode!()
+  end
+
+  def render("chat_update.json", %{chat_message_reference: cm_ref}, topic) do
     # Explicitly giving the cmr for the object here, so we don't accidentally
     # send a later 'last_message' that was inserted between inserting this and
     # streaming it out
@@ -66,6 +100,7 @@ defmodule Pleroma.Web.StreamerView do
       )
 
     %{
+      stream: render("stream.json", %{topic: topic}),
       event: "pleroma:chat_update",
       payload:
         representation
@@ -74,8 +109,9 @@ defmodule Pleroma.Web.StreamerView do
     |> Jason.encode!()
   end
 
-  def render("follow_relationships_update.json", item) do
+  def render("follow_relationships_update.json", item, topic) do
     %{
+      stream: render("stream.json", %{topic: topic}),
       event: "pleroma:follow_relationships_update",
       payload:
         %{
@@ -96,8 +132,9 @@ defmodule Pleroma.Web.StreamerView do
     |> Jason.encode!()
   end
 
-  def render("conversation.json", %Participation{} = participation) do
+  def render("conversation.json", %Participation{} = participation, topic) do
     %{
+      stream: render("stream.json", %{topic: topic}),
       event: "conversation",
       payload:
         Pleroma.Web.MastodonAPI.ConversationView.render("participation.json", %{
@@ -108,4 +145,39 @@ defmodule Pleroma.Web.StreamerView do
     }
     |> Jason.encode!()
   end
+
+  def render("pleroma_respond.json", %{type: type, result: result} = params) do
+    %{
+      event: "pleroma:respond",
+      payload:
+        %{
+          result: result,
+          type: type
+        }
+        |> Map.merge(maybe_error(params))
+        |> Jason.encode!()
+    }
+    |> Jason.encode!()
+  end
+
+  def render("stream.json", %{topic: "user:pleroma_chat:" <> _}), do: ["user:pleroma_chat"]
+  def render("stream.json", %{topic: "user:notification:" <> _}), do: ["user:notification"]
+  def render("stream.json", %{topic: "user:" <> _}), do: ["user"]
+  def render("stream.json", %{topic: "direct:" <> _}), do: ["direct"]
+  def render("stream.json", %{topic: "list:" <> id}), do: ["list", id]
+  def render("stream.json", %{topic: "hashtag:" <> tag}), do: ["hashtag", tag]
+
+  def render("stream.json", %{topic: "public:remote:media:" <> instance}),
+    do: ["public:remote:media", instance]
+
+  def render("stream.json", %{topic: "public:remote:" <> instance}),
+    do: ["public:remote", instance]
+
+  def render("stream.json", %{topic: stream}) when stream in Pleroma.Constants.public_streams(),
+    do: [stream]
+
+  defp maybe_error(%{error: :bad_topic}), do: %{error: "bad_topic"}
+  defp maybe_error(%{error: :unauthorized}), do: %{error: "unauthorized"}
+  defp maybe_error(%{error: :already_authenticated}), do: %{error: "already_authenticated"}
+  defp maybe_error(_), do: %{}
 end

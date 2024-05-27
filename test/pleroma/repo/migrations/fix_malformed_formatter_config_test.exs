@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Repo.Migrations.FixMalformedFormatterConfigTest do
@@ -26,13 +26,13 @@ defmodule Pleroma.Repo.Migrations.FixMalformedFormatterConfigTest do
 
     %{value: new_opts} = ConfigDB.get_by_params(%{group: :pleroma, key: Pleroma.Formatter})
 
-    assert new_opts == [
+    assert Keyword.equal?(new_opts,
              class: false,
              extra: true,
              new_window: false,
              rel: "F",
              strip_prefix: false
-           ]
+           )
 
     clear_config(Pleroma.Formatter, new_opts)
     assert new_opts == Pleroma.Config.get(Pleroma.Formatter)

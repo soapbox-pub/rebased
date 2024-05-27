@@ -1,22 +1,21 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Integration.WebsocketClient do
   # https://github.com/phoenixframework/phoenix/blob/master/test/support/websocket_client.exs
+
+  use WebSockex
 
   @doc """
   Starts the WebSocket server for given ws URL. Received Socket.Message's
   are forwarded to the sender pid
   """
   def start_link(sender, url, headers \\ []) do
-    :crypto.start()
-    :ssl.start()
-
-    :websocket_client.start_link(
-      String.to_charlist(url),
+    WebSockex.start_link(
+      url,
       __MODULE__,
-      [sender],
+      %{sender: sender},
       extra_headers: headers
     )
   end
@@ -36,27 +35,32 @@ defmodule Pleroma.Integration.WebsocketClient do
   end
 
   @doc false
-  def init([sender], _conn_state) do
-    {:ok, %{sender: sender}}
-  end
-
-  @doc false
-  def websocket_handle(frame, _conn_state, state) do
+  @impl true
+  def handle_frame(frame, state) do
     send(state.sender, frame)
     {:ok, state}
   end
 
+  @impl true
+  def handle_disconnect(conn_status, state) do
+    send(state.sender, {:close, conn_status})
+    {:ok, state}
+  end
+
   @doc false
-  def websocket_info({:text, msg}, _conn_state, state) do
+  @impl true
+  def handle_info({:text, msg}, state) do
     {:reply, {:text, msg}, state}
   end
 
-  def websocket_info(:close, _conn_state, _state) do
+  @impl true
+  def handle_info(:close, _state) do
     {:close, <<>>, "done"}
   end
 
   @doc false
-  def websocket_terminate(_reason, _conn_state, _state) do
+  @impl true
+  def terminate(_reason, _state) do
     :ok
   end
 end

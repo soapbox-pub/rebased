@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Docs.Generator do
@@ -15,8 +15,10 @@ defmodule Pleroma.Docs.Generator do
     :code.all_loaded()
     |> Enum.filter(fn {module, _} ->
       # This shouldn't be needed as all modules are expected to have module_info/1,
-      # but in test enviroments some transient modules `:elixir_compiler_XX`
+      # but in test environments some transient modules `:elixir_compiler_XX`
       # are loaded for some reason (where XX is a random integer).
+      Code.ensure_loaded(module)
+
       if function_exported?(module, :module_info, 1) do
         module.module_info(:attributes)
         |> Keyword.get_values(:behaviour)

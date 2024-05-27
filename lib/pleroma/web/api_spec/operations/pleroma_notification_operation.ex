@@ -1,11 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.PleromaNotificationOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
-  alias Pleroma.Web.ApiSpec.NotificationOperation
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
 
   import Pleroma.Web.ApiSpec.Helpers
@@ -35,12 +34,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaNotificationOperation do
           Operation.response(
             "A Notification or array of Notifications",
             "application/json",
-            %Schema{
-              anyOf: [
-                %Schema{type: :array, items: NotificationOperation.notification()},
-                NotificationOperation.notification()
-              ]
-            }
+            %Schema{type: :string}
           ),
         400 => Operation.response("Bad Request", "application/json", ApiError)
       }

@@ -1,0 +1,17 @@
+{
+  "commentsEnabled": true,
+  "sensitive": false,
+  "stickied": false,
+  "attributedTo": "https://enterprise.lemmy.ml/u/nutomic",
+  "summary": "Hello Federation!",
+  "url": "https://enterprise.lemmy.ml/pictrs/image/US52d9DPvf.jpg",
+  "image": {
+    "type": "Image",
+    "url": "https://enterprise.lemmy.ml/pictrs/image/lwFAcXHUjS.jpg"
+  },
+  "published": "2020-09-14T15:03:11.909105+00:00",
+  "to": "https://enterprise.lemmy.ml/c/main",
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id": "https://enterprise.lemmy.ml/post/3",
+  "type": "Page"
+}

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Pagination do
@@ -61,14 +61,15 @@ defmodule Pleroma.Pagination do
     |> Repo.all()
   end
 
-  @spec paginate(Ecto.Query.t(), map(), type(), atom() | nil) :: [Ecto.Schema.t()]
-  def paginate(query, options, method \\ :keyset, table_binding \\ nil)
-
-  def paginate(list, options, _method, _table_binding) when is_list(list) do
+  @spec paginate_list(list(), keyword()) :: list()
+  def paginate_list(list, options) do
     offset = options[:offset] || 0
     limit = options[:limit] || 0
     Enum.slice(list, offset, limit)
   end
+
+  @spec paginate(Ecto.Query.t(), map(), type(), atom() | nil) :: [Ecto.Schema.t()]
+  def paginate(query, options, method \\ :keyset, table_binding \\ nil)
 
   def paginate(query, options, :keyset, table_binding) do
     query

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.OTPVersionTest do
@@ -28,7 +28,7 @@ defmodule Pleroma.OTPVersionTest do
                "23.0"
     end
 
-    test "with non existance file" do
+    test "with nonexistent file" do
       assert OTPVersion.get_version_from_files([
                "test/fixtures/warnings/otp_version/non-exising",
                "test/fixtures/warnings/otp_version/22.4"

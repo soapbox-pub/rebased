@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.UserView do
@@ -34,7 +34,6 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   def render("endpoints.json", _), do: %{}
 
   def render("service.json", %{user: user}) do
-    {:ok, user} = User.ensure_keys_present(user)
     {:ok, _, public_key} = Keys.keys_from_pem(user.keys)
     public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
     public_key = :public_key.pem_encode([public_key])
@@ -47,6 +46,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "following" => "#{user.ap_id}/following",
       "followers" => "#{user.ap_id}/followers",
       "inbox" => "#{user.ap_id}/inbox",
+      "outbox" => "#{user.ap_id}/outbox",
       "name" => "Pleroma",
       "summary" =>
         "An internal service actor for this Pleroma instance.  No user-serviceable parts inside.",
@@ -67,11 +67,15 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   def render("user.json", %{user: %User{nickname: nil} = user}),
     do: render("service.json", %{user: user})
 
-  def render("user.json", %{user: %User{nickname: "internal." <> _} = user}),
-    do: render("service.json", %{user: user}) |> Map.put("preferredUsername", user.nickname)
+  def render("user.json", %{user: %User{nickname: "internal." <> _} = user}) do
+    render("service.json", %{user: user})
+    |> Map.merge(%{
+      "preferredUsername" => user.nickname,
+      "webfinger" => "acct:#{User.full_nickname(user)}"
+    })
+  end
 
   def render("user.json", %{user: user}) do
-    {:ok, user} = User.ensure_keys_present(user)
     {:ok, _, public_key} = Keys.keys_from_pem(user.keys)
     public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
     public_key = :public_key.pem_encode([public_key])
@@ -91,6 +95,11 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       else
         %{}
       end
+
+    birthday =
+      if user.show_birthday && user.birthday,
+        do: Date.to_iso8601(user.birthday),
+        else: nil
 
     %{
       "id" => user.ap_id,
@@ -116,7 +125,9 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       # Note: key name is indeed "discoverable" (not an error)
       "discoverable" => user.is_discoverable,
       "capabilities" => capabilities,
-      "alsoKnownAs" => user.also_known_as
+      "alsoKnownAs" => user.also_known_as,
+      "vcard:bday" => birthday,
+      "webfinger" => "acct:#{User.full_nickname(user)}"
     }
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))
     |> Map.merge(maybe_make_image(&User.banner_url/2, "image", user))

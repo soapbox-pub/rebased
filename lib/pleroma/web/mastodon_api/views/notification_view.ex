@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.NotificationView do
@@ -17,9 +17,14 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
 
-  @parent_types ~w{Like Announce EmojiReact}
+  defp object_id_for(%{data: %{"object" => %{"id" => id}}}) when is_binary(id), do: id
+
+  defp object_id_for(%{data: %{"object" => id}}) when is_binary(id), do: id
+
+  @parent_types ~w{Like Announce EmojiReact Update}
 
   def render("index.json", %{notifications: notifications, for: reading_user} = opts) do
     activities = Enum.map(notifications, & &1.activity)
@@ -30,7 +35,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
         %{data: %{"type" => type}} ->
           type in @parent_types
       end)
-      |> Enum.map(& &1.data["object"])
+      |> Enum.map(&object_id_for/1)
       |> Activity.create_by_object_ap_id()
       |> Activity.with_preloaded_object(:left)
       |> Pleroma.Repo.all()
@@ -78,9 +83,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
 
     parent_activity_fn = fn ->
       if opts[:parent_activities] do
-        Activity.Queries.find_by_object_ap_id(opts[:parent_activities], activity.data["object"])
+        Activity.Queries.find_by_object_ap_id(opts[:parent_activities], object_id_for(activity))
       else
-        Activity.get_create_by_object_ap_id(activity.data["object"])
+        Activity.get_create_by_object_ap_id(object_id_for(activity))
       end
     end
 
@@ -103,14 +108,23 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       "mention" ->
         put_status(response, activity, reading_user, status_render_opts)
 
+      "status" ->
+        put_status(response, activity, reading_user, status_render_opts)
+
       "favourite" ->
         put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
 
       "reblog" ->
         put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
 
+      "update" ->
+        put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
+
       "move" ->
         put_target(response, activity, reading_user, %{})
+
+      "poll" ->
+        put_status(response, activity, reading_user, status_render_opts)
 
       "pleroma:emoji_reaction" ->
         response
@@ -135,7 +149,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   end
 
   defp put_emoji(response, activity) do
-    Map.put(response, :emoji, activity.data["content"])
+    response
+    |> Map.put(:emoji, activity.data["content"])
+    |> Map.put(:emoji_url, MediaProxy.url(Pleroma.Emoji.emoji_url(activity.data)))
   end
 
   defp put_chat_message(response, activity, reading_user, opts) do

@@ -1,2 +1,0 @@
-(window.webpackJsonp=window.webpackJsonp||[]).push([[88],{220:function(e,n,t){"use strict";function o(e){["interactive","complete"].includes(document.readyState)?e():document.addEventListener("DOMContentLoaded",e)}t.r(n),t.d(n,"default",(function(){return o}))},951:function(e,n,t){"use strict";t.r(n);var o=t(220);Object(o.default)((function(){var e=document.querySelector("img");e.addEventListener("mouseenter",(function(){e.src="/oops.gif"})),e.addEventListener("mouseleave",(function(){e.src="/oops.png"}))}))}},[[951,0]]]);
-//# sourceMappingURL=error.js.map

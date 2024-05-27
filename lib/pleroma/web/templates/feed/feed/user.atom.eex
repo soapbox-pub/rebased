@@ -8,17 +8,18 @@
 
   <id><%= Routes.user_feed_url(@conn, :feed, @user.nickname) <> ".atom" %></id>
   <title><%= @user.nickname <> "'s timeline" %></title>
-  <updated><%= most_recent_update(@activities, @user) %></updated>
+  <subtitle><%= escape(@user.bio) %></subtitle>
+  <updated><%= most_recent_update(@activities, @user, :atom) %></updated>
   <logo><%= logo(@user) %></logo>
   <link rel="self" href="<%= '#{Routes.user_feed_url(@conn, :feed, @user.nickname)}.atom' %>" type="application/atom+xml"/>
 
-  <%= render @view_module, "_author.atom", assigns %>
+  <%= render Phoenix.Controller.view_module(@conn), "_author.atom", assigns %>
 
   <%= if last_activity(@activities) do %>
     <link rel="next" href="<%= '#{Routes.user_feed_url(@conn, :feed, @user.nickname)}.atom?max_id=#{last_activity(@activities).id}' %>" type="application/atom+xml"/>
   <% end %>
 
   <%= for activity <- @activities do %>
-  <%= render @view_module, "_activity.atom", Map.merge(assigns, prepare_activity(activity)) %>
+  <%= render Phoenix.Controller.view_module(@conn), "_activity.atom", Map.merge(assigns, prepare_activity(activity)) %>
   <% end %>
 </feed>

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
@@ -174,9 +174,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       response =
         conn
         |> get(
-          "/api/v1/pleroma/accounts/#{user.id}/favourites?since_id=#{third_activity.id}&max_id=#{
-            seventh_activity.id
-          }"
+          "/api/v1/pleroma/accounts/#{user.id}/favourites?since_id=#{third_activity.id}&max_id=#{seventh_activity.id}"
         )
         |> json_response_and_validate_schema(:ok)
 
@@ -279,6 +277,86 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       conn = post(conn, "/api/v1/pleroma/accounts/target_id/unsubscribe")
 
       assert %{"error" => "Record not found"} = json_response_and_validate_schema(conn, 404)
+    end
+  end
+
+  describe "account endorsements" do
+    test "returns a list of pinned accounts", %{conn: conn} do
+      %{id: id1} = user1 = insert(:user)
+      %{id: id2} = user2 = insert(:user)
+      %{id: id3} = user3 = insert(:user)
+
+      CommonAPI.follow(user1, user2)
+      CommonAPI.follow(user1, user3)
+
+      User.endorse(user1, user2)
+      User.endorse(user1, user3)
+
+      [%{"id" => ^id2}, %{"id" => ^id3}] =
+        conn
+        |> get("/api/v1/pleroma/accounts/#{id1}/endorsements")
+        |> json_response_and_validate_schema(200)
+    end
+
+    test "returns 404 error when specified user is not exist", %{conn: conn} do
+      conn = get(conn, "/api/v1/pleroma/accounts/test/endorsements")
+
+      assert json_response_and_validate_schema(conn, 404) == %{"error" => "Record not found"}
+    end
+  end
+
+  describe "birthday reminders" do
+    test "returns a list of friends having birthday on specified day" do
+      %{user: user, conn: conn} = oauth_access(["read:accounts"])
+
+      %{id: id1} =
+        user1 =
+        insert(:user, %{
+          birthday: "2001-02-12",
+          show_birthday: true
+        })
+
+      user2 =
+        insert(:user, %{
+          birthday: "2001-02-14",
+          show_birthday: true
+        })
+
+      user3 = insert(:user)
+
+      CommonAPI.follow(user, user1)
+      CommonAPI.follow(user, user2)
+      CommonAPI.follow(user, user3)
+
+      [%{"id" => ^id1}] =
+        conn
+        |> get("/api/v1/pleroma/birthdays?day=12&month=2")
+        |> json_response_and_validate_schema(:ok)
+    end
+
+    test "the list doesn't list friends with hidden birth date" do
+      %{user: user, conn: conn} = oauth_access(["read:accounts"])
+
+      user1 =
+        insert(:user, %{
+          birthday: "2001-02-12",
+          show_birthday: false
+        })
+
+      %{id: id2} =
+        user2 =
+        insert(:user, %{
+          birthday: "2001-02-12",
+          show_birthday: true
+        })
+
+      CommonAPI.follow(user, user1)
+      CommonAPI.follow(user, user2)
+
+      [%{"id" => ^id2}] =
+        conn
+        |> get("/api/v1/pleroma/birthdays?day=12&month=2")
+        |> json_response_and_validate_schema(:ok)
     end
   end
 end

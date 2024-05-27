@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
@@ -8,6 +8,8 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
 
+  import Pleroma.Web.ApiSpec.Helpers
+
   def open_api_operation(action) do
     operation = String.to_existing_atom("#{action}_operation")
     apply(__MODULE__, operation, [])
@@ -15,7 +17,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
 
   def emoji_operation do
     %Operation{
-      tags: ["Emojis"],
+      tags: ["Custom emojis"],
       summary: "List all custom emojis",
       operationId: "UtilController.emoji",
       parameters: [],
@@ -28,7 +30,8 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
               properties: %{
                 image_url: %Schema{type: :string},
                 tags: %Schema{type: :array, items: %Schema{type: :string}}
-              }
+              },
+              extensions: %{"x-additionalPropertiesName": "Emoji name"}
             },
             example: %{
               "firefox" => %{
@@ -43,7 +46,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
 
   def frontend_configurations_operation do
     %Operation{
-      tags: ["Configuration"],
+      tags: ["Others"],
       summary: "Dump frontend configurations",
       operationId: "UtilController.frontend_configurations",
       parameters: [],
@@ -51,7 +54,12 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
         200 =>
           Operation.response("List", "application/json", %Schema{
             type: :object,
-            additionalProperties: %Schema{type: :object}
+            additionalProperties: %Schema{
+              type: :object,
+              description:
+                "Opaque object representing the instance-wide configuration for the frontend",
+              extensions: %{"x-additionalPropertiesName": "Frontend name"}
+            }
           })
       }
     }
@@ -63,17 +71,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
       summary: "Change account password",
       security: [%{"oAuth" => ["write:accounts"]}],
       operationId: "UtilController.change_password",
-      parameters: [
-        Operation.parameter(:password, :query, :string, "Current password", required: true),
-        Operation.parameter(:new_password, :query, :string, "New password", required: true),
-        Operation.parameter(
-          :new_password_confirmation,
-          :query,
-          :string,
-          "New password, confirmation",
-          required: true
-        )
-      ],
+      requestBody: request_body("Parameters", change_password_request(), required: true),
       responses: %{
         200 =>
           Operation.response("Success", "application/json", %Schema{
@@ -82,6 +80,23 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
           }),
         400 => Operation.response("Error", "application/json", ApiError),
         403 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp change_password_request do
+    %Schema{
+      title: "ChangePasswordRequest",
+      description: "POST body for changing the account's password",
+      type: :object,
+      required: [:password, :new_password, :new_password_confirmation],
+      properties: %{
+        password: %Schema{type: :string, description: "Current password"},
+        new_password: %Schema{type: :string, description: "New password"},
+        new_password_confirmation: %Schema{
+          type: :string,
+          description: "New password, confirmation"
+        }
       }
     }
   end
@@ -92,11 +107,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
       summary: "Change account email",
       security: [%{"oAuth" => ["write:accounts"]}],
       operationId: "UtilController.change_email",
-      parameters: [
-        Operation.parameter(:password, :query, :string, "Current password", required: true),
-        Operation.parameter(:email, :query, :string, "New email", required: true)
-      ],
-      requestBody: nil,
+      requestBody: request_body("Parameters", change_email_request(), required: true),
       responses: %{
         200 =>
           Operation.response("Success", "application/json", %Schema{
@@ -109,23 +120,39 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
     }
   end
 
-  def update_notificaton_settings_operation do
+  defp change_email_request do
+    %Schema{
+      title: "ChangeEmailRequest",
+      description: "POST body for changing the account's email",
+      type: :object,
+      required: [:email, :password],
+      properties: %{
+        email: %Schema{
+          type: :string,
+          description: "New email. Set to blank to remove the user's email."
+        },
+        password: %Schema{type: :string, description: "Current password"}
+      }
+    }
+  end
+
+  def update_notification_settings_operation do
     %Operation{
-      tags: ["Accounts"],
+      tags: ["Settings"],
       summary: "Update Notification Settings",
       security: [%{"oAuth" => ["write:accounts"]}],
-      operationId: "UtilController.update_notificaton_settings",
+      operationId: "UtilController.update_notification_settings",
       parameters: [
         Operation.parameter(
           :block_from_strangers,
           :query,
-          BooleanLike,
+          BooleanLike.schema(),
           "blocks notifications from accounts you do not follow"
         ),
         Operation.parameter(
           :hide_notification_contents,
           :query,
-          BooleanLike,
+          BooleanLike.schema(),
           "removes the contents of a message from the push notification"
         )
       ],
@@ -170,6 +197,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
       parameters: [
         Operation.parameter(:password, :query, :string, "Password")
       ],
+      requestBody: request_body("Parameters", delete_account_request(), required: false),
       responses: %{
         200 =>
           Operation.response("Success", "application/json", %Schema{
@@ -185,6 +213,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
     %Operation{
       summary: "Get a captcha",
       operationId: "UtilController.captcha",
+      tags: ["Others"],
       parameters: [],
       responses: %{
         200 => Operation.response("Success", "application/json", %Schema{type: :object})
@@ -192,9 +221,149 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
     }
   end
 
+  def move_account_operation do
+    %Operation{
+      tags: ["Account credentials"],
+      summary: "Move account",
+      security: [%{"oAuth" => ["write:accounts"]}],
+      operationId: "UtilController.move_account",
+      requestBody: request_body("Parameters", move_account_request(), required: true),
+      responses: %{
+        200 =>
+          Operation.response("Success", "application/json", %Schema{
+            type: :object,
+            properties: %{status: %Schema{type: :string, example: "success"}}
+          }),
+        400 => Operation.response("Error", "application/json", ApiError),
+        403 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp move_account_request do
+    %Schema{
+      title: "MoveAccountRequest",
+      description: "POST body for moving the account",
+      type: :object,
+      required: [:password, :target_account],
+      properties: %{
+        password: %Schema{type: :string, description: "Current password"},
+        target_account: %Schema{
+          type: :string,
+          description: "The nickname of the target account to move to"
+        }
+      }
+    }
+  end
+
+  def list_aliases_operation do
+    %Operation{
+      tags: ["Account credentials"],
+      summary: "List account aliases",
+      security: [%{"oAuth" => ["read:accounts"]}],
+      operationId: "UtilController.list_aliases",
+      responses: %{
+        200 =>
+          Operation.response("Success", "application/json", %Schema{
+            type: :object,
+            properties: %{
+              aliases: %Schema{
+                type: :array,
+                items: %Schema{type: :string},
+                example: ["foo@example.org"]
+              }
+            }
+          }),
+        400 => Operation.response("Error", "application/json", ApiError),
+        403 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  def add_alias_operation do
+    %Operation{
+      tags: ["Account credentials"],
+      summary: "Add an alias to this account",
+      security: [%{"oAuth" => ["write:accounts"]}],
+      operationId: "UtilController.add_alias",
+      requestBody: request_body("Parameters", add_alias_request(), required: true),
+      responses: %{
+        200 =>
+          Operation.response("Success", "application/json", %Schema{
+            type: :object,
+            properties: %{
+              status: %Schema{
+                type: :string,
+                example: "success"
+              }
+            }
+          }),
+        400 => Operation.response("Error", "application/json", ApiError),
+        403 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp add_alias_request do
+    %Schema{
+      title: "AddAliasRequest",
+      description: "PUT body for adding aliases",
+      type: :object,
+      required: [:alias],
+      properties: %{
+        alias: %Schema{
+          type: :string,
+          description: "The nickname of the account to add to aliases"
+        }
+      }
+    }
+  end
+
+  def delete_alias_operation do
+    %Operation{
+      tags: ["Account credentials"],
+      summary: "Delete an alias from this account",
+      security: [%{"oAuth" => ["write:accounts"]}],
+      operationId: "UtilController.delete_alias",
+      requestBody: request_body("Parameters", delete_alias_request(), required: true),
+      responses: %{
+        200 =>
+          Operation.response("Success", "application/json", %Schema{
+            type: :object,
+            properties: %{
+              status: %Schema{
+                type: :string,
+                example: "success"
+              }
+            }
+          }),
+        400 => Operation.response("Error", "application/json", ApiError),
+        403 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp delete_alias_request do
+    %Schema{
+      title: "DeleteAliasRequest",
+      description: "PUT body for deleting aliases",
+      type: :object,
+      required: [:alias],
+      properties: %{
+        alias: %Schema{
+          type: :string,
+          description: "The nickname of the account to delete from aliases"
+        }
+      }
+    }
+  end
+
   def healthcheck_operation do
     %Operation{
-      tags: ["Accounts"],
+      tags: ["Others"],
       summary: "Quick status check on the instance",
       security: [%{"oAuth" => ["write:accounts"]}],
       operationId: "UtilController.healthcheck",
@@ -209,11 +378,65 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
 
   def remote_subscribe_operation do
     %Operation{
-      tags: ["Accounts"],
+      tags: ["Remote interaction"],
       summary: "Remote Subscribe",
       operationId: "UtilController.remote_subscribe",
       parameters: [],
       responses: %{200 => Operation.response("Web Page", "test/html", %Schema{type: :string})}
+    }
+  end
+
+  def remote_interaction_operation do
+    %Operation{
+      tags: ["Remote interaction"],
+      summary: "Remote interaction",
+      operationId: "UtilController.remote_interaction",
+      requestBody: request_body("Parameters", remote_interaction_request(), required: true),
+      responses: %{
+        200 =>
+          Operation.response("Remote interaction URL", "application/json", %Schema{type: :object})
+      }
+    }
+  end
+
+  defp remote_interaction_request do
+    %Schema{
+      title: "RemoteInteractionRequest",
+      description: "POST body for remote interaction",
+      type: :object,
+      required: [:ap_id, :profile],
+      properties: %{
+        ap_id: %Schema{type: :string, description: "Profile or status ActivityPub ID"},
+        profile: %Schema{type: :string, description: "Remote profile webfinger"}
+      }
+    }
+  end
+
+  def show_subscribe_form_operation do
+    %Operation{
+      tags: ["Remote interaction"],
+      summary: "Show remote subscribe form",
+      operationId: "UtilController.show_subscribe_form",
+      parameters: [],
+      responses: %{200 => Operation.response("Web Page", "test/html", %Schema{type: :string})}
+    }
+  end
+
+  defp delete_account_request do
+    %Schema{
+      title: "AccountDeleteRequest",
+      description: "POST body for deleting one's own account",
+      type: :object,
+      properties: %{
+        password: %Schema{
+          type: :string,
+          description: "The user's own password for confirmation.",
+          format: :password
+        }
+      },
+      example: %{
+        "password" => "prettyp0ony1313"
+      }
     }
   end
 end

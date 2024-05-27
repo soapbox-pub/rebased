@@ -1,17 +1,20 @@
 # Pleromaの入れ方
+
+Note: This article is potentially outdated because at this time we may not have people who can speak this language well enough to update it. To see the up-to-date version, which may have significant differences or important caveats of the installation process, look up the English version.
+
 ## 日本語訳について
 
 この記事は [Installing on Debian based distributions](Installing on Debian based distributions) の日本語訳です。何かがおかしいと思ったら、原文を見てください。
 
 ## インストール
 
-このガイドはDebian Stretchを利用することを想定しています。Ubuntu 16.04や18.04でもおそらく動作します。また、ユーザはrootもしくはsudoにより管理者権限を持っていることを前提とします。もし、以下の操作をrootユーザで行う場合は、 `sudo` を無視してください。ただし、`sudo -Hu pleroma` のようにユーザを指定している場合には `su <username> -s $SHELL -c 'command'` を代わりに使ってください。
+このガイドはDebian Bookwormを利用することを想定しています。Ubuntu 22.04でもおそらく動作します。また、ユーザはrootもしくはsudoにより管理者権限を持っていることを前提とします。もし、以下の操作をrootユーザで行う場合は、 `sudo` を無視してください。ただし、`sudo -Hu pleroma` のようにユーザを指定している場合には `su <username> -s $SHELL -c 'command'` を代わりに使ってください。
 
 ### 必要なソフトウェア
 
-- PostgreSQL 9.6以上 (Ubuntu16.04では9.5しか提供されていないので，[](https://www.postgresql.org/download/linux/ubuntu/)こちらから新しいバージョンを入手してください)
-- `postgresql-contrib` 9.6以上 (同上)
-- Elixir 1.8 以上 ([Debianのリポジトリからインストールしないこと！！！ ここからインストールすること！](https://elixir-lang.org/install.html#unix-and-unix-like)。または [asdf](https://github.com/asdf-vm/asdf) をpleromaユーザーでインストールしてください)
+- PostgreSQL 11.0以上 (Ubuntu16.04では9.5しか提供されていないので，[](https://www.postgresql.org/download/linux/ubuntu/)こちらから新しいバージョンを入手してください)
+- `postgresql-contrib` 11.0以上 (同上)
+- Elixir 1.13 以上 ([Debianのリポジトリからインストールしないこと！！！ ここからインストールすること！](https://elixir-lang.org/install.html#unix-and-unix-like)。または [asdf](https://github.com/asdf-vm/asdf) をpleromaユーザーでインストールしてください)
 - `erlang-dev`
 - `erlang-nox`
 - `git`

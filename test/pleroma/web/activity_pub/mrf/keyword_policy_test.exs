@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
@@ -79,6 +79,54 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
                    KeywordPolicy.filter(message)
                end)
     end
+
+    test "rejects if string matches in history" do
+      clear_config([:mrf_keyword, :reject], ["pun"])
+
+      message = %{
+        "type" => "Create",
+        "object" => %{
+          "content" => "just a daily reminder that compLAINer is a good",
+          "summary" => "",
+          "formerRepresentations" => %{
+            "type" => "OrderedCollection",
+            "orderedItems" => [
+              %{
+                "content" => "just a daily reminder that compLAINer is a good pun",
+                "summary" => ""
+              }
+            ]
+          }
+        }
+      }
+
+      assert {:reject, "[KeywordPolicy] Matches with rejected keyword"} =
+               KeywordPolicy.filter(message)
+    end
+
+    test "rejects Updates" do
+      clear_config([:mrf_keyword, :reject], ["pun"])
+
+      message = %{
+        "type" => "Update",
+        "object" => %{
+          "content" => "just a daily reminder that compLAINer is a good",
+          "summary" => "",
+          "formerRepresentations" => %{
+            "type" => "OrderedCollection",
+            "orderedItems" => [
+              %{
+                "content" => "just a daily reminder that compLAINer is a good pun",
+                "summary" => ""
+              }
+            ]
+          }
+        }
+      }
+
+      assert {:reject, "[KeywordPolicy] Matches with rejected keyword"} =
+               KeywordPolicy.filter(message)
+    end
   end
 
   describe "delisting from ftl based on keywords" do
@@ -157,6 +205,31 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
                    not (["https://www.w3.org/ns/activitystreams#Public"] == result["to"])
                end)
     end
+
+    test "delists if string matches in history" do
+      clear_config([:mrf_keyword, :federated_timeline_removal], ["pun"])
+
+      message = %{
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "type" => "Create",
+        "object" => %{
+          "content" => "just a daily reminder that compLAINer is a good",
+          "summary" => "",
+          "formerRepresentations" => %{
+            "orderedItems" => [
+              %{
+                "content" => "just a daily reminder that compLAINer is a good pun",
+                "summary" => ""
+              }
+            ]
+          }
+        }
+      }
+
+      {:ok, result} = KeywordPolicy.filter(message)
+      assert ["https://www.w3.org/ns/activitystreams#Public"] == result["cc"]
+      refute ["https://www.w3.org/ns/activitystreams#Public"] == result["to"]
+    end
   end
 
   describe "replacing keywords" do
@@ -220,6 +293,64 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
                  {:ok, %{"object" => %{"summary" => result}}} = KeywordPolicy.filter(message)
                  result == "ZFS is free software"
                end)
+    end
+
+    test "replaces keyword if string matches in history" do
+      clear_config([:mrf_keyword, :replace], [{"opensource", "free software"}])
+
+      message = %{
+        "type" => "Create",
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "object" => %{
+          "content" => "ZFS is opensource",
+          "summary" => "",
+          "formerRepresentations" => %{
+            "type" => "OrderedCollection",
+            "orderedItems" => [
+              %{"content" => "ZFS is opensource mew mew", "summary" => ""}
+            ]
+          }
+        }
+      }
+
+      {:ok,
+       %{
+         "object" => %{
+           "content" => "ZFS is free software",
+           "formerRepresentations" => %{
+             "orderedItems" => [%{"content" => "ZFS is free software mew mew"}]
+           }
+         }
+       }} = KeywordPolicy.filter(message)
+    end
+
+    test "replaces keyword in Updates" do
+      clear_config([:mrf_keyword, :replace], [{"opensource", "free software"}])
+
+      message = %{
+        "type" => "Update",
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "object" => %{
+          "content" => "ZFS is opensource",
+          "summary" => "",
+          "formerRepresentations" => %{
+            "type" => "OrderedCollection",
+            "orderedItems" => [
+              %{"content" => "ZFS is opensource mew mew", "summary" => ""}
+            ]
+          }
+        }
+      }
+
+      {:ok,
+       %{
+         "object" => %{
+           "content" => "ZFS is free software",
+           "formerRepresentations" => %{
+             "orderedItems" => [%{"content" => "ZFS is free software mew mew"}]
+           }
+         }
+       }} = KeywordPolicy.filter(message)
     end
   end
 end

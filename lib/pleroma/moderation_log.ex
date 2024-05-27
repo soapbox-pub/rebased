@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ModerationLog do
@@ -121,7 +121,7 @@ defmodule Pleroma.ModerationLog do
 
   defp prepare_log_data(attrs), do: attrs
 
-  @spec insert_log(log_params()) :: {:ok, ModerationLog} | {:error, any}
+  @spec insert_log(log_params()) :: {:ok, ModerationLog.t()} | {:error, any}
   def insert_log(%{actor: %User{}, subject: subjects, permission: permission} = attrs) do
     data =
       attrs
@@ -248,7 +248,8 @@ defmodule Pleroma.ModerationLog do
     |> insert_log_entry_with_message()
   end
 
-  @spec insert_log_entry_with_message(ModerationLog) :: {:ok, ModerationLog} | {:error, any}
+  @spec insert_log_entry_with_message(ModerationLog.t()) ::
+          {:ok, ModerationLog.t()} | {:error, any}
   defp insert_log_entry_with_message(entry) do
     entry.data["message"]
     |> put_in(get_log_entry_message(entry))
@@ -336,6 +337,26 @@ defmodule Pleroma.ModerationLog do
         }
       }) do
     "@#{actor_nickname} approved users: #{users_to_nicknames_string(users)}"
+  end
+
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
+          "action" => "add_suggestion",
+          "subject" => users
+        }
+      }) do
+    "@#{actor_nickname} added suggested users: #{users_to_nicknames_string(users)}"
+  end
+
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
+          "action" => "remove_suggestion",
+          "subject" => users
+        }
+      }) do
+    "@#{actor_nickname} removed suggested users: #{users_to_nicknames_string(users)}"
   end
 
   def get_log_entry_message(%ModerationLog{
@@ -481,9 +502,7 @@ defmodule Pleroma.ModerationLog do
           "visibility" => visibility
         }
       }) do
-    "@#{actor_nickname} updated status ##{subject_id}, set sensitive: '#{sensitive}', visibility: '#{
-      visibility
-    }'"
+    "@#{actor_nickname} updated status ##{subject_id}, set sensitive: '#{sensitive}', visibility: '#{visibility}'"
   end
 
   def get_log_entry_message(%ModerationLog{
@@ -523,9 +542,7 @@ defmodule Pleroma.ModerationLog do
           "subject" => subjects
         }
       }) do
-    "@#{actor_nickname} re-sent confirmation email for users: #{
-      users_to_nicknames_string(subjects)
-    }"
+    "@#{actor_nickname} re-sent confirmation email for users: #{users_to_nicknames_string(subjects)}"
   end
 
   def get_log_entry_message(%ModerationLog{

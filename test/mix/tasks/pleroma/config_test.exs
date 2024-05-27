@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.ConfigTest do
@@ -49,7 +49,6 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
   describe "migrate_to_db/1" do
     setup do
       clear_config(:configurable_from_database, true)
-      clear_config([:quack, :level])
     end
 
     @tag capture_log: true
@@ -72,14 +71,12 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
 
       config1 = ConfigDB.get_by_params(%{group: ":pleroma", key: ":first_setting"})
       config2 = ConfigDB.get_by_params(%{group: ":pleroma", key: ":second_setting"})
-      config3 = ConfigDB.get_by_params(%{group: ":quack", key: ":level"})
       refute ConfigDB.get_by_params(%{group: ":pleroma", key: "Pleroma.Repo"})
       refute ConfigDB.get_by_params(%{group: ":postgrex", key: ":json_library"})
       refute ConfigDB.get_by_params(%{group: ":pleroma", key: ":database"})
 
       assert config1.value == [key: "value", key2: [Repo]]
       assert config2.value == [key: "value2", key2: ["Activity"]]
-      assert config3.value == :info
     end
 
     test "config table is truncated before migration" do
@@ -108,7 +105,6 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     test "settings are migrated to file and deleted from db", %{temp_file: temp_file} do
       insert_config_record(:pleroma, :setting_first, key: "value", key2: ["Activity"])
       insert_config_record(:pleroma, :setting_second, key: "value2", key2: [Repo])
-      insert_config_record(:quack, :level, :info)
 
       MixTask.run(["migrate_from_db", "--env", "temp", "-d"])
 
@@ -117,7 +113,6 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
       file = File.read!(temp_file)
       assert file =~ "config :pleroma, :setting_first,"
       assert file =~ "config :pleroma, :setting_second,"
-      assert file =~ "config :quack, :level, :info"
     end
 
     test "load a settings with large values and pass to file", %{temp_file: temp_file} do
@@ -145,7 +140,6 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
           federating: true,
           federation_incoming_replies_max_depth: 100,
           federation_reachability_timeout_days: 7,
-          federation_publisher_modules: [Pleroma.Web.ActivityPub.Publisher],
           allow_relay: true,
           public: true,
           quarantined_instances: [],
@@ -188,8 +182,8 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
       assert File.exists?(temp_file)
       {:ok, file} = File.read(temp_file)
 
-      assert file ==
-               "import Config\n\nconfig :pleroma, :instance,\n  name: \"Pleroma\",\n  email: \"example@example.com\",\n  notify_email: \"noreply@example.com\",\n  description: \"A Pleroma instance, an alternative fediverse server\",\n  limit: 5000,\n  chat_limit: 5000,\n  remote_limit: 100_000,\n  upload_limit: 16_000_000,\n  avatar_upload_limit: 2_000_000,\n  background_upload_limit: 4_000_000,\n  banner_upload_limit: 4_000_000,\n  poll_limits: %{\n    max_expiration: 31_536_000,\n    max_option_chars: 200,\n    max_options: 20,\n    min_expiration: 0\n  },\n  registrations_open: true,\n  federating: true,\n  federation_incoming_replies_max_depth: 100,\n  federation_reachability_timeout_days: 7,\n  federation_publisher_modules: [Pleroma.Web.ActivityPub.Publisher],\n  allow_relay: true,\n  public: true,\n  quarantined_instances: [],\n  managed_config: true,\n  static_dir: \"instance/static/\",\n  allowed_post_formats: [\"text/plain\", \"text/html\", \"text/markdown\", \"text/bbcode\"],\n  autofollowed_nicknames: [],\n  max_pinned_statuses: 1,\n  attachment_links: false,\n  max_report_comment_size: 1000,\n  safe_dm_mentions: false,\n  healthcheck: false,\n  remote_post_retention_days: 90,\n  skip_thread_containment: true,\n  limit_to_local_content: :unauthenticated,\n  user_bio_length: 5000,\n  user_name_length: 100,\n  max_account_fields: 10,\n  max_remote_account_fields: 20,\n  account_field_name_length: 512,\n  account_field_value_length: 2048,\n  external_user_synchronization: true,\n  extended_nickname_format: true,\n  multi_factor_authentication: [\n    totp: [digits: 6, period: 30],\n    backup_codes: [number: 2, length: 6]\n  ]\n"
+      assert file =~ "import Config\n"
+      assert file =~ "A Pleroma instance, an alternative fediverse server"
     end
   end
 
@@ -199,7 +193,6 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     setup do
       insert_config_record(:pleroma, :setting_first, key: "value", key2: ["Activity"])
       insert_config_record(:pleroma, :setting_second, key: "value2", key2: [Repo])
-      insert_config_record(:quack, :level, :info)
 
       path = "test/instance_static"
       file_path = Path.join(path, "temp.exported_from_db.secret.exs")
@@ -215,7 +208,6 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
       file = File.read!(file_path)
       assert file =~ "config :pleroma, :setting_first,"
       assert file =~ "config :pleroma, :setting_second,"
-      assert file =~ "config :quack, :level, :info"
     end
 
     test "release", %{file_path: file_path} do
@@ -227,7 +219,6 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
       file = File.read!(file_path)
       assert file =~ "config :pleroma, :setting_first,"
       assert file =~ "config :pleroma, :setting_second,"
-      assert file =~ "config :quack, :level, :info"
     end
   end
 

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.RateLimiter.Supervisor do
@@ -14,7 +14,7 @@ defmodule Pleroma.Web.Plugs.RateLimiter.Supervisor do
       Pleroma.Web.Plugs.RateLimiter.LimiterSupervisor
     ]
 
-    opts = [strategy: :one_for_one, name: Pleroma.Web.Streamer.Supervisor]
+    opts = [strategy: :one_for_one]
     Supervisor.init(children, opts)
   end
 end

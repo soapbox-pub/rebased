@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.VideoHandlingTest do
@@ -53,16 +53,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.VideoHandlingTest do
              %{
                "type" => "Link",
                "mediaType" => "video/mp4",
-               "name" => nil,
-               "blurhash" => nil,
                "url" => [
                  %{
                    "href" =>
                      "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
                    "mediaType" => "video/mp4",
                    "type" => "Link",
-                   "width" => nil,
-                   "height" => nil
+                   "width" => 480
                  }
                ]
              }
@@ -78,16 +75,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.VideoHandlingTest do
              %{
                "type" => "Link",
                "mediaType" => "video/mp4",
-               "name" => nil,
-               "blurhash" => nil,
                "url" => [
                  %{
                    "href" =>
                      "https://framatube.org/static/webseed/6050732a-8a7a-43d4-a6cd-809525a1d206-1080.mp4",
                    "mediaType" => "video/mp4",
                    "type" => "Link",
-                   "width" => nil,
-                   "height" => nil
+                   "height" => 1080
                  }
                ]
              }
@@ -110,16 +104,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.VideoHandlingTest do
              %{
                "type" => "Link",
                "mediaType" => "video/mp4",
-               "name" => nil,
-               "blurhash" => nil,
                "url" => [
                  %{
                    "href" =>
                      "https://peertube.stream/static/streaming-playlists/hls/abece3c3-b9c6-47f4-8040-f3eed8c602e6/abece3c3-b9c6-47f4-8040-f3eed8c602e6-1080-fragmented.mp4",
                    "mediaType" => "video/mp4",
                    "type" => "Link",
-                   "width" => nil,
-                   "height" => nil
+                   "height" => 1080
                  }
                ]
              }

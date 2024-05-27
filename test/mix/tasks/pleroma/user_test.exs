@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.UserTest do
@@ -19,6 +19,11 @@ defmodule Mix.Tasks.Pleroma.UserTest do
   import ExUnit.CaptureIO
   import Mock
   import Pleroma.Factory
+
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
 
   setup_all do
     Mix.shell(Mix.Shell.Process)

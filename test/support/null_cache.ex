@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.NullCache do
@@ -29,12 +29,18 @@ defmodule Pleroma.NullCache do
   end
 
   @impl true
+  def fetch(_, key, func), do: func.(key)
+
+  @impl true
   def get_and_update(_, _, func) do
     func.(nil)
   end
 
   @impl true
   def expire_at(_, _, _), do: {:ok, true}
+
+  @impl true
+  def expire(_, _, _), do: {:ok, true}
 
   @impl true
   def exists?(_, _), do: {:ok, false}

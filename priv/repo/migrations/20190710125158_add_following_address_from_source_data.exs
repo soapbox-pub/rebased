@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Repo.Migrations.AddFollowingAddressFromSourceData do
   alias Pleroma.User
   import Ecto.Query
@@ -22,7 +26,7 @@ defmodule Pleroma.Repo.Migrations.AddFollowingAddressFromSourceData do
         |> Pleroma.Repo.update()
 
       user ->
-        Logger.warn("User #{user.id} / #{user.nickname} does not seem to have source_data")
+        Logger.warning("User #{user.id} / #{user.nickname} does not seem to have source_data")
     end)
   end
 end

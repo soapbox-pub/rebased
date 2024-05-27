@@ -4,8 +4,7 @@ import Config
 # you can enable the server option below.
 config :pleroma, Pleroma.Web.Endpoint,
   http: [port: 4001],
-  url: [port: 4001],
-  server: true
+  url: [port: 4001]
 
 # Disable captha for tests
 config :pleroma, Pleroma.Captcha,
@@ -15,7 +14,7 @@ config :pleroma, Pleroma.Captcha,
   method: Pleroma.Captcha.Mock
 
 # Print only warnings and errors during test
-config :logger, level: :warn
+config :logger, level: :warning
 
 config :pleroma, :auth, oauth_consumer_strategies: []
 
@@ -41,10 +40,11 @@ config :pleroma, Pleroma.Repo,
   password: "postgres",
   database: "pleroma_benchmark",
   hostname: System.get_env("DB_HOST") || "localhost",
+  port: System.get_env("DB_PORT") || "5432",
   pool_size: 10
 
 # Reduce hash rounds for testing
-config :pbkdf2_elixir, rounds: 1
+config :pleroma, :password, iterations: 1
 
 config :tesla, adapter: Tesla.Mock
 
@@ -78,6 +78,10 @@ config :pleroma, :database, rum_enabled: rum_enabled
 IO.puts("RUM enabled: #{rum_enabled}")
 
 config :pleroma, Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.ClientMock
+
+config :pleroma, Pleroma.Application,
+  background_migrators: false,
+  streamer_registry: false
 
 if File.exists?("./config/benchmark.secret.exs") do
   import_config "benchmark.secret.exs"

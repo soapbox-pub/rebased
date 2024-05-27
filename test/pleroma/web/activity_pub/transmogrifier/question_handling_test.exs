@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
@@ -32,8 +32,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
 
     assert object.data["context"] ==
              "tag:mastodon.sdf.org,2019-05-10:objectId=15095122:objectType=Conversation"
-
-    assert object.data["context_id"]
 
     assert object.data["anyOf"] == []
 
@@ -68,7 +66,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
     reply_object = Object.normalize(reply_activity, fetch: false)
 
     assert reply_object.data["context"] == object.data["context"]
-    assert reply_object.data["context_id"] == object.data["context_id"]
   end
 
   test "Mastodon Question activity with HTML tags in plaintext" do

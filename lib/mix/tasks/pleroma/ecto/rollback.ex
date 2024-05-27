@@ -1,6 +1,6 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
-# SPDX-License-Identifier: AGPL-3.0-onl
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Ecto.Rollback do
   use Mix.Task
@@ -61,7 +61,7 @@ defmodule Mix.Tasks.Pleroma.Ecto.Rollback do
     Logger.configure(level: :info)
 
     if opts[:env] == "test" do
-      Logger.info("Rollback succesfully")
+      Logger.info("Rollback successfully")
     else
       {:ok, _, _} =
         Ecto.Migrator.with_repo(Pleroma.Repo, &Ecto.Migrator.run(&1, path, :down, opts))

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OStatus.OStatusControllerTest do
@@ -196,7 +196,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
         |> get("/notice/#{like_activity.id}")
         |> response(200)
 
-      assert resp =~ "<!--server-generated-meta-->"
+      refute resp =~ ~r(<meta content="[^"]*" property="og:url")
     end
 
     test "404s a private notice", %{conn: conn} do

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.CachexProxy do
@@ -27,7 +27,13 @@ defmodule Pleroma.CachexProxy do
   defdelegate fetch!(cache, key, func), to: Cachex
 
   @impl true
+  defdelegate fetch(cache, key, func), to: Cachex
+
+  @impl true
   defdelegate expire_at(cache, str, num), to: Cachex
+
+  @impl true
+  defdelegate expire(cache, str, num), to: Cachex
 
   @impl true
   defdelegate exists?(cache, key), to: Cachex

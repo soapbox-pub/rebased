@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Digest do
@@ -30,7 +30,7 @@ defmodule Mix.Tasks.Pleroma.Digest do
       shell_info("Digest email have been sent to #{nickname} (#{user.email})")
     else
       _ ->
-        shell_info("Cound't find any mentions for #{nickname} since #{last_digest_emailed_at}")
+        shell_info("Couldn't find any mentions for #{nickname} since #{last_digest_emailed_at}")
     end
   end
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Relay do
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.ActivityPub.Relay do
   @spec publish(any()) :: {:ok, Activity.t()} | {:error, any()}
   def publish(%Activity{data: %{"type" => "Create"}} = activity) do
     with %User{} = user <- get_actor(),
-         true <- Visibility.is_public?(activity) do
+         true <- Visibility.public?(activity) do
       CommonAPI.repeat(activity.id, user)
     else
       error -> format_error(error)

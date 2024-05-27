@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
@@ -316,15 +316,16 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       assert Application.get_env(:idna, :key5) == {"string", Pleroma.Captcha.NotReal, []}
     end
 
+    @tag capture_log: true
     test "save configs setting without explicit key", %{conn: conn} do
-      level = Application.get_env(:quack, :level)
-      meta = Application.get_env(:quack, :meta)
-      webhook_url = Application.get_env(:quack, :webhook_url)
+      adapter = Application.get_env(:http, :adapter)
+      send_user_agent = Application.get_env(:http, :send_user_agent)
+      user_agent = Application.get_env(:http, :user_agent)
 
       on_exit(fn ->
-        Application.put_env(:quack, :level, level)
-        Application.put_env(:quack, :meta, meta)
-        Application.put_env(:quack, :webhook_url, webhook_url)
+        Application.put_env(:http, :adapter, adapter)
+        Application.put_env(:http, :send_user_agent, send_user_agent)
+        Application.put_env(:http, :user_agent, user_agent)
       end)
 
       conn =
@@ -333,19 +334,19 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
         |> post("/api/pleroma/admin/config", %{
           configs: [
             %{
-              group: ":quack",
-              key: ":level",
-              value: ":info"
+              group: ":http",
+              key: ":adapter",
+              value: [":someval"]
             },
             %{
-              group: ":quack",
-              key: ":meta",
-              value: [":none"]
+              group: ":http",
+              key: ":send_user_agent",
+              value: true
             },
             %{
-              group: ":quack",
-              key: ":webhook_url",
-              value: "https://hooks.slack.com/services/KEY"
+              group: ":http",
+              key: ":user_agent",
+              value: [":default"]
             }
           ]
         })
@@ -353,30 +354,30 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       assert json_response_and_validate_schema(conn, 200) == %{
                "configs" => [
                  %{
-                   "group" => ":quack",
-                   "key" => ":level",
-                   "value" => ":info",
-                   "db" => [":level"]
+                   "group" => ":http",
+                   "key" => ":adapter",
+                   "value" => [":someval"],
+                   "db" => [":adapter"]
                  },
                  %{
-                   "group" => ":quack",
-                   "key" => ":meta",
-                   "value" => [":none"],
-                   "db" => [":meta"]
+                   "group" => ":http",
+                   "key" => ":send_user_agent",
+                   "value" => true,
+                   "db" => [":send_user_agent"]
                  },
                  %{
-                   "group" => ":quack",
-                   "key" => ":webhook_url",
-                   "value" => "https://hooks.slack.com/services/KEY",
-                   "db" => [":webhook_url"]
+                   "group" => ":http",
+                   "key" => ":user_agent",
+                   "value" => [":default"],
+                   "db" => [":user_agent"]
                  }
                ],
                "need_reboot" => false
              }
 
-      assert Application.get_env(:quack, :level) == :info
-      assert Application.get_env(:quack, :meta) == [:none]
-      assert Application.get_env(:quack, :webhook_url) == "https://hooks.slack.com/services/KEY"
+      assert Application.get_env(:http, :adapter) == [:someval]
+      assert Application.get_env(:http, :send_user_agent) == true
+      assert Application.get_env(:http, :user_agent) == [:default]
     end
 
     test "saving config with partial update", %{conn: conn} do
@@ -872,7 +873,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                                   %{
                                     "tuple" => [
                                       ":_",
-                                      "Phoenix.Endpoint.Cowboy2Handler",
+                                      "Plug.Cowboy.Handler",
                                       %{"tuple" => ["Pleroma.Web.Endpoint", []]}
                                     ]
                                   }
@@ -936,7 +937,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                                        %{
                                          "tuple" => [
                                            ":_",
-                                           "Phoenix.Endpoint.Cowboy2Handler",
+                                           "Plug.Cowboy.Handler",
                                            %{"tuple" => ["Pleroma.Web.Endpoint", []]}
                                          ]
                                        }
@@ -1501,15 +1502,14 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       clear_config(:database_config_whitelist, [
         {:pleroma, :instance},
         {:pleroma, :activitypub},
-        {:pleroma, Pleroma.Upload},
-        {:esshd}
+        {:pleroma, Pleroma.Upload}
       ])
 
       conn = get(conn, "/api/pleroma/admin/config/descriptions")
 
       children = json_response_and_validate_schema(conn, 200)
 
-      assert length(children) == 4
+      assert length(children) == 3
 
       assert Enum.count(children, fn c -> c["group"] == ":pleroma" end) == 3
 
@@ -1521,9 +1521,6 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
       web_endpoint = Enum.find(children, fn c -> c["key"] == "Pleroma.Upload" end)
       assert web_endpoint["children"]
-
-      esshd = Enum.find(children, fn c -> c["group"] == ":esshd" end)
-      assert esshd["children"]
     end
   end
 end

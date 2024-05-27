@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.UserInviteToken do
@@ -64,7 +64,7 @@ defmodule Pleroma.UserInviteToken do
   end
 
   @spec update_invite(UserInviteToken.t(), map()) ::
-          {:ok, UserInviteToken.t()} | {:error, Changeset.t()}
+          {:ok, UserInviteToken.t()} | {:error, Ecto.Changeset.t()}
   def update_invite(invite, changes) do
     change(invite, changes) |> Repo.update()
   end

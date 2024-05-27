@@ -4,17 +4,17 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.3.50"),
-      elixir: "~> 1.9",
+      version: version("2.6.52"),
+      elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
-      compilers: [:phoenix, :gettext] ++ Mix.compilers(),
-      elixirc_options: [warnings_as_errors: warnings_as_errors(Mix.env())],
+      compilers: Mix.compilers(),
+      elixirc_options: [warnings_as_errors: warnings_as_errors()],
       xref: [exclude: [:eldap]],
+      dialyzer: [plt_add_apps: [:mix, :eldap]],
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      test_coverage: [tool: ExCoveralls],
-      preferred_cli_env: ["coveralls.html": :test],
+      test_coverage: [tool: :covertool, summary: true],
       # Docs
       name: "Pleroma",
       homepage_url: "https://pleroma.social/",
@@ -77,8 +77,8 @@ defmodule Pleroma.Mixfile do
         :logger,
         :runtime_tools,
         :comeonin,
-        :quack,
         :fast_sanitize,
+        :os_mon,
         :ssl
       ],
       included_applications: [:ex_syslogger]
@@ -86,12 +86,11 @@ defmodule Pleroma.Mixfile do
   end
 
   # Specifies which paths to compile per environment.
-  defp elixirc_paths(:benchmark), do: ["lib", "benchmarks"]
+  defp elixirc_paths(:benchmark), do: ["lib", "benchmarks", "priv/scrubbers"]
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
-  defp warnings_as_errors(:prod), do: false
-  defp warnings_as_errors(_), do: true
+  defp warnings_as_errors, do: System.get_env("CI") == "true"
 
   # Specifies OAuth dependencies.
   defp oauth_deps do
@@ -115,100 +114,93 @@ defmodule Pleroma.Mixfile do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.5.5"},
-      {:tzdata, "~> 1.0.3"},
-      {:plug_cowboy, "~> 2.3"},
-      {:phoenix_pubsub, "~> 2.0"},
-      {:phoenix_ecto, "~> 4.0"},
+      {:phoenix, "~> 1.7.3"},
+      {:phoenix_ecto, "~> 4.4"},
+      {:ecto_sql, "~> 3.10"},
       {:ecto_enum, "~> 1.4"},
-      {:ecto_explain, "~> 0.1.2"},
-      {:ecto_sql, "~> 3.4.4"},
-      {:postgrex, ">= 0.15.5"},
-      {:oban, "~> 2.3.4"},
-      {:gettext, "~> 0.18"},
+      {:postgrex, ">= 0.0.0"},
+      {:phoenix_html, "~> 3.3"},
+      {:phoenix_live_reload, "~> 1.3.3", only: :dev},
+      {:phoenix_live_view, "~> 0.19.0"},
+      {:phoenix_live_dashboard, "~> 0.8.0"},
+      {:telemetry_metrics, "~> 0.6"},
+      {:telemetry_poller, "~> 1.0"},
+      {:tzdata, "~> 1.0.3"},
+      {:plug_cowboy, "~> 2.5"},
+      # oban 2.14 requires Elixir 1.12+
+      {:oban, "~> 2.13.4"},
+      {:gettext, "~> 0.20"},
       {:bcrypt_elixir, "~> 2.2"},
       {:trailing_format_plug, "~> 0.0.7"},
       {:fast_sanitize, "~> 0.2.0"},
       {:html_entities, "~> 0.5", override: true},
-      {:phoenix_html, "~> 2.14"},
       {:calendar, "~> 1.0"},
       {:cachex, "~> 3.2"},
       {:poison, "~> 3.0", override: true},
-      {:tesla, "~> 1.4.0", override: true},
+      {:tesla, "~> 1.8.0"},
       {:castore, "~> 0.1"},
       {:cowlib, "~> 2.9", override: true},
       {:gun, "~> 2.0.0-rc.1", override: true},
+      {:finch, "~> 0.15"},
       {:jason, "~> 1.2"},
-      {:mogrify, "~> 0.7.4"},
+      {:mogrify, "~> 0.8.0"},
       {:ex_aws, "~> 2.1.6"},
       {:ex_aws_s3, "~> 2.0"},
-      {:sweet_xml, "~> 0.6.6"},
-      {:earmark, "1.4.15"},
+      {:sweet_xml, "~> 0.7.2"},
+      # earmark 1.4.23 requires Elixir 1.12+
+      {:earmark, "1.4.22"},
       {:bbcode_pleroma, "~> 0.2.0"},
-      {:crypt,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/crypt.git",
-       ref: "cf2aa3f11632e8b0634810a15b3e612c7526f6a3"},
       {:cors_plug, "~> 2.0"},
-      {:web_push_encryption,
-       git: "https://github.com/lanodan/elixir-web-push-encryption.git", branch: "bugfix/otp-24"},
-      {:swoosh, "~> 1.0"},
-      {:phoenix_swoosh, "~> 0.3"},
+      {:web_push_encryption, "~> 0.3.1"},
+      # swoosh 1.11.2+ requires Elixir 1.12+
+      {:swoosh, "~> 1.10.0"},
+      {:phoenix_swoosh, "~> 1.1"},
       {:gen_smtp, "~> 0.13"},
       {:ex_syslogger, "~> 1.4"},
-      {:floki, "~> 0.27"},
+      {:floki, "~> 0.35"},
       {:timex, "~> 3.6"},
       {:ueberauth, "~> 0.4"},
-      {:linkify, "~> 0.5.0"},
-      {:http_signatures, "~> 0.1.0"},
-      {:telemetry, "~> 0.3"},
+      {:linkify, "~> 0.5.3"},
+      {:http_signatures, "~> 0.1.2"},
+      {:telemetry, "~> 1.0.0", override: true},
       {:poolboy, "~> 1.5"},
-      {:prometheus, "~> 4.6"},
-      {:prometheus_ex,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/prometheus.ex.git",
-       ref: "a4e9beb3c1c479d14b352fd9d6dd7b1f6d7deee5",
-       override: true},
-      {:prometheus_plugs, "~> 1.1"},
-      {:prometheus_phoenix, "~> 1.3"},
-      # Note: once `prometheus_phx` is integrated into `prometheus_phoenix`, remove the former:
-      {:prometheus_phx,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/prometheus-phx.git",
-       branch: "no-logging"},
-      {:prometheus_ecto, "~> 1.4"},
+      {:prom_ex, "~> 1.9"},
       {:recon, "~> 2.5"},
-      {:quack, "~> 0.1.1"},
       {:joken, "~> 2.0"},
-      {:benchee, "~> 1.0"},
       {:pot, "~> 1.0"},
-      {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
       {:flake_id, "~> 0.1.0"},
-      {:concurrent_limiter,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/concurrent_limiter.git",
-       ref: "d81be41024569330f296fc472e24198d7499ba78"},
+      {:concurrent_limiter, "~> 0.1.1"},
       {:remote_ip,
        git: "https://git.pleroma.social/pleroma/remote_ip.git",
        ref: "b647d0deecaa3acb140854fe4bda5b7e1dc6d1c8"},
       {:captcha,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
-       ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
+       ref: "90f6ce7672f70f56708792a98d98bd05176c9176"},
       {:restarter, path: "./restarter"},
-      {:majic,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/majic.git",
-       ref: "289cda1b6d0d70ccb2ba508a2b0bd24638db2880"},
-      {:eblurhash, "~> 1.1.0"},
-      {:open_api_spex, "~> 3.10"},
+      {:majic, "~> 1.0"},
+      {:open_api_spex, "~> 3.16"},
+      {:ecto_psql_extras, "~> 0.6"},
+      {:vix, "~> 0.26.0"},
+      {:elixir_make, "~> 0.7.7", override: true},
+      {:blurhash, "~> 0.1.0", hex: :rinpatch_blurhash},
+      {:exile,
+       git: "https://github.com/akash-akya/exile.git",
+       ref: "be87c33b02a7c3c5d22d2ece01fbd462355b28ef"},
+      {:bandit, "~> 1.2"},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
       {:ex_machina, "~> 2.4", only: :test},
-      {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:mock, "~> 0.3.5", only: :test},
-      # temporary downgrade for excoveralls, hackney until hackney max_connections bug will be fixed
-      {:excoveralls, "0.12.3", only: :test},
-      {:hackney, "~> 1.17.0", override: true},
+      {:covertool, "~> 2.0", only: :test},
+      {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
-      {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
+      {:websockex, "~> 0.4.3", only: :test},
+      {:benchee, "~> 1.0", only: :benchmark},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ] ++ oauth_deps()
   end
 
@@ -243,9 +235,10 @@ defmodule Pleroma.Mixfile do
     identifier_filter = ~r/[^0-9a-z\-]+/i
 
     git_available? = match?({_output, 0}, System.cmd("sh", ["-c", "command -v git"]))
+    dotgit_present? = File.exists?(".git")
 
     git_pre_release =
-      if git_available? do
+      if git_available? and dotgit_present? do
         {tag, tag_err} =
           System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true)
 
@@ -272,6 +265,7 @@ defmodule Pleroma.Mixfile do
     # Branch name as pre-release version component, denoted with a dot
     branch_name =
       with true <- git_available?,
+           true <- dotgit_present?,
            {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
            branch_name <- String.trim(branch_name),
            branch_name <- System.get_env("PLEROMA_BUILD_BRANCH") || branch_name,

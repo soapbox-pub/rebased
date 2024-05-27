@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Schemas.Attachment do
@@ -11,7 +11,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Attachment do
     title: "Attachment",
     description: "Represents a file or media attachment that can be added to a status.",
     type: :object,
-    requried: [:id, :url, :preview_url],
+    required: [:id, :url, :preview_url],
     properties: %{
       id: %Schema{type: :string, description: "The ID of the attachment in the database."},
       url: %Schema{

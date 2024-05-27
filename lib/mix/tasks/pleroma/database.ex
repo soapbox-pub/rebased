@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Database do
@@ -154,9 +154,8 @@ defmodule Mix.Tasks.Pleroma.Database do
     |> join(:inner, [a], o in Object,
       on:
         fragment(
-          "(?->>'id') = COALESCE((?)->'object'->> 'id', (?)->>'object')",
+          "(?->>'id') = associated_object_id((?))",
           o.data,
-          a.data,
           a.data
         )
     )
@@ -194,7 +193,7 @@ defmodule Mix.Tasks.Pleroma.Database do
         "ALTER DATABASE #{db} SET default_text_search_config = '#{tsconfig}';"
       )
 
-    # non-exist config will not raise excpetion but only give >0 messages
+    # non-exist config will not raise exception but only give >0 messages
     if length(msg) > 0 do
       shell_info("Error: #{inspect(msg, pretty: true)}")
     else
@@ -209,7 +208,9 @@ defmodule Mix.Tasks.Pleroma.Database do
           new.fts_content := to_tsvector(new.data->>'content');
           RETURN new;
           END
-          $$ LANGUAGE plpgsql"
+          $$ LANGUAGE plpgsql",
+          [],
+          timeout: :infinity
         )
 
         shell_info("Refresh RUM index")
@@ -219,7 +220,9 @@ defmodule Mix.Tasks.Pleroma.Database do
 
         Ecto.Adapters.SQL.query!(
           Pleroma.Repo,
-          "CREATE INDEX objects_fts ON objects USING gin(to_tsvector('#{tsconfig}', data->>'content')); "
+          "CREATE INDEX CONCURRENTLY objects_fts ON objects USING gin(to_tsvector('#{tsconfig}', data->>'content')); ",
+          [],
+          timeout: :infinity
         )
       end
 

@@ -1,10 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Preload do
   alias Phoenix.HTML
-  require Logger
 
   def build_tags(_conn, params) do
     preload_data =
@@ -12,7 +11,7 @@ defmodule Pleroma.Web.Preload do
         terms =
           params
           |> parser.generate_terms()
-          |> Enum.map(fn {k, v} -> {k, Base.encode64(Jason.encode!(v))} end)
+          |> Enum.map(fn {k, v} -> {k, Base.encode64(Jason.encode!(v, escape: :html_safe))} end)
           |> Enum.into(%{})
 
         Map.merge(acc, terms)
@@ -20,7 +19,7 @@ defmodule Pleroma.Web.Preload do
 
     rendered_html =
       preload_data
-      |> Jason.encode!()
+      |> Jason.encode!(escape: :html_safe)
       |> build_script_tag()
       |> HTML.safe_to_string()
 

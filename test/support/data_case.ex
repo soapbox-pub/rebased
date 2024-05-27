@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.DataCase do
@@ -115,6 +115,7 @@ defmodule Pleroma.DataCase do
     Mox.stub_with(Pleroma.Web.ActivityPub.ActivityPubMock, Pleroma.Web.ActivityPub.ActivityPub)
     Mox.stub_with(Pleroma.Web.FederatorMock, Pleroma.Web.Federator)
     Mox.stub_with(Pleroma.ConfigMock, Pleroma.Config)
+    Mox.stub_with(Pleroma.StaticStubbedConfigMock, Pleroma.Test.StaticConfig)
   end
 
   def ensure_local_uploader(context) do

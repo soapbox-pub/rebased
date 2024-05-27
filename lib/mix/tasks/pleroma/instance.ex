@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Instance do
@@ -34,7 +34,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
           static_dir: :string,
           listen_ip: :string,
           listen_port: :string,
-          strip_uploads: :string,
+          strip_uploads_location: :string,
+          read_uploads_description: :string,
           anonymize_uploads: :string,
           dedupe_uploads: :string
         ],
@@ -161,7 +162,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
         )
         |> Path.expand()
 
-      {strip_uploads_message, strip_uploads_default} =
+      {strip_uploads_location_message, strip_uploads_location_default} =
         if Pleroma.Utils.command_available?("exiftool") do
           {"Do you want to strip location (GPS) data from uploaded images? This requires exiftool, it was detected as installed. (y/n)",
            "y"}
@@ -170,12 +171,29 @@ defmodule Mix.Tasks.Pleroma.Instance do
            "n"}
         end
 
-      strip_uploads =
+      strip_uploads_location =
         get_option(
           options,
-          :strip_uploads,
-          strip_uploads_message,
-          strip_uploads_default
+          :strip_uploads_location,
+          strip_uploads_location_message,
+          strip_uploads_location_default
+        ) === "y"
+
+      {read_uploads_description_message, read_uploads_description_default} =
+        if Pleroma.Utils.command_available?("exiftool") do
+          {"Do you want to read data from uploaded files so clients can use it to prefill fields like image description? This requires exiftool, it was detected as installed. (y/n)",
+           "y"}
+        else
+          {"Do you want to read data from uploaded files so clients can use it to prefill fields like image description? This requires exiftool, it was detected as not installed, please install it if you answer yes. (y/n)",
+           "n"}
+        end
+
+      read_uploads_description =
+        get_option(
+          options,
+          :read_uploads_description,
+          read_uploads_description_message,
+          read_uploads_description_default
         ) === "y"
 
       anonymize_uploads =
@@ -199,6 +217,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
       secret = :crypto.strong_rand_bytes(64) |> Base.encode64() |> binary_part(0, 64)
       jwt_secret = :crypto.strong_rand_bytes(64) |> Base.encode64() |> binary_part(0, 64)
       signing_salt = :crypto.strong_rand_bytes(8) |> Base.encode64() |> binary_part(0, 8)
+      lv_signing_salt = :crypto.strong_rand_bytes(8) |> Base.encode64() |> binary_part(0, 8)
       {web_push_public_key, web_push_private_key} = :crypto.generate_key(:ecdh, :prime256v1)
       template_dir = Application.app_dir(:pleroma, "priv") <> "/templates"
 
@@ -217,6 +236,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
           secret: secret,
           jwt_secret: jwt_secret,
           signing_salt: signing_salt,
+          lv_signing_salt: lv_signing_salt,
           web_push_public_key: Base.url_encode64(web_push_public_key, padding: false),
           web_push_private_key: Base.url_encode64(web_push_private_key, padding: false),
           db_configurable?: db_configurable?,
@@ -227,7 +247,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
           listen_port: listen_port,
           upload_filters:
             upload_filters(%{
-              strip: strip_uploads,
+              strip_location: strip_uploads_location,
+              read_description: read_uploads_description,
               anonymize: anonymize_uploads,
               dedupe: dedupe_uploads
             })
@@ -245,12 +266,20 @@ defmodule Mix.Tasks.Pleroma.Instance do
       config_dir = Path.dirname(config_path)
       psql_dir = Path.dirname(psql_path)
 
+      # Note: Distros requiring group read (0o750) on those directories should
+      # pre-create the directories.
       [config_dir, psql_dir, static_dir, uploads_dir]
       |> Enum.reject(&File.exists?/1)
-      |> Enum.map(&File.mkdir_p!/1)
+      |> Enum.each(fn dir ->
+        File.mkdir_p!(dir)
+        File.chmod!(dir, 0o700)
+      end)
 
       shell_info("Writing config to #{config_path}.")
 
+      # Sadly no fchmod(2) equivalent in Elixir…
+      File.touch!(config_path)
+      File.chmod!(config_path, 0o640)
       File.write(config_path, result_config)
       shell_info("Writing the postgres script to #{psql_path}.")
       File.write(psql_path, result_psql)
@@ -263,14 +292,13 @@ defmodule Mix.Tasks.Pleroma.Instance do
 
       if db_configurable? do
         shell_info(
-          " Please transfer your config to the database after running database migrations. Refer to \"Transfering the config to/from the database\" section of the docs for more information."
+          " Please transfer your config to the database after running database migrations. Refer to \"Transferring the config to/from the database\" section of the docs for more information."
         )
       end
     else
       shell_error(
         "The task would have overwritten the following files:\n" <>
-          (Enum.map(will_overwrite, &"- #{&1}\n") |> Enum.join("")) <>
-          "Rerun with `--force` to overwrite them."
+          Enum.map_join(will_overwrite, &"- #{&1}\n") <> "Rerun with `--force` to overwrite them."
       )
     end
   end
@@ -295,10 +323,17 @@ defmodule Mix.Tasks.Pleroma.Instance do
 
   defp upload_filters(filters) when is_map(filters) do
     enabled_filters =
-      if filters.strip do
-        [Pleroma.Upload.Filter.Exiftool]
+      if filters.strip_location do
+        [Pleroma.Upload.Filter.Exiftool.StripLocation]
       else
         []
+      end
+
+    enabled_filters =
+      if filters.read_description do
+        enabled_filters ++ [Pleroma.Upload.Filter.Exiftool.ReadDescription]
+      else
+        enabled_filters
       end
 
     enabled_filters =
@@ -317,6 +352,4 @@ defmodule Mix.Tasks.Pleroma.Instance do
 
     enabled_filters
   end
-
-  defp upload_filters(_), do: []
 end

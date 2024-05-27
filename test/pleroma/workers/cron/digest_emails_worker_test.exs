@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.Cron.DigestEmailsWorkerTest do
@@ -12,6 +12,11 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorkerTest do
   alias Pleroma.Web.CommonAPI
 
   setup do: clear_config([:email_notifications, :digest])
+
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
 
   setup do
     clear_config([:email_notifications, :digest], %{

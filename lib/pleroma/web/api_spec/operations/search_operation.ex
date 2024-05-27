@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.SearchOperation do
@@ -70,7 +70,7 @@ defmodule Pleroma.Web.ApiSpec.SearchOperation do
         Operation.parameter(
           :account_id,
           :query,
-          FlakeID,
+          FlakeID.schema(),
           "If provided, statuses returned will be authored only by this account"
         ),
         Operation.parameter(
@@ -116,7 +116,7 @@ defmodule Pleroma.Web.ApiSpec.SearchOperation do
         Operation.parameter(
           :account_id,
           :query,
-          FlakeID,
+          FlakeID.schema(),
           "If provided, statuses returned will be authored only by this account"
         ),
         Operation.parameter(

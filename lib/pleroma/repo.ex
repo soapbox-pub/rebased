@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Repo do
@@ -8,12 +8,8 @@ defmodule Pleroma.Repo do
     adapter: Ecto.Adapters.Postgres,
     migration_timestamps: [type: :naive_datetime_usec]
 
-  use Ecto.Explain
-
   import Ecto.Query
   require Logger
-
-  defmodule Instrumenter, do: use(Prometheus.EctoInstrumenter)
 
   @doc """
   Dynamically loads the repository url from the

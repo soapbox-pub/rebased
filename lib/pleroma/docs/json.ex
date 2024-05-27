@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Docs.JSON do
@@ -18,7 +18,7 @@ defmodule Pleroma.Docs.JSON do
     :persistent_term.put(@term, Pleroma.Docs.Generator.convert_to_strings(descriptions))
   end
 
-  @spec compiled_descriptions :: Map.t()
+  @spec compiled_descriptions :: map()
   def compiled_descriptions do
     :persistent_term.get(@term)
   end

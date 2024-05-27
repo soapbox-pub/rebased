@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Cluster do
   @moduledoc """
   Facilities for managing a cluster of slave VM's for federated testing.
@@ -123,7 +127,10 @@ defmodule Pleroma.Cluster do
 
   defp start_slave({node_host, override_configs}) do
     log(node_host, "booting federated VM")
-    {:ok, node} = :slave.start(~c"127.0.0.1", node_name(node_host), vm_args())
+
+    {:ok, node} =
+      do_start_slave(%{host: "127.0.0.1", name: node_name(node_host), args: vm_args()})
+
     add_code_paths(node)
     load_apps_and_transfer_configuration(node, override_configs)
     ensure_apps_started(node)
@@ -214,5 +221,15 @@ defmodule Pleroma.Cluster do
     |> String.split("@")
     |> Enum.at(0)
     |> String.to_atom()
+  end
+
+  defp do_start_slave(%{host: host, name: name, args: args} = opts) do
+    peer_module = Application.get_env(__MODULE__, :peer_module)
+
+    if peer_module == :peer do
+      peer_module.start(opts)
+    else
+      peer_module.start(host, name, args)
+    end
   end
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.FrontendControllerTest do
@@ -32,6 +32,20 @@ defmodule Pleroma.Web.AdminAPI.FrontendControllerTest do
 
   describe "GET /api/pleroma/admin/frontends" do
     test "it lists available frontends", %{conn: conn} do
+      response =
+        conn
+        |> get("/api/pleroma/admin/frontends")
+        |> json_response_and_validate_schema(:ok)
+
+      assert Enum.map(response, & &1["name"]) ==
+               Enum.map(Config.get([:frontends, :available]), fn {_, map} -> map["name"] end)
+
+      refute Enum.any?(response, fn frontend -> frontend["installed"] == true end)
+    end
+
+    test "it lists available frontends when no frontend folder was created yet", %{conn: conn} do
+      File.rm_rf(@dir)
+
       response =
         conn
         |> get("/api/pleroma/admin/frontends")
@@ -75,6 +89,7 @@ defmodule Pleroma.Web.AdminAPI.FrontendControllerTest do
                  "build_url" => "http://gensokyo.2hu/builds/${ref}",
                  "git" => nil,
                  "installed" => true,
+                 "installed_refs" => ["fantasy"],
                  "name" => "pleroma",
                  "ref" => "fantasy"
                }

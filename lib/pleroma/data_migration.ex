@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.DataMigration do
@@ -11,6 +11,8 @@ defmodule Pleroma.DataMigration do
 
   import Ecto.Changeset
   import Ecto.Query
+
+  @type t :: %__MODULE__{}
 
   schema "data_migrations" do
     field(:name, :string)
@@ -42,4 +44,5 @@ defmodule Pleroma.DataMigration do
   end
 
   def populate_hashtags_table, do: get_by_name("populate_hashtags_table")
+  def delete_context_objects, do: get_by_name("delete_context_objects")
 end

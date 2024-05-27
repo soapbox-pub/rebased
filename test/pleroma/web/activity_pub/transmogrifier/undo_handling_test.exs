@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
@@ -32,7 +32,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
     assert activity.data["type"] == "Undo"
   end
 
-  test "it returns an error for incoming unlikes wihout a like activity" do
+  test "it returns an error for incoming unlikes without a like activity" do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{status: "leave a like pls"})
 

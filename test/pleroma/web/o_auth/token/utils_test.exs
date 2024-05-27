@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.Token.UtilsTest do
@@ -13,7 +13,7 @@ defmodule Pleroma.Web.OAuth.Token.UtilsTest do
                Utils.fetch_app(%Plug.Conn{params: %{"client_id" => 1, "client_secret" => "x"}})
     end
 
-    test "returns App by params credentails" do
+    test "returns App by params credentials" do
       app = insert(:oauth_app)
 
       assert {:ok, load_app} =
@@ -24,7 +24,7 @@ defmodule Pleroma.Web.OAuth.Token.UtilsTest do
       assert load_app == app
     end
 
-    test "returns App by header credentails" do
+    test "returns App by header credentials" do
       app = insert(:oauth_app)
       header = "Basic " <> Base.encode64("#{app.client_id}:#{app.client_secret}")
 

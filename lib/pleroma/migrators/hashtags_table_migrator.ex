@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Migrators.HashtagsTableMigrator do
@@ -100,7 +100,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
     |> where([_o, hashtags_objects], is_nil(hashtags_objects.object_id))
   end
 
-  @spec transfer_object_hashtags(Map.t()) :: {:noop | :ok | :error, integer()}
+  @spec transfer_object_hashtags(map()) :: {:noop | :ok | :error, integer()}
   defp transfer_object_hashtags(object) do
     embedded_tags = if Map.has_key?(object, :tag), do: object.tag, else: object.data["tag"]
     hashtags = Object.object_data_hashtags(%{"tag" => embedded_tags})
@@ -183,7 +183,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
     DELETE FROM hashtags_objects WHERE object_id IN
       (SELECT DISTINCT objects.id FROM objects
         JOIN hashtags_objects ON hashtags_objects.object_id = objects.id LEFT JOIN activities
-          ON COALESCE(activities.data->'object'->>'id', activities.data->>'object') =
+          ON associated_object_id(activities) =
             (objects.data->>'id')
           AND activities.data->>'type' = 'Create'
         WHERE activities.id IS NULL);

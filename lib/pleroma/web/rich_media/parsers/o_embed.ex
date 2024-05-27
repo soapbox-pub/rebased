@@ -1,13 +1,13 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parsers.OEmbed do
   def parse(html, _data) do
     with elements = [_ | _] <- get_discovery_data(html),
          oembed_url when is_binary(oembed_url) <- get_oembed_url(elements),
-         {:ok, oembed_data} <- get_oembed_data(oembed_url) do
-      oembed_data
+         {:ok, oembed_data = %{"html" => html}} <- get_oembed_data(oembed_url) do
+      %{oembed_data | "html" => Pleroma.HTML.filter_tags(html)}
     else
       _e -> %{}
     end

@@ -1,12 +1,13 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.UserRelationshipTest do
   alias Pleroma.UserRelationship
 
-  use Pleroma.DataCase, async: true
+  use Pleroma.DataCase, async: false
 
+  import Mock
   import Pleroma.Factory
 
   describe "*_exists?/2" do
@@ -79,7 +80,12 @@ defmodule Pleroma.UserRelationshipTest do
     end
 
     test "if record already exists, returns it", %{users: [user1, user2]} do
-      user_block = UserRelationship.create_block(user1, user2)
+      user_block =
+        with_mock NaiveDateTime, [:passthrough], utc_now: fn -> ~N[2017-03-17 17:09:58] end do
+          {:ok, %{inserted_at: ~N[2017-03-17 17:09:58]}} =
+            UserRelationship.create_block(user1, user2)
+        end
+
       assert user_block == UserRelationship.create_block(user1, user2)
     end
   end

@@ -261,9 +261,49 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
+## `PATCH /api/v1/pleroma/admin/users/suggest`
+
+### Suggest a user
+
+Adds the user(s) to follower recommendations.
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+
+```json
+{
+  users: [
+    {
+      // user object
+    }
+  ]
+}
+```
+
+## `PATCH /api/v1/pleroma/admin/users/unsuggest`
+
+### Unsuggest a user
+
+Removes the user(s) from follower recommendations.
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+
+```json
+{
+  users: [
+    {
+      // user object
+    }
+  ]
+}
+```
+
 ## `GET /api/v1/pleroma/admin/users/:nickname_or_id`
 
-### Retrive the details of a user
+### Retrieve the details of a user
 
 - Params:
   - `nickname` or `id`
@@ -273,7 +313,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ## `GET /api/v1/pleroma/admin/users/:nickname_or_id/statuses`
 
-### Retrive user's latest statuses
+### Retrieve user's latest statuses
 
 - Params:
   - `nickname` or `id`
@@ -297,7 +337,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ## `GET /api/v1/pleroma/admin/instances/:instance/statuses`
 
-### Retrive instance's latest statuses
+### Retrieve instance's latest statuses
 
 - Params:
   - `instance`: instance name
@@ -319,9 +359,25 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
+## `DELETE /api/v1/pleroma/admin/instances/:instance`
+
+### Delete all users and activities from a remote instance
+
+Note: this will trigger a job to remove instance content in the background.
+It may take some time.
+
+- Params:
+  - `instance`: remote instance host
+- Response:
+  - The `instance` name as a string
+
+```json
+"lain.com"
+```
+
 ## `GET /api/v1/pleroma/admin/statuses`
 
-### Retrives all latest statuses
+### Retrieves all latest statuses
 
 - Params:
   - *optional* `page_size`: number of statuses to return (default is `20`)
@@ -485,7 +541,7 @@ Response:
 
 ## `PATCH /api/v1/pleroma/admin/users/force_password_reset`
 
-### Force passord reset for a user with a given nickname
+### Force password reset for a user with a given nickname
 
 - Params:
   - `nicknames`
@@ -1008,7 +1064,6 @@ List of settings which support only full update by key:
 ```elixir
 @full_key_update [
     {:pleroma, :ecto_repos},
-    {:quack, :meta},
     {:mime, :types},
     {:cors_plug, [:max_age, :methods, :expose, :headers]},
     {:auto_linker, :opts},
@@ -1028,18 +1083,18 @@ List of settings which support only full update by subkey:
   ]
 ```
 
-*Settings without explicit key must be sended in separate config object params.*
+*Settings without explicit key must be sent in separate config object params.*
 ```elixir
-config :quack,
-  level: :debug,
-  meta: [:all],
+config :foo,
+  bar: :baz,
+  meta: [:data],
   ...
 ```
 ```json
 {
   "configs": [
-    {"group": ":quack", "key": ":level", "value": ":debug"},
-    {"group": ":quack", "key": ":meta", "value": [":all"]},
+    {"group": ":foo", "key": ":bar", "value": ":baz"},
+    {"group": ":foo", "key": ":meta", "value": [":data"]},
     ...
   ]
 }
@@ -1530,6 +1585,7 @@ Returns the content of the document
     "build_url": "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
     "git": "https://git.pleroma.social/pleroma/fedi-fe",
     "installed": true,
+    "installed_refs": ["master"],
     "name": "fedi-fe",
     "ref": "master"
   },
@@ -1537,6 +1593,7 @@ Returns the content of the document
     "build_url": "https://git.pleroma.social/lambadalambda/kenoma/-/jobs/artifacts/${ref}/download?job=build",
     "git": "https://git.pleroma.social/lambadalambda/kenoma",
     "installed": false,
+    "installed_refs": [],
     "name": "kenoma",
     "ref": "master"
   }
@@ -1579,4 +1636,168 @@ Returns the content of the document
 {
   "error": "Could not install frontend"
 }
+```
+
+## `GET /api/v1/pleroma/admin/announcements`
+
+### List announcements
+
+- Params: `offset`, `limit`
+
+- Response: JSON, list of announcements
+
+```json
+[
+  {
+    "id": "AHDp0GBdRn1EPN5HN2",
+    "content": "some content",
+    "starts_at": null,
+    "ends_at": null,
+    "all_day": false,
+    "published_at": "2022-03-09T02:13:05",
+    "reactions": [],
+    "statuses": [],
+    "tags": [],
+    "emojis": [],
+    "updated_at": "2022-03-09T02:13:05"
+  }
+]
+```
+
+Note that this differs from the Mastodon API variant: Mastodon API only returns *active* announcements, while this returns all.
+
+## `GET /api/v1/pleroma/admin/announcements/:id`
+
+### Display one announcement
+
+- Response: JSON, one announcement
+
+```json
+{
+  "id": "AHDp0GBdRn1EPN5HN2",
+  "content": "some content",
+  "starts_at": null,
+  "ends_at": null,
+  "all_day": false,
+  "published_at": "2022-03-09T02:13:05",
+  "reactions": [],
+  "statuses": [],
+  "tags": [],
+  "emojis": [],
+  "updated_at": "2022-03-09T02:13:05"
+}
+```
+
+## `POST /api/v1/pleroma/admin/announcements`
+
+### Create an announcement
+
+- Params:
+  - `content`: string, required, announcement content
+  - `starts_at`: datetime, optional, default to null, the time when the announcement will become active (displayed to users); if it is null, the announcement will be active immediately
+  - `ends_at`: datetime, optional, default to null, the time when the announcement will become inactive (no longer displayed to users); if it is null, the announcement will be active until an admin deletes it
+  - `all_day`: boolean, optional, default to false, tells the client whether to only display dates for `starts_at` and `ends_at`
+
+- Response: JSON, created announcement
+
+```json
+{
+  "id": "AHDp0GBdRn1EPN5HN2",
+  "content": "some content",
+  "starts_at": null,
+  "ends_at": null,
+  "all_day": false,
+  "published_at": "2022-03-09T02:13:05",
+  "reactions": [],
+  "statuses": [],
+  "tags": [],
+  "emojis": [],
+  "updated_at": "2022-03-09T02:13:05"
+}
+```
+
+## `PATCH /api/v1/pleroma/admin/announcements/:id`
+
+### Change an announcement
+
+- Params: same as `POST /api/v1/pleroma/admin/announcements`, except no param is required.
+
+- Updates the announcement according to params. Missing params are kept as-is.
+
+- Response: JSON, updated announcement
+
+```json
+{
+  "id": "AHDp0GBdRn1EPN5HN2",
+  "content": "some content",
+  "starts_at": null,
+  "ends_at": null,
+  "all_day": false,
+  "published_at": "2022-03-09T02:13:05",
+  "reactions": [],
+  "statuses": [],
+  "tags": [],
+  "emojis": [],
+  "updated_at": "2022-03-09T02:13:05"
+}
+```
+
+## `DELETE /api/v1/pleroma/admin/announcements/:id`
+
+### Delete an announcement
+
+- Response: JSON, empty object
+
+```json
+{}
+```
+
+
+## `GET /api/v1/pleroma/admin/rules`
+
+### List rules
+
+- Response: JSON, list of rules
+
+```json
+[
+  {
+    "id": "1",
+    "priority": 1,
+    "text": "There are no rules",
+    "hint": null
+  }
+]
+```
+
+## `POST /api/v1/pleroma/admin/rules`
+
+### Create a rule
+
+- Params:
+  - `text`: string, required, rule content
+  - `hint`: string, optional, rule description
+  - `priority`: integer, optional, rule ordering priority
+
+- Response: JSON, a single rule
+
+## `PATCH /api/v1/pleroma/admin/rules/:id`
+
+### Update a rule
+
+- Params:
+  - `text`: string, optional, rule content
+  - `hint`: string, optional, rule description
+  - `priority`: integer, optional, rule ordering priority
+
+- Response: JSON, a single rule
+
+## `DELETE /api/v1/pleroma/admin/rules/:id`
+
+### Delete a rule
+
+- Response: JSON, empty object
+
+```json
+{}
 ```

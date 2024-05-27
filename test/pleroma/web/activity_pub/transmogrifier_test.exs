@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
@@ -8,7 +8,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
   alias Pleroma.Activity
   alias Pleroma.Object
-  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
@@ -61,7 +60,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       note_obj = %{
         "type" => "Note",
-        "id" => activity.data["id"],
+        "id" => activity.object.data["id"],
         "content" => "test post",
         "published" => object.data["published"],
         "actor" => AccountView.render("show.json", %{user: user, skip_visibility_check: true})
@@ -106,6 +105,56 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert activity.data["object"] == old_user.ap_id
       assert activity.data["target"] == new_user.ap_id
       assert activity.data["type"] == "Move"
+    end
+
+    test "it fixes both the Create and object contexts in a reply" do
+      insert(:user, ap_id: "https://mk.absturztau.be/users/8ozbzjs3o8")
+      insert(:user, ap_id: "https://p.helene.moe/users/helene")
+
+      create_activity =
+        "test/fixtures/create-pleroma-reply-to-misskey-thread.json"
+        |> File.read!()
+        |> Jason.decode!()
+
+      assert {:ok, %Activity{} = activity} = Transmogrifier.handle_incoming(create_activity)
+
+      object = Object.normalize(activity, fetch: false)
+
+      assert activity.data["context"] == object.data["context"]
+    end
+
+    test "it keeps link tags" do
+      insert(:user, ap_id: "https://example.org/users/alice")
+
+      message = File.read!("test/fixtures/fep-e232.json") |> Jason.decode!()
+
+      assert capture_log(fn ->
+               assert {:ok, activity} = Transmogrifier.handle_incoming(message)
+               object = Object.normalize(activity)
+               assert [%{"type" => "Mention"}, %{"type" => "Link"}] = object.data["tag"]
+             end) =~ "Object rejected while fetching"
+    end
+
+    test "it accepts quote posts" do
+      insert(:user, ap_id: "https://misskey.io/users/7rkrarq81i")
+
+      object = File.read!("test/fixtures/quote_post/misskey_quote_post.json") |> Jason.decode!()
+
+      message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "type" => "Create",
+        "actor" => "https://misskey.io/users/7rkrarq81i",
+        "object" => object
+      }
+
+      assert {:ok, activity} = Transmogrifier.handle_incoming(message)
+
+      # Object was created in the database
+      object = Object.normalize(activity)
+      assert object.data["quoteUrl"] == "https://misskey.io/notes/8vs6wxufd0"
+
+      # It fetched the quoted post
+      assert Object.normalize("https://misskey.io/notes/8vs6wxufd0")
     end
   end
 
@@ -216,7 +265,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["like_count"])
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
-      assert is_nil(modified["object"]["context_id"])
       assert is_nil(modified["object"]["generator"])
     end
 
@@ -231,7 +279,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["like_count"])
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
-      assert is_nil(modified["object"]["context_id"])
       assert is_nil(modified["object"]["likes"])
     end
 
@@ -301,68 +348,41 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert url == "http://localhost:4001/emoji/dino%20walking.gif"
     end
-  end
 
-  describe "user upgrade" do
-    test "it upgrades a user to activitypub" do
-      user =
-        insert(:user, %{
-          nickname: "rye@niu.moe",
-          local: false,
-          ap_id: "https://niu.moe/users/rye",
-          follower_address: User.ap_followers(%User{nickname: "rye@niu.moe"})
-        })
+    test "Updates of Notes are handled" do
+      user = insert(:user)
 
-      user_two = insert(:user)
-      Pleroma.FollowingRelationship.follow(user_two, user, :follow_accept)
+      {:ok, activity} = CommonAPI.post(user, %{status: "everybody do the dinosaur :dinosaur:"})
+      {:ok, update} = CommonAPI.update(user, activity, %{status: "mew mew :blank:"})
 
-      {:ok, activity} = CommonAPI.post(user, %{status: "test"})
-      {:ok, unrelated_activity} = CommonAPI.post(user_two, %{status: "test"})
-      assert "http://localhost:4001/users/rye@niu.moe/followers" in activity.recipients
-
-      user = User.get_cached_by_id(user.id)
-      assert user.note_count == 1
-
-      {:ok, user} = Transmogrifier.upgrade_user_from_ap_id("https://niu.moe/users/rye")
-      ObanHelpers.perform_all()
-
-      assert user.ap_enabled
-      assert user.note_count == 1
-      assert user.follower_address == "https://niu.moe/users/rye/followers"
-      assert user.following_address == "https://niu.moe/users/rye/following"
-
-      user = User.get_cached_by_id(user.id)
-      assert user.note_count == 1
-
-      activity = Activity.get_by_id(activity.id)
-      assert user.follower_address in activity.recipients
+      {:ok, prepared} = Transmogrifier.prepare_outgoing(update.data)
 
       assert %{
-               "url" => [
-                 %{
-                   "href" =>
-                     "https://cdn.niu.moe/accounts/avatars/000/033/323/original/fd7f8ae0b3ffedc9.jpeg"
-                 }
-               ]
-             } = user.avatar
+               "content" => "mew mew :blank:",
+               "tag" => [%{"name" => ":blank:", "type" => "Emoji"}],
+               "formerRepresentations" => %{
+                 "orderedItems" => [
+                   %{
+                     "content" => "everybody do the dinosaur :dinosaur:",
+                     "tag" => [%{"name" => ":dinosaur:", "type" => "Emoji"}]
+                   }
+                 ]
+               }
+             } = prepared["object"]
+    end
 
-      assert %{
-               "url" => [
-                 %{
-                   "href" =>
-                     "https://cdn.niu.moe/accounts/headers/000/033/323/original/850b3448fa5fd477.png"
-                 }
-               ]
-             } = user.banner
+    test "it prepares a quote post" do
+      user = insert(:user)
 
-      refute "..." in activity.recipients
+      {:ok, quoted_post} = CommonAPI.post(user, %{status: "hey"})
+      {:ok, quote_post} = CommonAPI.post(user, %{status: "hey", quote_id: quoted_post.id})
 
-      unrelated_activity = Activity.get_by_id(unrelated_activity.id)
-      refute user.follower_address in unrelated_activity.recipients
+      {:ok, modified} = Transmogrifier.prepare_outgoing(quote_post.data)
 
-      user_two = User.get_cached_by_id(user_two.id)
-      assert User.following?(user_two, user)
-      refute "..." in User.following(user_two)
+      %{data: %{"id" => quote_id}} = Object.normalize(quoted_post)
+
+      assert modified["object"]["quoteUrl"] == quote_id
+      assert modified["object"]["quoteUri"] == quote_id
     end
   end
 
@@ -390,7 +410,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert capture_log(fn ->
                {:error, _} = Transmogrifier.handle_incoming(data)
-             end) =~ "Object containment failed"
+             end) =~ "Object rejected while fetching"
     end
 
     test "it rejects activities which reference objects that have an incorrect attribution (variant 1)" do
@@ -405,7 +425,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert capture_log(fn ->
                {:error, _} = Transmogrifier.handle_incoming(data)
-             end) =~ "Object containment failed"
+             end) =~ "Object rejected while fetching"
     end
 
     test "it rejects activities which reference objects that have an incorrect attribution (variant 2)" do
@@ -420,7 +440,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert capture_log(fn ->
                {:error, _} = Transmogrifier.handle_incoming(data)
-             end) =~ "Object containment failed"
+             end) =~ "Object rejected while fetching"
     end
   end
 
@@ -522,6 +542,85 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                Transmogrifier.get_obj_helper(
                  "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
                )
+    end
+  end
+
+  describe "fix_attachments/1" do
+    test "puts dimensions into attachment url field" do
+      object = %{
+        "attachment" => [
+          %{
+            "type" => "Document",
+            "name" => "Hello world",
+            "url" => "https://media.example.tld/1.jpg",
+            "width" => 880,
+            "height" => 960,
+            "mediaType" => "image/jpeg",
+            "blurhash" => "eTKL26+HDjcEIBVl;ds+K6t301W.t7nit7y1E,R:v}ai4nXSt7V@of"
+          }
+        ]
+      }
+
+      expected = %{
+        "attachment" => [
+          %{
+            "type" => "Document",
+            "name" => "Hello world",
+            "url" => [
+              %{
+                "type" => "Link",
+                "mediaType" => "image/jpeg",
+                "href" => "https://media.example.tld/1.jpg",
+                "width" => 880,
+                "height" => 960
+              }
+            ],
+            "mediaType" => "image/jpeg",
+            "blurhash" => "eTKL26+HDjcEIBVl;ds+K6t301W.t7nit7y1E,R:v}ai4nXSt7V@of"
+          }
+        ]
+      }
+
+      assert Transmogrifier.fix_attachments(object) == expected
+    end
+  end
+
+  describe "prepare_object/1" do
+    test "it processes history" do
+      original = %{
+        "formerRepresentations" => %{
+          "orderedItems" => [
+            %{
+              "generator" => %{},
+              "emoji" => %{"blobcat" => "http://localhost:4001/emoji/blobcat.png"}
+            }
+          ]
+        }
+      }
+
+      processed = Transmogrifier.prepare_object(original)
+
+      history_item = Enum.at(processed["formerRepresentations"]["orderedItems"], 0)
+
+      refute Map.has_key?(history_item, "generator")
+
+      assert [%{"name" => ":blobcat:"}] = history_item["tag"]
+    end
+
+    test "it works when there is no or bad history" do
+      original = %{
+        "formerRepresentations" => %{
+          "items" => [
+            %{
+              "generator" => %{},
+              "emoji" => %{"blobcat" => "http://localhost:4001/emoji/blobcat.png"}
+            }
+          ]
+        }
+      }
+
+      processed = Transmogrifier.prepare_object(original)
+      assert processed["formerRepresentations"] == original["formerRepresentations"]
     end
   end
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Helpers do
@@ -62,7 +62,7 @@ defmodule Pleroma.Web.ApiSpec.Helpers do
     Operation.parameter(
       :with_relationships,
       :query,
-      BooleanLike,
+      BooleanLike.schema(),
       "Embed relationships into accounts. **If this parameter is not set account's `pleroma.relationship` is going to be `null`.**"
     )
   end

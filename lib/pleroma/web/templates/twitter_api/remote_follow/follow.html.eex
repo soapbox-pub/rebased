@@ -1,11 +1,11 @@
 <%= if @error == :error do %>
-    <h2>Error fetching user</h2>
+    <h2><%= Gettext.dpgettext("static_pages", "remote follow error", "Error fetching user") %></h2>
 <% else %>
-    <h2>Remote follow</h2>
+    <h2><%= Gettext.dpgettext("static_pages", "remote follow header", "Remote follow") %></h2>
     <img height="128" width="128" src="<%= avatar_url(@followee) %>">
     <p><%= @followee.nickname %></p>
     <%= form_for @conn, Routes.remote_follow_path(@conn, :do_follow), [as: "user"], fn f -> %>
     <%= hidden_input f, :id, value: @followee.id %>
-    <%= submit "Authorize" %>
+    <%= submit Gettext.dpgettext("static_pages", "remote follow authorization button", "Authorize") %>
     <% end %>
 <% end %>

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ConversationTest do
@@ -12,6 +12,11 @@ defmodule Pleroma.ConversationTest do
   import Pleroma.Factory
 
   setup_all do: clear_config([:instance, :federating], true)
+
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
 
   test "it goes through old direct conversations" do
     user = insert(:user)

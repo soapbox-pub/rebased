@@ -1,15 +1,17 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatValidationTest do
   use Pleroma.DataCase
   alias Pleroma.Object
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.ObjectValidator
   alias Pleroma.Web.CommonAPI
 
+  import Mox
   import Pleroma.Factory
 
   describe "chat message create activities" do
@@ -68,7 +70,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatValidationTest do
     test "validates for a basic object we build", %{valid_chat_message: valid_chat_message} do
       assert {:ok, object, _meta} = ObjectValidator.validate(valid_chat_message, [])
 
-      assert Map.put(valid_chat_message, "attachment", nil) == object
+      assert valid_chat_message == object
       assert match?(%{"firefox" => _}, object["emoji"])
     end
 
@@ -81,6 +83,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatValidationTest do
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
+
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
 
       {:ok, attachment} = ActivityPub.upload(file, actor: user.ap_id)
 
@@ -103,6 +108,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatValidationTest do
         filename: "an_image.jpg"
       }
 
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
+
       {:ok, attachment} = ActivityPub.upload(file, actor: user.ap_id)
 
       valid_chat_message =
@@ -124,6 +132,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatValidationTest do
         filename: "an_image.jpg"
       }
 
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
+
       {:ok, attachment} = ActivityPub.upload(file, actor: user.ap_id)
 
       valid_chat_message =
@@ -134,6 +145,21 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatValidationTest do
       assert {:ok, object, _meta} = ObjectValidator.validate(valid_chat_message, [])
 
       assert object["attachment"]
+    end
+
+    test "validates for a basic object with content but attachment set to empty array", %{
+      user: user,
+      recipient: recipient
+    } do
+      {:ok, valid_chat_message, _} = Builder.chat_message(user, recipient.ap_id, "Hello!")
+
+      valid_chat_message =
+        valid_chat_message
+        |> Map.put("attachment", [])
+
+      assert {:ok, object, _meta} = ObjectValidator.validate(valid_chat_message, [])
+
+      assert object == Map.drop(valid_chat_message, ["attachment"])
     end
 
     test "does not validate if the message has no content", %{

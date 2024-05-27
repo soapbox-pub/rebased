@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Pipeline do
@@ -62,7 +62,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
     with {:ok, local} <- Keyword.fetch(meta, :local) do
       do_not_federate = meta[:do_not_federate] || !config().get([:instance, :federating])
 
-      if !do_not_federate and local and not Visibility.is_local_public?(activity) do
+      if !do_not_federate and local and not Visibility.local_public?(activity) do
         activity =
           if object = Keyword.get(meta, :object_data) do
             %{activity | data: Map.put(activity.data, "object", object)}

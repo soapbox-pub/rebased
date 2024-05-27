@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator do
@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator do
 
   alias Pleroma.Activity
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
+  alias Pleroma.User
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
@@ -14,13 +15,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator do
   @primary_key false
 
   embedded_schema do
-    field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:type, :string)
-    field(:actor, ObjectValidators.ObjectID)
-    field(:to, ObjectValidators.Recipients, default: [])
-    field(:cc, ObjectValidators.Recipients, default: [])
+    quote do
+      unquote do
+        import Elixir.Pleroma.Web.ActivityPub.ObjectValidators.CommonFields
+        message_fields()
+        activity_fields()
+      end
+    end
+
     field(:deleted_activity_id, ObjectValidators.ObjectID)
-    field(:object, ObjectValidators.ObjectID)
   end
 
   def cast_data(data) do
@@ -57,8 +60,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator do
     cng
     |> validate_required([:id, :type, :actor, :to, :cc, :object])
     |> validate_inclusion(:type, ["Delete"])
-    |> validate_actor_presence()
-    |> validate_modification_rights()
+    |> validate_delete_actor(:actor)
+    |> validate_modification_rights(:messages_delete)
     |> validate_object_or_user_presence(allowed_types: @deletable_types)
     |> add_deleted_activity_id()
   end
@@ -71,5 +74,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator do
     data
     |> cast_data
     |> validate_data
+  end
+
+  defp validate_delete_actor(cng, field_name) do
+    validate_change(cng, field_name, fn field_name, actor ->
+      case User.get_cached_by_ap_id(actor) do
+        %User{} -> []
+        _ -> [{field_name, "can't find user"}]
+      end
+    end)
   end
 end

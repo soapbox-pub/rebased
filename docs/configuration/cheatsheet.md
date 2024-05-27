@@ -18,6 +18,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `email`: Email used to reach an Administrator/Moderator of the instance.
 * `notify_email`: Email used for notifications.
 * `description`: The instance’s description, can be seen in nodeinfo and ``/api/v1/instance``.
+* `short_description`: Shorter version of instance description, can be seen on ``/api/v1/instance``.
 * `limit`: Posts character limit (CW/Subject included in the counter).
 * `description_limit`: The character limit for image descriptions.
 * `remote_limit`: Hard character limit beyond which remote posts will be dropped.
@@ -39,7 +40,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `federation_reachability_timeout_days`: Timeout (in days) of each external federation target being unreachable prior to pausing federating to it.
 * `allow_relay`: Permits remote instances to subscribe to all public posts of your instance. This may increase the visibility of your instance.
 * `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network. Note that there is a dependent setting restricting or allowing unauthenticated access to specific resources, see `restrict_unauthenticated` for more details.
-* `quarantined_instances`: List of ActivityPub instances where private (DMs, followers-only) activities will not be send.
+* `quarantined_instances`: ActivityPub instances where private (DMs, followers-only) activities will not be send.
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML).
 * `extended_nickname_format`: Set to `true` to use extended local nicknames format (allows underscores/dashes). This will break federation with
     older software for theses nicknames.
@@ -48,6 +49,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `autofollowing_nicknames`: Set to nicknames of (local) users that automatically follows every newly registered user.
 * `attachment_links`: Set to true to enable automatically adding attachment link text to statuses.
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`).
+* `report_strip_status`: Strip associated statuses in reports to ids when closed/resolved, otherwise keep a copy.
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). Default: `false`.
 * `healthcheck`: If set to true, system data will be shown on ``/api/v1/pleroma/healthcheck``.
 * `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
@@ -64,6 +66,36 @@ To add configuration to your config file, you can copy it from the base config. 
 * `cleanup_attachments`: Remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
 * `show_reactions`: Let favourites and emoji reactions be viewed through the API (default: `true`).
 * `password_reset_token_validity`: The time after which reset tokens aren't accepted anymore, in seconds (default: one day).
+* `admin_privileges`: A list of privileges an admin has (e.g. delete messages, manage reports...)
+    * Possible values are:
+      * `:users_read`
+        * Allows admins to fetch users through the admin API.
+      * `:users_manage_invites`
+        * Allows admins to manage invites. This includes sending, resending, revoking and approving invites.
+      * `:users_manage_activation_state`
+        * Allows admins to activate and deactivate accounts. This also allows them to see deactivated users through the Mastodon API.
+      * `:users_manage_tags`
+        * Allows admins to set and remove tags for users. This can be useful in combination with MRF policies, such as `Pleroma.Web.ActivityPub.MRF.TagPolicy`.
+      * `:users_manage_credentials`
+        * Allows admins to trigger a password reset and set new credentials for an user.
+      * `:users_delete`
+        * Allows admins to delete accounts. Note that deleting an account is actually deactivating it and removing all data like posts, profile information, etc.
+      * `:messages_read`
+        * Allows admins to read messages through the admin API, including non-public posts and chats.
+      * `:messages_delete`
+        * Allows admins to delete messages from other users.
+      * `:instances_delete,`
+        * Allows admins to remove a whole remote instance from your instance. This will delete all users and messages from that remote instance.
+      * `:reports_manage_reports`
+        * Allows admins to see and manage reports.
+      * `:moderation_log_read,`
+        * Allows admins to read the entries in the moderation log.
+      * `:emoji_manage_emoji`
+        * Allows admins to manage custom emoji on the instance.
+      * `:statistics_read,`
+        * Allows admins to see some simple statistics about the instance.
+* `moderator_privileges`: A list of privileges a moderator has (e.g. delete messages, manage reports...)
+    * Possible values are the same as for `admin_privileges`
 
 ## :database
 * `improved_hashtag_timeline`: Setting to force toggle / force disable improved hashtags timeline. `:enabled` forces hashtags to be fetched from `hashtags` table for hashtags timeline. `:disabled` forces object-embedded hashtags to be used (slower). Keep it `:auto` for automatic behaviour (it is auto-set to `:enabled` [unless overridden] when HashtagsTableMigrator completes).
@@ -122,9 +154,15 @@ To add configuration to your config file, you can copy it from the base config. 
     * `Pleroma.Web.ActivityPub.MRF.MentionPolicy`: Drops posts mentioning configurable users. (See [`:mrf_mention`](#mrf_mention)).
     * `Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`: Restricts activities to a configured set of vocabulary. (See [`:mrf_vocabulary`](#mrf_vocabulary)).
     * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
-    * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.Workers.PurgeExpiredActivity` to be enabled for processing the scheduled delections.
+    * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.Workers.PurgeExpiredActivity` to be enabled for processing the scheduled deletions.
     * `Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy`: Makes all bot posts to disappear from public timelines.
     * `Pleroma.Web.ActivityPub.MRF.FollowBotPolicy`: Automatically follows newly discovered users from the specified bot account. Local accounts, locked accounts, and users with "#nobot" in their bio are respected and excluded from being followed.
+    * `Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicy`: Drops follow requests from followbots. Users can still allow bots to follow them by first following the bot.
+    * `Pleroma.Web.ActivityPub.MRF.KeywordPolicy`: Rejects or removes from the federated timeline or replaces keywords. (See [`:mrf_keyword`](#mrf_keyword)).
+    * `Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent`: Forces every mentioned user to be reflected in the post content.
+    * `Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy`: Forces quote post URLs to be reflected in the message content inline.
+    * `Pleroma.Web.ActivityPub.MRF.QuoteToLinkTagPolicy`: Force a Link tag for posts quoting another post. (may break outgoing federation of quote posts with older Pleroma versions).
+    * `Pleroma.Web.ActivityPub.MRF.ForceMention`: Forces posts to include a mention of the author of parent post or the author of quoted post.
 * `transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
 
@@ -135,15 +173,16 @@ To add configuration to your config file, you can copy it from the base config. 
     Configuring MRF policies is not enough for them to take effect. You have to enable them by specifying their module in `policies` under [:mrf](#mrf) section.
 
 #### :mrf_simple
-* `media_removal`: List of instances to remove media from.
-* `media_nsfw`: List of instances to put media as NSFW(sensitive) from.
-* `federated_timeline_removal`: List of instances to remove from Federated (aka The Whole Known Network) Timeline.
-* `reject`: List of instances to reject any activities from.
-* `accept`: List of instances to accept any activities from.
-* `followers_only`: List of instances to decrease post visibility to only the followers, including for DM mentions.
-* `report_removal`: List of instances to reject reports from.
-* `avatar_removal`: List of instances to strip avatars from.
-* `banner_removal`: List of instances to strip banners from.
+* `media_removal`: List of instances to strip media attachments from and the reason for doing so.
+* `media_nsfw`: List of instances to tag all media as NSFW (sensitive) from and the reason for doing so.
+* `federated_timeline_removal`: List of instances to remove from the Federated Timeline (aka The Whole Known Network) and the reason for doing so.
+* `reject`: List of instances to reject activities (except deletes) from and the reason for doing so.
+* `accept`: List of instances to only accept activities (except deletes) from and the reason for doing so.
+* `followers_only`: Force posts from the given instances to be visible by followers only and the reason for doing so.
+* `report_removal`: List of instances to reject reports from and the reason for doing so.
+* `avatar_removal`: List of instances to strip avatars from and the reason for doing so.
+* `banner_removal`: List of instances to strip banners from and the reason for doing so.
+* `reject_deletes`: List of instances to reject deletions from and the reason for doing so.
 
 #### :mrf_subchain
 This policy processes messages through an alternate pipeline when a given message matches certain criteria.
@@ -199,7 +238,7 @@ config :pleroma, :mrf_user_allowlist, %{
   e.g., A value of 900 results in any post with a timestamp older than 15 minutes will be acted upon.
 * `actions`: A list of actions to apply to the post:
   * `:delist` removes the post from public timelines
-  * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines
+  * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines, additionally for followers-only it degrades to a direct message
   * `:reject` rejects the message entirely
 
 #### :mrf_steal_emoji
@@ -225,10 +264,23 @@ Notes:
 
 * `follower_nickname`: The name of the bot account to use for following newly discovered users. Using `followbot` or similar is strongly suggested.
 
+#### :mrf_emoji
+* `remove_url`: A list of patterns which result in emoji whose URL matches being removed from the message. This will apply to statuses, emoji reactions, and user profiles. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
+* `remove_shortcode`: A list of patterns which result in emoji whose shortcode matches being removed from the message. This will apply to statuses, emoji reactions, and user profiles. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
+* `federated_timeline_removal_url`: A list of patterns which result in message with emojis whose URLs match being removed from federated timelines (a.k.a unlisted). This will apply only to statuses. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
+* `federated_timeline_removal_shortcode`: A list of patterns which result in message with emojis whose shortcodes match being removed from federated timelines (a.k.a unlisted). This will apply only to statuses. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
+
+#### :mrf_inline_quote
+* `template`: The template to append to the post. `{url}` will be replaced with the actual link to the quoted post. Default: `<bdi>RT:</bdi> {url}`
+
+#### :mrf_force_mention
+* `mention_parent`: Whether to append mention of parent post author
+* `mention_quoted`: Whether to append mention of parent quoted author
 
 ### :activitypub
 * `unfollow_blocked`: Whether blocks result in people getting unfollowed
 * `outgoing_blocks`: Whether to federate blocks to other instances
+* `blockers_visible`: Whether a user can see the posts of users who blocked them
 * `deny_follow_blocked`: Whether to disallow following an account that has blocked the user in question
 * `sign_object_fetches`: Sign object fetches with HTTP signatures
 * `authorized_fetch_mode`: Require HTTP signatures for AP fetches
@@ -246,7 +298,7 @@ Notes:
 
 ### :frontend_configurations
 
-This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` and `masto_fe` are configured. You can find the documentation for `pleroma_fe` configuration into [Pleroma-FE configuration and customization for instance administrators](/frontend/CONFIGURATION/#options).
+This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` are configured. You can find the documentation for `pleroma_fe` configuration into [Pleroma-FE configuration and customization for instance administrators](/frontend/CONFIGURATION/#options).
 
 Frontends can access these settings at `/api/v1/pleroma/frontend_configurations`
 
@@ -257,10 +309,7 @@ config :pleroma, :frontend_configurations,
   pleroma_fe: %{
     theme: "pleroma-dark",
     # ... see /priv/static/static/config.json for the available keys.
-},
-  masto_fe: %{
-    showInstanceSpecificPanel: true
-  }
+}
 ```
 
 These settings **need to be complete**, they will override the defaults.
@@ -462,7 +511,7 @@ config :pleroma, :rate_limit,
 Means that:
 
 1. In 60 seconds, 15 authentication attempts can be performed from the same IP address.
-2. In 1 second, 10 search requests can be performed from the same IP adress by unauthenticated users, while authenticated users can perform 30 search requests per second.
+2. In 1 second, 10 search requests can be performed from the same IP address by unauthenticated users, while authenticated users can perform 30 search requests per second.
 
 Supported rate limiters:
 
@@ -625,9 +674,21 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 
 No specific configuration.
 
-#### Pleroma.Upload.Filter.Exiftool
+#### Pleroma.Upload.Filter.Exiftool.StripLocation
 
 This filter only strips the GPS and location metadata with Exiftool leaving color profiles and attributes intact.
+
+No specific configuration.
+
+#### Pleroma.Upload.Filter.Exiftool.ReadDescription
+
+This filter reads the ImageDescription and iptc:Caption-Abstract fields with Exiftool so clients can prefill the media description field.
+
+No specific configuration.
+
+#### Pleroma.Upload.Filter.OnlyMedia
+
+This filter rejects uploads that are not identified with Content-Type matching audio/\*, image/\*, or video/\*
 
 No specific configuration.
 
@@ -768,7 +829,7 @@ Web Push Notifications configuration. You can use the mix task `mix web_push.gen
 * ``private_key``: VAPID private key
 
 ## :logger
-* `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
+* `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
 
 An example to enable ONLY ExSyslogger (f/ex in ``prod.secret.exs``) with info and debug suppressed:
 ```elixir
@@ -791,10 +852,10 @@ config :logger, :ex_syslogger,
 
 See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_syslogger’s documentation](https://hexdocs.pm/ex_syslogger/)
 
-An example of logging info to local syslog, but warn to a Slack channel:
+An example of logging info to local syslog, but debug to console:
 ```elixir
 config :logger,
-  backends: [ {ExSyslogger, :ex_syslogger}, Quack.Logger ],
+  backends: [ {ExSyslogger, :ex_syslogger}, :console ],
   level: :info
 
 config :logger, :ex_syslogger,
@@ -802,13 +863,11 @@ config :logger, :ex_syslogger,
   ident: "pleroma",
   format: "$metadata[$level] $message"
 
-config :quack,
-  level: :warn,
-  meta: [:all],
-  webhook_url: "https://hooks.slack.com/services/YOUR-API-KEY-HERE"
+config :logger, :console,
+  level: :debug,
+  format: "\n$time $metadata[$level] $message\n",
+  metadata: [:request_id]
 ```
-
-See the [Quack Github](https://github.com/azohra/quack) for more details
 
 
 
@@ -835,21 +894,8 @@ This will probably take a long time.
 
 ### BBS / SSH access
 
-To enable simple command line interface accessible over ssh, add a setting like this to your configuration file:
-
-```exs
-app_dir = File.cwd!
-priv_dir = Path.join([app_dir, "priv/ssh_keys"])
-
-config :esshd,
-  enabled: true,
-  priv_dir: priv_dir,
-  handler: "Pleroma.BBS.Handler",
-  port: 10_022,
-  password_authenticator: "Pleroma.BBS.Authenticator"
-```
-
-Feel free to adjust the priv_dir and port number. Then you will have to create the key for the keys (in the example `priv/ssh_keys`) and create the host keys with `ssh-keygen -m PEM -N "" -b 2048 -t rsa -f ssh_host_rsa_key`. After restarting, you should be able to connect to your Pleroma instance with `ssh username@server -p $PORT`
+This feature has been removed from Pleroma core.
+However, a client has been made and is available at https://git.pleroma.social/Duponin/sshocial.
 
 ### :gopher
 * `enabled`: Enables the gopher interface
@@ -1040,7 +1086,7 @@ config :pleroma, Pleroma.Formatter,
 
 ## :configurable_from_database
 
-Boolean, enables/disables in-database configuration. Read [Transfering the config to/from the database](../administration/CLI_tasks/config.md) for more information.
+Boolean, enables/disables in-database configuration. Read [Transferring the config to/from the database](../administration/CLI_tasks/config.md) for more information.
 
 ## :database_config_whitelist
 
@@ -1101,7 +1147,7 @@ Control favicons for instances.
 !!! note
     Requires enabled email
 
-* `:purge_after_days` an integer, remove backup achives after N days.
+* `:purge_after_days` an integer, remove backup achieves after N days.
 * `:limit_days` an integer, limit user to export not more often than once per N days.
 * `:dir` a string with a path to backup temporary directory or `nil` to let Pleroma choose temporary directory in the following order:
     1. the directory named by the TMPDIR environment variable

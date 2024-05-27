@@ -1,8 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.BackgroundWorker do
+  alias Pleroma.Instances.Instance
   alias Pleroma.User
 
   use Pleroma.Workers.WorkerHelper, queue: "background"
@@ -27,7 +28,7 @@ defmodule Pleroma.Workers.BackgroundWorker do
   def perform(%Job{args: %{"op" => op, "user_id" => user_id, "identifiers" => identifiers}})
       when op in ["blocks_import", "follow_import", "mutes_import"] do
     user = User.get_cached_by_id(user_id)
-    {:ok, User.Import.perform(String.to_atom(op), user, identifiers)}
+    {:ok, User.Import.perform(String.to_existing_atom(op), user, identifiers)}
   end
 
   def perform(%Job{
@@ -38,4 +39,16 @@ defmodule Pleroma.Workers.BackgroundWorker do
 
     Pleroma.FollowingRelationship.move_following(origin, target)
   end
+
+  def perform(%Job{args: %{"op" => "verify_fields_links", "user_id" => user_id}}) do
+    user = User.get_by_id(user_id)
+    User.perform(:verify_fields_links, user)
+  end
+
+  def perform(%Job{args: %{"op" => "delete_instance", "host" => host}}) do
+    Instance.perform(:delete_instance, host)
+  end
+
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(900)
 end

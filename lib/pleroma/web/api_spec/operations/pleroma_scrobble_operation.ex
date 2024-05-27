@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.PleromaScrobbleOperation do
@@ -22,7 +22,8 @@ defmodule Pleroma.Web.ApiSpec.PleromaScrobbleOperation do
       summary: "Creates a new Listen activity for an account",
       security: [%{"oAuth" => ["write"]}],
       operationId: "PleromaAPI.ScrobbleController.create",
-      requestBody: request_body("Parameters", create_request(), requried: true),
+      deprecated: true,
+      requestBody: request_body("Parameters", create_request(), required: true),
       responses: %{
         200 => Operation.response("Scrobble", "application/json", scrobble())
       }
@@ -34,6 +35,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaScrobbleOperation do
       tags: ["Scrobbles"],
       summary: "Requests a list of current and recent Listen activities for an account",
       operationId: "PleromaAPI.ScrobbleController.index",
+      deprecated: true,
       parameters: [
         %Reference{"$ref": "#/components/parameters/accountIdOrNickname"} | pagination_params()
       ],
@@ -57,6 +59,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaScrobbleOperation do
         album: %Schema{type: :string, description: "The album of the media playing"},
         artist: %Schema{type: :string, description: "The artist of the media playing"},
         length: %Schema{type: :integer, description: "The length of the media playing"},
+        externalLink: %Schema{type: :string, description: "A URL referencing the media playing"},
         visibility: %Schema{
           allOf: [VisibilityScope],
           default: "public",
@@ -67,7 +70,8 @@ defmodule Pleroma.Web.ApiSpec.PleromaScrobbleOperation do
         "title" => "Some Title",
         "artist" => "Some Artist",
         "album" => "Some Album",
-        "length" => 180_000
+        "length" => 180_000,
+        "externalLink" => "https://www.last.fm/music/Some+Artist/_/Some+Title"
       }
     }
   end
@@ -81,6 +85,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaScrobbleOperation do
         title: %Schema{type: :string, description: "The title of the media playing"},
         album: %Schema{type: :string, description: "The album of the media playing"},
         artist: %Schema{type: :string, description: "The artist of the media playing"},
+        externalLink: %Schema{type: :string, description: "A URL referencing the media playing"},
         length: %Schema{
           type: :integer,
           description: "The length of the media playing",
@@ -95,6 +100,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaScrobbleOperation do
         "artist" => "Some Artist",
         "album" => "Some Album",
         "length" => 180_000,
+        "externalLink" => "https://www.last.fm/music/Some+Artist/_/Some+Title",
         "created_at" => "2019-09-28T12:40:45.000Z"
       }
     }

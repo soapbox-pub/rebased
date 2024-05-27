@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Gun.ConnectionPool.WorkerSupervisor do
@@ -18,10 +18,12 @@ defmodule Pleroma.Gun.ConnectionPool.WorkerSupervisor do
     )
   end
 
-  def start_worker(opts, retry \\ false) do
+  def start_worker(opts, last_attempt \\ false) do
     case DynamicSupervisor.start_child(__MODULE__, {Pleroma.Gun.ConnectionPool.Worker, opts}) do
       {:error, :max_children} ->
-        if retry or free_pool() == :error do
+        funs = [fn -> last_attempt end, fn -> match?(:error, free_pool()) end]
+
+        if Enum.any?(funs, fn fun -> fun.() end) do
           :telemetry.execute([:pleroma, :connection_pool, :provision_failure], %{opts: opts})
           {:error, :pool_full}
         else

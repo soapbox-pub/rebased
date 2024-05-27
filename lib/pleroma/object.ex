@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Object do
@@ -40,8 +40,7 @@ defmodule Pleroma.Object do
     join(query, join_type, [{object, object_position}], a in Activity,
       on:
         fragment(
-          "COALESCE(?->'object'->>'id', ?->>'object') = (? ->> 'id') AND (?->>'type' = ?) ",
-          a.data,
+          "associated_object_id(?) = (? ->> 'id') AND (?->>'type' = ?) ",
           a.data,
           object.data,
           a.data,
@@ -145,7 +144,7 @@ defmodule Pleroma.Object do
     Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
   end
 
-  def normalize(_, options \\ [fetch: false])
+  def normalize(_, options \\ [fetch: false, id_only: false])
 
   # If we pass an Activity to Object.normalize(), we can try to use the preloaded object.
   # Use this whenever possible, especially when walking graphs in an O(N) loop!
@@ -173,10 +172,18 @@ defmodule Pleroma.Object do
   def normalize(%{"id" => ap_id}, options), do: normalize(ap_id, options)
 
   def normalize(ap_id, options) when is_binary(ap_id) do
-    if Keyword.get(options, :fetch) do
-      Fetcher.fetch_object_from_id!(ap_id, options)
-    else
-      get_cached_by_ap_id(ap_id)
+    cond do
+      Keyword.get(options, :id_only) ->
+        ap_id
+
+      Keyword.get(options, :fetch) ->
+        case Fetcher.fetch_object_from_id(ap_id, options) do
+          {:ok, object} -> object
+          _ -> nil
+        end
+
+      true ->
+        get_cached_by_ap_id(ap_id)
     end
   end
 
@@ -208,10 +215,6 @@ defmodule Pleroma.Object do
     end
   end
 
-  def context_mapping(context) do
-    Object.change(%Object{}, %{data: %{"id" => context}})
-  end
-
   def make_tombstone(%Object{data: %{"id" => id, "type" => type}}, deleted \\ DateTime.utc_now()) do
     %ObjectTombstone{
       id: id,
@@ -239,17 +242,17 @@ defmodule Pleroma.Object do
          {:ok, _} <- invalid_object_cache(object) do
       cleanup_attachments(
         Config.get([:instance, :cleanup_attachments]),
-        %{"object" => object}
+        object
       )
 
       {:ok, object, deleted_activity}
     end
   end
 
-  @spec cleanup_attachments(boolean(), %{required(:object) => map()}) ::
+  @spec cleanup_attachments(boolean(), Object.t()) ::
           {:ok, Oban.Job.t() | nil}
-  def cleanup_attachments(true, %{"object" => _} = params) do
-    AttachmentsCleanupWorker.enqueue("cleanup_attachments", params)
+  def cleanup_attachments(true, %Object{} = object) do
+    AttachmentsCleanupWorker.enqueue("cleanup_attachments", %{"object" => object})
   end
 
   def cleanup_attachments(_, _), do: {:ok, nil}
@@ -315,6 +318,52 @@ defmodule Pleroma.Object do
             """
             safe_jsonb_set(?, '{repliesCount}',
               (greatest(0, (?->>'repliesCount')::int - 1))::varchar::jsonb, true)
+            """,
+            o.data,
+            o.data
+          )
+      ]
+    )
+    |> Repo.update_all([])
+    |> case do
+      {1, [object]} -> set_cache(object)
+      _ -> {:error, "Not found"}
+    end
+  end
+
+  def increase_quotes_count(ap_id) do
+    Object
+    |> where([o], fragment("?->>'id' = ?::text", o.data, ^to_string(ap_id)))
+    |> update([o],
+      set: [
+        data:
+          fragment(
+            """
+            safe_jsonb_set(?, '{quotesCount}',
+              (coalesce((?->>'quotesCount')::int, 0) + 1)::varchar::jsonb, true)
+            """,
+            o.data,
+            o.data
+          )
+      ]
+    )
+    |> Repo.update_all([])
+    |> case do
+      {1, [object]} -> set_cache(object)
+      _ -> {:error, "Not found"}
+    end
+  end
+
+  def decrease_quotes_count(ap_id) do
+    Object
+    |> where([o], fragment("?->>'id' = ?::text", o.data, ^to_string(ap_id)))
+    |> update([o],
+      set: [
+        data:
+          fragment(
+            """
+            safe_jsonb_set(?, '{quotesCount}',
+              (greatest(0, (?->>'quotesCount')::int - 1))::varchar::jsonb, true)
             """,
             o.data,
             o.data
@@ -425,4 +474,30 @@ defmodule Pleroma.Object do
   end
 
   def object_data_hashtags(_), do: []
+
+  def get_emoji_reactions(object) do
+    reactions = object.data["reactions"]
+
+    if is_list(reactions) or is_map(reactions) do
+      reactions
+      |> Enum.map(fn
+        [_emoji, users, _maybe_url] = item when is_list(users) ->
+          item
+
+        [emoji, users] when is_list(users) ->
+          [emoji, users, nil]
+
+        # This case is here to process the Map situation, which will happen
+        # only with the legacy two-value format.
+        {emoji, users} when is_list(users) ->
+          [emoji, users, nil]
+
+        _ ->
+          nil
+      end)
+      |> Enum.reject(&is_nil/1)
+    else
+      []
+    end
+  end
 end

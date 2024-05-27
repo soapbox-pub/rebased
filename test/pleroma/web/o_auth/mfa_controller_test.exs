@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.MFAControllerTest do
@@ -214,7 +214,7 @@ defmodule Pleroma.Web.OAuth.MFAControllerTest do
       assert response == %{"error" => "Invalid code"}
     end
 
-    test "returns error when client credentails is wrong ", %{conn: conn, user: user} do
+    test "returns error when client credentials is wrong ", %{conn: conn, user: user} do
       otp_token = TOTP.generate_token(user.multi_factor_authentication_settings.totp.secret)
       mfa_token = insert(:mfa_token, user: user)
 

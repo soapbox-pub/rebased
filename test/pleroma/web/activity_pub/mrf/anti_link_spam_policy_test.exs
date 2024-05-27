@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
   import Pleroma.Factory
   import ExUnit.CaptureLog
 
+  alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy
 
   @linkless_message %{
@@ -49,11 +50,23 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
 
       assert user.note_count == 0
 
-      message =
-        @linkful_message
-        |> Map.put("actor", user.ap_id)
+      message = %{
+        "type" => "Create",
+        "actor" => user.ap_id,
+        "object" => %{
+          "formerRepresentations" => %{
+            "type" => "OrderedCollection",
+            "orderedItems" => [
+              %{
+                "content" => "<a href='https://example.com'>hi world!</a>"
+              }
+            ]
+          },
+          "content" => "mew"
+        }
+      }
 
-      {:reject, _} = AntiLinkSpamPolicy.filter(message)
+      {:reject, _} = MRF.filter_one(AntiLinkSpamPolicy, message)
     end
 
     test "it allows posts with links for local users" do
@@ -66,6 +79,18 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
         |> Map.put("actor", user.ap_id)
 
       {:ok, _message} = AntiLinkSpamPolicy.filter(message)
+    end
+
+    test "it disallows posts with links in history" do
+      user = insert(:user, local: false)
+
+      assert user.note_count == 0
+
+      message =
+        @linkful_message
+        |> Map.put("actor", user.ap_id)
+
+      {:reject, _} = AntiLinkSpamPolicy.filter(message)
     end
   end
 

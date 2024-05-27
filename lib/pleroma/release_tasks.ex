@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ReleaseTasks do
@@ -55,12 +55,6 @@ defmodule Pleroma.ReleaseTasks do
 
       {:error, term} when is_binary(term) ->
         IO.puts(:stderr, "The database for #{inspect(@repo)} couldn't be created: #{term}")
-
-      {:error, term} ->
-        IO.puts(
-          :stderr,
-          "The database for #{inspect(@repo)} couldn't be created: #{inspect(term)}"
-        )
     end
   end
 end

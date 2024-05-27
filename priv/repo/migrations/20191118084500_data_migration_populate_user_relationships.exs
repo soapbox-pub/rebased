@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Repo.Migrations.DataMigrationPopulateUserRelationships do
   use Ecto.Migration
 
@@ -59,7 +63,7 @@ defmodule Pleroma.Repo.Migrations.DataMigrationPopulateUserRelationships do
             ON CONFLICT (source_id, relationship_type, target_id) DO NOTHING
             """)
           else
-            _ -> Logger.warn("Unresolved #{field} reference: (#{source_uuid}, #{target_id})")
+            _ -> Logger.warning("Unresolved #{field} reference: (#{source_uuid}, #{target_id})")
           end
         end
       end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.Cache do
@@ -20,7 +20,7 @@ defmodule Pleroma.Web.Plugs.Cache do
 
   - `ttl`:  An expiration time (time-to-live). This value should be in milliseconds or `nil` to disable expiration. Defaults to `nil`.
   - `query_params`: Take URL query string into account (`true`), ignore it (`false`) or limit to specific params only (list). Defaults to `true`.
-  - `tracking_fun`: A function that is called on successfull responses, no matter if the request is cached or not. It should accept a conn as the first argument and the value assigned to `tracking_fun_data` as the second.
+  - `tracking_fun`: A function that is called on successful responses, no matter if the request is cached or not. It should accept a conn as the first argument and the value assigned to `tracking_fun_data` as the second.
 
   Additionally, you can overwrite the TTL inside a controller action by assigning `cache_ttl` to the connection struct:
 
@@ -97,13 +97,21 @@ defmodule Pleroma.Web.Plugs.Cache do
         key = cache_key(conn, opts)
         content_type = content_type(conn)
 
+        should_cache = not Map.get(conn.assigns, :skip_cache, false)
+
         conn =
           unless opts[:tracking_fun] do
-            @cachex.put(:web_resp_cache, key, {content_type, body}, ttl: ttl)
+            if should_cache do
+              @cachex.put(:web_resp_cache, key, {content_type, body}, ttl: ttl)
+            end
+
             conn
           else
             tracking_fun_data = Map.get(conn.assigns, :tracking_fun_data, nil)
-            @cachex.put(:web_resp_cache, key, {content_type, body, tracking_fun_data}, ttl: ttl)
+
+            if should_cache do
+              @cachex.put(:web_resp_cache, key, {content_type, body, tracking_fun_data}, ttl: ttl)
+            end
 
             opts.tracking_fun.(conn, tracking_fun_data)
           end

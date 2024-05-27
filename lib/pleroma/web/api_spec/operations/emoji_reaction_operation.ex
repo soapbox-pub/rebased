@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.EmojiReactionOperation do
@@ -21,7 +21,7 @@ defmodule Pleroma.Web.ApiSpec.EmojiReactionOperation do
       summary:
         "Get an object of emoji to account mappings with accounts that reacted to the post",
       parameters: [
-        Operation.parameter(:id, :path, FlakeID, "Status ID", required: true),
+        Operation.parameter(:id, :path, FlakeID.schema(), "Status ID", required: true),
         Operation.parameter(:emoji, :path, :string, "Filter by a single unicode emoji",
           required: nil
         ),
@@ -45,7 +45,7 @@ defmodule Pleroma.Web.ApiSpec.EmojiReactionOperation do
       tags: ["Emoji reactions"],
       summary: "React to a post with a unicode emoji",
       parameters: [
-        Operation.parameter(:id, :path, FlakeID, "Status ID", required: true),
+        Operation.parameter(:id, :path, FlakeID.schema(), "Status ID", required: true),
         Operation.parameter(:emoji, :path, :string, "A single character unicode emoji",
           required: true
         )
@@ -64,7 +64,7 @@ defmodule Pleroma.Web.ApiSpec.EmojiReactionOperation do
       tags: ["Emoji reactions"],
       summary: "Remove a reaction to a post with a unicode emoji",
       parameters: [
-        Operation.parameter(:id, :path, FlakeID, "Status ID", required: true),
+        Operation.parameter(:id, :path, FlakeID.schema(), "Status ID", required: true),
         Operation.parameter(:emoji, :path, :string, "A single character unicode emoji",
           required: true
         )

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.BackupView do
@@ -9,12 +9,22 @@ defmodule Pleroma.Web.PleromaAPI.BackupView do
   alias Pleroma.Web.CommonAPI.Utils
 
   def render("show.json", %{backup: %Backup{} = backup}) do
+    # To deal with records before the migration
+    state =
+      if backup.state == :invalid do
+        if backup.processed, do: :complete, else: :failed
+      else
+        backup.state
+      end
+
     %{
       id: backup.id,
       content_type: backup.content_type,
       url: download_url(backup),
       file_size: backup.file_size,
       processed: backup.processed,
+      state: to_string(state),
+      processed_number: backup.processed_number,
       inserted_at: Utils.to_masto_date(backup.inserted_at)
     }
   end

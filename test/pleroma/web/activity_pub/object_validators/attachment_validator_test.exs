@@ -1,16 +1,31 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
   use Pleroma.DataCase, async: true
 
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
 
+  import Mox
   import Pleroma.Factory
 
   describe "attachments" do
+    test "fails without url" do
+      attachment = %{
+        "mediaType" => "",
+        "name" => "",
+        "summary" => "298p3RG7j27tfsZ9RQ.jpg",
+        "type" => "Document"
+      }
+
+      assert {:error, _cng} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+    end
+
     test "works with honkerific attachments" do
       attachment = %{
         "mediaType" => "",
@@ -18,6 +33,46 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
         "summary" => "298p3RG7j27tfsZ9RQ.jpg",
         "type" => "Document",
         "url" => "https://honk.tedunangst.com/d/298p3RG7j27tfsZ9RQ.jpg"
+      }
+
+      assert {:ok, attachment} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+
+      assert attachment.mediaType == "application/octet-stream"
+    end
+
+    test "works with an unknown but valid mime type" do
+      attachment = %{
+        "mediaType" => "x-custom/x-type",
+        "type" => "Document",
+        "url" => "https://example.org"
+      }
+
+      assert {:ok, attachment} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+
+      assert attachment.mediaType == "x-custom/x-type"
+    end
+
+    test "works with invalid mime types" do
+      attachment = %{
+        "mediaType" => "x-customx-type",
+        "type" => "Document",
+        "url" => "https://example.org"
+      }
+
+      assert {:ok, attachment} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+
+      assert attachment.mediaType == "application/octet-stream"
+
+      attachment = %{
+        "mediaType" => "https://example.org",
+        "type" => "Document",
+        "url" => "https://example.org"
       }
 
       assert {:ok, attachment} =
@@ -63,6 +118,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
         filename: "an_image.jpg"
       }
 
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
+
       {:ok, attachment} = ActivityPub.upload(file, actor: user.ap_id)
 
       {:ok, attachment} =
@@ -104,6 +162,38 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
              ] = attachment.url
 
       assert attachment.mediaType == "image/jpeg"
+    end
+
+    test "it transforms image dimensions to our internal format" do
+      attachment = %{
+        "type" => "Document",
+        "name" => "Hello world",
+        "url" => "https://media.example.tld/1.jpg",
+        "width" => 880,
+        "height" => 960,
+        "mediaType" => "image/jpeg",
+        "blurhash" => "eTKL26+HDjcEIBVl;ds+K6t301W.t7nit7y1E,R:v}ai4nXSt7V@of"
+      }
+
+      expected = %AttachmentValidator{
+        type: "Document",
+        name: "Hello world",
+        mediaType: "image/jpeg",
+        blurhash: "eTKL26+HDjcEIBVl;ds+K6t301W.t7nit7y1E,R:v}ai4nXSt7V@of",
+        url: [
+          %AttachmentValidator.UrlObjectValidator{
+            type: "Link",
+            mediaType: "image/jpeg",
+            href: "https://media.example.tld/1.jpg",
+            width: 880,
+            height: 960
+          }
+        ]
+      }
+
+      {:ok, ^expected} =
+        AttachmentValidator.cast_and_validate(attachment)
+        |> Ecto.Changeset.apply_action(:insert)
     end
   end
 end

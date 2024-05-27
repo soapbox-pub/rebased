@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config.Loader do
@@ -19,21 +19,10 @@ defmodule Pleroma.Config.Loader do
     :tesla
   ]
 
-  if Code.ensure_loaded?(Config.Reader) do
-    @reader Config.Reader
-
-    def read(path), do: @reader.read!(path)
-  else
-    # support for Elixir less than 1.9
-    @reader Mix.Config
-    def read(path) do
-      path
-      |> @reader.eval!()
-      |> elem(0)
-    end
-  end
+  @reader Config.Reader
 
   @spec read(Path.t()) :: keyword()
+  def read(path), do: @reader.read!(path)
 
   @spec merge(keyword(), keyword()) :: keyword()
   def merge(c1, c2), do: @reader.merge(c1, c2)

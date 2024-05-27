@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaApi.InstancesControllerTest do
@@ -16,7 +16,7 @@ defmodule Pleroma.Web.PleromaApi.InstancesControllerTest do
     {:ok, %Pleroma.Instances.Instance{unreachable_since: constant_unreachable}} =
       Instances.set_consistently_unreachable(constant)
 
-    _eventual_unrechable = Instances.set_unreachable(eventual)
+    _eventual_unreachable = Instances.set_unreachable(eventual)
 
     %{constant_unreachable: constant_unreachable, constant: constant}
   end
@@ -26,6 +26,8 @@ defmodule Pleroma.Web.PleromaApi.InstancesControllerTest do
     constant_unreachable: constant_unreachable,
     constant: constant
   } do
+    clear_config([:instance, :public], false)
+
     constant_host = URI.parse(constant).host
 
     assert conn

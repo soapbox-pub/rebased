@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Activity.Queries do
@@ -9,7 +9,7 @@ defmodule Pleroma.Activity.Queries do
 
   import Ecto.Query, only: [from: 2, where: 3]
 
-  @type query :: Ecto.Queryable.t() | Activity.t()
+  @type query :: Ecto.Queryable.t() | Pleroma.Activity.t()
 
   alias Pleroma.Activity
   alias Pleroma.User
@@ -52,8 +52,7 @@ defmodule Pleroma.Activity.Queries do
       activity in query,
       where:
         fragment(
-          "coalesce((?)->'object'->>'id', (?)->>'object') = ANY(?)",
-          activity.data,
+          "associated_object_id((?)) = ANY(?)",
           activity.data,
           ^object_ids
         )
@@ -64,8 +63,7 @@ defmodule Pleroma.Activity.Queries do
     from(activity in query,
       where:
         fragment(
-          "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
-          activity.data,
+          "associated_object_id((?)) = ?",
           activity.data,
           ^object_id
         )

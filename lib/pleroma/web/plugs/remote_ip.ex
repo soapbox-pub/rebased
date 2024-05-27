@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.RemoteIp do
@@ -43,6 +43,6 @@ defmodule Pleroma.Web.Plugs.RemoteIp do
         InetCidr.v6?(InetCidr.parse_address!(proxy)) -> proxy <> "/128"
       end
 
-    InetCidr.parse(proxy, true)
+    InetCidr.parse_cidr!(proxy, true)
   end
 end

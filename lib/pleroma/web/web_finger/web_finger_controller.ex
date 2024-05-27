@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.WebFinger.WebFingerController do
@@ -30,7 +30,7 @@ defmodule Pleroma.Web.WebFinger.WebFingerController do
   end
 
   def webfinger(%{assigns: %{format: format}} = conn, %{"resource" => resource})
-      when format in ["json", "jrd+json"] do
+      when format in ["jrd", "json", "jrd+json"] do
     with {:ok, response} <- WebFinger.webfinger(resource, "JSON") do
       json(conn, response)
     else

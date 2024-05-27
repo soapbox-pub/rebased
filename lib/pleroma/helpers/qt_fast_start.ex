@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Helpers.QtFastStart do
@@ -40,16 +40,21 @@ defmodule Pleroma.Helpers.QtFastStart do
          got_mdat,
          acc
        ) do
-    full_size = (size - 8) * 8
-    <<data::bits-size(full_size), rest::bits>> = rest
+    try do
+      full_size = (size - 8) * 8
+      <<data::bits-size(full_size), rest::bits>> = rest
 
-    acc = [
-      {fourcc, pos, pos + size, size,
-       <<size::integer-big-size(32), fourcc::bits-size(32), data::bits>>}
-      | acc
-    ]
+      acc = [
+        {fourcc, pos, pos + size, size,
+         <<size::integer-big-size(32), fourcc::bits-size(32), data::bits>>}
+        | acc
+      ]
 
-    fix(rest, pos + size, got_moov || fourcc == "moov", got_mdat || fourcc == "mdat", acc)
+      fix(rest, pos + size, got_moov || fourcc == "moov", got_mdat || fourcc == "mdat", acc)
+    rescue
+      _ ->
+        :abort
+    end
   end
 
   defp fix(<<>>, _pos, _, _, acc) do
@@ -121,9 +126,15 @@ defmodule Pleroma.Helpers.QtFastStart do
            <<pos::integer-big-size(unquote(size)), rest::bits>>,
            acc
          ) do
-      rewrite_entries(unquote(size), offset, rest, [
-        acc | <<pos + offset::integer-big-size(unquote(size))>>
-      ])
+      rewrite_entries(
+        unquote(size),
+        offset,
+        rest,
+        acc ++
+          [
+            <<pos + offset::integer-big-size(unquote(size))>>
+          ]
+      )
     end
   end
 

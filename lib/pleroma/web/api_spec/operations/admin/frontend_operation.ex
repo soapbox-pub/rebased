@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Admin.FrontendOperation do
@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.FrontendOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Frontend managment"],
+      tags: ["Frontend management"],
       summary: "Retrieve a list of available frontends",
       operationId: "AdminAPI.FrontendController.index",
       security: [%{"oAuth" => ["admin:read"]}],
@@ -29,7 +29,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.FrontendOperation do
 
   def install_operation do
     %Operation{
-      tags: ["Frontend managment"],
+      tags: ["Frontend management"],
       summary: "Install a frontend",
       operationId: "AdminAPI.FrontendController.install",
       security: [%{"oAuth" => ["admin:read"]}],
@@ -51,8 +51,9 @@ defmodule Pleroma.Web.ApiSpec.Admin.FrontendOperation do
           name: %Schema{type: :string},
           git: %Schema{type: :string, format: :uri, nullable: true},
           build_url: %Schema{type: :string, format: :uri, nullable: true},
-          ref: %Schema{type: :string},
-          installed: %Schema{type: :boolean}
+          ref: %Schema{type: :string, nullable: true},
+          installed: %Schema{type: :boolean},
+          installed_refs: %Schema{type: :array, items: %Schema{type: :string}}
         }
       }
     }

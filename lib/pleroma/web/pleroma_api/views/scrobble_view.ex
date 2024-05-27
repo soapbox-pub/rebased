@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.ScrobbleView do
@@ -27,6 +27,7 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleView do
       title: object.data["title"] |> HTML.strip_tags(),
       artist: object.data["artist"] |> HTML.strip_tags(),
       album: object.data["album"] |> HTML.strip_tags(),
+      externalLink: object.data["externalLink"],
       length: object.data["length"]
     }
   end

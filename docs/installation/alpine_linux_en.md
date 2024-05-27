@@ -1,29 +1,14 @@
 # Installing on Alpine Linux
+
+{! backend/installation/otp_vs_from_source_source.include !}
+
 ## Installation
 
 This guide is a step-by-step installation guide for Alpine Linux. The instructions were verified against Alpine v3.10 standard image. You might miss additional dependencies if you use `netboot` instead.
 
 It assumes that you have administrative rights, either as root or a user with [sudo permissions](https://www.linode.com/docs/tools-reference/custom-kernels-distros/install-alpine-linux-on-your-linode/#configuration). If you want to run this guide with root, ignore the `sudo` at the beginning of the lines, unless it calls a user like `sudo -Hu pleroma`; in this case, use `su -l <username> -s $SHELL -c 'command'` instead.
 
-### Required packages
-
-* `postgresql`
-* `elixir`
-* `erlang`
-* `erlang-parsetools`
-* `erlang-xmerl`
-* `git`
-* `file-dev`
-* Development Tools
-* `cmake`
-
-#### Optional packages used in this guide
-
-* `nginx` (preferred, example configs for other reverse proxies can be found in the repo)
-* `certbot` (or any other ACME client for Let’s Encrypt certificates)
-* `ImageMagick`
-* `ffmpeg`
-* `exiftool`
+{! backend/installation/generic_dependencies.include !}
 
 ### Prepare the system
 
@@ -198,6 +183,9 @@ server {
     ...
 }
 ```
+* (Strongly recommended) serve media on another domain
+
+Refer to the [Hardening your instance](../configuration/hardening.md) document on how to serve media on another domain. We STRONGLY RECOMMEND you to do this to minimize attack vectors.
 
 * Enable and start nginx:
 

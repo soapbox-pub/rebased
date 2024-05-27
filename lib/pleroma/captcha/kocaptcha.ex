@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Captcha.Kocaptcha do
@@ -29,7 +29,7 @@ defmodule Pleroma.Captcha.Kocaptcha do
 
   @impl Service
   def validate(_token, captcha, answer_data) do
-    # Here the token is unsed, because the unencrypted captcha answer is just passed to method
+    # Here the token is unused, because the unencrypted captcha answer is just passed to method
     if not is_nil(captcha) and
          :crypto.hash(:md5, captcha) |> Base.encode16() == String.upcase(answer_data),
        do: :ok,

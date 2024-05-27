@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier do
@@ -20,11 +20,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator
-  alias Pleroma.Workers.TransmogrifierWorker
 
   import Ecto.Query
 
-  require Logger
   require Pleroma.Constants
 
   @doc """
@@ -156,8 +154,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         |> Map.put("context", replied_object.data["context"] || object["conversation"])
         |> Map.drop(["conversation", "inReplyToAtomUri"])
       else
-        e ->
-          Logger.warn("Couldn't fetch #{inspect(in_reply_to_id)}, error: #{inspect(e)}")
+        _ ->
           object
       end
     else
@@ -166,6 +163,26 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_in_reply_to(object, _options), do: object
+
+  def fix_quote_url_and_maybe_fetch(object, options \\ []) do
+    quote_url =
+      case Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes.fix_quote_url(object) do
+        %{"quoteUrl" => quote_url} -> quote_url
+        _ -> nil
+      end
+
+    with {:quoting?, true} <- {:quoting?, not is_nil(quote_url)},
+         {:ok, quoted_object} <- get_obj_helper(quote_url, options),
+         %Activity{} <- Activity.get_create_by_object_ap_id(quoted_object.data["id"]) do
+      Map.put(object, "quoteUrl", quoted_object.data["id"])
+    else
+      {:quoting?, _} ->
+        object
+
+      _ ->
+        object
+    end
+  end
 
   defp prepare_in_reply_to(in_reply_to) do
     cond do
@@ -203,13 +220,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
         media_type =
           cond do
-            is_map(url) && MIME.extensions(url["mediaType"]) != [] ->
+            is_map(url) && url =~ Pleroma.Constants.mime_regex() ->
               url["mediaType"]
 
-            is_bitstring(data["mediaType"]) && MIME.extensions(data["mediaType"]) != [] ->
+            is_bitstring(data["mediaType"]) && data["mediaType"] =~ Pleroma.Constants.mime_regex() ->
               data["mediaType"]
 
-            is_bitstring(data["mimeType"]) && MIME.extensions(data["mimeType"]) != [] ->
+            is_bitstring(data["mimeType"]) && data["mimeType"] =~ Pleroma.Constants.mime_regex() ->
               data["mimeType"]
 
             true ->
@@ -353,29 +370,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end)
   end
 
-  # Compatibility wrapper for Mastodon votes
-  defp handle_create(%{"object" => %{"type" => "Answer"}} = data, _user) do
-    handle_incoming(data)
-  end
-
-  defp handle_create(%{"object" => object} = data, user) do
-    %{
-      to: data["to"],
-      object: object,
-      actor: user,
-      context: object["context"],
-      local: false,
-      published: data["published"],
-      additional:
-        Map.take(data, [
-          "cc",
-          "directMessage",
-          "id"
-        ])
-    }
-    |> ActivityPub.create()
-  end
-
   def handle_incoming(data, options \\ [])
 
   # Flag objects are placed ahead of the ID check because Mastodon 2.8 and earlier send them
@@ -406,43 +400,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # length of https:// = 8, should validate better, but good enough for now.
   def handle_incoming(%{"id" => id}, _options) when is_binary(id) and byte_size(id) < 8,
     do: :error
-
-  # TODO: validate those with a Ecto scheme
-  # - tags
-  # - emoji
-  def handle_incoming(
-        %{"type" => "Create", "object" => %{"type" => "Page"} = object} = data,
-        options
-      ) do
-    actor = Containment.get_actor(data)
-
-    with nil <- Activity.get_create_by_object_ap_id(object["id"]),
-         {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(actor) do
-      data =
-        data
-        |> Map.put("object", fix_object(object, options))
-        |> Map.put("actor", actor)
-        |> fix_addressing()
-
-      with {:ok, created_activity} <- handle_create(data, user) do
-        reply_depth = (options[:depth] || 0) + 1
-
-        if Federator.allowed_thread_distance?(reply_depth) do
-          for reply_id <- replies(object) do
-            Pleroma.Workers.RemoteFetcherWorker.enqueue("fetch_remote", %{
-              "id" => reply_id,
-              "depth" => reply_depth
-            })
-          end
-        end
-
-        {:ok, created_activity}
-      end
-    else
-      %Activity{} = activity -> {:ok, activity}
-      _e -> :error
-    end
-  end
 
   def handle_incoming(
         %{"type" => "Listen", "object" => %{"type" => "Audio"} = object} = data,
@@ -507,7 +464,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Create", "object" => %{"type" => objtype, "id" => obj_id}} = data,
         options
       )
-      when objtype in ~w{Question Answer ChatMessage Audio Video Event Article Note} do
+      when objtype in ~w{Question Answer ChatMessage Audio Video Event Article Note Page Image} do
     fetch_options = Keyword.put(options, :depth, (options[:depth] || 0) + 1)
 
     object =
@@ -515,6 +472,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       |> strip_internal_fields()
       |> fix_type(fetch_options)
       |> fix_in_reply_to(fetch_options)
+      |> fix_quote_url_and_maybe_fetch(fetch_options)
 
     data = Map.put(data, "object", object)
     options = Keyword.put(options, :local, false)
@@ -690,6 +648,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def set_reply_to_uri(obj), do: obj
 
   @doc """
+  Fedibird compatibility
+  https://github.com/fedibird/mastodon/commit/dbd7ae6cf58a92ec67c512296b4daaea0d01e6ac
+  """
+  def set_quote_url(%{"quoteUrl" => quote_url} = object) when is_binary(quote_url) do
+    Map.put(object, "quoteUri", quote_url)
+  end
+
+  def set_quote_url(obj), do: obj
+
+  @doc """
   Serialized Mastodon-compatible `replies` collection containing _self-replies_.
   Based on Mastodon's ActivityPub::NoteSerializer#replies.
   """
@@ -743,10 +711,29 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> prepare_attachments
     |> set_conversation
     |> set_reply_to_uri
+    |> set_quote_url
     |> set_replies
     |> strip_internal_fields
     |> strip_internal_tags
     |> set_type
+    |> maybe_process_history
+  end
+
+  defp maybe_process_history(%{"formerRepresentations" => %{"orderedItems" => history}} = object) do
+    processed_history =
+      Enum.map(
+        history,
+        fn
+          item when is_map(item) -> prepare_object(item)
+          item -> item
+        end
+      )
+
+    put_in(object, ["formerRepresentations", "orderedItems"], processed_history)
+  end
+
+  defp maybe_process_history(object) do
+    object
   end
 
   #  @doc
@@ -771,13 +758,28 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     {:ok, data}
   end
 
+  def prepare_outgoing(%{"type" => "Update", "object" => %{"type" => objtype} = object} = data)
+      when objtype in Pleroma.Constants.updatable_object_types() do
+    object =
+      object
+      |> prepare_object
+
+    data =
+      data
+      |> Map.put("object", object)
+      |> Map.merge(Utils.make_json_ld_header())
+      |> Map.delete("bcc")
+
+    {:ok, data}
+  end
+
   def prepare_outgoing(%{"type" => "Announce", "actor" => ap_id, "object" => object_id} = data) do
     object =
       object_id
       |> Object.normalize(fetch: false)
 
     data =
-      if Visibility.is_private?(object) && object.data["actor"] == ap_id do
+      if Visibility.private?(object) && object.data["actor"] == ap_id do
         data |> Map.put("object", object |> Map.get(:data) |> prepare_object)
       else
         data |> maybe_fix_object_url
@@ -847,8 +849,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            relative_object do
       Map.put(data, "object", external_url)
     else
-      {:fetch, e} ->
-        Logger.error("Couldn't fetch #{object} #{inspect(e)}")
+      {:fetch, _} ->
         data
 
       _ ->
@@ -972,47 +973,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   defp strip_internal_tags(object), do: object
-
-  def perform(:user_upgrade, user) do
-    # we pass a fake user so that the followers collection is stripped away
-    old_follower_address = User.ap_followers(%User{nickname: user.nickname})
-
-    from(
-      a in Activity,
-      where: ^old_follower_address in a.recipients,
-      update: [
-        set: [
-          recipients:
-            fragment(
-              "array_replace(?,?,?)",
-              a.recipients,
-              ^old_follower_address,
-              ^user.follower_address
-            )
-        ]
-      ]
-    )
-    |> Repo.update_all([])
-  end
-
-  def upgrade_user_from_ap_id(ap_id) do
-    with %User{local: false} = user <- User.get_cached_by_ap_id(ap_id),
-         {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id),
-         {:ok, user} <- update_user(user, data) do
-      {:ok, _pid} = Task.start(fn -> ActivityPub.pinned_fetch_task(user) end)
-      TransmogrifierWorker.enqueue("user_upgrade", %{"user_id" => user.id})
-      {:ok, user}
-    else
-      %User{} = user -> {:ok, user}
-      e -> e
-    end
-  end
-
-  defp update_user(user, data) do
-    user
-    |> User.remote_user_changeset(data)
-    |> User.update_and_set_cache()
-  end
 
   def maybe_fix_user_url(%{"url" => url} = data) when is_map(url) do
     Map.put(data, "url", url["href"])

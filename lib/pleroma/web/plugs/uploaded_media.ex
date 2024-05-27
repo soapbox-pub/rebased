@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.UploadedMedia do
@@ -35,9 +35,9 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
     conn =
       case fetch_query_params(conn) do
         %{query_params: %{"name" => name}} = conn ->
-          name = String.replace(name, "\"", "\\\"")
+          name = String.replace(name, ~s["], ~s[\\"])
 
-          put_resp_header(conn, "content-disposition", "filename=\"#{name}\"")
+          put_resp_header(conn, "content-disposition", ~s[inline; filename="#{name}"])
 
         conn ->
           conn
@@ -105,7 +105,7 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
   end
 
   defp get_media(conn, unknown, _, _) do
-    Logger.error("#{__MODULE__}: Unknown get startegy: #{inspect(unknown)}")
+    Logger.error("#{__MODULE__}: Unknown get strategy: #{inspect(unknown)}")
 
     conn
     |> send_resp(:internal_server_error, dgettext("errors", "Internal Error"))

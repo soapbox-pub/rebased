@@ -1,0 +1,16 @@
+## Required dependencies
+
+* PostgreSQL >=11.0
+* Elixir >=1.13.0 <1.15
+* Erlang OTP >=22.2.0 (supported: <27)
+* git
+* file / libmagic
+* gcc or clang
+* GNU make
+* CMake
+
+## Optional dependencies
+
+* ImageMagick
+* FFmpeg
+* exiftool

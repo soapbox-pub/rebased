@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Telemetry.Logger do
@@ -29,9 +29,7 @@ defmodule Pleroma.Telemetry.Logger do
         _
       ) do
     Logger.debug(fn ->
-      "Connection pool is exhausted (reached #{max_connections} connections). Starting idle connection cleanup to reclaim as much as #{
-        reclaim_max
-      } connections"
+      "Connection pool is exhausted (reached #{max_connections} connections). Starting idle connection cleanup to reclaim as much as #{reclaim_max} connections"
     end)
   end
 
@@ -61,7 +59,7 @@ defmodule Pleroma.Telemetry.Logger do
         _,
         _
       ) do
-    Logger.error(fn ->
+    Logger.debug(fn ->
       "Connection pool had to refuse opening a connection to #{key} due to connection limit exhaustion"
     end)
   end
@@ -72,10 +70,8 @@ defmodule Pleroma.Telemetry.Logger do
         %{key: key},
         _
       ) do
-    Logger.warn(fn ->
-      "Pool worker for #{key}: Client #{inspect(client_pid)} died before releasing the connection with #{
-        inspect(reason)
-      }"
+    Logger.warning(fn ->
+      "Pool worker for #{key}: Client #{inspect(client_pid)} died before releasing the connection with #{inspect(reason)}"
     end)
   end
 
@@ -85,7 +81,7 @@ defmodule Pleroma.Telemetry.Logger do
         %{key: key, protocol: :http},
         _
       ) do
-    Logger.info(fn ->
+    Logger.debug(fn ->
       "Pool worker for #{key}: #{length(clients)} clients are using an HTTP1 connection at the same time, head-of-line blocking might occur."
     end)
   end

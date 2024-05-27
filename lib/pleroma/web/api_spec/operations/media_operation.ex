@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.MediaOperation do
@@ -24,6 +24,7 @@ defmodule Pleroma.Web.ApiSpec.MediaOperation do
       requestBody: Helpers.request_body("Parameters", create_request()),
       responses: %{
         200 => Operation.response("Media", "application/json", Attachment),
+        400 => Operation.response("Media", "application/json", ApiError),
         401 => Operation.response("Media", "application/json", ApiError),
         422 => Operation.response("Media", "application/json", ApiError)
       }
@@ -121,6 +122,7 @@ defmodule Pleroma.Web.ApiSpec.MediaOperation do
       requestBody: Helpers.request_body("Parameters", create_request()),
       responses: %{
         202 => Operation.response("Media", "application/json", Attachment),
+        400 => Operation.response("Media", "application/json", ApiError),
         422 => Operation.response("Media", "application/json", ApiError),
         500 => Operation.response("Media", "application/json", ApiError)
       }

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.Utils do
@@ -23,21 +23,21 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   require Logger
   require Pleroma.Constants
 
-  def attachments_from_ids(%{media_ids: ids, descriptions: desc}) do
-    attachments_from_ids_descs(ids, desc)
+  def attachments_from_ids(%{media_ids: ids, descriptions: desc}, user) do
+    attachments_from_ids_descs(ids, desc, user)
   end
 
-  def attachments_from_ids(%{media_ids: ids}) do
-    attachments_from_ids_no_descs(ids)
+  def attachments_from_ids(%{media_ids: ids}, user) do
+    attachments_from_ids_no_descs(ids, user)
   end
 
-  def attachments_from_ids(_), do: []
+  def attachments_from_ids(_, _), do: []
 
-  def attachments_from_ids_no_descs([]), do: []
+  def attachments_from_ids_no_descs([], _), do: []
 
-  def attachments_from_ids_no_descs(ids) do
+  def attachments_from_ids_no_descs(ids, user) do
     Enum.map(ids, fn media_id ->
-      case Repo.get(Object, media_id) do
+      case get_attachment(media_id, user) do
         %Object{data: data} -> data
         _ -> nil
       end
@@ -45,17 +45,27 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Enum.reject(&is_nil/1)
   end
 
-  def attachments_from_ids_descs([], _), do: []
+  def attachments_from_ids_descs([], _, _), do: []
 
-  def attachments_from_ids_descs(ids, descs_str) do
+  def attachments_from_ids_descs(ids, descs_str, user) do
     {_, descs} = Jason.decode(descs_str)
 
     Enum.map(ids, fn media_id ->
-      with %Object{data: data} <- Repo.get(Object, media_id) do
+      with %Object{data: data} <- get_attachment(media_id, user) do
         Map.put(data, "name", descs[media_id])
       end
     end)
     |> Enum.reject(&is_nil/1)
+  end
+
+  defp get_attachment(media_id, user) do
+    with %Object{data: data} = object <- Repo.get(Object, media_id),
+         %{"type" => type} when type in Pleroma.Constants.upload_object_types() <- data,
+         :ok <- Object.authorize_access(object, user) do
+      object
+    else
+      _ -> nil
+    end
   end
 
   @spec get_to_and_cc(ActivityDraft.t()) :: {list(String.t()), list(String.t())}
@@ -99,7 +109,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def get_to_and_cc(%{visibility: "direct"} = draft) do
     # If the OP is a DM already, add the implicit actor.
-    if draft.in_reply_to && Visibility.is_direct?(draft.in_reply_to) do
+    if draft.in_reply_to && Visibility.direct?(draft.in_reply_to) do
       {Enum.uniq([draft.in_reply_to.data["actor"] | draft.mentions]), []}
     else
       {draft.mentions, []}
@@ -141,6 +151,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       when is_list(options) do
     limits = Config.get([:instance, :poll_limits])
 
+    options = options |> Enum.uniq()
+
     with :ok <- validate_poll_expiration(expires_in, limits),
          :ok <- validate_poll_options_amount(options, limits),
          :ok <- validate_poll_options_length(options, limits) do
@@ -176,10 +188,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   defp validate_poll_options_amount(options, %{max_options: max_options}) do
-    if Enum.count(options) > max_options do
-      {:error, "Poll can't contain more than #{max_options} options"}
-    else
-      :ok
+    cond do
+      Enum.count(options) < 2 ->
+        {:error, "Poll must contain at least 2 options"}
+
+      Enum.count(options) > max_options ->
+        {:error, "Poll can't contain more than #{max_options} options"}
+
+      true ->
+        :ok
     end
   end
 
@@ -219,7 +236,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> maybe_add_attachments(draft.attachments, attachment_links)
   end
 
-  defp get_content_type(content_type) do
+  def get_content_type(content_type) do
     if Enum.member?(Config.get([:instance, :allowed_post_formats]), content_type) do
       content_type
     else
@@ -291,33 +308,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Formatter.html_escape("text/html")
   end
 
-  def make_note_data(%ActivityDraft{} = draft) do
-    %{
-      "type" => "Note",
-      "to" => draft.to,
-      "cc" => draft.cc,
-      "content" => draft.content_html,
-      "summary" => draft.summary,
-      "sensitive" => draft.sensitive,
-      "context" => draft.context,
-      "attachment" => draft.attachments,
-      "actor" => draft.user.ap_id,
-      "tag" => Keyword.values(draft.tags) |> Enum.uniq()
-    }
-    |> add_in_reply_to(draft.in_reply_to)
-    |> Map.merge(draft.extra)
-  end
-
-  defp add_in_reply_to(object, nil), do: object
-
-  defp add_in_reply_to(object, in_reply_to) do
-    with %Object{} = in_reply_to_object <- Object.normalize(in_reply_to, fetch: false) do
-      Map.put(object, "inReplyTo", in_reply_to_object.data["id"])
-    else
-      _ -> object
-    end
-  end
-
   def format_naive_asctime(date) do
     date |> DateTime.from_naive!("Etc/UTC") |> format_asctime
   end
@@ -331,13 +321,13 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       format_asctime(date)
     else
       _e ->
-        Logger.warn("Date #{date} in wrong format, must be ISO 8601")
+        Logger.warning("Date #{date} in wrong format, must be ISO 8601")
         ""
     end
   end
 
   def date_to_asctime(date) do
-    Logger.warn("Date #{date} in wrong format, must be ISO 8601")
+    Logger.warning("Date #{date} in wrong format, must be ISO 8601")
     ""
   end
 
@@ -412,19 +402,14 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def maybe_notify_mentioned_recipients(recipients, _), do: recipients
 
-  # Do not notify subscribers if author is making a reply
-  def maybe_notify_subscribers(recipients, %Activity{
-        object: %Object{data: %{"inReplyTo" => _ap_id}}
-      }) do
-    recipients
-  end
-
   def maybe_notify_subscribers(
         recipients,
-        %Activity{data: %{"actor" => actor, "type" => type}} = activity
-      )
-      when type == "Create" do
-    with %User{} = user <- User.get_cached_by_ap_id(actor) do
+        %Activity{data: %{"actor" => actor, "type" => "Create"}} = activity
+      ) do
+    # Do not notify subscribers if author is making a reply
+    with %Object{data: object} <- Object.normalize(activity, fetch: false),
+         nil <- object["inReplyTo"],
+         %User{} = user <- User.get_cached_by_ap_id(actor) do
       subscriber_ids =
         user
         |> User.subscriber_users()
@@ -481,35 +466,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def get_report_statuses(_, _), do: {:ok, nil}
 
-  # DEPRECATED mostly, context objects are now created at insertion time.
-  def context_to_conversation_id(context) do
-    with %Object{id: id} <- Object.get_cached_by_ap_id(context) do
-      id
-    else
-      _e ->
-        changeset = Object.context_mapping(context)
-
-        case Repo.insert(changeset) do
-          {:ok, %{id: id}} ->
-            id
-
-          # This should be solved by an upsert, but it seems ecto
-          # has problems accessing the constraint inside the jsonb.
-          {:error, _} ->
-            Object.get_cached_by_ap_id(context).id
-        end
-    end
-  end
-
-  def conversation_id_to_context(id) do
-    with %Object{data: %{"id" => context}} <- Repo.get(Object, id) do
-      context
-    else
-      _e ->
-        {:error, dgettext("errors", "No such conversation")}
-    end
-  end
-
   def validate_character_limit("" = _full_payload, [] = _attachments) do
     {:error, dgettext("errors", "Cannot post an empty status without attachments")}
   end
@@ -522,6 +478,21 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       :ok
     else
       {:error, dgettext("errors", "The status is over the character limit")}
+    end
+  end
+
+  def validate_attachments_count([] = _attachments) do
+    :ok
+  end
+
+  def validate_attachments_count(attachments) do
+    limit = Config.get([:instance, :max_media_attachments])
+    count = length(attachments)
+
+    if count <= limit do
+      :ok
+    else
+      {:error, dgettext("errors", "Too many attachments")}
     end
   end
 end

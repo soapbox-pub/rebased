@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.App do
@@ -7,6 +7,7 @@ defmodule Pleroma.Web.OAuth.App do
   import Ecto.Changeset
   import Ecto.Query
   alias Pleroma.Repo
+  alias Pleroma.User
 
   @type t :: %__MODULE__{}
 
@@ -19,6 +20,8 @@ defmodule Pleroma.Web.OAuth.App do
     field(:client_secret, :string)
     field(:trusted, :boolean, default: false)
 
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
+
     has_many(:oauth_authorizations, Pleroma.Web.OAuth.Authorization, on_delete: :delete_all)
     has_many(:oauth_tokens, Pleroma.Web.OAuth.Token, on_delete: :delete_all)
 
@@ -27,7 +30,7 @@ defmodule Pleroma.Web.OAuth.App do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(struct, params) do
-    cast(struct, params, [:client_name, :redirect_uris, :scopes, :website, :trusted])
+    cast(struct, params, [:client_name, :redirect_uris, :scopes, :website, :trusted, :user_id])
   end
 
   @spec register_changeset(t(), map()) :: Ecto.Changeset.t()
@@ -127,6 +130,12 @@ defmodule Pleroma.Web.OAuth.App do
     count = Repo.aggregate(__MODULE__, :count, :id)
 
     {:ok, Repo.all(query), count}
+  end
+
+  @spec get_user_apps(User.t()) :: {:ok, [t()], non_neg_integer()}
+  def get_user_apps(%User{id: user_id}) do
+    from(a in __MODULE__, where: a.user_id == ^user_id)
+    |> Repo.all()
   end
 
   @spec destroy(pos_integer()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Password.Pbkdf2 do
@@ -28,7 +28,7 @@ defmodule Pleroma.Password.Pbkdf2 do
 
     iterations = String.to_integer(iterations)
 
-    digest = String.to_atom(digest)
+    digest = String.to_existing_atom(digest)
 
     binary_hash =
       KeyGenerator.generate(password, salt, digest: digest, iterations: iterations, length: 64)

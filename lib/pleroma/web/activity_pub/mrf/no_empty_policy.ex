@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.NoEmptyPolicy do
@@ -10,8 +10,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoEmptyPolicy do
 
   @impl true
   def filter(%{"actor" => actor} = object) do
-    with true <- is_local?(actor),
-         true <- is_note?(object),
+    with true <- local?(actor),
+         true <- eligible_type?(object),
+         true <- note?(object),
          false <- has_attachment?(object),
          true <- only_mentions?(object) do
       {:reject, "[NoEmptyPolicy]"}
@@ -23,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoEmptyPolicy do
 
   def filter(object), do: {:ok, object}
 
-  defp is_local?(actor) do
+  defp local?(actor) do
     if actor |> String.starts_with?("#{Endpoint.url()}") do
       true
     else
@@ -32,7 +33,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoEmptyPolicy do
   end
 
   defp has_attachment?(%{
-         "type" => "Create",
          "object" => %{"type" => "Note", "attachment" => attachments}
        })
        when length(attachments) > 0,
@@ -40,7 +40,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoEmptyPolicy do
 
   defp has_attachment?(_), do: false
 
-  defp only_mentions?(%{"type" => "Create", "object" => %{"type" => "Note", "source" => source}}) do
+  defp only_mentions?(%{"object" => %{"type" => "Note", "source" => source}}) do
+    source =
+      case source do
+        %{"content" => text} -> text
+        _ -> source
+      end
+
     non_mentions =
       source |> String.split() |> Enum.filter(&(not String.starts_with?(&1, "@"))) |> length
 
@@ -53,8 +59,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoEmptyPolicy do
 
   defp only_mentions?(_), do: false
 
-  defp is_note?(%{"type" => "Create", "object" => %{"type" => "Note"}}), do: true
-  defp is_note?(_), do: false
+  defp note?(%{"object" => %{"type" => "Note"}}), do: true
+  defp note?(_), do: false
+
+  defp eligible_type?(%{"type" => type}) when type in ["Create", "Update"], do: true
+  defp eligible_type?(_), do: false
 
   @impl true
   def describe, do: {:ok, %{}}

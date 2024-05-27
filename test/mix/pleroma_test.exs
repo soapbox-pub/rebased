@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.PleromaTest do
@@ -39,7 +39,7 @@ defmodule Mix.PleromaTest do
 
   describe "get_option/3" do
     test "get from options" do
-      assert get_option([domain: "some-domain.com"], :domain, "Promt") == "some-domain.com"
+      assert get_option([domain: "some-domain.com"], :domain, "Prompt") == "some-domain.com"
     end
 
     test "get from prompt" do

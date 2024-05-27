@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.AccountOperation do
@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias Pleroma.Web.ApiSpec.Schemas.ActorType
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
+  alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.List
   alias Pleroma.Web.ApiSpec.Schemas.Status
   alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
@@ -64,7 +65,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       requestBody: request_body("Parameters", update_credentials_request(), required: true),
       responses: %{
         200 => Operation.response("Account", "application/json", Account),
-        403 => Operation.response("Error", "application/json", ApiError)
+        403 => Operation.response("Error", "application/json", ApiError),
+        413 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
@@ -121,22 +123,27 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       parameters:
         [
           %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
-          Operation.parameter(:pinned, :query, BooleanLike, "Include only pinned statuses"),
+          Operation.parameter(
+            :pinned,
+            :query,
+            BooleanLike.schema(),
+            "Include only pinned statuses"
+          ),
           Operation.parameter(:tagged, :query, :string, "With tag"),
           Operation.parameter(
             :only_media,
             :query,
-            BooleanLike,
+            BooleanLike.schema(),
             "Include only statuses with media attached"
           ),
           Operation.parameter(
             :with_muted,
             :query,
-            BooleanLike,
+            BooleanLike.schema(),
             "Include statuses from muted accounts."
           ),
-          Operation.parameter(:exclude_reblogs, :query, BooleanLike, "Exclude reblogs"),
-          Operation.parameter(:exclude_replies, :query, BooleanLike, "Exclude replies"),
+          Operation.parameter(:exclude_reblogs, :query, BooleanLike.schema(), "Exclude reblogs"),
+          Operation.parameter(:exclude_replies, :query, BooleanLike.schema(), "Exclude replies"),
           Operation.parameter(
             :exclude_visibilities,
             :query,
@@ -146,7 +153,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           Operation.parameter(
             :with_muted,
             :query,
-            BooleanLike,
+            BooleanLike.schema(),
             "Include reactions from muted accounts."
           )
         ] ++ pagination_params(),
@@ -223,9 +230,15 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
             type: :object,
             properties: %{
               reblogs: %Schema{
-                type: :boolean,
+                allOf: [BooleanLike],
                 description: "Receive this account's reblogs in home timeline? Defaults to true.",
                 default: true
+              },
+              notify: %Schema{
+                allOf: [BooleanLike],
+                description:
+                  "Receive notifications for all statuses posted by the account? Defaults to false.",
+                default: false
               }
             }
           },
@@ -273,10 +286,16 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           "Mute notifications in addition to statuses? Defaults to `true`."
         ),
         Operation.parameter(
+          :duration,
+          :query,
+          %Schema{type: :integer},
+          "Expire the mute in `duration` seconds. Default 0 for infinity"
+        ),
+        Operation.parameter(
           :expires_in,
           :query,
           %Schema{type: :integer, default: 0},
-          "Expire the mute in `expires_in` seconds. Default 0 for infinity"
+          "Deprecated, use `duration` instead"
         )
       ],
       responses: %{
@@ -328,6 +347,81 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
+  def endorse_operation do
+    %Operation{
+      tags: ["Account actions"],
+      summary: "Endorse",
+      operationId: "AccountController.endorse",
+      security: [%{"oAuth" => ["follow", "write:accounts"]}],
+      description: "Adds the given account to endorsed accounts list.",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship),
+        400 =>
+          Operation.response("Bad Request", "application/json", %Schema{
+            allOf: [ApiError],
+            title: "Unprocessable Entity",
+            example: %{
+              "error" => "You have already pinned the maximum number of users"
+            }
+          })
+      }
+    }
+  end
+
+  def unendorse_operation do
+    %Operation{
+      tags: ["Account actions"],
+      summary: "Unendorse",
+      operationId: "AccountController.unendorse",
+      security: [%{"oAuth" => ["follow", "write:accounts"]}],
+      description: "Removes the given account from endorsed accounts list.",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship)
+      }
+    }
+  end
+
+  def remove_from_followers_operation do
+    %Operation{
+      tags: ["Account actions"],
+      summary: "Remove from followers",
+      operationId: "AccountController.remove_from_followers",
+      security: [%{"oAuth" => ["follow", "write:follows"]}],
+      description: "Remove the given account from followers",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship),
+        400 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  def note_operation do
+    %Operation{
+      tags: ["Account actions"],
+      summary: "Set a private note about a user.",
+      operationId: "AccountController.note",
+      security: [%{"oAuth" => ["follow", "write:accounts"]}],
+      requestBody: request_body("Parameters", note_request()),
+      description: "Create a note for the given account.",
+      parameters: [
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        Operation.parameter(
+          :comment,
+          :query,
+          %Schema{type: :string},
+          "Account note body"
+        )
+      ],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship)
+      }
+    }
+  end
+
   def follow_by_uri_operation do
     %Operation{
       tags: ["Account actions"],
@@ -364,9 +458,29 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       operationId: "AccountController.blocks",
       description: "View your blocks. See also accounts/:id/{block,unblock}",
       security: [%{"oAuth" => ["read:blocks"]}],
-      parameters: pagination_params(),
+      parameters: [with_relationships_param() | pagination_params()],
       responses: %{
         200 => Operation.response("Accounts", "application/json", array_of_accounts())
+      }
+    }
+  end
+
+  def lookup_operation do
+    %Operation{
+      tags: ["Retrieve account information"],
+      summary: "Find a user by nickname",
+      operationId: "AccountController.lookup",
+      parameters: [
+        Operation.parameter(
+          :acct,
+          :query,
+          :string,
+          "User nickname"
+        )
+      ],
+      responses: %{
+        200 => Operation.response("Account", "application/json", Account),
+        404 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
@@ -376,10 +490,10 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       tags: ["Retrieve account information"],
       summary: "Endorsements",
       operationId: "AccountController.endorsements",
-      description: "Not implemented",
+      description: "Returns endorsed accounts",
       security: [%{"oAuth" => ["read:accounts"]}],
       responses: %{
-        200 => empty_array_response()
+        200 => Operation.response("Array of Accounts", "application/json", array_of_accounts())
       }
     }
   end
@@ -396,6 +510,48 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       description: "Not implemented",
       responses: %{
         200 => empty_array_response()
+      }
+    }
+  end
+
+  def familiar_followers_operation do
+    %Operation{
+      tags: ["Retrieve account information"],
+      summary: "Followers that you follow",
+      operationId: "AccountController.familiar_followers",
+      description:
+        "Obtain a list of all accounts that follow a given account, filtered for accounts you follow.",
+      security: [%{"oAuth" => ["read:follows"]}],
+      parameters: [
+        Operation.parameter(
+          :id,
+          :query,
+          %Schema{
+            oneOf: [%Schema{type: :array, items: %Schema{type: :string}}, %Schema{type: :string}]
+          },
+          "Account IDs",
+          example: "123"
+        )
+      ],
+      responses: %{
+        200 =>
+          Operation.response("Accounts", "application/json", %Schema{
+            title: "ArrayOfAccounts",
+            type: :array,
+            items: %Schema{
+              title: "Account",
+              type: :object,
+              properties: %{
+                id: FlakeID,
+                accounts: %Schema{
+                  title: "ArrayOfAccounts",
+                  type: :array,
+                  items: Account,
+                  example: [Account.schema().example]
+                }
+              }
+            }
+          })
       }
     }
   end
@@ -458,6 +614,25 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           type: :string,
           nullable: true,
           description: "Invite token required when the registrations aren't public"
+        },
+        birthday: %Schema{
+          nullable: true,
+          description: "User's birthday",
+          anyOf: [
+            %Schema{
+              type: :string,
+              format: :date
+            },
+            %Schema{
+              type: :string,
+              maxLength: 0
+            }
+          ]
+        },
+        language: %Schema{
+          type: :string,
+          nullable: true,
+          description: "User's preferred language for emails"
         }
       },
       example: %{
@@ -635,7 +810,26 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           description:
             "Discovery (listing, indexing) of this account by external services (search bots etc.) is allowed."
         },
-        actor_type: ActorType
+        actor_type: ActorType,
+        birthday: %Schema{
+          nullable: true,
+          description: "User's birthday",
+          anyOf: [
+            %Schema{
+              type: :string,
+              format: :date
+            },
+            %Schema{
+              type: :string,
+              maxLength: 0
+            }
+          ]
+        },
+        show_birthday: %Schema{
+          allOf: [BooleanLike],
+          nullable: true,
+          description: "User's birthday will be visible"
+        }
       },
       example: %{
         bot: false,
@@ -655,7 +849,9 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         allow_following_move: false,
         also_known_as: ["https://foo.bar/users/foo"],
         discoverable: false,
-        actor_type: "Person"
+        actor_type: "Person",
+        show_birthday: false,
+        birthday: "2001-02-12"
       }
     }
   end
@@ -685,9 +881,11 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           "blocked_by" => true,
           "muting" => false,
           "muting_notifications" => false,
+          "note" => "",
           "requested" => false,
           "domain_blocking" => false,
           "subscribing" => false,
+          "notifying" => false,
           "endorsed" => true
         },
         %{
@@ -699,9 +897,11 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           "blocked_by" => true,
           "muting" => true,
           "muting_notifications" => false,
+          "note" => "",
           "requested" => true,
           "domain_blocking" => false,
           "subscribing" => false,
+          "notifying" => false,
           "endorsed" => false
         },
         %{
@@ -713,9 +913,11 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           "blocked_by" => false,
           "muting" => true,
           "muting_notifications" => false,
+          "note" => "",
           "requested" => false,
           "domain_blocking" => true,
           "subscribing" => true,
+          "notifying" => true,
           "endorsed" => false
         }
       ]
@@ -746,16 +948,38 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           description: "Mute notifications in addition to statuses? Defaults to true.",
           default: true
         },
+        duration: %Schema{
+          type: :integer,
+          nullable: true,
+          description: "Expire the mute in `expires_in` seconds. Default 0 for infinity"
+        },
         expires_in: %Schema{
           type: :integer,
           nullable: true,
-          description: "Expire the mute in `expires_in` seconds. Default 0 for infinity",
+          description: "Deprecated, use `duration` instead",
           default: 0
         }
       },
       example: %{
         "notifications" => true,
         "expires_in" => 86_400
+      }
+    }
+  end
+
+  defp note_request do
+    %Schema{
+      title: "AccountNoteRequest",
+      description: "POST body for adding a note for an account",
+      type: :object,
+      properties: %{
+        comment: %Schema{
+          type: :string,
+          description: "Account note body"
+        }
+      },
+      example: %{
+        "comment" => "Example note"
       }
     }
   end

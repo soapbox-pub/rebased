@@ -1,10 +1,13 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
   use Pleroma.Web.ConnCase, async: true
 
+  alias Pleroma.Activity
+  alias Pleroma.Repo
+  alias Pleroma.Rule
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -27,6 +30,41 @@ defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
              |> json_response_and_validate_schema(200)
   end
 
+  test "submit a report with a fake Create", %{
+    conn: conn
+  } do
+    target_user = insert(:user)
+
+    note = insert(:note, user: target_user)
+
+    activity_params = %{
+      "object" => note.data["id"],
+      "actor" => note.data["actor"],
+      "to" => note.data["to"] || [],
+      "cc" => note.data["cc"] || [],
+      "type" => "Create"
+    }
+
+    {:ok, fake_activity} =
+      Repo.insert(%Activity{
+        data: activity_params,
+        recipients: activity_params["to"] ++ activity_params["cc"],
+        local: true,
+        actor: activity_params["actor"]
+      })
+
+    assert %{"action_taken" => false, "id" => _} =
+             conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/v1/reports", %{
+               "account_id" => target_user.id,
+               "status_ids" => [fake_activity.id],
+               "comment" => "bad status!",
+               "forward" => "false"
+             })
+             |> json_response_and_validate_schema(200)
+  end
+
   test "submit a report with statuses and comment", %{
     conn: conn,
     target_user: target_user,
@@ -42,6 +80,44 @@ defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
                "forward" => "false"
              })
              |> json_response_and_validate_schema(200)
+  end
+
+  test "submit a report with rule_ids", %{
+    conn: conn,
+    target_user: target_user
+  } do
+    %{id: rule_id} = Rule.create(%{text: "There are no rules"})
+
+    rule_id = to_string(rule_id)
+
+    assert %{"action_taken" => false, "id" => id} =
+             conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/v1/reports", %{
+               "account_id" => target_user.id,
+               "forward" => "false",
+               "rule_ids" => [rule_id]
+             })
+             |> json_response_and_validate_schema(200)
+
+    assert %Activity{data: %{"rules" => [^rule_id]}} = Activity.get_report(id)
+  end
+
+  test "rules field is empty if provided wrong rule id", %{
+    conn: conn,
+    target_user: target_user
+  } do
+    assert %{"id" => id} =
+             conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/v1/reports", %{
+               "account_id" => target_user.id,
+               "forward" => "false",
+               "rule_ids" => ["-1"]
+             })
+             |> json_response_and_validate_schema(200)
+
+    assert %Activity{data: %{"rules" => []}} = Activity.get_report(id)
   end
 
   test "account_id is required", %{

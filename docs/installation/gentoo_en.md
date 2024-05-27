@@ -1,11 +1,14 @@
-# Installing on Gentoo GNU/Linux
+# Manual install on Gentoo GNU/Linux
+
+{! backend/installation/otp_vs_from_source.include !}
+
+This guide covers a manual from-source installation. To use the gentoo package, please check the [packaged installation guide for gentoo](./gentoo_otp_en.md).
+
 ## Installation
 
 This guide will assume that you have administrative rights, either as root or a user with [sudo permissions](https://wiki.gentoo.org/wiki/Sudo). Lines that begin with `#` indicate that they should be run as the superuser. Lines using `$` should be run as the indicated user, e.g. `pleroma$` should be run as the `pleroma` user.
 
-### Configuring your hostname (optional)
-
-If you would like your prompt to permanently include your host/domain, change `/etc/conf.d/hostname` to your hostname. You can reboot or use the `hostname` command to make immediate changes.
+{! backend/installation/generic_dependencies.include !}
 
 ### Your make.conf, package.use, and USE flags
 
@@ -56,7 +59,7 @@ Gentoo quite pointedly does not come with a cron daemon installed, and as such i
 
 If you would not like to install the optional packages, remove them from this line.
 
-If you're running this from a low-powered virtual machine, it should work though it will take some time. There were no issues on a VPS with a single core and 1GB of RAM; if you are using an even more limited device and run into issues, you can try creating a swapfile or use a more powerful machine running Gentoo to [cross build](https://wiki.gentoo.org/wiki/Cross_build_environment). If you have a wait ahead of you, now would be a good time to take a break, strech a bit, refresh your beverage of choice and/or get a snack, and reply to Arch users' posts with "I use Gentoo btw" as we do.
+If you're running this from a low-powered virtual machine, it should work though it will take some time. There were no issues on a VPS with a single core and 1GB of RAM; if you are using an even more limited device and run into issues, you can try creating a swapfile or use a more powerful machine running Gentoo to [cross build](https://wiki.gentoo.org/wiki/Cross_build_environment). If you have a wait ahead of you, now would be a good time to take a break, stretch a bit, refresh your beverage of choice and/or get a snack, and reply to Arch users' posts with "I use Gentoo btw" as we do.
 
 ### Install PostgreSQL
 
@@ -101,7 +104,7 @@ Not only does this make it much easier to deploy changes you make, as you can co
 
 * Add a new system user for the Pleroma service and set up default directories:
 
-Remove `,wheel` if you do not want this user to be able to use `sudo`, however note that being able to `sudo` as the `pleroma` user will make finishing the insallation and common maintenence tasks somewhat easier:
+Remove `,wheel` if you do not want this user to be able to use `sudo`, however note that being able to `sudo` as the `pleroma` user will make finishing the installation and common maintenance tasks somewhat easier:
 
 ```shell
  # useradd -m -G users,wheel -s /bin/bash pleroma
@@ -225,6 +228,10 @@ If you are using any additional subdomains, such as for a media proxy, you can r
 Replace all instances of `example.tld` with your instance's public URL. If for whatever reason you made changes to the port that your pleroma app runs on, be sure that is reflected in your configuration.
 
 Pay special attention to the line that begins with `ssl_ecdh_curve`. It is stongly advised to comment that line out so that OpenSSL will use its full capabilities, and it is also possible you are running OpenSSL 1.0.2 necessitating that you do this.
+
+* (Strongly recommended) serve media on another domain
+
+Refer to the [Hardening your instance](../configuration/hardening.md) document on how to serve media on another domain. We STRONGLY RECOMMEND you to do this to minimize attack vectors.
 
 * Enable and start nginx:
 

@@ -5,7 +5,7 @@ Pleroma's full text search feature is powered by PostgreSQL's native [text searc
 
 ## Setup and test the new search config
 
-In most cases, you would need an extension installed to support parsing CJK text. Here are a few extension you may choose from, or you are more than welcome to share additional ones you found working for you with the rest of Pleroma community.
+In most cases, you would need an extension installed to support parsing CJK text. Here are a few extensions you may choose from, or you are more than welcome to share additional ones you found working for you with the rest of Pleroma community.
 
  * [a generic n-gram parser](https://github.com/huangjimmy/pg_cjk_parser) supports Simplifed/Traditional Chinese, Japanese, and Korean
  * [a Korean parser](https://github.com/i0seph/textsearch_ko) based on mecab
@@ -34,7 +34,7 @@ Check output of the query, and see if it matches your expectation.
     mix pleroma.database set_text_search_config YOUR.CONFIG
     ```
 
-Note: index update may take a while.
+Note: index update may take a while, and it can be done while the instance is up and running, so you may restart db connection as soon as you see `Recreate index` in task output.
 
 ## Restart database connection
 Since some changes above will only apply with a new database connection, you will have to restart either Pleroma or PostgreSQL process, or use `pg_terminate_backend` SQL command without restarting either. 

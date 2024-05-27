@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
@@ -17,10 +17,18 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.SideEffects
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.CommonAPI.ActivityDraft
 
   import Mock
   import Pleroma.Factory
+
+  defp get_announces_of_object(%{data: %{"id" => id}} = _object) do
+    Pleroma.Activity.Queries.by_type("Announce")
+    |> Pleroma.Activity.Queries.by_object_id(id)
+    |> Pleroma.Repo.all()
+  end
 
   describe "handle_after_transaction" do
     test "it streams out notifications and streams" do
@@ -88,6 +96,16 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       assert User.blocks?(user, blocked)
     end
 
+    test "it updates following relationship", %{user: user, blocked: blocked, block: block} do
+      {:ok, _, _} = SideEffects.handle(block)
+
+      refute Pleroma.FollowingRelationship.get(user, blocked)
+      assert User.get_follow_state(user, blocked) == nil
+      assert User.get_follow_state(blocked, user) == nil
+      assert User.get_follow_state(user, blocked, nil) == nil
+      assert User.get_follow_state(blocked, user, nil) == nil
+    end
+
     test "it blocks but does not unfollow if the relevant setting is set", %{
       user: user,
       blocked: blocked,
@@ -108,7 +126,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   describe "update users" do
     setup do
       user = insert(:user, local: false)
-      {:ok, update_data, []} = Builder.update(user, %{"id" => user.ap_id, "name" => "new name!"})
+
+      {:ok, update_data, []} =
+        Builder.update(user, %{"id" => user.ap_id, "type" => "Person", "name" => "new name!"})
+
       {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)
 
       %{user: user, update_data: update_data, update: update}
@@ -130,6 +151,298 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     end
   end
 
+  describe "update notes" do
+    setup do
+      make_time = fn ->
+        Pleroma.Web.ActivityPub.Utils.make_date()
+      end
+
+      user = insert(:user)
+      note = insert(:note, user: user, data: %{"published" => make_time.()})
+      _note_activity = insert(:note_activity, note: note)
+
+      updated_note =
+        note.data
+        |> Map.put("summary", "edited summary")
+        |> Map.put("content", "edited content")
+        |> Map.put("updated", make_time.())
+
+      {:ok, update_data, []} = Builder.update(user, updated_note)
+      {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)
+
+      %{
+        user: user,
+        note: note,
+        object_id: note.id,
+        update_data: update_data,
+        update: update,
+        updated_note: updated_note
+      }
+    end
+
+    test "it updates the note", %{
+      object_id: object_id,
+      update: update,
+      updated_note: updated_note
+    } do
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
+      updated_time = updated_note["updated"]
+
+      new_note = Pleroma.Object.get_by_id(object_id)
+
+      assert %{
+               "summary" => "edited summary",
+               "content" => "edited content",
+               "updated" => ^updated_time
+             } = new_note.data
+    end
+
+    test "it rejects updates with no updated attribute in object", %{
+      object_id: object_id,
+      update: update,
+      updated_note: updated_note
+    } do
+      old_note = Pleroma.Object.get_by_id(object_id)
+      updated_note = Map.drop(updated_note, ["updated"])
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
+      new_note = Pleroma.Object.get_by_id(object_id)
+      assert old_note.data == new_note.data
+    end
+
+    test "it rejects updates with updated attribute older than what we have in the original object",
+         %{
+           object_id: object_id,
+           update: update,
+           updated_note: updated_note
+         } do
+      old_note = Pleroma.Object.get_by_id(object_id)
+      {:ok, creation_time, _} = DateTime.from_iso8601(old_note.data["published"])
+
+      updated_note =
+        Map.put(updated_note, "updated", DateTime.to_iso8601(DateTime.add(creation_time, -10)))
+
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
+      new_note = Pleroma.Object.get_by_id(object_id)
+      assert old_note.data == new_note.data
+    end
+
+    test "it rejects updates with updated attribute older than the last Update", %{
+      object_id: object_id,
+      update: update,
+      updated_note: updated_note
+    } do
+      old_note = Pleroma.Object.get_by_id(object_id)
+      {:ok, creation_time, _} = DateTime.from_iso8601(old_note.data["published"])
+
+      updated_note =
+        Map.put(updated_note, "updated", DateTime.to_iso8601(DateTime.add(creation_time, +10)))
+
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
+
+      old_note = Pleroma.Object.get_by_id(object_id)
+      {:ok, update_time, _} = DateTime.from_iso8601(old_note.data["updated"])
+
+      updated_note =
+        Map.put(updated_note, "updated", DateTime.to_iso8601(DateTime.add(update_time, -5)))
+
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
+
+      new_note = Pleroma.Object.get_by_id(object_id)
+      assert old_note.data == new_note.data
+    end
+
+    test "it updates using object_data", %{
+      object_id: object_id,
+      update: update,
+      updated_note: updated_note
+    } do
+      updated_note = Map.put(updated_note, "summary", "mew mew")
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
+      new_note = Pleroma.Object.get_by_id(object_id)
+      assert %{"summary" => "mew mew", "content" => "edited content"} = new_note.data
+    end
+
+    test "it records the original note in formerRepresentations", %{
+      note: note,
+      object_id: object_id,
+      update: update,
+      updated_note: updated_note
+    } do
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
+      %{data: new_note} = Pleroma.Object.get_by_id(object_id)
+      assert %{"summary" => "edited summary", "content" => "edited content"} = new_note
+
+      assert [Map.drop(note.data, ["id", "formerRepresentations"])] ==
+               new_note["formerRepresentations"]["orderedItems"]
+
+      assert new_note["formerRepresentations"]["totalItems"] == 1
+    end
+
+    test "it puts the original note at the front of formerRepresentations", %{
+      user: user,
+      note: note,
+      object_id: object_id,
+      update: update,
+      updated_note: updated_note
+    } do
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
+      %{data: first_edit} = Pleroma.Object.get_by_id(object_id)
+
+      second_updated_note =
+        note.data
+        |> Map.put("summary", "edited summary 2")
+        |> Map.put("content", "edited content 2")
+        |> Map.put(
+          "updated",
+          first_edit["updated"]
+          |> DateTime.from_iso8601()
+          |> elem(1)
+          |> DateTime.add(10)
+          |> DateTime.to_iso8601()
+        )
+
+      {:ok, second_update_data, []} = Builder.update(user, second_updated_note)
+      {:ok, update, _meta} = ActivityPub.persist(second_update_data, local: true)
+      {:ok, _, _} = SideEffects.handle(update, object_data: second_updated_note)
+      %{data: new_note} = Pleroma.Object.get_by_id(object_id)
+      assert %{"summary" => "edited summary 2", "content" => "edited content 2"} = new_note
+
+      original_version = Map.drop(note.data, ["id", "formerRepresentations"])
+      first_edit = Map.drop(first_edit, ["id", "formerRepresentations"])
+
+      assert [first_edit, original_version] ==
+               new_note["formerRepresentations"]["orderedItems"]
+
+      assert new_note["formerRepresentations"]["totalItems"] == 2
+    end
+
+    test "it does not prepend to formerRepresentations if no actual changes are made", %{
+      note: note,
+      object_id: object_id,
+      update: update,
+      updated_note: updated_note
+    } do
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
+      %{data: first_edit} = Pleroma.Object.get_by_id(object_id)
+
+      updated_note =
+        updated_note
+        |> Map.put(
+          "updated",
+          first_edit["updated"]
+          |> DateTime.from_iso8601()
+          |> elem(1)
+          |> DateTime.add(10)
+          |> DateTime.to_iso8601()
+        )
+
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
+      %{data: new_note} = Pleroma.Object.get_by_id(object_id)
+      assert %{"summary" => "edited summary", "content" => "edited content"} = new_note
+
+      original_version = Map.drop(note.data, ["id", "formerRepresentations"])
+
+      assert [original_version] ==
+               new_note["formerRepresentations"]["orderedItems"]
+
+      assert new_note["formerRepresentations"]["totalItems"] == 1
+    end
+  end
+
+  describe "update questions" do
+    setup do
+      user = insert(:user)
+
+      question =
+        insert(:question,
+          user: user,
+          data: %{"published" => Pleroma.Web.ActivityPub.Utils.make_date()}
+        )
+
+      %{user: user, data: question.data, id: question.id}
+    end
+
+    test "allows updating choice count without generating edit history", %{
+      user: user,
+      data: data,
+      id: id
+    } do
+      new_choices =
+        data["oneOf"]
+        |> Enum.map(fn choice -> put_in(choice, ["replies", "totalItems"], 5) end)
+
+      updated_question =
+        data
+        |> Map.put("oneOf", new_choices)
+        |> Map.put("updated", Pleroma.Web.ActivityPub.Utils.make_date())
+
+      {:ok, update_data, []} = Builder.update(user, updated_question)
+      {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)
+
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_question)
+
+      %{data: new_question} = Pleroma.Object.get_by_id(id)
+
+      assert [%{"replies" => %{"totalItems" => 5}}, %{"replies" => %{"totalItems" => 5}}] =
+               new_question["oneOf"]
+
+      refute Map.has_key?(new_question, "formerRepresentations")
+    end
+
+    test "allows updating choice count without updated field", %{
+      user: user,
+      data: data,
+      id: id
+    } do
+      new_choices =
+        data["oneOf"]
+        |> Enum.map(fn choice -> put_in(choice, ["replies", "totalItems"], 5) end)
+
+      updated_question =
+        data
+        |> Map.put("oneOf", new_choices)
+
+      {:ok, update_data, []} = Builder.update(user, updated_question)
+      {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)
+
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_question)
+
+      %{data: new_question} = Pleroma.Object.get_by_id(id)
+
+      assert [%{"replies" => %{"totalItems" => 5}}, %{"replies" => %{"totalItems" => 5}}] =
+               new_question["oneOf"]
+
+      refute Map.has_key?(new_question, "formerRepresentations")
+    end
+
+    test "allows updating choice count with updated field same as the creation date", %{
+      user: user,
+      data: data,
+      id: id
+    } do
+      new_choices =
+        data["oneOf"]
+        |> Enum.map(fn choice -> put_in(choice, ["replies", "totalItems"], 5) end)
+
+      updated_question =
+        data
+        |> Map.put("oneOf", new_choices)
+        |> Map.put("updated", data["published"])
+
+      {:ok, update_data, []} = Builder.update(user, updated_question)
+      {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)
+
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_question)
+
+      %{data: new_question} = Pleroma.Object.get_by_id(id)
+
+      assert [%{"replies" => %{"totalItems" => 5}}, %{"replies" => %{"totalItems" => 5}}] =
+               new_question["oneOf"]
+
+      refute Map.has_key?(new_question, "formerRepresentations")
+    end
+  end
+
   describe "EmojiReact objects" do
     setup do
       poster = insert(:user)
@@ -148,12 +461,36 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       object = Object.get_by_ap_id(emoji_react.data["object"])
 
       assert object.data["reaction_count"] == 1
-      assert ["👌", [user.ap_id]] in object.data["reactions"]
+      assert ["👌", [user.ap_id], nil] in object.data["reactions"]
     end
 
     test "creates a notification", %{emoji_react: emoji_react, poster: poster} do
       {:ok, emoji_react, _} = SideEffects.handle(emoji_react)
       assert Repo.get_by(Notification, user_id: poster.id, activity_id: emoji_react.id)
+    end
+  end
+
+  describe "Question objects" do
+    setup do
+      user = insert(:user)
+      question = build(:question, user: user)
+      question_activity = build(:question_activity, question: question)
+      activity_data = Map.put(question_activity.data, "object", question.data["id"])
+      meta = [object_data: question.data, local: false]
+
+      {:ok, activity, meta} = ActivityPub.persist(activity_data, meta)
+
+      %{activity: activity, meta: meta}
+    end
+
+    test "enqueues the poll end", %{activity: activity, meta: meta} do
+      {:ok, activity, meta} = SideEffects.handle(activity, meta)
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PollWorker,
+        args: %{op: "poll_end", activity_id: activity.id},
+        scheduled_at: NaiveDateTime.from_iso8601!(meta[:object_data]["closed"])
+      )
     end
   end
 
@@ -490,32 +827,156 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, announce, _} = SideEffects.handle(announce)
       assert Repo.get_by(Notification, user_id: poster.id, activity_id: announce.id)
     end
+  end
 
-    test "it streams out the announce", %{announce: announce} do
-      with_mocks([
-        {
-          Pleroma.Web.Streamer,
-          [],
-          [
-            stream: fn _, _ -> nil end
-          ]
-        },
-        {
-          Pleroma.Web.Push,
-          [],
-          [
-            send: fn _ -> nil end
-          ]
-        }
-      ]) do
-        {:ok, announce, _} = SideEffects.handle(announce)
+  describe "removing a follower" do
+    setup do
+      user = insert(:user)
+      followed = insert(:user)
 
-        assert called(
-                 Pleroma.Web.Streamer.stream(["user", "list", "public", "public:local"], announce)
-               )
+      {:ok, _, _, follow_activity} = CommonAPI.follow(user, followed)
 
-        assert called(Pleroma.Web.Push.send(:_))
+      {:ok, reject_data, []} = Builder.reject(followed, follow_activity)
+      {:ok, reject, _meta} = ActivityPub.persist(reject_data, local: true)
+
+      %{user: user, followed: followed, reject: reject}
+    end
+
+    test "", %{user: user, followed: followed, reject: reject} do
+      assert User.following?(user, followed)
+      assert Pleroma.FollowingRelationship.get(user, followed)
+
+      {:ok, _, _} = SideEffects.handle(reject)
+
+      refute User.following?(user, followed)
+      refute Pleroma.FollowingRelationship.get(user, followed)
+      assert User.get_follow_state(user, followed) == nil
+      assert User.get_follow_state(user, followed, nil) == nil
+    end
+  end
+
+  describe "removing a follower from remote" do
+    setup do
+      user = insert(:user)
+      followed = insert(:user, local: false)
+
+      # Mock a local-to-remote follow
+      {:ok, follow_data, []} = Builder.follow(user, followed)
+
+      follow_data =
+        follow_data
+        |> Map.put("state", "accept")
+
+      {:ok, follow, _meta} = ActivityPub.persist(follow_data, local: true)
+      {:ok, _, _} = SideEffects.handle(follow)
+
+      # Mock a remote-to-local accept
+      {:ok, accept_data, _} = Builder.accept(followed, follow)
+      {:ok, accept, _} = ActivityPub.persist(accept_data, local: false)
+      {:ok, _, _} = SideEffects.handle(accept)
+
+      # Mock a remote-to-local reject
+      {:ok, reject_data, []} = Builder.reject(followed, follow)
+      {:ok, reject, _meta} = ActivityPub.persist(reject_data, local: false)
+
+      %{user: user, followed: followed, reject: reject}
+    end
+
+    test "", %{user: user, followed: followed, reject: reject} do
+      assert User.following?(user, followed)
+      assert Pleroma.FollowingRelationship.get(user, followed)
+
+      {:ok, _, _} = SideEffects.handle(reject)
+
+      refute User.following?(user, followed)
+      refute Pleroma.FollowingRelationship.get(user, followed)
+
+      assert Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(user, followed).data["state"] ==
+               "reject"
+
+      assert User.get_follow_state(user, followed) == nil
+      assert User.get_follow_state(user, followed, nil) == nil
+    end
+  end
+
+  describe "Group actors" do
+    setup do
+      poster =
+        insert(:user,
+          local: false,
+          nickname: "poster@example.com",
+          ap_id: "https://example.com/users/poster"
+        )
+
+      group = insert(:user, actor_type: "Group")
+
+      make_create = fn mentioned_users ->
+        mentions = mentioned_users |> Enum.map(fn u -> "@#{u.nickname}" end) |> Enum.join(" ")
+        {:ok, draft} = ActivityDraft.create(poster, %{status: "#{mentions} hey"})
+
+        create_activity_data =
+          Utils.make_create_data(draft.changes |> Map.put(:published, nil), %{})
+          |> put_in(["object", "id"], "https://example.com/object")
+          |> put_in(["id"], "https://example.com/activity")
+
+        assert Enum.all?(mentioned_users, fn u -> u.ap_id in create_activity_data["to"] end)
+
+        create_activity_data
       end
+
+      %{poster: poster, group: group, make_create: make_create}
+    end
+
+    test "group should boost it", %{make_create: make_create, group: group} do
+      create_activity_data = make_create.([group])
+      {:ok, create_activity, _meta} = ActivityPub.persist(create_activity_data, local: false)
+
+      {:ok, _create_activity, _meta} =
+        SideEffects.handle(create_activity,
+          local: false,
+          object_data: create_activity_data["object"]
+        )
+
+      object = Object.normalize(create_activity, fetch: false)
+      assert [announce] = get_announces_of_object(object)
+      assert announce.actor == group.ap_id
+    end
+
+    test "remote group should not boost it", %{make_create: make_create, group: group} do
+      remote_group =
+        insert(:user, actor_type: "Group", local: false, nickname: "remotegroup@example.com")
+
+      create_activity_data = make_create.([group, remote_group])
+      {:ok, create_activity, _meta} = ActivityPub.persist(create_activity_data, local: false)
+
+      {:ok, _create_activity, _meta} =
+        SideEffects.handle(create_activity,
+          local: false,
+          object_data: create_activity_data["object"]
+        )
+
+      object = Object.normalize(create_activity, fetch: false)
+      assert [announce] = get_announces_of_object(object)
+      assert announce.actor == group.ap_id
+    end
+
+    test "group should not boost it if group is blocking poster", %{
+      make_create: make_create,
+      group: group,
+      poster: poster
+    } do
+      {:ok, _} = CommonAPI.block(group, poster)
+      create_activity_data = make_create.([group])
+      {:ok, create_activity, _meta} = ActivityPub.persist(create_activity_data, local: false)
+
+      {:ok, _create_activity, _meta} =
+        SideEffects.handle(create_activity,
+          local: false,
+          object_data: create_activity_data["object"]
+        )
+
+      object = Object.normalize(create_activity, fetch: false)
+      assert [] = get_announces_of_object(object)
     end
   end
 end

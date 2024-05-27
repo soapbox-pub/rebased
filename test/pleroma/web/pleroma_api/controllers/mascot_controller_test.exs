@@ -1,11 +1,14 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.MascotControllerTest do
   use Pleroma.Web.ConnCase, async: true
 
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
+
+  import Mox
 
   test "mascot upload" do
     %{conn: conn} = oauth_access(["write:accounts"])
@@ -28,6 +31,9 @@ defmodule Pleroma.Web.PleromaAPI.MascotControllerTest do
       path: Path.absname("test/fixtures/image.jpg"),
       filename: "an_image.jpg"
     }
+
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
 
     conn =
       conn
@@ -52,6 +58,9 @@ defmodule Pleroma.Web.PleromaAPI.MascotControllerTest do
       path: Path.absname("test/fixtures/image.jpg"),
       filename: "an_image.jpg"
     }
+
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
 
     ret_conn =
       conn

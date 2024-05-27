@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ObjectTest do
@@ -7,6 +7,7 @@ defmodule Pleroma.ObjectTest do
   use Oban.Testing, repo: Pleroma.Repo
 
   import ExUnit.CaptureLog
+  import Mox
   import Pleroma.Factory
   import Tesla.Mock
 
@@ -15,10 +16,12 @@ defmodule Pleroma.ObjectTest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.CommonAPI
 
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    ConfigMock |> stub_with(Pleroma.Test.StaticConfig)
     :ok
   end
 
@@ -442,6 +445,44 @@ defmodule Pleroma.ObjectTest do
 
       assert [%Hashtag{name: "abc"}, %Hashtag{name: "def"}] =
                Enum.sort_by(object.hashtags, & &1.name)
+    end
+  end
+
+  describe "get_emoji_reactions/1" do
+    test "3-tuple current format" do
+      object = %Object{
+        data: %{
+          "reactions" => [
+            ["x", ["https://some/user"], "https://some/emoji"]
+          ]
+        }
+      }
+
+      assert Object.get_emoji_reactions(object) == object.data["reactions"]
+    end
+
+    test "2-tuple legacy format" do
+      object = %Object{
+        data: %{
+          "reactions" => [
+            ["x", ["https://some/user"]]
+          ]
+        }
+      }
+
+      assert Object.get_emoji_reactions(object) == [["x", ["https://some/user"], nil]]
+    end
+
+    test "Map format" do
+      object = %Object{
+        data: %{
+          "reactions" => %{
+            "x" => ["https://some/user"]
+          }
+        }
+      }
+
+      assert Object.get_emoji_reactions(object) == [["x", ["https://some/user"], nil]]
     end
   end
 end

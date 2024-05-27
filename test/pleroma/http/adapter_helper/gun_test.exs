@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTTP.AdapterHelper.GunTest do
@@ -36,7 +36,7 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
       assert opts[:certificates_verification]
     end
 
-    test "https url with non standart port" do
+    test "https url with non-standard port" do
       uri = URI.parse("https://example.com:115")
 
       opts = Gun.options([receive_conn: false], uri)
@@ -44,7 +44,7 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
       assert opts[:certificates_verification]
     end
 
-    test "merges with defaul http adapter config" do
+    test "merges with default http adapter config" do
       defaults = Gun.options([receive_conn: false], URI.parse("https://example.com"))
       assert Keyword.has_key?(defaults, :a)
       assert Keyword.has_key?(defaults, :b)

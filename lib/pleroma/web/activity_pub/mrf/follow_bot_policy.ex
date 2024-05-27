@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
   alias Pleroma.Config
@@ -15,7 +19,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicy do
       try_follow(follower, message)
     else
       nil ->
-        Logger.warn(
+        Logger.warning(
           "#{__MODULE__} skipped because of missing `:mrf_follow_bot, :follower_nickname` configuration, the :follower_nickname
             account does not exist, or the account is not correctly configured as a bot."
         )

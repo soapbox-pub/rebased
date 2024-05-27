@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ModerationLogTest do
@@ -236,9 +236,7 @@ defmodule Pleroma.ModerationLogTest do
       log = Repo.get(ModerationLog, log2.id)
 
       assert log.data["message"] ==
-               "@#{moderator.nickname} added note 'look at this' to report ##{report.id} on user @#{
-                 user.nickname
-               }"
+               "@#{moderator.nickname} added note 'look at this' to report ##{report.id} on user @#{user.nickname}"
     end
 
     test "logging status sensitivity update", %{moderator: moderator} do

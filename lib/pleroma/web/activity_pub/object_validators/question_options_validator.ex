@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidator do
@@ -14,10 +14,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidator do
 
     embeds_one :replies, Replies, primary_key: false do
       field(:totalItems, :integer)
-      field(:type, :string)
+      field(:type, :string, default: "Collection")
     end
 
-    field(:type, :string)
+    field(:type, :string, default: "Note")
   end
 
   def changeset(struct, data) do

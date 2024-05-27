@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.PleromaEmojiFileOperation do
@@ -133,7 +133,11 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiFileOperation do
   defp files_object do
     %Schema{
       type: :object,
-      additionalProperties: %Schema{type: :string},
+      additionalProperties: %Schema{
+        type: :string,
+        description: "Filename of the emoji",
+        extensions: %{"x-additionalPropertiesName": "Emoji name"}
+      },
       description: "Object with emoji names as keys and filenames as values"
     }
   end

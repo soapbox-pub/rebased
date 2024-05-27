@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.UserControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: false
   use Oban.Testing, repo: Pleroma.Repo
 
   import Mock
@@ -18,6 +18,11 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
+
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -38,6 +43,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   end
 
   test "with valid `admin_token` query parameter, skips OAuth scopes check" do
+    clear_config([:instance, :admin_privileges], [:users_read])
     clear_config([:admin_token], "password123")
 
     user = insert(:user)
@@ -47,53 +53,10 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     assert json_response_and_validate_schema(conn, 200)
   end
 
-  test "GET /api/pleroma/admin/users/:nickname requires admin:read:accounts or broader scope",
-       %{admin: admin} do
-    user = insert(:user)
-    url = "/api/pleroma/admin/users/#{user.nickname}"
-
-    good_token1 = insert(:oauth_token, user: admin, scopes: ["admin"])
-    good_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read"])
-    good_token3 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts"])
-
-    bad_token1 = insert(:oauth_token, user: admin, scopes: ["read:accounts"])
-    bad_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts:partial"])
-    bad_token3 = nil
-
-    for good_token <- [good_token1, good_token2, good_token3] do
-      conn =
-        build_conn()
-        |> assign(:user, admin)
-        |> assign(:token, good_token)
-        |> get(url)
-
-      assert json_response_and_validate_schema(conn, 200)
-    end
-
-    for good_token <- [good_token1, good_token2, good_token3] do
-      conn =
-        build_conn()
-        |> assign(:user, nil)
-        |> assign(:token, good_token)
-        |> get(url)
-
-      assert json_response(conn, :forbidden)
-    end
-
-    for bad_token <- [bad_token1, bad_token2, bad_token3] do
-      conn =
-        build_conn()
-        |> assign(:user, admin)
-        |> assign(:token, bad_token)
-        |> get(url)
-
-      assert json_response_and_validate_schema(conn, :forbidden)
-    end
-  end
-
   describe "DELETE /api/pleroma/admin/users" do
     test "single user", %{admin: admin, conn: conn} do
       clear_config([:instance, :federating], true)
+      clear_config([:instance, :admin_privileges], [:users_delete])
 
       user =
         insert(:user,
@@ -149,6 +112,8 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     end
 
     test "multiple users", %{admin: admin, conn: conn} do
+      clear_config([:instance, :admin_privileges], [:users_delete])
+
       user_one = insert(:user)
       user_two = insert(:user)
 
@@ -167,6 +132,17 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
                "@#{admin.nickname} deleted users: @#{user_one.nickname}, @#{user_two.nickname}"
 
       assert response -- [user_one.nickname, user_two.nickname] == []
+    end
+
+    test "Needs privileged role", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      response =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> delete("/api/pleroma/admin/users?nickname=nickname")
+
+      assert json_response(response, :forbidden)
     end
   end
 
@@ -307,7 +283,19 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     end
   end
 
-  describe "/api/pleroma/admin/users/:nickname" do
+  describe "GET /api/pleroma/admin/users/:nickname" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:users_read])
+    end
+
+    test "returns 403 if not privileged with :users_read", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn = get(conn, "/api/pleroma/admin/users/user.nickname")
+
+      assert json_response(conn, :forbidden)
+    end
+
     test "Show", %{conn: conn} do
       user = insert(:user)
 
@@ -322,6 +310,50 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}")
 
       assert %{"error" => "Not found"} == json_response_and_validate_schema(conn, 404)
+    end
+
+    test "requires admin:read:accounts or broader scope",
+         %{admin: admin} do
+      user = insert(:user)
+      url = "/api/pleroma/admin/users/#{user.nickname}"
+
+      good_token1 = insert(:oauth_token, user: admin, scopes: ["admin"])
+      good_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read"])
+      good_token3 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts"])
+
+      bad_token1 = insert(:oauth_token, user: admin, scopes: ["read:accounts"])
+      bad_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts:partial"])
+      bad_token3 = nil
+
+      for good_token <- [good_token1, good_token2, good_token3] do
+        conn =
+          build_conn()
+          |> assign(:user, admin)
+          |> assign(:token, good_token)
+          |> get(url)
+
+        assert json_response_and_validate_schema(conn, 200)
+      end
+
+      for good_token <- [good_token1, good_token2, good_token3] do
+        conn =
+          build_conn()
+          |> assign(:user, nil)
+          |> assign(:token, good_token)
+          |> get(url)
+
+        assert json_response(conn, :forbidden)
+      end
+
+      for bad_token <- [bad_token1, bad_token2, bad_token3] do
+        conn =
+          build_conn()
+          |> assign(:user, admin)
+          |> assign(:token, bad_token)
+          |> get(url)
+
+        assert json_response_and_validate_schema(conn, :forbidden)
+      end
     end
   end
 
@@ -378,30 +410,40 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   end
 
   describe "GET /api/pleroma/admin/users" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:users_read])
+    end
+
+    test "returns 403 if not privileged with :users_read", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn = get(conn, "/api/pleroma/admin/users?page=1")
+
+      assert json_response(conn, :forbidden)
+    end
+
     test "renders users array for the first page", %{conn: conn, admin: admin} do
       user = insert(:user, local: false, tags: ["foo", "bar"])
       user2 = insert(:user, is_approved: false, registration_reason: "I'm a chill dude")
 
       conn = get(conn, "/api/pleroma/admin/users?page=1")
 
-      users =
-        [
-          user_response(
-            admin,
-            %{"roles" => %{"admin" => true, "moderator" => false}}
-          ),
-          user_response(user, %{"local" => false, "tags" => ["foo", "bar"]}),
-          user_response(
-            user2,
-            %{
-              "local" => true,
-              "is_approved" => false,
-              "registration_reason" => "I'm a chill dude",
-              "actor_type" => "Person"
-            }
-          )
-        ]
-        |> Enum.sort_by(& &1["nickname"])
+      users = [
+        user_response(
+          user2,
+          %{
+            "local" => true,
+            "is_approved" => false,
+            "registration_reason" => "I'm a chill dude",
+            "actor_type" => "Person"
+          }
+        ),
+        user_response(user, %{"local" => false, "tags" => ["foo", "bar"]}),
+        user_response(
+          admin,
+          %{"roles" => %{"admin" => true, "moderator" => false}}
+        )
+      ]
 
       assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 3,
@@ -525,7 +567,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       assert json_response_and_validate_schema(conn1, 200) == %{
                "count" => 2,
                "page_size" => 1,
-               "users" => [user_response(user)]
+               "users" => [user_response(user2)]
              }
 
       conn2 = get(conn, "/api/pleroma/admin/users?query=a&page_size=1&page=2")
@@ -533,7 +575,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       assert json_response_and_validate_schema(conn2, 200) == %{
                "count" => 2,
                "page_size" => 1,
-               "users" => [user_response(user2)]
+               "users" => [user_response(user)]
              }
     end
 
@@ -565,18 +607,16 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?filters=local")
 
-      users =
-        [
-          user_response(user),
-          user_response(admin, %{
-            "roles" => %{"admin" => true, "moderator" => false}
-          }),
-          user_response(old_admin, %{
-            "is_active" => true,
-            "roles" => %{"admin" => true, "moderator" => false}
-          })
-        ]
-        |> Enum.sort_by(& &1["nickname"])
+      users = [
+        user_response(user),
+        user_response(admin, %{
+          "roles" => %{"admin" => true, "moderator" => false}
+        }),
+        user_response(old_admin, %{
+          "is_active" => true,
+          "roles" => %{"admin" => true, "moderator" => false}
+        })
+      ]
 
       assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 3,
@@ -604,7 +644,6 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
             "is_approved" => true
           })
         end)
-        |> Enum.sort_by(& &1["nickname"])
 
       assert result == %{"count" => 2, "page_size" => 50, "users" => users}
     end
@@ -642,18 +681,16 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?filters=is_admin")
 
-      users =
-        [
-          user_response(admin, %{
-            "is_active" => true,
-            "roles" => %{"admin" => true, "moderator" => false}
-          }),
-          user_response(second_admin, %{
-            "is_active" => true,
-            "roles" => %{"admin" => true, "moderator" => false}
-          })
-        ]
-        |> Enum.sort_by(& &1["nickname"])
+      users = [
+        user_response(second_admin, %{
+          "is_active" => true,
+          "roles" => %{"admin" => true, "moderator" => false}
+        }),
+        user_response(admin, %{
+          "is_active" => true,
+          "roles" => %{"admin" => true, "moderator" => false}
+        })
+      ]
 
       assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 2,
@@ -693,13 +730,11 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
         |> get(user_path(conn, :index), %{actor_types: ["Person"]})
         |> json_response_and_validate_schema(200)
 
-      users =
-        [
-          user_response(admin, %{"roles" => %{"admin" => true, "moderator" => false}}),
-          user_response(user1),
-          user_response(user2)
-        ]
-        |> Enum.sort_by(& &1["nickname"])
+      users = [
+        user_response(user2),
+        user_response(user1),
+        user_response(admin, %{"roles" => %{"admin" => true, "moderator" => false}})
+      ]
 
       assert response == %{"count" => 3, "page_size" => 50, "users" => users}
     end
@@ -716,14 +751,12 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
         |> get(user_path(conn, :index), %{actor_types: ["Person", "Service"]})
         |> json_response_and_validate_schema(200)
 
-      users =
-        [
-          user_response(admin, %{"roles" => %{"admin" => true, "moderator" => false}}),
-          user_response(user1),
-          user_response(user2),
-          user_response(user_service, %{"actor_type" => "Service"})
-        ]
-        |> Enum.sort_by(& &1["nickname"])
+      users = [
+        user_response(user2),
+        user_response(user1),
+        user_response(user_service, %{"actor_type" => "Service"}),
+        user_response(admin, %{"roles" => %{"admin" => true, "moderator" => false}})
+      ]
 
       assert response == %{"count" => 4, "page_size" => 50, "users" => users}
     end
@@ -752,12 +785,10 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?tags[]=first&tags[]=second")
 
-      users =
-        [
-          user_response(user1, %{"tags" => ["first"]}),
-          user_response(user2, %{"tags" => ["second"]})
-        ]
-        |> Enum.sort_by(& &1["nickname"])
+      users = [
+        user_response(user2, %{"tags" => ["second"]}),
+        user_response(user1, %{"tags" => ["first"]})
+      ]
 
       assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 2,
@@ -781,8 +812,8 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
                "count" => 2,
                "page_size" => 50,
                "users" => [
-                 %{"id" => ^admin_id},
-                 %{"id" => ^user_id}
+                 %{"id" => ^user_id},
+                 %{"id" => ^admin_id}
                ]
              } = json_response_and_validate_schema(conn, 200)
     end
@@ -823,49 +854,9 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     end
   end
 
-  test "PATCH /api/pleroma/admin/users/activate", %{admin: admin, conn: conn} do
-    user_one = insert(:user, is_active: false)
-    user_two = insert(:user, is_active: false)
-
-    conn =
-      conn
-      |> put_req_header("content-type", "application/json")
-      |> patch(
-        "/api/pleroma/admin/users/activate",
-        %{nicknames: [user_one.nickname, user_two.nickname]}
-      )
-
-    response = json_response_and_validate_schema(conn, 200)
-    assert Enum.map(response["users"], & &1["is_active"]) == [true, true]
-
-    log_entry = Repo.one(ModerationLog)
-
-    assert ModerationLog.get_log_entry_message(log_entry) ==
-             "@#{admin.nickname} activated users: @#{user_one.nickname}, @#{user_two.nickname}"
-  end
-
-  test "PATCH /api/pleroma/admin/users/deactivate", %{admin: admin, conn: conn} do
-    user_one = insert(:user, is_active: true)
-    user_two = insert(:user, is_active: true)
-
-    conn =
-      conn
-      |> put_req_header("content-type", "application/json")
-      |> patch(
-        "/api/pleroma/admin/users/deactivate",
-        %{nicknames: [user_one.nickname, user_two.nickname]}
-      )
-
-    response = json_response_and_validate_schema(conn, 200)
-    assert Enum.map(response["users"], & &1["is_active"]) == [false, false]
-
-    log_entry = Repo.one(ModerationLog)
-
-    assert ModerationLog.get_log_entry_message(log_entry) ==
-             "@#{admin.nickname} deactivated users: @#{user_one.nickname}, @#{user_two.nickname}"
-  end
-
   test "PATCH /api/pleroma/admin/users/approve", %{admin: admin, conn: conn} do
+    clear_config([:instance, :admin_privileges], [:users_manage_invites])
+
     user_one = insert(:user, is_approved: false)
     user_two = insert(:user, is_approved: false)
 
@@ -886,24 +877,178 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
              "@#{admin.nickname} approved users: @#{user_one.nickname}, @#{user_two.nickname}"
   end
 
-  test "PATCH /api/pleroma/admin/users/:nickname/toggle_activation", %{admin: admin, conn: conn} do
-    user = insert(:user)
+  test "PATCH /api/pleroma/admin/users/approve returns 403 if not privileged with :users_manage_invites",
+       %{conn: conn} do
+    clear_config([:instance, :admin_privileges], [])
 
     conn =
       conn
       |> put_req_header("content-type", "application/json")
-      |> patch("/api/pleroma/admin/users/#{user.nickname}/toggle_activation")
+      |> patch(
+        "/api/pleroma/admin/users/approve",
+        %{nicknames: ["user_one.nickname", "user_two.nickname"]}
+      )
 
-    assert json_response_and_validate_schema(conn, 200) ==
-             user_response(
-               user,
-               %{"is_active" => !user.is_active}
-             )
+    assert json_response(conn, :forbidden)
+  end
+
+  test "PATCH /api/pleroma/admin/users/suggest", %{admin: admin, conn: conn} do
+    user1 = insert(:user, is_suggested: false)
+    user2 = insert(:user, is_suggested: false)
+
+    response =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> patch(
+        "/api/pleroma/admin/users/suggest",
+        %{nicknames: [user1.nickname, user2.nickname]}
+      )
+      |> json_response_and_validate_schema(200)
+
+    assert Enum.map(response["users"], & &1["is_suggested"]) == [true, true]
+    [user1, user2] = Repo.reload!([user1, user2])
+
+    assert user1.is_suggested
+    assert user2.is_suggested
 
     log_entry = Repo.one(ModerationLog)
 
     assert ModerationLog.get_log_entry_message(log_entry) ==
-             "@#{admin.nickname} deactivated users: @#{user.nickname}"
+             "@#{admin.nickname} added suggested users: @#{user1.nickname}, @#{user2.nickname}"
+  end
+
+  test "PATCH /api/pleroma/admin/users/unsuggest", %{admin: admin, conn: conn} do
+    user1 = insert(:user, is_suggested: true)
+    user2 = insert(:user, is_suggested: true)
+
+    response =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> patch(
+        "/api/pleroma/admin/users/unsuggest",
+        %{nicknames: [user1.nickname, user2.nickname]}
+      )
+      |> json_response_and_validate_schema(200)
+
+    assert Enum.map(response["users"], & &1["is_suggested"]) == [false, false]
+    [user1, user2] = Repo.reload!([user1, user2])
+
+    refute user1.is_suggested
+    refute user2.is_suggested
+
+    log_entry = Repo.one(ModerationLog)
+
+    assert ModerationLog.get_log_entry_message(log_entry) ==
+             "@#{admin.nickname} removed suggested users: @#{user1.nickname}, @#{user2.nickname}"
+  end
+
+  describe "user activation" do
+    test "PATCH /api/pleroma/admin/users/activate", %{admin: admin, conn: conn} do
+      clear_config([:instance, :admin_privileges], [:users_manage_activation_state])
+
+      user_one = insert(:user, is_active: false)
+      user_two = insert(:user, is_active: false)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> patch(
+          "/api/pleroma/admin/users/activate",
+          %{nicknames: [user_one.nickname, user_two.nickname]}
+        )
+
+      response = json_response_and_validate_schema(conn, 200)
+      assert Enum.map(response["users"], & &1["is_active"]) == [true, true]
+
+      log_entry = Repo.one(ModerationLog)
+
+      assert ModerationLog.get_log_entry_message(log_entry) ==
+               "@#{admin.nickname} activated users: @#{user_one.nickname}, @#{user_two.nickname}"
+    end
+
+    test "PATCH /api/pleroma/admin/users/deactivate", %{admin: admin, conn: conn} do
+      clear_config([:instance, :admin_privileges], [:users_manage_activation_state])
+
+      user_one = insert(:user, is_active: true)
+      user_two = insert(:user, is_active: true)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> patch(
+          "/api/pleroma/admin/users/deactivate",
+          %{nicknames: [user_one.nickname, user_two.nickname]}
+        )
+
+      response = json_response_and_validate_schema(conn, 200)
+      assert Enum.map(response["users"], & &1["is_active"]) == [false, false]
+
+      log_entry = Repo.one(ModerationLog)
+
+      assert ModerationLog.get_log_entry_message(log_entry) ==
+               "@#{admin.nickname} deactivated users: @#{user_one.nickname}, @#{user_two.nickname}"
+    end
+
+    test "PATCH /api/pleroma/admin/users/:nickname/toggle_activation", %{admin: admin, conn: conn} do
+      clear_config([:instance, :admin_privileges], [:users_manage_activation_state])
+
+      user = insert(:user)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> patch("/api/pleroma/admin/users/#{user.nickname}/toggle_activation")
+
+      assert json_response_and_validate_schema(conn, 200) ==
+               user_response(
+                 user,
+                 %{"is_active" => !user.is_active}
+               )
+
+      log_entry = Repo.one(ModerationLog)
+
+      assert ModerationLog.get_log_entry_message(log_entry) ==
+               "@#{admin.nickname} deactivated users: @#{user.nickname}"
+    end
+
+    test "it requires privileged role :statuses_activation to activate", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> patch(
+          "/api/pleroma/admin/users/activate",
+          %{nicknames: ["user_one.nickname", "user_two.nickname"]}
+        )
+
+      assert json_response(conn, :forbidden)
+    end
+
+    test "it requires privileged role :statuses_activation to deactivate", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> patch(
+          "/api/pleroma/admin/users/deactivate",
+          %{nicknames: ["user_one.nickname", "user_two.nickname"]}
+        )
+
+      assert json_response(conn, :forbidden)
+    end
+
+    test "it requires privileged role :statuses_activation to toggle activation", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> patch("/api/pleroma/admin/users/user.nickname/toggle_activation")
+
+      assert json_response(conn, :forbidden)
+    end
   end
 
   defp user_response(user, attrs \\ %{}) do
@@ -919,9 +1064,11 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       "display_name" => HTML.strip_tags(user.name || user.nickname),
       "is_confirmed" => true,
       "is_approved" => true,
+      "is_suggested" => false,
       "url" => user.ap_id,
       "registration_reason" => nil,
-      "actor_type" => "Person"
+      "actor_type" => "Person",
+      "created_at" => CommonAPI.Utils.to_masto_date(user.inserted_at)
     }
     |> Map.merge(attrs)
   end

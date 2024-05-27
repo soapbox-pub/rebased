@@ -1,11 +1,21 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
   use Pleroma.DataCase
+  import Mox
   import Pleroma.Factory
+
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.Metadata.Providers.OpenGraph
+
+  setup do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
+    :ok
+  end
 
   setup do: clear_config([Pleroma.Web.Metadata, :unfurl_nsfw])
 

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.Token.Query do
@@ -9,9 +9,9 @@ defmodule Pleroma.Web.OAuth.Token.Query do
 
   import Ecto.Query, only: [from: 2]
 
-  @type query :: Ecto.Queryable.t() | Token.t()
-
   alias Pleroma.Web.OAuth.Token
+
+  @type query :: Ecto.Queryable.t() | Token.t()
 
   @spec get_by_refresh_token(query, String.t()) :: query
   def get_by_refresh_token(query \\ Token, refresh_token) do

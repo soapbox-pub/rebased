@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Instances do
@@ -7,16 +7,15 @@ defmodule Pleroma.Instances do
 
   alias Pleroma.Instances.Instance
 
-  def filter_reachable(urls_or_hosts), do: Instance.filter_reachable(urls_or_hosts)
+  defdelegate filter_reachable(urls_or_hosts), to: Instance
 
-  def reachable?(url_or_host), do: Instance.reachable?(url_or_host)
+  defdelegate reachable?(url_or_host), to: Instance
 
-  def set_reachable(url_or_host), do: Instance.set_reachable(url_or_host)
+  defdelegate set_reachable(url_or_host), to: Instance
 
-  def set_unreachable(url_or_host, unreachable_since \\ nil),
-    do: Instance.set_unreachable(url_or_host, unreachable_since)
+  defdelegate set_unreachable(url_or_host, unreachable_since \\ nil), to: Instance
 
-  def get_consistently_unreachable, do: Instance.get_consistently_unreachable()
+  defdelegate get_consistently_unreachable, to: Instance
 
   def set_consistently_unreachable(url_or_host),
     do: set_unreachable(url_or_host, reachability_datetime_threshold())

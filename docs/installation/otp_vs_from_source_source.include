@@ -1,0 +1,3 @@
+{! backend/installation/otp_vs_from_source.include !}
+
+This guide covers a manual from-source installation. To install using OTP releases, please check for the presence of a distro package, failing that you can use [Pleroma-provided OTP binaries](./otp_en.md).

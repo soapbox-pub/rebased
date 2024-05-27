@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Emoji.PackTest do
@@ -89,5 +89,9 @@ defmodule Pleroma.Emoji.PackTest do
            }
 
     assert updated_pack.files_count == 1
+  end
+
+  test "load_pack/1 ignores path traversal in a forged pack name", %{pack: pack} do
+    assert {:ok, ^pack} = Pack.load_pack("../../../../../dump_pack")
   end
 end

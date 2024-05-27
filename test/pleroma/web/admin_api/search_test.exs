@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.SearchTest do
@@ -151,9 +151,9 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
 
       {:ok, [^user_service], 1} = Search.user(%{actor_types: ["Service"]})
       {:ok, [^user_application], 1} = Search.user(%{actor_types: ["Application"]})
-      {:ok, [^user1, ^user2], 2} = Search.user(%{actor_types: ["Person"]})
+      {:ok, [^user2, ^user1], 2} = Search.user(%{actor_types: ["Person"]})
 
-      {:ok, [^user_service, ^user1, ^user2], 3} =
+      {:ok, [^user2, ^user1, ^user_service], 3} =
         Search.user(%{actor_types: ["Person", "Service"]})
     end
 

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.Cron.DigestEmailsWorker do
@@ -7,7 +7,7 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorker do
   The worker to send digest emails.
   """
 
-  use Oban.Worker, queue: "digest_emails"
+  use Oban.Worker, queue: "mailer"
 
   alias Pleroma.Config
   alias Pleroma.Emails
