@@ -4,8 +4,18 @@
 
 defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
   use Pleroma.DataCase
+  import Mox
   import Pleroma.Factory
+
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.Metadata.Providers.OpenGraph
+
+  setup do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
+    :ok
+  end
 
   setup do: clear_config([Pleroma.Web.Metadata, :unfurl_nsfw])
 

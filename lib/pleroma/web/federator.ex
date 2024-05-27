@@ -6,10 +6,9 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Activity
   alias Pleroma.Object.Containment
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Publisher
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Workers.PublisherWorker
   alias Pleroma.Workers.ReceiverWorker
 
@@ -36,6 +35,17 @@ defmodule Pleroma.Web.Federator do
   end
 
   # Client API
+  def incoming_ap_doc(%{params: params, req_headers: req_headers}) do
+    ReceiverWorker.enqueue(
+      "incoming_ap_doc",
+      %{"req_headers" => req_headers, "params" => params, "timeout" => :timer.seconds(20)},
+      priority: 2
+    )
+  end
+
+  def incoming_ap_doc(%{"type" => "Delete"} = params) do
+    ReceiverWorker.enqueue("incoming_ap_doc", %{"params" => params}, priority: 3)
+  end
 
   def incoming_ap_doc(params) do
     ReceiverWorker.enqueue("incoming_ap_doc", %{"params" => params})
@@ -47,24 +57,25 @@ defmodule Pleroma.Web.Federator do
   end
 
   @impl true
-  def publish(activity) do
-    PublisherWorker.enqueue("publish", %{"activity_id" => activity.id})
+  def publish(%Pleroma.Activity{data: %{"type" => type}} = activity) do
+    PublisherWorker.enqueue("publish", %{"activity_id" => activity.id},
+      priority: publish_priority(type)
+    )
   end
+
+  defp publish_priority("Delete"), do: 3
+  defp publish_priority(_), do: 0
 
   # Job Worker Callbacks
 
-  @spec perform(atom(), module(), any()) :: {:ok, any()} | {:error, any()}
-  def perform(:publish_one, module, params) do
-    apply(module, :publish_one, [params])
-  end
+  @spec perform(atom(), any()) :: {:ok, any()} | {:error, any()}
+  def perform(:publish_one, params), do: Publisher.publish_one(params)
 
   def perform(:publish, activity) do
     Logger.debug(fn -> "Running publish for #{activity.data["id"]}" end)
 
-    with %User{} = actor <- User.get_cached_by_ap_id(activity.data["actor"]),
-         {:ok, actor} <- User.ensure_keys_present(actor) do
-      Publisher.publish(actor, activity)
-    end
+    %User{} = actor = User.get_cached_by_ap_id(activity.data["actor"])
+    Publisher.publish(actor, activity)
   end
 
   def perform(:incoming_ap_doc, params) do
@@ -77,7 +88,7 @@ defmodule Pleroma.Web.Federator do
 
     # NOTE: we use the actor ID to do the containment, this is fine because an
     # actor shouldn't be acting on objects outside their own AP server.
-    with {_, {:ok, _user}} <- {:actor, ap_enabled_actor(actor)},
+    with {_, {:ok, _user}} <- {:actor, User.get_or_fetch_by_ap_id(actor)},
          nil <- Activity.normalize(params["id"]),
          {_, :ok} <-
            {:correct_origin?, Containment.contain_origin_from_id(actor, params)},
@@ -105,16 +116,6 @@ defmodule Pleroma.Web.Federator do
         # Just drop those for now
         Logger.debug(fn -> "Unhandled activity\n" <> Jason.encode!(params, pretty: true) end)
         {:error, e}
-    end
-  end
-
-  def ap_enabled_actor(id) do
-    user = User.get_cached_by_ap_id(id)
-
-    if User.ap_enabled?(user) do
-      {:ok, user}
-    else
-      ActivityPub.make_user_from_ap_id(id)
     end
   end
 end

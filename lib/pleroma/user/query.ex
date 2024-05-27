@@ -22,13 +22,14 @@ defmodule Pleroma.User.Query do
       - pass non empty string
       - e.g. Pleroma.User.Query.build(%{email: "email@example.com"})
     - *contains criteria*
-      - add field to @containns_criteria list
+      - add field to @contains_criteria list
       - pass values list
       - e.g. Pleroma.User.Query.build(%{ap_id: ["http://ap_id1", "http://ap_id2"]})
   """
   import Ecto.Query
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
+  alias Pleroma.Config
   alias Pleroma.FollowingRelationship
   alias Pleroma.User
 
@@ -49,6 +50,7 @@ defmodule Pleroma.User.Query do
             is_suggested: boolean(),
             is_discoverable: boolean(),
             super_users: boolean(),
+            is_privileged: atom(),
             invisible: boolean(),
             internal: boolean(),
             followers: User.t(),
@@ -69,7 +71,7 @@ defmodule Pleroma.User.Query do
   @equal_criteria [:email]
   @contains_criteria [:ap_id, :nickname]
 
-  @spec build(Query.t(), criteria()) :: Query.t()
+  @spec build(Ecto.Query.t(), criteria()) :: Ecto.Query.t()
   def build(query \\ base_query(), criteria) do
     prepare_query(query, criteria)
   end
@@ -134,6 +136,43 @@ defmodule Pleroma.User.Query do
       [u],
       u.is_admin or u.is_moderator
     )
+  end
+
+  defp compose_query({:is_privileged, privilege}, query) do
+    moderator_privileged = privilege in Config.get([:instance, :moderator_privileges])
+    admin_privileged = privilege in Config.get([:instance, :admin_privileges])
+
+    query = compose_query({:active, true}, query)
+    query = compose_query({:local, true}, query)
+
+    case {admin_privileged, moderator_privileged} do
+      {false, false} ->
+        where(
+          query,
+          false
+        )
+
+      {true, true} ->
+        where(
+          query,
+          [u],
+          u.is_admin or u.is_moderator
+        )
+
+      {true, false} ->
+        where(
+          query,
+          [u],
+          u.is_admin
+        )
+
+      {false, true} ->
+        where(
+          query,
+          [u],
+          u.is_moderator
+        )
+    end
   end
 
   defp compose_query({:local, _}, query), do: location_query(query, true)

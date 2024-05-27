@@ -68,7 +68,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
         ]
       }
 
-      [{"reply-to", Jason.encode!(report_group)} | headers]
+      [{"report-to", Jason.encode!(report_group)} | headers]
     else
       headers
     end
@@ -93,18 +93,26 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
 
     img_src = "img-src 'self' data: blob:"
     media_src = "media-src 'self'"
+    connect_src = ["connect-src 'self' blob: ", static_url, ?\s, websocket_url]
 
     # Strict multimedia CSP enforcement only when MediaProxy is enabled
-    {img_src, media_src} =
+    {img_src, media_src, connect_src} =
       if Config.get([:media_proxy, :enabled]) &&
            !Config.get([:media_proxy, :proxy_opts, :redirect_on_failure]) do
         sources = build_csp_multimedia_source_list()
-        {[img_src, sources], [media_src, sources]}
-      else
-        {[img_src, " https:"], [media_src, " https:"]}
-      end
 
-    connect_src = ["connect-src 'self' blob: ", static_url, ?\s, websocket_url]
+        {
+          [img_src, sources],
+          [media_src, sources],
+          [connect_src, sources]
+        }
+      else
+        {
+          [img_src, " https:"],
+          [media_src, " https:"],
+          [connect_src, " https:"]
+        }
+      end
 
     connect_src =
       if Config.get(:env) == :dev do
@@ -117,7 +125,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
       if Config.get(:env) == :dev do
         "script-src 'self' 'unsafe-eval'"
       else
-        "script-src 'self'"
+        "script-src 'self' 'wasm-unsafe-eval'"
       end
 
     report = if report_uri, do: ["report-uri ", report_uri, ";report-to csp-endpoint"]
@@ -193,7 +201,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
 
   def warn_if_disabled do
     unless Config.get([:http_security, :enabled]) do
-      Logger.warn("
+      Logger.warning("
                                  .i;;;;i.
                                iYcviii;vXY:
                              .YXi       .i1c.

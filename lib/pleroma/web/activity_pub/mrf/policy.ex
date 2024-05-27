@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.Policy do
-  @callback filter(Map.t()) :: {:ok | :reject, Map.t()}
-  @callback describe() :: {:ok | :error, Map.t()}
+  @callback filter(map()) :: {:ok | :reject, map()}
+  @callback describe() :: {:ok | :error, map()}
   @callback config_description() :: %{
               optional(:children) => [map()],
               key: atom(),
@@ -12,5 +12,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.Policy do
               label: String.t(),
               description: String.t()
             }
-  @optional_callbacks config_description: 0
+  @callback history_awareness() :: :auto | :manual
+  @optional_callbacks config_description: 0, history_awareness: 0
 end

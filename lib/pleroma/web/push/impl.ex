@@ -16,7 +16,7 @@ defmodule Pleroma.Web.Push.Impl do
   require Logger
   import Ecto.Query
 
-  @types ["Create", "Follow", "Announce", "Like", "Move", "EmojiReact"]
+  @types ["Create", "Follow", "Announce", "Like", "Move", "EmojiReact", "Update"]
 
   @doc "Performs sending notifications for user subscriptions"
   @spec perform(Notification.t()) :: list(any) | :error | {:error, :unknown_type}
@@ -57,7 +57,7 @@ defmodule Pleroma.Web.Push.Impl do
   end
 
   def perform(_) do
-    Logger.warn("Unknown notification type")
+    Logger.warning("Unknown notification type")
     {:error, :unknown_type}
   end
 
@@ -174,6 +174,15 @@ defmodule Pleroma.Web.Push.Impl do
     end
   end
 
+  def format_body(
+        %{activity: %{data: %{"type" => "Update"}}},
+        actor,
+        _object,
+        _mastodon_type
+      ) do
+    "@#{actor.nickname} edited a status"
+  end
+
   def format_title(activity, mastodon_type \\ nil)
 
   def format_title(%{activity: %{data: %{"directMessage" => true}}}, _mastodon_type) do
@@ -183,10 +192,12 @@ defmodule Pleroma.Web.Push.Impl do
   def format_title(%{type: type}, mastodon_type) do
     case mastodon_type || type do
       "mention" -> "New Mention"
+      "status" -> "New Status"
       "follow" -> "New Follower"
       "follow_request" -> "New Follow Request"
       "reblog" -> "New Repeat"
       "favourite" -> "New Favorite"
+      "update" -> "New Update"
       "pleroma:chat_mention" -> "New Chat Message"
       "pleroma:emoji_reaction" -> "New Reaction"
       type -> "New #{String.capitalize(type || "event")}"

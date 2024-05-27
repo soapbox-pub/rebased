@@ -31,6 +31,9 @@ defmodule Pleroma.Workers.PurgeExpiredFilter do
     |> Repo.delete()
   end
 
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
+
   @spec get_expiration(pos_integer()) :: Job.t() | nil
   def get_expiration(id) do
     from(j in Job,

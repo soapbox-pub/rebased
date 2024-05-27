@@ -7,6 +7,7 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
 
   import Pleroma.Factory
 
+  alias Pleroma.Rule
   alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.Report
   alias Pleroma.Web.AdminAPI.ReportView
@@ -38,7 +39,8 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
       statuses: [],
       notes: [],
       state: "open",
-      id: activity.id
+      id: activity.id,
+      rules: []
     }
 
     result =
@@ -76,7 +78,8 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
       statuses: [StatusView.render("show.json", %{activity: activity})],
       state: "open",
       notes: [],
-      id: report_activity.id
+      id: report_activity.id,
+      rules: []
     }
 
     result =
@@ -167,5 +170,23 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
 
     assert report2.id == rendered |> Enum.at(0) |> Map.get(:id)
     assert report1.id == rendered |> Enum.at(1) |> Map.get(:id)
+  end
+
+  test "renders included rules" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    %{id: rule_id, text: text} = Rule.create(%{text: "Example rule"})
+
+    rule_id = to_string(rule_id)
+
+    {:ok, activity} =
+      CommonAPI.report(user, %{
+        account_id: other_user.id,
+        rule_ids: [rule_id]
+      })
+
+    assert %{rules: [%{id: ^rule_id, text: ^text}]} =
+             ReportView.render("show.json", Report.extract_report_info(activity))
   end
 end

@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
   alias Pleroma.Config
   alias Pleroma.Stats
   alias Pleroma.User
-  alias Pleroma.Web.Federator.Publisher
+  alias Pleroma.Web.ActivityPub.Publisher
   alias Pleroma.Web.MastodonAPI.InstanceView
 
   # returns a nodeinfo 2.0 map, since 2.1 just adds a repository field
@@ -49,6 +49,10 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
           enabled: false
         },
         staffAccounts: staff_accounts,
+        roles: %{
+          admin: Config.get([:instance, :admin_privileges]),
+          moderator: Config.get([:instance, :moderator_privileges])
+        },
         federation: federation,
         pollLimits: Config.get([:instance, :poll_limits]),
         postFormats: Config.get([:instance, :allowed_post_formats]),
@@ -69,8 +73,7 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
         mailerEnabled: Config.get([Pleroma.Emails.Mailer, :enabled], false),
         features: features,
         restrictedNicknames: Config.get([Pleroma.User, :restricted_nicknames]),
-        skipThreadContainment: Config.get([:instance, :skip_thread_containment], false),
-        privilegedStaff: Config.get([:instance, :privileged_staff])
+        skipThreadContainment: Config.get([:instance, :skip_thread_containment], false)
       }
     }
   end

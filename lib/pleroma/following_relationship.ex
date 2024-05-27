@@ -194,12 +194,13 @@ defmodule Pleroma.FollowingRelationship do
     |> join(:inner, [r], f in assoc(r, :follower))
     |> where(following_id: ^origin.id)
     |> where([r, f], f.allow_following_move == true)
+    |> where([r, f], f.local == true)
     |> limit(50)
     |> preload([:follower])
     |> Repo.all()
     |> Enum.map(fn following_relationship ->
-      Repo.delete(following_relationship)
       Pleroma.Web.CommonAPI.follow(following_relationship.follower, target)
+      Pleroma.Web.CommonAPI.unfollow(following_relationship.follower, origin)
     end)
     |> case do
       [] ->
@@ -240,13 +241,13 @@ defmodule Pleroma.FollowingRelationship do
   end
 
   @doc """
-  For a query with joined activity,
-  keeps rows where activity's actor is followed by user -or- is NOT domain-blocked by user.
+  For a query with joined activity's actor,
+  keeps rows where actor is followed by user -or- is NOT domain-blocked by user.
   """
   def keep_following_or_not_domain_blocked(query, user) do
     where(
       query,
-      [_, activity],
+      [_, user_actor: user_actor],
       fragment(
         # "(actor's domain NOT in domain_blocks) OR (actor IS in followed AP IDs)"
         """
@@ -254,9 +255,9 @@ defmodule Pleroma.FollowingRelationship do
           ? = ANY(SELECT ap_id FROM users AS u INNER JOIN following_relationships AS fr
             ON u.id = fr.following_id WHERE fr.follower_id = ? AND fr.state = ?)
         """,
-        activity.actor,
+        user_actor.ap_id,
         ^user.domain_blocks,
-        activity.actor,
+        user_actor.ap_id,
         ^User.binary_id(user.id),
         ^accept_state_code()
       )

@@ -1,0 +1,1 @@
+Mastodon API /api/v1/directory: Fix listing directory contents when not authenticated

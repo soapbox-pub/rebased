@@ -9,119 +9,128 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   alias Pleroma.User
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.Streamer
+  alias Pleroma.Web.StreamerView
 
-  @behaviour :cowboy_websocket
+  @behaviour Phoenix.Socket.Transport
 
   # Client ping period.
   @tick :timer.seconds(30)
-  # Cowboy timeout period.
-  @timeout :timer.seconds(60)
-  # Hibernate every X messages
-  @hibernate_every 100
 
-  def init(%{qs: qs} = req, state) do
-    with params <- Enum.into(:cow_qs.parse_qs(qs), %{}),
-         sec_websocket <- :cowboy_req.header("sec-websocket-protocol", req, nil),
-         access_token <- Map.get(params, "access_token"),
-         {:ok, user, oauth_token} <- authenticate_request(access_token, sec_websocket),
-         {:ok, topic} <- Streamer.get_topic(params["stream"], user, oauth_token, params) do
-      req =
-        if sec_websocket do
-          :cowboy_req.set_resp_header("sec-websocket-protocol", sec_websocket, req)
+  @impl Phoenix.Socket.Transport
+  def child_spec(_opts), do: :ignore
+
+  # This only prepares the connection and is not in the process yet
+  @impl Phoenix.Socket.Transport
+  def connect(%{params: params} = transport_info) do
+    with access_token <- Map.get(params, "access_token"),
+         {:ok, user, oauth_token} <- authenticate_request(access_token),
+         {:ok, topic} <-
+           Streamer.get_topic(params["stream"], user, oauth_token, params) do
+      topics =
+        if topic do
+          [topic]
         else
-          req
+          []
         end
 
-      {:cowboy_websocket, req, %{user: user, topic: topic, count: 0, timer: nil},
-       %{idle_timeout: @timeout}}
+      state = %{
+        user: user,
+        topics: topics,
+        oauth_token: oauth_token,
+        count: 0,
+        timer: nil
+      }
+
+      {:ok, state}
     else
       {:error, :bad_topic} ->
-        Logger.debug("#{__MODULE__} bad topic #{inspect(req)}")
-        req = :cowboy_req.reply(404, req)
-        {:ok, req, state}
+        Logger.debug("#{__MODULE__} bad topic #{inspect(transport_info)}")
+
+        {:error, :bad_topic}
 
       {:error, :unauthorized} ->
-        Logger.debug("#{__MODULE__} authentication error: #{inspect(req)}")
-        req = :cowboy_req.reply(401, req)
-        {:ok, req, state}
+        Logger.debug("#{__MODULE__} authentication error: #{inspect(transport_info)}")
+        {:error, :unauthorized}
     end
   end
 
-  def websocket_init(state) do
-    Logger.debug(
-      "#{__MODULE__} accepted websocket connection for user #{(state.user || %{id: "anonymous"}).id}, topic #{state.topic}"
-    )
+  # All subscriptions/links and messages cannot be created
+  # until the processed is launched with init/1
+  @impl Phoenix.Socket.Transport
+  def init(state) do
+    Enum.each(state.topics, fn topic -> Streamer.add_socket(topic, state.oauth_token) end)
 
-    Streamer.add_socket(state.topic, state.user)
-    {:ok, %{state | timer: timer()}}
+    Process.send_after(self(), :ping, @tick)
+
+    {:ok, state}
   end
 
-  # Client's Pong frame.
-  def websocket_handle(:pong, state) do
-    if state.timer, do: Process.cancel_timer(state.timer)
-    {:ok, %{state | timer: timer()}}
+  @impl Phoenix.Socket.Transport
+  def handle_in({text, [opcode: :text]}, state) do
+    with {:ok, %{} = event} <- Jason.decode(text) do
+      handle_client_event(event, state)
+    else
+      _ ->
+        Logger.error("#{__MODULE__} received non-JSON event: #{inspect(text)}")
+        {:ok, state}
+    end
   end
 
-  # We only receive pings for now
-  def websocket_handle(:ping, state), do: {:ok, state}
-
-  def websocket_handle(frame, state) do
+  def handle_in(frame, state) do
     Logger.error("#{__MODULE__} received frame: #{inspect(frame)}")
     {:ok, state}
   end
 
-  def websocket_info({:render_with_user, view, template, item}, state) do
+  @impl Phoenix.Socket.Transport
+  def handle_info({:render_with_user, view, template, item, topic}, state) do
     user = %User{} = User.get_cached_by_ap_id(state.user.ap_id)
 
     unless Streamer.filtered_by_user?(user, item) do
-      websocket_info({:text, view.render(template, item, user)}, %{state | user: user})
+      message = view.render(template, item, user, topic)
+      {:push, {:text, message}, %{state | user: user}}
     else
       {:ok, state}
     end
   end
 
-  def websocket_info({:text, message}, state) do
-    # If the websocket processed X messages, force an hibernate/GC.
-    # We don't hibernate at every message to balance CPU usage/latency with RAM usage.
-    if state.count > @hibernate_every do
-      {:reply, {:text, message}, %{state | count: 0}, :hibernate}
-    else
-      {:reply, {:text, message}, %{state | count: state.count + 1}}
-    end
+  def handle_info({:text, text}, state) do
+    {:push, {:text, text}, state}
   end
 
-  # Ping tick. We don't re-queue a timer there, it is instead queued when :pong is received.
-  # As we hibernate there, reset the count to 0.
-  # If the client misses :pong, Cowboy will automatically timeout the connection after
-  # `@idle_timeout`.
-  def websocket_info(:tick, state) do
-    {:reply, :ping, %{state | timer: nil, count: 0}, :hibernate}
+  def handle_info(:ping, state) do
+    Process.send_after(self(), :ping, @tick)
+
+    {:push, {:ping, ""}, state}
   end
 
-  # State can be `[]` only in case we terminate before switching to websocket,
-  # we already log errors for these cases in `init/1`, so just do nothing here
-  def terminate(_reason, _req, []), do: :ok
+  def handle_info(:close, state) do
+    {:stop, {:closed, 'connection closed by server'}, state}
+  end
 
-  def terminate(reason, _req, state) do
+  def handle_info(msg, state) do
+    Logger.debug("#{__MODULE__} received info: #{inspect(msg)}")
+
+    {:ok, state}
+  end
+
+  @impl Phoenix.Socket.Transport
+  def terminate(reason, state) do
     Logger.debug(
-      "#{__MODULE__} terminating websocket connection for user #{(state.user || %{id: "anonymous"}).id}, topic #{state.topic || "?"}: #{inspect(reason)}"
+      "#{__MODULE__} terminating websocket connection for user #{(state.user || %{id: "anonymous"}).id}, topics #{state.topics || "?"}: #{inspect(reason)})"
     )
 
-    Streamer.remove_socket(state.topic)
+    Enum.each(state.topics, fn topic -> Streamer.remove_socket(topic) end)
     :ok
   end
 
   # Public streams without authentication.
-  defp authenticate_request(nil, nil) do
+  defp authenticate_request(nil) do
     {:ok, nil, nil}
   end
 
   # Authenticated streams.
-  defp authenticate_request(access_token, sec_websocket) do
-    token = access_token || sec_websocket
-
-    with true <- is_bitstring(token),
-         oauth_token = %Token{user_id: user_id} <- Repo.get_by(Token, token: token),
+  defp authenticate_request(access_token) do
+    with oauth_token = %Token{user_id: user_id} <- Repo.get_by(Token, token: access_token),
          user = %User{} <- User.get_cached_by_id(user_id) do
       {:ok, user, oauth_token}
     else
@@ -129,7 +138,110 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     end
   end
 
-  defp timer do
-    Process.send_after(self(), :tick, @tick)
+  defp handle_client_event(%{"type" => "subscribe", "stream" => _topic} = params, state) do
+    with {_, {:ok, topic}} <-
+           {:topic, Streamer.get_topic(params["stream"], state.user, state.oauth_token, params)},
+         {_, false} <- {:subscribed, topic in state.topics} do
+      Streamer.add_socket(topic, state.oauth_token)
+
+      message =
+        StreamerView.render("pleroma_respond.json", %{type: "subscribe", result: "success"})
+
+      {:reply, :ok, {:text, message}, %{state | topics: [topic | state.topics]}}
+    else
+      {:subscribed, true} ->
+        message =
+          StreamerView.render("pleroma_respond.json", %{type: "subscribe", result: "ignored"})
+
+        {:reply, :error, {:text, message}, state}
+
+      {:topic, {:error, error}} ->
+        message =
+          StreamerView.render("pleroma_respond.json", %{
+            type: "subscribe",
+            result: "error",
+            error: error
+          })
+
+        {:reply, :error, {:text, message}, state}
+    end
+  end
+
+  defp handle_client_event(%{"type" => "unsubscribe", "stream" => _topic} = params, state) do
+    with {_, {:ok, topic}} <-
+           {:topic, Streamer.get_topic(params["stream"], state.user, state.oauth_token, params)},
+         {_, true} <- {:subscribed, topic in state.topics} do
+      Streamer.remove_socket(topic)
+
+      message =
+        StreamerView.render("pleroma_respond.json", %{type: "unsubscribe", result: "success"})
+
+      {:reply, :ok, {:text, message}, %{state | topics: List.delete(state.topics, topic)}}
+    else
+      {:subscribed, false} ->
+        message =
+          StreamerView.render("pleroma_respond.json", %{type: "unsubscribe", result: "ignored"})
+
+        {:reply, :error, {:text, message}, state}
+
+      {:topic, {:error, error}} ->
+        message =
+          StreamerView.render("pleroma_respond.json", %{
+            type: "unsubscribe",
+            result: "error",
+            error: error
+          })
+
+        {:reply, :error, {:text, message}, state}
+    end
+  end
+
+  defp handle_client_event(
+         %{"type" => "pleroma:authenticate", "token" => access_token} = _params,
+         state
+       ) do
+    with {:auth, nil, nil} <- {:auth, state.user, state.oauth_token},
+         {:ok, user, oauth_token} <- authenticate_request(access_token) do
+      message =
+        StreamerView.render("pleroma_respond.json", %{
+          type: "pleroma:authenticate",
+          result: "success"
+        })
+
+      {:reply, :ok, {:text, message}, %{state | user: user, oauth_token: oauth_token}}
+    else
+      {:auth, _, _} ->
+        message =
+          StreamerView.render("pleroma_respond.json", %{
+            type: "pleroma:authenticate",
+            result: "error",
+            error: :already_authenticated
+          })
+
+        {:reply, :error, {:text, message}, state}
+
+      _ ->
+        message =
+          StreamerView.render("pleroma_respond.json", %{
+            type: "pleroma:authenticate",
+            result: "error",
+            error: :unauthorized
+          })
+
+        {:reply, :error, {:text, message}, state}
+    end
+  end
+
+  defp handle_client_event(params, state) do
+    Logger.error("#{__MODULE__} received unknown event: #{inspect(params)}")
+    {:ok, state}
+  end
+
+  def handle_error(conn, :unauthorized) do
+    Plug.Conn.send_resp(conn, 401, "Unauthorized")
+  end
+
+  def handle_error(conn, _reason) do
+    Plug.Conn.send_resp(conn, 404, "Not Found")
   end
 end

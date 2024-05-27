@@ -522,6 +522,27 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :delete_context_objects,
+    type: :group,
+    description: "`delete_context_objects` background migration settings",
+    children: [
+      %{
+        key: :fault_rate_allowance,
+        type: :float,
+        description:
+          "Max accepted rate of objects that failed in the migration. Any value from 0.0 which tolerates no errors to 1.0 which will enable the feature even if context object deletion failed for all records.",
+        suggestions: [0.01]
+      },
+      %{
+        key: :sleep_interval_ms,
+        type: :integer,
+        description:
+          "Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances)."
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: :instance,
     type: :group,
     description: "Instance-related settings",
@@ -560,6 +581,29 @@ config :pleroma, :config_description, [
         suggestions: [
           "Very cool instance"
         ]
+      },
+      %{
+        key: :short_description,
+        type: :string,
+        description:
+          "Shorter version of instance description. It can be seen on `/api/v1/instance`",
+        suggestions: [
+          "Cool instance"
+        ]
+      },
+      %{
+        key: :status_page,
+        type: :string,
+        description: "A page where people can see the status of the server during an outage",
+        suggestions: [
+          "https://status.pleroma.example.org"
+        ]
+      },
+      %{
+        key: :contact_username,
+        type: :string,
+        description: "Instance owner username",
+        suggestions: ["admin"]
       },
       %{
         key: :limit,
@@ -811,6 +855,13 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :report_strip_status,
+        label: "Report strip status",
+        type: :boolean,
+        description:
+          "Strip associated statuses in reports to ids when closed/resolved, otherwise keep a copy"
+      },
+      %{
         key: :safe_dm_mentions,
         label: "Safe DM mentions",
         type: :boolean,
@@ -976,6 +1027,12 @@ config :pleroma, :config_description, [
         suggestions: ["/instance/thumbnail.jpeg"]
       },
       %{
+        key: :favicon,
+        type: {:string, :image},
+        description: "Favicon of the instance",
+        suggestions: ["/favicon.png"]
+      },
+      %{
         key: :show_reactions,
         type: :boolean,
         description: "Let favourites and emoji reactions be viewed through the API."
@@ -986,10 +1043,48 @@ config :pleroma, :config_description, [
         description: "Enable profile directory."
       },
       %{
-        key: :privileged_staff,
-        type: :boolean,
+        key: :admin_privileges,
+        type: {:list, :atom},
+        suggestions: [
+          :users_read,
+          :users_manage_invites,
+          :users_manage_activation_state,
+          :users_manage_tags,
+          :users_manage_credentials,
+          :users_delete,
+          :messages_read,
+          :messages_delete,
+          :instances_delete,
+          :reports_manage_reports,
+          :moderation_log_read,
+          :announcements_manage_announcements,
+          :emoji_manage_emoji,
+          :statistics_read
+        ],
         description:
-          "Let moderators access sensitive data (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
+          "What extra privileges to allow admins (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
+      },
+      %{
+        key: :moderator_privileges,
+        type: {:list, :atom},
+        suggestions: [
+          :users_read,
+          :users_manage_invites,
+          :users_manage_activation_state,
+          :users_manage_tags,
+          :users_manage_credentials,
+          :users_delete,
+          :messages_read,
+          :messages_delete,
+          :instances_delete,
+          :reports_manage_reports,
+          :moderation_log_read,
+          :announcements_manage_announcements,
+          :emoji_manage_emoji,
+          :statistics_read
+        ],
+        description:
+          "What extra privileges to allow moderators (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
       },
       %{
         key: :birthday_required,
@@ -1000,7 +1095,17 @@ config :pleroma, :config_description, [
         key: :birthday_min_age,
         type: :integer,
         description:
-          "Minimum required age for users to create account. Only used if birthday is required."
+          "Minimum required age (in days) for users to create account. Only used if birthday is required.",
+        suggestions: [6570]
+      },
+      %{
+        key: :languages,
+        type: {:list, :string},
+        description:
+          "Languages to be exposed in /api/v1/instance. Should be in the format of BCP47 language codes.",
+        suggestions: [
+          "en"
+        ]
       }
     ]
   },
@@ -1121,7 +1226,7 @@ config :pleroma, :config_description, [
         type: [:atom, :tuple, :module],
         description:
           "Where logs will be sent, :console - send logs to stdout, { ExSyslogger, :ex_syslogger } - to syslog, Quack.Logger - to Slack.",
-        suggestions: [:console, {ExSyslogger, :ex_syslogger}, Quack.Logger]
+        suggestions: [:console, {ExSyslogger, :ex_syslogger}]
       }
     ]
   },
@@ -1136,7 +1241,7 @@ config :pleroma, :config_description, [
         key: :level,
         type: {:dropdown, :atom},
         description: "Log level",
-        suggestions: [:debug, :info, :warn, :error]
+        suggestions: [:debug, :info, :warning, :error]
       },
       %{
         key: :ident,
@@ -1169,7 +1274,7 @@ config :pleroma, :config_description, [
         key: :level,
         type: {:dropdown, :atom},
         description: "Log level",
-        suggestions: [:debug, :info, :warn, :error]
+        suggestions: [:debug, :info, :warning, :error]
       },
       %{
         key: :format,
@@ -1181,45 +1286,6 @@ config :pleroma, :config_description, [
         key: :metadata,
         type: {:list, :atom},
         suggestions: [:request_id]
-      }
-    ]
-  },
-  %{
-    group: :quack,
-    type: :group,
-    label: "Quack Logger",
-    description: "Quack-related settings",
-    children: [
-      %{
-        key: :level,
-        type: {:dropdown, :atom},
-        description: "Log level",
-        suggestions: [:debug, :info, :warn, :error]
-      },
-      %{
-        key: :meta,
-        type: {:list, :atom},
-        description: "Configure which metadata you want to report on",
-        suggestions: [
-          :application,
-          :module,
-          :file,
-          :function,
-          :line,
-          :pid,
-          :crash_reason,
-          :initial_call,
-          :registered_name,
-          :all,
-          :none
-        ]
-      },
-      %{
-        key: :webhook_url,
-        label: "Webhook URL",
-        type: :string,
-        description: "Configure the Slack incoming webhook",
-        suggestions: ["https://hooks.slack.com/services/YOUR-KEY-HERE"]
       }
     ]
   },
@@ -1417,7 +1483,7 @@ config :pleroma, :config_description, [
             label: "Subject line behavior",
             type: :string,
             description: "Allows changing the default behaviour of subject lines in replies.
-          `email`: copy and preprend re:, as in email,
+          `email`: copy and prepend re:, as in email,
           `masto`: copy verbatim, as in Mastodon,
           `noop`: don't copy the subject.",
             suggestions: ["email", "masto", "noop"]
@@ -1746,6 +1812,11 @@ config :pleroma, :config_description, [
         description: "Sign object fetches with HTTP signatures"
       },
       %{
+        key: :authorized_fetch_mode,
+        type: :boolean,
+        description: "Require HTTP signatures for AP fetches"
+      },
+      %{
         key: :note_replies_output_limit,
         type: :integer,
         description:
@@ -1905,7 +1976,7 @@ config :pleroma, :config_description, [
         key: :log,
         type: {:dropdown, :atom},
         description: "Logs verbose mode",
-        suggestions: [false, :error, :warn, :info, :debug]
+        suggestions: [false, :error, :warning, :info, :debug]
       },
       %{
         key: :queues,
@@ -2603,45 +2674,6 @@ config :pleroma, :config_description, [
     ]
   },
   %{
-    group: :esshd,
-    label: "ESSHD",
-    type: :group,
-    description:
-      "Before enabling this you must add :esshd to mix.exs as one of the extra_applications " <>
-        "and generate host keys in your priv dir with ssh-keygen -m PEM -N \"\" -b 2048 -t rsa -f ssh_host_rsa_key",
-    children: [
-      %{
-        key: :enabled,
-        type: :boolean,
-        description: "Enables SSH"
-      },
-      %{
-        key: :priv_dir,
-        type: :string,
-        description: "Dir with SSH keys",
-        suggestions: ["/some/path/ssh_keys"]
-      },
-      %{
-        key: :handler,
-        type: :string,
-        description: "Handler module",
-        suggestions: ["Pleroma.BBS.Handler"]
-      },
-      %{
-        key: :port,
-        type: :integer,
-        description: "Port to connect",
-        suggestions: [10_022]
-      },
-      %{
-        key: :password_authenticator,
-        type: :string,
-        description: "Authenticator module",
-        suggestions: ["Pleroma.BBS.Authenticator"]
-      }
-    ]
-  },
-  %{
     group: :mime,
     label: "Mime Types",
     type: :group,
@@ -3103,7 +3135,7 @@ config :pleroma, :config_description, [
               key: :max_waiting,
               type: :integer,
               description:
-                "Maximum number of requests waiting for other requests to finish. After this number is reached, the pool will start returning errrors when a new request is made",
+                "Maximum number of requests waiting for other requests to finish. After this number is reached, the pool will start returning errors when a new request is made",
               suggestions: [10]
             },
             %{
@@ -3369,7 +3401,7 @@ config :pleroma, :config_description, [
       %{
         key: :purge_after_days,
         type: :integer,
-        description: "Remove backup achives after N days",
+        description: "Remove backup archives after N days",
         suggestions: [30]
       },
       %{
@@ -3377,6 +3409,21 @@ config :pleroma, :config_description, [
         type: :integer,
         description: "Limit user to export not more often than once per N days",
         suggestions: [7]
+      },
+      %{
+        key: :process_wait_time,
+        type: :integer,
+        label: "Process Wait Time",
+        description:
+          "The amount of time to wait for backup to report progress, in milliseconds. If no progress is received from the backup job for that much time, terminate it and deem it failed.",
+        suggestions: [30_000]
+      },
+      %{
+        key: :process_chunk_size,
+        type: :integer,
+        label: "Process Chunk Size",
+        description: "The number of activities to fetch in the backup job for each chunk.",
+        suggestions: [100]
       }
     ]
   },
@@ -3462,6 +3509,49 @@ config :pleroma, :config_description, [
             suggestion: [5]
           }
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Search,
+    type: :group,
+    description: "General search settings.",
+    children: [
+      %{
+        key: :module,
+        type: :keyword,
+        description: "Selected search module.",
+        suggestion: [Pleroma.Search.DatabaseSearch, Pleroma.Search.Meilisearch]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Search.Meilisearch,
+    type: :group,
+    description: "Meilisearch settings.",
+    children: [
+      %{
+        key: :url,
+        type: :string,
+        description: "Meilisearch URL.",
+        suggestion: ["http://127.0.0.1:7700/"]
+      },
+      %{
+        key: :private_key,
+        type: :string,
+        description:
+          "Private key for meilisearch authentication, or `nil` to disable private key authentication.",
+        suggestion: [nil]
+      },
+      %{
+        key: :initial_indexing_chunk_size,
+        type: :integer,
+        description:
+          "Amount of posts in a batch when running the initial indexing operation. Should probably not be more than 100000" <>
+            " since there's a limit on maximum insert size",
+        suggestion: [100_000]
       }
     ]
   }

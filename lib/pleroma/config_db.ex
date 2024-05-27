@@ -54,7 +54,7 @@ defmodule Pleroma.ConfigDB do
   @spec get_by_params(map()) :: ConfigDB.t() | nil
   def get_by_params(%{group: _, key: _} = params), do: Repo.get_by(ConfigDB, params)
 
-  @spec changeset(ConfigDB.t(), map()) :: Changeset.t()
+  @spec changeset(ConfigDB.t(), map()) :: Ecto.Changeset.t()
   def changeset(config, params \\ %{}) do
     config
     |> cast(params, [:key, :group, :value])
@@ -138,7 +138,7 @@ defmodule Pleroma.ConfigDB do
     end
   end
 
-  @spec update_or_create(map()) :: {:ok, ConfigDB.t()} | {:error, Changeset.t()}
+  @spec update_or_create(map()) :: {:ok, ConfigDB.t()} | {:error, Ecto.Changeset.t()}
   def update_or_create(params) do
     params = Map.put(params, :value, to_elixir_types(params[:value]))
     search_opts = Map.take(params, [:group, :key])
@@ -163,7 +163,6 @@ defmodule Pleroma.ConfigDB do
   defp only_full_update?(%ConfigDB{group: group, key: key}) do
     full_key_update = [
       {:pleroma, :ecto_repos},
-      {:quack, :meta},
       {:mime, :types},
       {:cors_plug, [:max_age, :methods, :expose, :headers]},
       {:swarm, :node_blacklist},
@@ -176,7 +175,7 @@ defmodule Pleroma.ConfigDB do
     end)
   end
 
-  @spec delete(ConfigDB.t() | map()) :: {:ok, ConfigDB.t()} | {:error, Changeset.t()}
+  @spec delete(ConfigDB.t() | map()) :: {:ok, ConfigDB.t()} | {:error, Ecto.Changeset.t()}
   def delete(%ConfigDB{} = config), do: Repo.delete(config)
 
   def delete(params) do
@@ -386,7 +385,7 @@ defmodule Pleroma.ConfigDB do
 
   @spec module_name?(String.t()) :: boolean()
   def module_name?(string) do
-    Regex.match?(~r/^(Pleroma|Phoenix|Tesla|Quack|Ueberauth|Swoosh)\./, string) or
+    Regex.match?(~r/^(Pleroma|Phoenix|Tesla|Ueberauth|Swoosh)\./, string) or
       string in ["Oban", "Ueberauth", "ExSyslogger", "ConcurrentLimiter"]
   end
 end

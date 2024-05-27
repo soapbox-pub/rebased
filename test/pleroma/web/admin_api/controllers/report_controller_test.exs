@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
-  use Pleroma.Web.ConnCase, async: true
+  use Pleroma.Web.ConnCase, async: false
 
   import Pleroma.Factory
 
@@ -11,6 +11,7 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
   alias Pleroma.ReportNote
+  alias Pleroma.Rule
   alias Pleroma.Web.CommonAPI
 
   setup do
@@ -26,6 +27,20 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
   end
 
   describe "GET /api/pleroma/admin/reports/:id" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:reports_manage_reports])
+    end
+
+    test "returns 403 if not privileged with :reports_manage_reports", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn =
+        conn
+        |> get("/api/pleroma/admin/reports/report_id")
+
+      assert json_response(conn, :forbidden)
+    end
+
     test "returns report by its id", %{conn: conn} do
       [reporter, target_user] = insert_pair(:user)
       activity = insert(:note_activity, user: target_user)
@@ -54,6 +69,32 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
       assert notes["content"] == "this is an admin note"
     end
 
+    test "renders reported content even if the status is deleted", %{conn: conn} do
+      [reporter, target_user] = insert_pair(:user)
+      activity = insert(:note_activity, user: target_user)
+      activity = Activity.normalize(activity)
+
+      {:ok, %{id: report_id}} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id,
+          comment: "I feel offended",
+          status_ids: [activity.id]
+        })
+
+      CommonAPI.delete(activity.id, target_user)
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/reports/#{report_id}")
+        |> json_response_and_validate_schema(:ok)
+
+      assert response["id"] == report_id
+
+      assert [status] = response["statuses"]
+      assert activity.object.data["id"] == status["uri"]
+      assert activity.object.data["content"] == status["content"]
+    end
+
     test "returns 404 when report id is invalid", %{conn: conn} do
       conn = get(conn, "/api/pleroma/admin/reports/test")
 
@@ -63,6 +104,8 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
 
   describe "PATCH /api/pleroma/admin/reports" do
     setup do
+      clear_config([:instance, :admin_privileges], [:reports_manage_reports])
+
       [reporter, target_user] = insert_pair(:user)
       activity = insert(:note_activity, user: target_user)
 
@@ -81,9 +124,28 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
         })
 
       %{
+        reporter: reporter,
         id: report_id,
         second_report_id: second_report_id
       }
+    end
+
+    test "returns 403 if not privileged with :reports_manage_reports", %{
+      conn: conn,
+      id: id,
+      admin: admin
+    } do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn =
+        conn
+        |> assign(:token, insert(:oauth_token, user: admin, scopes: ["admin:write:reports"]))
+        |> put_req_header("content-type", "application/json")
+        |> patch("/api/pleroma/admin/reports", %{
+          "reports" => [%{"state" => "resolved", "id" => id}]
+        })
+
+      assert json_response(conn, :forbidden)
     end
 
     test "requires admin:write:reports scope", %{conn: conn, id: id, admin: admin} do
@@ -206,9 +268,43 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
       assert ModerationLog.get_log_entry_message(second_log_entry) ==
                "@#{admin.nickname} updated report ##{second_report_id} (on user @#{second_activity.user_actor.nickname}) with 'closed' state"
     end
+
+    test "works if reporter is deactivated", %{
+      conn: conn,
+      id: id,
+      reporter: reporter
+    } do
+      Pleroma.User.set_activation(reporter, false)
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> patch("/api/pleroma/admin/reports", %{
+        "reports" => [
+          %{"state" => "resolved", "id" => id}
+        ]
+      })
+      |> json_response_and_validate_schema(:no_content)
+
+      activity = Activity.get_by_id_with_user_actor(id)
+      assert activity.data["state"] == "resolved"
+    end
   end
 
   describe "GET /api/pleroma/admin/reports" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:reports_manage_reports])
+    end
+
+    test "returns 403 if not privileged with :reports_manage_reports", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn =
+        conn
+        |> get(report_path(conn, :index))
+
+      assert json_response(conn, :forbidden)
+    end
+
     test "returns empty response when no reports created", %{conn: conn} do
       response =
         conn
@@ -292,6 +388,34 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
                |> json_response_and_validate_schema(:ok)
     end
 
+    test "renders content correctly", %{conn: conn} do
+      [reporter, target_user] = insert_pair(:user)
+      note = insert(:note, user: target_user, data: %{"content" => "mew 1"})
+      note2 = insert(:note, user: target_user, data: %{"content" => "mew 2"})
+      activity = insert(:note_activity, user: target_user, note: note)
+      activity2 = insert(:note_activity, user: target_user, note: note2)
+
+      {:ok, _report} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id,
+          comment: "I feel offended",
+          status_ids: [activity.id, activity2.id]
+        })
+
+      CommonAPI.delete(activity.id, target_user)
+      CommonAPI.delete(activity2.id, target_user)
+
+      response =
+        conn
+        |> get(report_path(conn, :index))
+        |> json_response_and_validate_schema(:ok)
+
+      assert [open_report] = response["reports"]
+      assert %{"statuses" => [s1, s2]} = open_report
+      assert "mew 1" in [s1["content"], s2["content"]]
+      assert "mew 2" in [s1["content"], s2["content"]]
+    end
+
     test "returns 403 when requested by a non-admin" do
       user = insert(:user)
       token = insert(:oauth_token, user: user)
@@ -313,10 +437,40 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
                "error" => "Invalid credentials."
              }
     end
+
+    test "returns reports with specified role_id", %{conn: conn} do
+      [reporter, target_user] = insert_pair(:user)
+
+      %{id: rule_id} = Rule.create(%{text: "Example rule"})
+
+      rule_id = to_string(rule_id)
+
+      {:ok, %{id: report_id}} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id,
+          comment: "",
+          rule_ids: [rule_id]
+        })
+
+      {:ok, _report} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id,
+          comment: ""
+        })
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/reports?rule_id=#{rule_id}")
+        |> json_response_and_validate_schema(:ok)
+
+      assert %{"reports" => [%{"id" => ^report_id}]} = response
+    end
   end
 
   describe "POST /api/pleroma/admin/reports/:id/notes" do
     setup %{conn: conn, admin: admin} do
+      clear_config([:instance, :admin_privileges], [:reports_manage_reports])
+
       [reporter, target_user] = insert_pair(:user)
       activity = insert(:note_activity, user: target_user)
 
@@ -343,6 +497,25 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
         admin_id: admin.id,
         report_id: report_id
       }
+    end
+
+    test "returns 403 if not privileged with :reports_manage_reports", %{
+      conn: conn,
+      report_id: report_id
+    } do
+      clear_config([:instance, :admin_privileges], [])
+
+      post_conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/reports/#{report_id}/notes", %{
+          content: "this is disgusting2!"
+        })
+
+      delete_conn = delete(conn, "/api/pleroma/admin/reports/#{report_id}/notes/note.id")
+
+      assert json_response(post_conn, :forbidden)
+      assert json_response(delete_conn, :forbidden)
     end
 
     test "it creates report note", %{admin_id: admin_id, report_id: report_id} do

@@ -17,7 +17,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.AnnouncementOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Announcement managment"],
+      tags: ["Announcement management"],
       summary: "Retrieve a list of announcements",
       operationId: "AdminAPI.AnnouncementController.index",
       security: [%{"oAuth" => ["admin:read"]}],
@@ -46,7 +46,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.AnnouncementOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Announcement managment"],
+      tags: ["Announcement management"],
       summary: "Display one announcement",
       operationId: "AdminAPI.AnnouncementController.show",
       security: [%{"oAuth" => ["admin:read"]}],
@@ -69,7 +69,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.AnnouncementOperation do
 
   def delete_operation do
     %Operation{
-      tags: ["Announcement managment"],
+      tags: ["Announcement management"],
       summary: "Delete one announcement",
       operationId: "AdminAPI.AnnouncementController.delete",
       security: [%{"oAuth" => ["admin:write"]}],
@@ -92,7 +92,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.AnnouncementOperation do
 
   def create_operation do
     %Operation{
-      tags: ["Announcement managment"],
+      tags: ["Announcement management"],
       summary: "Create one announcement",
       operationId: "AdminAPI.AnnouncementController.create",
       security: [%{"oAuth" => ["admin:write"]}],
@@ -107,7 +107,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.AnnouncementOperation do
 
   def change_operation do
     %Operation{
-      tags: ["Announcement managment"],
+      tags: ["Announcement management"],
       summary: "Change one announcement",
       operationId: "AdminAPI.AnnouncementController.change",
       security: [%{"oAuth" => ["admin:write"]}],

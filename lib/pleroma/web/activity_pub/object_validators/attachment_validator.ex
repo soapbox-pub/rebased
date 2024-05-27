@@ -11,13 +11,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
 
   @primary_key false
   embedded_schema do
-    field(:type, :string)
+    field(:id, :string)
+    field(:type, :string, default: "Link")
     field(:mediaType, ObjectValidators.MIME, default: "application/octet-stream")
     field(:name, :string)
     field(:blurhash, :string)
 
     embeds_many :url, UrlObjectValidator, primary_key: false do
-      field(:type, :string)
+      field(:type, :string, default: "Link")
       field(:href, ObjectValidators.Uri)
       field(:mediaType, ObjectValidators.MIME, default: "application/octet-stream")
       field(:width, :integer)
@@ -43,10 +44,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
       |> fix_url()
 
     struct
-    |> cast(data, [:type, :mediaType, :name, :blurhash])
-    |> cast_embed(:url, with: &url_changeset/2)
+    |> cast(data, [:id, :type, :mediaType, :name, :blurhash])
+    |> cast_embed(:url, with: &url_changeset/2, required: true)
     |> validate_inclusion(:type, ~w[Link Document Audio Image Video])
-    |> validate_required([:type, :mediaType, :url])
+    |> validate_required([:type, :mediaType])
   end
 
   def url_changeset(struct, data) do
@@ -59,7 +60,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   end
 
   def fix_media_type(data) do
-    Map.put_new(data, "mediaType", data["mimeType"])
+    Map.put_new(data, "mediaType", data["mimeType"] || "application/octet-stream")
   end
 
   defp handle_href(href, mediaType, data) do
@@ -90,6 +91,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   defp validate_data(cng) do
     cng
     |> validate_inclusion(:type, ~w[Document Audio Image Video])
-    |> validate_required([:mediaType, :url, :type])
+    |> validate_required([:mediaType, :type])
   end
 end

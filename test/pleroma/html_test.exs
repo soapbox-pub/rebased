@@ -17,11 +17,16 @@ defmodule Pleroma.HTMLTest do
     this is a link with allowed "rel" attribute: <a href="http://example.com/" rel="tag">example.com</a>
     this is a link with not allowed "rel" attribute: <a href="http://example.com/" rel="tag noallowed">example.com</a>
     this is an image: <img src="http://example.com/image.jpg"><br />
+    this is an inline emoji: <img class="emoji" src="http://example.com/image.jpg"><br />
     <script>alert('hacked')</script>
   """
 
   @html_onerror_sample """
   <img src="http://example.com/image.jpg" onerror="alert('hacked')">
+  """
+
+  @html_stillimage_sample """
+  <img class="still-image" src="http://example.com/image.jpg">
   """
 
   @html_span_class_sample """
@@ -45,6 +50,7 @@ defmodule Pleroma.HTMLTest do
         this is a link with allowed &quot;rel&quot; attribute: example.com
         this is a link with not allowed &quot;rel&quot; attribute: example.com
         this is an image: 
+        this is an inline emoji: 
         alert(&#39;hacked&#39;)
       """
 
@@ -67,6 +73,7 @@ defmodule Pleroma.HTMLTest do
         this is a link with allowed &quot;rel&quot; attribute: <a href="http://example.com/" rel="tag">example.com</a>
         this is a link with not allowed &quot;rel&quot; attribute: <a href="http://example.com/">example.com</a>
         this is an image: <img src="http://example.com/image.jpg"/><br/>
+        this is an inline emoji: <img class="emoji" src="http://example.com/image.jpg"/><br/>
         alert(&#39;hacked&#39;)
       """
 
@@ -88,6 +95,15 @@ defmodule Pleroma.HTMLTest do
 
       assert expected ==
                HTML.filter_tags(@html_span_class_sample, Pleroma.HTML.Scrubber.TwitterText)
+    end
+
+    test "does not allow images with invalid classes" do
+      expected = """
+      <img src="http://example.com/image.jpg"/>
+      """
+
+      assert expected ==
+               HTML.filter_tags(@html_stillimage_sample, Pleroma.HTML.Scrubber.TwitterText)
     end
 
     test "does allow microformats" do
@@ -121,6 +137,7 @@ defmodule Pleroma.HTMLTest do
         this is a link with allowed &quot;rel&quot; attribute: <a href="http://example.com/" rel="tag">example.com</a>
         this is a link with not allowed &quot;rel&quot; attribute: <a href="http://example.com/">example.com</a>
         this is an image: <img src="http://example.com/image.jpg"/><br/>
+        this is an inline emoji: <img class="emoji" src="http://example.com/image.jpg"/><br/>
         alert(&#39;hacked&#39;)
       """
 
@@ -141,6 +158,15 @@ defmodule Pleroma.HTMLTest do
       """
 
       assert expected == HTML.filter_tags(@html_span_class_sample, Pleroma.HTML.Scrubber.Default)
+    end
+
+    test "does not allow images with invalid classes" do
+      expected = """
+      <img src="http://example.com/image.jpg"/>
+      """
+
+      assert expected ==
+               HTML.filter_tags(@html_stillimage_sample, Pleroma.HTML.Scrubber.TwitterText)
     end
 
     test "does allow microformats" do
@@ -176,7 +202,7 @@ defmodule Pleroma.HTMLTest do
         })
 
       object = Object.normalize(activity, fetch: false)
-      {:ok, url} = HTML.extract_first_external_url_from_object(object)
+      url = HTML.extract_first_external_url_from_object(object)
       assert url == "https://github.com/komeiji-satori/Dress"
     end
 
@@ -191,7 +217,7 @@ defmodule Pleroma.HTMLTest do
         })
 
       object = Object.normalize(activity, fetch: false)
-      {:ok, url} = HTML.extract_first_external_url_from_object(object)
+      url = HTML.extract_first_external_url_from_object(object)
 
       assert url == "https://github.com/syuilo/misskey/blob/develop/docs/setup.en.md"
 
@@ -207,7 +233,7 @@ defmodule Pleroma.HTMLTest do
         })
 
       object = Object.normalize(activity, fetch: false)
-      {:ok, url} = HTML.extract_first_external_url_from_object(object)
+      url = HTML.extract_first_external_url_from_object(object)
 
       assert url == "https://www.pixiv.net/member_illust.php?mode=medium&illust_id=72255140"
     end
@@ -223,7 +249,7 @@ defmodule Pleroma.HTMLTest do
         })
 
       object = Object.normalize(activity, fetch: false)
-      {:ok, url} = HTML.extract_first_external_url_from_object(object)
+      url = HTML.extract_first_external_url_from_object(object)
 
       assert url == "https://www.pixiv.net/member_illust.php?mode=medium&illust_id=72255140"
     end
@@ -235,7 +261,7 @@ defmodule Pleroma.HTMLTest do
 
       object = Object.normalize(activity, fetch: false)
 
-      assert {:ok, nil} = HTML.extract_first_external_url_from_object(object)
+      assert nil == HTML.extract_first_external_url_from_object(object)
     end
 
     test "skips attachment links" do
@@ -249,7 +275,7 @@ defmodule Pleroma.HTMLTest do
 
       object = Object.normalize(activity, fetch: false)
 
-      assert {:ok, nil} = HTML.extract_first_external_url_from_object(object)
+      assert nil == HTML.extract_first_external_url_from_object(object)
     end
   end
 end

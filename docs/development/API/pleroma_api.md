@@ -129,7 +129,7 @@ The `/api/v1/pleroma/*` path is backwards compatible with `/api/pleroma/*` (`/ap
 * method: `GET`
 * Authentication: required
 * OAuth scope: `write:security`
-* Response: JSON. Returns `{"codes": codes}`when successful, otherwise HTTP 422 `{"error": "[error message]"}`
+* Response: JSON. Returns `{"codes": codes}` when successful, otherwise HTTP 422 `{"error": "[error message]"}`
 
 ## `/api/v1/pleroma/admin/`
 See [Admin-API](admin_api.md)
@@ -251,6 +251,15 @@ See [Admin-API](admin_api.md)
 ]
 ```
 
+
+## `/api/v1/pleroma/accounts/:id/endorsements`
+### Returns users endorsed by a user
+* Method `GET`
+* Authentication: not required
+* Params:
+    * `id`: the id of the account for whom to return results
+* Response: JSON, returns a list of Mastodon Account entities
+
 ## `/api/v1/pleroma/accounts/update_*`
 ### Set and clear account avatar, banner, and background
 
@@ -265,6 +274,58 @@ See [Admin-API](admin_api.md)
     * `email`: email of that needs to be verified
 * Authentication: not required
 * Response: 204 No Content
+
+## `/api/v1/pleroma/statuses/:id/quotes`
+### Gets quotes for a given status
+* Method `GET`
+* Authentication: not required
+* Params:
+    * `id`: the id of the status
+* Response: JSON, returns a list of Mastodon Status entities
+
+## `GET /api/v1/pleroma/bookmark_folders`
+### Gets user bookmark folders
+* Authentication: required
+
+* Response: JSON. Returns a list of bookmark folders.
+* Example response:
+```json
+[
+    {
+        "id": "9umDrYheeY451cQnEe",
+        "name": "Read later",
+        "emoji": "🕓",
+        "emoji_url": null
+    }
+]
+```
+
+## `POST /api/v1/pleroma/bookmark_folders`
+### Creates a bookmark folder
+* Authentication: required
+
+* Params:
+    * `name`: folder name
+    * `emoji`: folder emoji (optional)
+* Response: JSON. Returns a single bookmark folder.
+
+## `PATCH /api/v1/pleroma/bookmark_folders/:id`
+### Updates a bookmark folder
+* Authentication: required
+
+* Params:
+    * `id`: folder id
+    * `name`: folder name (optional)
+    * `emoji`: folder emoji (optional)
+* Response: JSON. Returns a single bookmark folder.
+
+## `DELETE /api/v1/pleroma/bookmark_folders/:id`
+### Deletes a bookmark folder
+* Authentication: required
+
+* Params:
+    * `id`: folder id
+* Response: JSON. Returns a single bookmark folder.
 
 ## `/api/v1/pleroma/mascot`
 ### Gets user mascot image
@@ -342,6 +403,45 @@ See [Admin-API](admin_api.md)
 * Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
 * Note: Currently, Mastodon has no API for changing email. If they add it in future it might be incompatible with Pleroma.
 
+## `/api/pleroma/move_account`
+### Move account
+* Method `POST`
+* Authentication: required
+* Params:
+    * `password`: user's password
+    * `target_account`: the nickname of the target account (e.g. `foo@example.org`)
+* Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
+* Note: This endpoint emits a `Move` activity to all followers of the current account. Some remote servers will automatically unfollow the current account and follow the target account upon seeing this, but this depends on the remote server implementation and cannot be guaranteed. For local followers , they will automatically unfollow and follow if and only if they have set the `allow_following_move` preference ("Allow auto-follow when following account moves").
+
+## `/api/pleroma/aliases`
+### Get aliases of the current account
+* Method `GET`
+* Authentication: required
+* Response: JSON. Returns `{"aliases": [alias, ...]}`, where `alias` is the nickname of an alias, e.g. `foo@example.org`.
+
+### Add alias to the current account
+* Method `PUT`
+* Authentication: required
+* Params:
+    * `alias`: the nickname of the alias to add, e.g. `foo@example.org`.
+* Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
+
+### Delete alias from the current account
+* Method `DELETE`
+* Authentication: required
+* Params:
+    * `alias`: the nickname of the alias to delete, e.g. `foo@example.org`.
+* Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
+
+## `/api/v1/pleroma/remote_interaction`
+## Interact with profile or status from remote account
+* Metod `POST`
+* Authentication: not required
+* Params:
+    * `ap_id`: Profile or status ActivityPub ID
+    * `profile`: Remote profile webfinger
+* Response: JSON. Returns `{"url": "[redirect url]"}` on success, `{"error": "[error message]"}` otherwise
+
 # Pleroma Conversations
 
 Pleroma Conversations have the same general structure that Mastodon Conversations have. The behavior differs in the following ways when using these endpoints:
@@ -352,7 +452,7 @@ Pleroma Conversations have the same general structure that Mastodon Conversation
 
 Conversations have the additional field `recipients` under the `pleroma` key. This holds a list of all the accounts that will receive a message in this conversation.
 
-The status posting endpoint takes an additional parameter, `in_reply_to_conversation_id`, which, when set, will set the visiblity to direct and address only the people who are the recipients of that Conversation.
+The status posting endpoint takes an additional parameter, `in_reply_to_conversation_id`, which, when set, will set the visibility to direct and address only the people who are the recipients of that Conversation.
 
 ⚠ Conversation IDs can be found in direct messages with the `pleroma.direct_conversation_id` key, do not confuse it with `pleroma.conversation_id`.
 
@@ -547,6 +647,9 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
   404 if the pack does not exist
 
 ## `GET /api/v1/pleroma/accounts/:id/scrobbles`
+
+Audio scrobbling in Pleroma is **deprecated**.
+
 ### Requests a list of current and recent Listen activities for an account
 * Method `GET`
 * Authentication: not required
@@ -568,6 +671,9 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 ```
 
 ## `POST /api/v1/pleroma/scrobble`
+
+Audio scrobbling in Pleroma is **deprecated**.
+
 ### Creates a new Listen activity for an account
 * Method `POST`
 * Authentication: required
@@ -695,3 +801,42 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
 * Authentication: required
 * Params: none
 * Response: HTTP 200 on success, 500 on error
+
+## `/api/v1/pleroma/settings/:app`
+### Gets settings for some application
+* Method `GET`
+* Authentication: `read:accounts`
+
+* Response: JSON. The settings for that application, or empty object if there is none.
+* Example response:
+```json
+{
+  "some key": "some value"
+}
+```
+
+### Updates settings for some application
+* Method `PATCH`
+* Authentication: `write:accounts`
+* Request body: JSON object. The object will be merged recursively with old settings. If some field is set to null, it is removed.
+* Example request:
+```json
+{
+  "some key": "some value",
+  "key to remove": null,
+  "nested field": {
+    "some key": "some value",
+    "key to remove": null
+  }
+}
+```
+* Response: JSON. Updated (merged) settings for that application.
+* Example response:
+```json
+{
+  "some key": "some value",
+  "nested field": {
+    "some key": "some value",
+  }
+}
+```

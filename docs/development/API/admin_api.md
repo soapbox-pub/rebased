@@ -303,7 +303,7 @@ Removes the user(s) from follower recommendations.
 
 ## `GET /api/v1/pleroma/admin/users/:nickname_or_id`
 
-### Retrive the details of a user
+### Retrieve the details of a user
 
 - Params:
   - `nickname` or `id`
@@ -313,7 +313,7 @@ Removes the user(s) from follower recommendations.
 
 ## `GET /api/v1/pleroma/admin/users/:nickname_or_id/statuses`
 
-### Retrive user's latest statuses
+### Retrieve user's latest statuses
 
 - Params:
   - `nickname` or `id`
@@ -337,7 +337,7 @@ Removes the user(s) from follower recommendations.
 
 ## `GET /api/v1/pleroma/admin/instances/:instance/statuses`
 
-### Retrive instance's latest statuses
+### Retrieve instance's latest statuses
 
 - Params:
   - `instance`: instance name
@@ -377,7 +377,7 @@ It may take some time.
 
 ## `GET /api/v1/pleroma/admin/statuses`
 
-### Retrives all latest statuses
+### Retrieves all latest statuses
 
 - Params:
   - *optional* `page_size`: number of statuses to return (default is `20`)
@@ -541,7 +541,7 @@ Response:
 
 ## `PATCH /api/v1/pleroma/admin/users/force_password_reset`
 
-### Force passord reset for a user with a given nickname
+### Force password reset for a user with a given nickname
 
 - Params:
   - `nicknames`
@@ -1064,7 +1064,6 @@ List of settings which support only full update by key:
 ```elixir
 @full_key_update [
     {:pleroma, :ecto_repos},
-    {:quack, :meta},
     {:mime, :types},
     {:cors_plug, [:max_age, :methods, :expose, :headers]},
     {:auto_linker, :opts},
@@ -1084,18 +1083,18 @@ List of settings which support only full update by subkey:
   ]
 ```
 
-*Settings without explicit key must be sended in separate config object params.*
+*Settings without explicit key must be sent in separate config object params.*
 ```elixir
-config :quack,
-  level: :debug,
-  meta: [:all],
+config :foo,
+  bar: :baz,
+  meta: [:data],
   ...
 ```
 ```json
 {
   "configs": [
-    {"group": ":quack", "key": ":level", "value": ":debug"},
-    {"group": ":quack", "key": ":meta", "value": [":all"]},
+    {"group": ":foo", "key": ":bar", "value": ":baz"},
+    {"group": ":foo", "key": ":meta", "value": [":data"]},
     ...
   ]
 }
@@ -1586,6 +1585,7 @@ Returns the content of the document
     "build_url": "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
     "git": "https://git.pleroma.social/pleroma/fedi-fe",
     "installed": true,
+    "installed_refs": ["master"],
     "name": "fedi-fe",
     "ref": "master"
   },
@@ -1593,6 +1593,7 @@ Returns the content of the document
     "build_url": "https://git.pleroma.social/lambadalambda/kenoma/-/jobs/artifacts/${ref}/download?job=build",
     "git": "https://git.pleroma.social/lambadalambda/kenoma",
     "installed": false,
+    "installed_refs": [],
     "name": "kenoma",
     "ref": "master"
   }
@@ -1744,6 +1745,56 @@ Note that this differs from the Mastodon API variant: Mastodon API only returns 
 ## `DELETE /api/v1/pleroma/admin/announcements/:id`
 
 ### Delete an announcement
+
+- Response: JSON, empty object
+
+```json
+{}
+```
+
+
+## `GET /api/v1/pleroma/admin/rules`
+
+### List rules
+
+- Response: JSON, list of rules
+
+```json
+[
+  {
+    "id": "1",
+    "priority": 1,
+    "text": "There are no rules",
+    "hint": null
+  }
+]
+```
+
+## `POST /api/v1/pleroma/admin/rules`
+
+### Create a rule
+
+- Params:
+  - `text`: string, required, rule content
+  - `hint`: string, optional, rule description
+  - `priority`: integer, optional, rule ordering priority
+
+- Response: JSON, a single rule
+
+## `PATCH /api/v1/pleroma/admin/rules/:id`
+
+### Update a rule
+
+- Params:
+  - `text`: string, optional, rule content
+  - `hint`: string, optional, rule description
+  - `priority`: integer, optional, rule ordering priority
+
+- Response: JSON, a single rule
+
+## `DELETE /api/v1/pleroma/admin/rules/:id`
+
+### Delete a rule
 
 - Response: JSON, empty object
 

@@ -5,12 +5,27 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
   use Pleroma.DataCase, async: true
 
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
 
+  import Mox
   import Pleroma.Factory
 
   describe "attachments" do
+    test "fails without url" do
+      attachment = %{
+        "mediaType" => "",
+        "name" => "",
+        "summary" => "298p3RG7j27tfsZ9RQ.jpg",
+        "type" => "Document"
+      }
+
+      assert {:error, _cng} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+    end
+
     test "works with honkerific attachments" do
       attachment = %{
         "mediaType" => "",
@@ -103,6 +118,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
         filename: "an_image.jpg"
       }
 
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
+
       {:ok, attachment} = ActivityPub.upload(file, actor: user.ap_id)
 
       {:ok, attachment} =
@@ -146,7 +164,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
       assert attachment.mediaType == "image/jpeg"
     end
 
-    test "it transforms image dimentions to our internal format" do
+    test "it transforms image dimensions to our internal format" do
       attachment = %{
         "type" => "Document",
         "name" => "Hello world",

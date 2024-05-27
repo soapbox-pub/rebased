@@ -12,7 +12,6 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
 
   test "Renders a user, including the public key" do
     user = insert(:user)
-    {:ok, user} = User.ensure_keys_present(user)
 
     result = UserView.render("user.json", %{user: user})
 
@@ -55,7 +54,6 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
 
   test "Does not add an avatar image if the user hasn't set one" do
     user = insert(:user)
-    {:ok, user} = User.ensure_keys_present(user)
 
     result = UserView.render("user.json", %{user: user})
     refute result["icon"]
@@ -66,8 +64,6 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
         avatar: %{"url" => [%{"href" => "https://someurl"}]},
         banner: %{"url" => [%{"href" => "https://somebanner"}]}
       )
-
-    {:ok, user} = User.ensure_keys_present(user)
 
     result = UserView.render("user.json", %{user: user})
     assert result["icon"]["url"] == "https://someurl"
@@ -80,16 +76,31 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     assert %{"invisible" => true} = UserView.render("service.json", %{user: user})
   end
 
+  test "service has a few essential fields" do
+    user = insert(:user)
+    result = UserView.render("service.json", %{user: user})
+    assert result["id"]
+    assert result["type"] == "Application"
+    assert result["inbox"]
+    assert result["outbox"]
+  end
+
   test "renders AKAs" do
     akas = ["https://i.tusooa.xyz/users/test-pleroma"]
     user = insert(:user, also_known_as: akas)
     assert %{"alsoKnownAs" => ^akas} = UserView.render("user.json", %{user: user})
   end
 
+  test "renders full nickname" do
+    clear_config([Pleroma.Web.WebFinger, :domain], "plemora.dev")
+
+    user = insert(:user, nickname: "user")
+    assert %{"webfinger" => "acct:user@plemora.dev"} = UserView.render("user.json", %{user: user})
+  end
+
   describe "endpoints" do
     test "local users have a usable endpoints structure" do
       user = insert(:user)
-      {:ok, user} = User.ensure_keys_present(user)
 
       result = UserView.render("user.json", %{user: user})
 
@@ -105,7 +116,6 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
 
     test "remote users have an empty endpoints structure" do
       user = insert(:user, local: false)
-      {:ok, user} = User.ensure_keys_present(user)
 
       result = UserView.render("user.json", %{user: user})
 
@@ -115,7 +125,6 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
 
     test "instance users do not expose oAuth endpoints" do
       user = insert(:user, nickname: nil, local: true)
-      {:ok, user} = User.ensure_keys_present(user)
 
       result = UserView.render("user.json", %{user: user})
 

@@ -9,7 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
   plug(:assign_follower when action != :index)
 
   action_fallback(:errors)
@@ -44,7 +44,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestController do
     end
   end
 
-  defp assign_follower(%{params: %{id: id}} = conn, _) do
+  defp assign_follower(%{private: %{open_api_spex: %{params: %{id: id}}}} = conn, _) do
     case User.get_cached_by_id(id) do
       %User{} = follower -> assign(conn, :follower, follower)
       nil -> Pleroma.Web.MastodonAPI.FallbackController.call(conn, {:error, :not_found}) |> halt()

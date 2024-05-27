@@ -10,6 +10,15 @@ defmodule Pleroma.Factory do
   alias Pleroma.Object
   alias Pleroma.User
 
+  @rsa_keys [
+              "test/fixtures/rsa_keys/key_1.pem",
+              "test/fixtures/rsa_keys/key_2.pem",
+              "test/fixtures/rsa_keys/key_3.pem",
+              "test/fixtures/rsa_keys/key_4.pem",
+              "test/fixtures/rsa_keys/key_5.pem"
+            ]
+            |> Enum.map(&File.read!/1)
+
   def participation_factory do
     conversation = insert(:conversation)
     user = insert(:user)
@@ -28,6 +37,8 @@ defmodule Pleroma.Factory do
   end
 
   def user_factory(attrs \\ %{}) do
+    pem = Enum.random(@rsa_keys)
+
     user = %User{
       name: sequence(:name, &"Test テスト User #{&1}"),
       email: sequence(:email, &"user#{&1}@example.com"),
@@ -39,7 +50,7 @@ defmodule Pleroma.Factory do
       last_refreshed_at: NaiveDateTime.utc_now(),
       notification_settings: %Pleroma.User.NotificationSetting{},
       multi_factor_authentication_settings: %Pleroma.MFA.Settings{},
-      ap_enabled: true
+      keys: pem
     }
 
     urls =
@@ -105,6 +116,18 @@ defmodule Pleroma.Factory do
         "2hu" => "corndog.png"
       }
     }
+
+    %Pleroma.Object{
+      data: merge_attributes(data, Map.get(attrs, :data, %{}))
+    }
+  end
+
+  def attachment_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+
+    data =
+      attachment_data(user.ap_id, nil)
+      |> Map.put("id", Pleroma.Web.ActivityPub.Utils.generate_object_id())
 
     %Pleroma.Object{
       data: merge_attributes(data, Map.get(attrs, :data, %{}))
@@ -189,7 +212,7 @@ defmodule Pleroma.Factory do
   end
 
   def direct_note_factory do
-    user2 = insert(:user)
+    user2 = insert(:user, local: false, inbox: "http://example.com/inbox")
 
     %Pleroma.Object{data: data} = note_factory()
     %Pleroma.Object{data: Map.merge(data, %{"to" => [user2.ap_id]})}

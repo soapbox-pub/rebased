@@ -12,6 +12,8 @@ defmodule Pleroma.DataMigration do
   import Ecto.Changeset
   import Ecto.Query
 
+  @type t :: %__MODULE__{}
+
   schema "data_migrations" do
     field(:name, :string)
     field(:state, State, default: :pending)
@@ -42,4 +44,5 @@ defmodule Pleroma.DataMigration do
   end
 
   def populate_hashtags_table, do: get_by_name("populate_hashtags_table")
+  def delete_context_objects, do: get_by_name("delete_context_objects")
 end

@@ -1,0 +1,17 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "type": "Note",
+  "content": "This is a quote:<br>RE: https://server.example/objects/123",
+  "tag": [
+    {
+      "type": "Link",
+      "mediaType": "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+      "href": "https://server.example/objects/123",
+      "name": "RE: https://server.example/objects/123"
+    }
+  ],
+  "id": "https://server.example/objects/1",
+  "to": "https://server.example/users/1",
+  "attributedTo": "https://server.example/users/1",
+  "actor": "https://server.example/users/1"
+}

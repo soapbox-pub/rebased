@@ -27,12 +27,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFields do
     end
   end
 
-  # All objects except Answer and CHatMessage
+  # All objects except Answer and ChatMessage
   defmacro object_fields do
     quote bind_quoted: binding() do
       field(:content, :string)
 
       field(:published, ObjectValidators.DateTime)
+      field(:updated, ObjectValidators.DateTime)
       field(:emoji, ObjectValidators.Emoji, default: %{})
       embeds_many(:attachment, AttachmentValidator)
     end
@@ -51,15 +52,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFields do
       field(:summary, :string)
 
       field(:context, :string)
-      # short identifier for PleromaFE to group statuses by context
-      field(:context_id, :integer)
 
       field(:sensitive, :boolean, default: false)
       field(:replies_count, :integer, default: 0)
       field(:like_count, :integer, default: 0)
       field(:announcement_count, :integer, default: 0)
+      field(:quotes_count, :integer, default: 0)
       field(:inReplyTo, ObjectValidators.ObjectID)
-      field(:url, ObjectValidators.Uri)
+      field(:quoteUrl, ObjectValidators.ObjectID)
+      field(:url, ObjectValidators.BareUri)
 
       field(:likes, {:array, ObjectValidators.ObjectID}, default: [])
       field(:announcements, {:array, ObjectValidators.ObjectID}, default: [])

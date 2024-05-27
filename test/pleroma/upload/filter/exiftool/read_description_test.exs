@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Upload.Filter.Exiftool.ReadDescriptionTest do
-  use Pleroma.DataCase, async: true
+  use Pleroma.DataCase
   alias Pleroma.Upload.Filter
 
   @uploads %Pleroma.Upload{
@@ -40,6 +40,33 @@ defmodule Pleroma.Upload.Filter.Exiftool.ReadDescriptionTest do
 
     assert Filter.Exiftool.ReadDescription.filter(@uploads) ==
              {:ok, :filtered, uploads_after}
+  end
+
+  test "Ignores warnings" do
+    uploads = %Pleroma.Upload{
+      name: "image_with_imagedescription_and_caption-abstract_and_stray_data_after.png",
+      content_type: "image/png",
+      path:
+        Path.absname(
+          "test/fixtures/image_with_imagedescription_and_caption-abstract_and_stray_data_after.png"
+        ),
+      tempfile:
+        Path.absname(
+          "test/fixtures/image_with_imagedescription_and_caption-abstract_and_stray_data_after.png"
+        )
+    }
+
+    assert {:ok, :filtered, %{description: "a descriptive white pixel"}} =
+             Filter.Exiftool.ReadDescription.filter(uploads)
+
+    uploads = %Pleroma.Upload{
+      name: "image_with_stray_data_after.png",
+      content_type: "image/png",
+      path: Path.absname("test/fixtures/image_with_stray_data_after.png"),
+      tempfile: Path.absname("test/fixtures/image_with_stray_data_after.png")
+    }
+
+    assert {:ok, :filtered, %{description: nil}} = Filter.Exiftool.ReadDescription.filter(uploads)
   end
 
   test "otherwise returns iptc:Caption-Abstract when present" do

@@ -9,7 +9,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
   alias Pleroma.ConfigDB
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
   plug(OAuthScopesPlug, %{scopes: ["admin:write"]} when action == :update)
 
   plug(
@@ -22,13 +22,61 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.ConfigOperation
 
+  defp translate_descriptions(descriptions, path \\ []) do
+    Enum.map(descriptions, fn desc -> translate_item(desc, path) end)
+  end
+
+  defp translate_string(str, path, type) do
+    Gettext.dpgettext(
+      Pleroma.Web.Gettext,
+      "config_descriptions",
+      Pleroma.Docs.Translator.Compiler.msgctxt_for(path, type),
+      str
+    )
+  end
+
+  defp maybe_put_translated(item, key, path) do
+    if item[key] do
+      Map.put(
+        item,
+        key,
+        translate_string(
+          item[key],
+          path ++ [Pleroma.Docs.Translator.Compiler.key_for(item)],
+          to_string(key)
+        )
+      )
+    else
+      item
+    end
+  end
+
+  defp translate_item(item, path) do
+    item
+    |> maybe_put_translated(:label, path)
+    |> maybe_put_translated(:description, path)
+    |> translate_children(path)
+  end
+
+  defp translate_children(%{children: children} = item, path) when is_list(children) do
+    item
+    |> Map.put(
+      :children,
+      translate_descriptions(children, path ++ [Pleroma.Docs.Translator.Compiler.key_for(item)])
+    )
+  end
+
+  defp translate_children(item, _path) do
+    item
+  end
+
   def descriptions(conn, _params) do
     descriptions = Enum.filter(Pleroma.Docs.JSON.compiled_descriptions(), &whitelisted_config?/1)
 
-    json(conn, descriptions)
+    json(conn, translate_descriptions(descriptions))
   end
 
-  def show(conn, %{only_db: true}) do
+  def show(%{private: %{open_api_spex: %{params: %{only_db: true}}}} = conn, _) do
     with :ok <- configurable_from_database() do
       configs = Pleroma.Repo.all(ConfigDB)
 
@@ -80,7 +128,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
     end
   end
 
-  def update(%{body_params: %{configs: configs}} = conn, _) do
+  def update(%{private: %{open_api_spex: %{body_params: %{configs: configs}}}} = conn, _) do
     with :ok <- configurable_from_database() do
       results =
         configs

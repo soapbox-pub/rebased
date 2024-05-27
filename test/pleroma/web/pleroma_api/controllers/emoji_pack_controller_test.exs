@@ -99,6 +99,10 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
   end
 
   describe "GET /api/pleroma/emoji/packs/remote" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:emoji_manage_emoji])
+    end
+
     test "shareable instance", %{admin_conn: admin_conn, conn: conn} do
       resp =
         conn
@@ -112,7 +116,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
         %{method: :get, url: "https://example.com/nodeinfo/2.1.json"} ->
           json(%{metadata: %{features: ["shareable_emoji_packs"]}})
 
-        %{method: :get, url: "https://example.com/api/pleroma/emoji/packs?page=2&page_size=1"} ->
+        %{method: :get, url: "https://example.com/api/v1/pleroma/emoji/packs?page=2&page_size=1"} ->
           json(resp)
       end)
 
@@ -135,6 +139,14 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
              |> json_response_and_validate_schema(500) == %{
                "error" => "The requested instance does not support sharing emoji packs"
              }
+    end
+
+    test "it requires privileged role :emoji_manage_emoji", %{admin_conn: admin_conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      assert admin_conn
+             |> get("/api/pleroma/emoji/packs/remote?url=https://example.com")
+             |> json_response(:forbidden)
     end
   end
 
@@ -170,6 +182,10 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
   end
 
   describe "POST /api/pleroma/emoji/packs/download" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:emoji_manage_emoji])
+    end
+
     test "shared pack from remote and non shared from fallback-src", %{
       admin_conn: admin_conn,
       conn: conn
@@ -183,7 +199,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
         %{
           method: :get,
-          url: "https://example.com/api/pleroma/emoji/pack?name=test_pack"
+          url: "https://example.com/api/v1/pleroma/emoji/pack?name=test_pack&page_size=" <> _n
         } ->
           conn
           |> get("/api/pleroma/emoji/pack?name=test_pack")
@@ -192,7 +208,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
         %{
           method: :get,
-          url: "https://example.com/api/pleroma/emoji/packs/archive?name=test_pack"
+          url: "https://example.com/api/v1/pleroma/emoji/packs/archive?name=test_pack"
         } ->
           conn
           |> get("/api/pleroma/emoji/packs/archive?name=test_pack")
@@ -201,7 +217,9 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
         %{
           method: :get,
-          url: "https://example.com/api/pleroma/emoji/pack?name=test_pack_nonshared"
+          url:
+            "https://example.com/api/v1/pleroma/emoji/pack?name=test_pack_nonshared&page_size=" <>
+                _n
         } ->
           conn
           |> get("/api/pleroma/emoji/pack?name=test_pack_nonshared")
@@ -289,14 +307,14 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
         %{
           method: :get,
-          url: "https://example.com/api/pleroma/emoji/pack?name=pack_bad_sha"
+          url: "https://example.com/api/v1/pleroma/emoji/pack?name=pack_bad_sha&page_size=" <> _n
         } ->
           {:ok, pack} = Pleroma.Emoji.Pack.load_pack("pack_bad_sha")
           %Tesla.Env{status: 200, body: Jason.encode!(pack)}
 
         %{
           method: :get,
-          url: "https://example.com/api/pleroma/emoji/packs/archive?name=pack_bad_sha"
+          url: "https://example.com/api/v1/pleroma/emoji/packs/archive?name=pack_bad_sha"
         } ->
           %Tesla.Env{
             status: 200,
@@ -326,7 +344,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
         %{
           method: :get,
-          url: "https://example.com/api/pleroma/emoji/pack?name=test_pack"
+          url: "https://example.com/api/v1/pleroma/emoji/pack?name=test_pack&page_size=" <> _n
         } ->
           {:ok, pack} = Pleroma.Emoji.Pack.load_pack("test_pack")
           %Tesla.Env{status: 200, body: Jason.encode!(pack)}
@@ -344,10 +362,24 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
                  "The pack was not set as shared and there is no fallback src to download from"
              }
     end
+
+    test "it requires privileged role :emoji_manage_emoji", %{admin_conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      assert conn
+             |> put_req_header("content-type", "multipart/form-data")
+             |> post("/api/pleroma/emoji/packs/download", %{
+               url: "https://example.com",
+               name: "test_pack",
+               as: "test_pack2"
+             })
+             |> json_response(:forbidden)
+    end
   end
 
   describe "PATCH/update /api/pleroma/emoji/pack?name=:name" do
     setup do
+      clear_config([:instance, :admin_privileges], [:emoji_manage_emoji])
       pack_file = "#{@emoji_path}/test_pack/pack.json"
       original_content = File.read!(pack_file)
 
@@ -435,9 +467,25 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
                "error" => "The fallback archive does not have all files specified in pack.json"
              }
     end
+
+    test "it requires privileged role :emoji_manage_emoji", %{
+      admin_conn: conn,
+      new_data: new_data
+    } do
+      clear_config([:instance, :admin_privileges], [])
+
+      assert conn
+             |> put_req_header("content-type", "multipart/form-data")
+             |> patch("/api/pleroma/emoji/pack?name=test_pack", %{metadata: new_data})
+             |> json_response(:forbidden)
+    end
   end
 
   describe "POST/DELETE /api/pleroma/emoji/pack?name=:name" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:emoji_manage_emoji])
+    end
+
     test "returns an error on creates pack when file system not writable", %{
       admin_conn: admin_conn
     } do
@@ -520,6 +568,18 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
                "error" => "pack name cannot be empty"
              }
     end
+
+    test "it requires privileged role :emoji_manage_emoji", %{admin_conn: admin_conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      assert admin_conn
+             |> post("/api/pleroma/emoji/pack?name= ")
+             |> json_response(:forbidden)
+
+      assert admin_conn
+             |> delete("/api/pleroma/emoji/pack?name= ")
+             |> json_response(:forbidden)
+    end
   end
 
   test "deleting nonexisting pack", %{admin_conn: admin_conn} do
@@ -578,6 +638,12 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
              "blank2" => "blank.png",
              "foo" => "blank.png"
            }
+
+    clear_config([:instance, :admin_privileges], [])
+
+    assert admin_conn
+           |> get("/api/pleroma/emoji/packs/import")
+           |> json_response(:forbidden)
   end
 
   describe "GET /api/pleroma/emoji/pack?name=:name" do

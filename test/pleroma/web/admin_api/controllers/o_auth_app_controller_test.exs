@@ -163,7 +163,7 @@ defmodule Pleroma.Web.AdminAPI.OAuthAppControllerTest do
       assert response == ""
     end
 
-    test "with non existance id", %{conn: conn} do
+    test "with nonexistent id", %{conn: conn} do
       response =
         conn
         |> delete("/api/pleroma/admin/oauth_app/0")

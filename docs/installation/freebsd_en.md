@@ -9,7 +9,7 @@ This document was written for FreeBSD 12.1, but should be work on future release
 This assumes the target system has `pkg(8)`.
 
 ```
-# pkg install elixir postgresql12-server postgresql12-client postgresql12-contrib git-lite sudo nginx gmake acme.sh cmake
+# pkg install elixir postgresql12-server postgresql12-client postgresql12-contrib git-lite sudo nginx gmake acme.sh cmake vips
 ```
 
 Copy the rc.d scripts to the right directory:
@@ -41,6 +41,7 @@ Create a user for Pleroma:
 ```
 # pw add user pleroma -m
 # echo 'export LC_ALL="en_US.UTF-8"' >> /home/pleroma/.profile
+# echo 'export VIX_COMPILATION_MODE=PLATFORM_PROVIDED_LIBVIPS' >> /home/pleroma/.profile
 # su -l pleroma
 ```
 
@@ -172,6 +173,10 @@ Edit the defaults of `/usr/local/etc/nginx/sites-available/pleroma.nginx`:
 * Change `ssl_certificate` to `/var/db/acme/certs/example.tld/fullchain.cer`.
 * Change `ssl_certificate_key` to `/var/db/acme/certs/example.tld/example.tld.key`.
 * Change all references of `example.tld` to your instance's domain name.
+
+#### (Strongly recommended) serve media on another domain
+
+Refer to the [Hardening your instance](../configuration/hardening.md) document on how to serve media on another domain. We STRONGLY RECOMMEND you to do this to minimize attack vectors.
 
 ## Creating a startup script for Pleroma
 

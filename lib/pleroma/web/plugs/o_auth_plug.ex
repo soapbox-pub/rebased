@@ -23,14 +23,14 @@ defmodule Pleroma.Web.Plugs.OAuthPlug do
   def call(conn, _) do
     with {:ok, token_str} <- fetch_token_str(conn) do
       with {:ok, user, user_token} <- fetch_user_and_token(token_str),
-           false <- Token.is_expired?(user_token) do
+           false <- Token.expired?(user_token) do
         conn
         |> assign(:token, user_token)
         |> assign(:user, user)
       else
         _ ->
           with {:ok, app, app_token} <- fetch_app_and_token(token_str),
-               false <- Token.is_expired?(app_token) do
+               false <- Token.expired?(app_token) do
             conn
             |> assign(:token, app_token)
             |> assign(:app, app)
@@ -47,15 +47,17 @@ defmodule Pleroma.Web.Plugs.OAuthPlug do
   #
   @spec fetch_user_and_token(String.t()) :: {:ok, User.t(), Token.t()} | nil
   defp fetch_user_and_token(token) do
-    query =
+    token_query =
       from(t in Token,
-        where: t.token == ^token,
-        join: user in assoc(t, :user),
-        preload: [user: user]
+        where: t.token == ^token
       )
 
-    with %Token{user: user} = token_record <- Repo.one(query) do
+    with %Token{user_id: user_id} = token_record <- Repo.one(token_query),
+         false <- is_nil(user_id),
+         %User{} = user <- User.get_cached_by_id(user_id) do
       {:ok, user, token_record}
+    else
+      _ -> nil
     end
   end
 

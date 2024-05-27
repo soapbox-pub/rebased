@@ -6,10 +6,15 @@ defmodule Pleroma.Object.FetcherTest do
   use Pleroma.DataCase
 
   alias Pleroma.Activity
+  alias Pleroma.Instances
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
+  alias Pleroma.Web.ActivityPub.ObjectValidator
+
+  require Pleroma.Constants
 
   import Mock
+  import Pleroma.Factory
   import Tesla.Mock
 
   setup do
@@ -96,8 +101,7 @@ defmodule Pleroma.Object.FetcherTest do
     test "it returns thread depth exceeded error if thread depth is exceeded" do
       clear_config([:instance, :federation_incoming_replies_max_depth], 0)
 
-      assert {:error, "Max thread distance exceeded."} =
-               Fetcher.fetch_object_from_id(@ap_id, depth: 1)
+      assert {:error, :allowed_depth} = Fetcher.fetch_object_from_id(@ap_id, depth: 1)
     end
 
     test "it fetches object if max thread depth is restricted to 0 and depth is not specified" do
@@ -159,6 +163,17 @@ defmodule Pleroma.Object.FetcherTest do
                  "https://patch.cx/media/03ca3c8b4ac3ddd08bf0f84be7885f2f88de0f709112131a22d83650819e36c2.json"
                )
     end
+
+    test "it resets instance reachability on successful fetch" do
+      id = "http://mastodon.example.org/@admin/99541947525187367"
+      Instances.set_consistently_unreachable(id)
+      refute Instances.reachable?(id)
+
+      {:ok, _object} =
+        Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
+
+      assert Instances.reachable?(id)
+    end
   end
 
   describe "implementation quirks" do
@@ -204,14 +219,14 @@ defmodule Pleroma.Object.FetcherTest do
     end
 
     test "handle HTTP 410 Gone response" do
-      assert {:error, "Object has been deleted"} ==
+      assert {:error, :not_found} ==
                Fetcher.fetch_and_contain_remote_object_from_id(
                  "https://mastodon.example.org/users/userisgone"
                )
     end
 
     test "handle HTTP 404 response" do
-      assert {:error, "Object has been deleted"} ==
+      assert {:error, :not_found} ==
                Fetcher.fetch_and_contain_remote_object_from_id(
                  "https://mastodon.example.org/users/userisgone404"
                )
@@ -267,6 +282,333 @@ defmodule Pleroma.Object.FetcherTest do
       Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
 
       refute called(Pleroma.Signature.sign(:_, :_))
+    end
+  end
+
+  describe "refetching" do
+    setup do
+      insert(:user, ap_id: "https://mastodon.social/users/emelie")
+
+      object1 = %{
+        "id" => "https://mastodon.social/1",
+        "actor" => "https://mastodon.social/users/emelie",
+        "attributedTo" => "https://mastodon.social/users/emelie",
+        "type" => "Note",
+        "content" => "test 1",
+        "bcc" => [],
+        "bto" => [],
+        "cc" => [],
+        "to" => [Pleroma.Constants.as_public()],
+        "summary" => "",
+        "published" => "2023-05-08 23:43:20Z",
+        "updated" => "2023-05-09 23:43:20Z"
+      }
+
+      {:ok, local_object1, _} = ObjectValidator.validate(object1, [])
+
+      object2 = %{
+        "id" => "https://mastodon.social/2",
+        "actor" => "https://mastodon.social/users/emelie",
+        "attributedTo" => "https://mastodon.social/users/emelie",
+        "type" => "Note",
+        "content" => "test 2",
+        "bcc" => [],
+        "bto" => [],
+        "cc" => [],
+        "to" => [Pleroma.Constants.as_public()],
+        "summary" => "",
+        "published" => "2023-05-08 23:43:20Z",
+        "updated" => "2023-05-09 23:43:25Z",
+        "formerRepresentations" => %{
+          "type" => "OrderedCollection",
+          "orderedItems" => [
+            %{
+              "type" => "Note",
+              "content" => "orig 2",
+              "actor" => "https://mastodon.social/users/emelie",
+              "attributedTo" => "https://mastodon.social/users/emelie",
+              "bcc" => [],
+              "bto" => [],
+              "cc" => [],
+              "to" => [Pleroma.Constants.as_public()],
+              "summary" => "",
+              "published" => "2023-05-08 23:43:20Z",
+              "updated" => "2023-05-09 23:43:21Z"
+            }
+          ],
+          "totalItems" => 1
+        }
+      }
+
+      {:ok, local_object2, _} = ObjectValidator.validate(object2, [])
+
+      mock(fn
+        %{
+          method: :get,
+          url: "https://mastodon.social/1"
+        } ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body: Jason.encode!(object1 |> Map.put("updated", "2023-05-09 23:44:20Z"))
+          }
+
+        %{
+          method: :get,
+          url: "https://mastodon.social/2"
+        } ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body: Jason.encode!(object2 |> Map.put("updated", "2023-05-09 23:44:20Z"))
+          }
+
+        %{
+          method: :get,
+          url: "https://mastodon.social/users/emelie/collections/featured"
+        } ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body:
+              Jason.encode!(%{
+                "id" => "https://mastodon.social/users/emelie/collections/featured",
+                "type" => "OrderedCollection",
+                "actor" => "https://mastodon.social/users/emelie",
+                "attributedTo" => "https://mastodon.social/users/emelie",
+                "orderedItems" => [],
+                "totalItems" => 0
+              })
+          }
+
+        env ->
+          apply(HttpRequestMock, :request, [env])
+      end)
+
+      %{object1: local_object1, object2: local_object2}
+    end
+
+    test "it keeps formerRepresentations if remote does not have this attr", %{object1: object1} do
+      full_object1 =
+        object1
+        |> Map.merge(%{
+          "formerRepresentations" => %{
+            "type" => "OrderedCollection",
+            "orderedItems" => [
+              %{
+                "type" => "Note",
+                "content" => "orig 2",
+                "actor" => "https://mastodon.social/users/emelie",
+                "attributedTo" => "https://mastodon.social/users/emelie",
+                "bcc" => [],
+                "bto" => [],
+                "cc" => [],
+                "to" => [Pleroma.Constants.as_public()],
+                "summary" => "",
+                "published" => "2023-05-08 23:43:20Z"
+              }
+            ],
+            "totalItems" => 1
+          }
+        })
+
+      {:ok, o} = Object.create(full_object1)
+
+      assert {:ok, refetched} = Fetcher.refetch_object(o)
+
+      assert %{"formerRepresentations" => %{"orderedItems" => [%{"content" => "orig 2"}]}} =
+               refetched.data
+    end
+
+    test "it uses formerRepresentations from remote if possible", %{object2: object2} do
+      {:ok, o} = Object.create(object2)
+
+      assert {:ok, refetched} = Fetcher.refetch_object(o)
+
+      assert %{"formerRepresentations" => %{"orderedItems" => [%{"content" => "orig 2"}]}} =
+               refetched.data
+    end
+
+    test "it replaces formerRepresentations with the one from remote", %{object2: object2} do
+      full_object2 =
+        object2
+        |> Map.merge(%{
+          "content" => "mew mew #def",
+          "formerRepresentations" => %{
+            "type" => "OrderedCollection",
+            "orderedItems" => [
+              %{"type" => "Note", "content" => "mew mew 2"}
+            ],
+            "totalItems" => 1
+          }
+        })
+
+      {:ok, o} = Object.create(full_object2)
+
+      assert {:ok, refetched} = Fetcher.refetch_object(o)
+
+      assert %{
+               "content" => "test 2",
+               "formerRepresentations" => %{"orderedItems" => [%{"content" => "orig 2"}]}
+             } = refetched.data
+    end
+
+    test "it adds to formerRepresentations if the remote does not have one and the object has changed",
+         %{object1: object1} do
+      full_object1 =
+        object1
+        |> Map.merge(%{
+          "content" => "mew mew #def",
+          "formerRepresentations" => %{
+            "type" => "OrderedCollection",
+            "orderedItems" => [
+              %{"type" => "Note", "content" => "mew mew 1"}
+            ],
+            "totalItems" => 1
+          }
+        })
+
+      {:ok, o} = Object.create(full_object1)
+
+      assert {:ok, refetched} = Fetcher.refetch_object(o)
+
+      assert %{
+               "content" => "test 1",
+               "formerRepresentations" => %{
+                 "orderedItems" => [
+                   %{"content" => "mew mew #def"},
+                   %{"content" => "mew mew 1"}
+                 ],
+                 "totalItems" => 2
+               }
+             } = refetched.data
+    end
+
+    test "it keeps the history intact if only updated time has changed",
+         %{object1: object1} do
+      full_object1 =
+        object1
+        |> Map.merge(%{
+          "updated" => "2023-05-08 23:43:47Z",
+          "formerRepresentations" => %{
+            "type" => "OrderedCollection",
+            "orderedItems" => [
+              %{"type" => "Note", "content" => "mew mew 1"}
+            ],
+            "totalItems" => 1
+          }
+        })
+
+      {:ok, o} = Object.create(full_object1)
+
+      assert {:ok, refetched} = Fetcher.refetch_object(o)
+
+      assert %{
+               "content" => "test 1",
+               "formerRepresentations" => %{
+                 "orderedItems" => [
+                   %{"content" => "mew mew 1"}
+                 ],
+                 "totalItems" => 1
+               }
+             } = refetched.data
+    end
+
+    test "it goes through ObjectValidator and MRF", %{object2: object2} do
+      with_mock Pleroma.Web.ActivityPub.MRF, [:passthrough],
+        filter: fn
+          %{"type" => "Note"} = object ->
+            {:ok, Map.put(object, "content", "MRFd content")}
+
+          arg ->
+            passthrough([arg])
+        end do
+        {:ok, o} = Object.create(object2)
+
+        assert {:ok, refetched} = Fetcher.refetch_object(o)
+
+        assert %{"content" => "MRFd content"} = refetched.data
+      end
+    end
+  end
+
+  describe "fetch with history" do
+    setup do
+      object2 = %{
+        "id" => "https://mastodon.social/2",
+        "actor" => "https://mastodon.social/users/emelie",
+        "attributedTo" => "https://mastodon.social/users/emelie",
+        "type" => "Note",
+        "content" => "test 2",
+        "bcc" => [],
+        "bto" => [],
+        "cc" => ["https://mastodon.social/users/emelie/followers"],
+        "to" => [],
+        "summary" => "",
+        "formerRepresentations" => %{
+          "type" => "OrderedCollection",
+          "orderedItems" => [
+            %{
+              "type" => "Note",
+              "content" => "orig 2",
+              "actor" => "https://mastodon.social/users/emelie",
+              "attributedTo" => "https://mastodon.social/users/emelie",
+              "bcc" => [],
+              "bto" => [],
+              "cc" => ["https://mastodon.social/users/emelie/followers"],
+              "to" => [],
+              "summary" => ""
+            }
+          ],
+          "totalItems" => 1
+        }
+      }
+
+      mock(fn
+        %{
+          method: :get,
+          url: "https://mastodon.social/2"
+        } ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body: Jason.encode!(object2)
+          }
+
+        %{
+          method: :get,
+          url: "https://mastodon.social/users/emelie/collections/featured"
+        } ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body:
+              Jason.encode!(%{
+                "id" => "https://mastodon.social/users/emelie/collections/featured",
+                "type" => "OrderedCollection",
+                "actor" => "https://mastodon.social/users/emelie",
+                "attributedTo" => "https://mastodon.social/users/emelie",
+                "orderedItems" => [],
+                "totalItems" => 0
+              })
+          }
+
+        env ->
+          apply(HttpRequestMock, :request, [env])
+      end)
+
+      %{object2: object2}
+    end
+
+    test "it gets history", %{object2: object2} do
+      {:ok, object} = Fetcher.fetch_object_from_id(object2["id"])
+
+      assert %{
+               "formerRepresentations" => %{
+                 "type" => "OrderedCollection",
+                 "orderedItems" => [%{}]
+               }
+             } = object.data
     end
   end
 end

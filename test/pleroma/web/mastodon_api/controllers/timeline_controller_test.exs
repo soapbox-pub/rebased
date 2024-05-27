@@ -367,6 +367,47 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
                }
              ] = result
     end
+
+    test "should return local-only posts for authenticated users" do
+      user = insert(:user)
+      %{user: _reader, conn: conn} = oauth_access(["read:statuses"])
+
+      {:ok, %{id: id}} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      result =
+        conn
+        |> get("/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert [%{"id" => ^id}] = result
+    end
+
+    test "should not return local-only posts for users without read:statuses" do
+      user = insert(:user)
+      %{user: _reader, conn: conn} = oauth_access([])
+
+      {:ok, _activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      result =
+        conn
+        |> get("/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert [] = result
+    end
+
+    test "should not return local-only posts for anonymous users" do
+      user = insert(:user)
+
+      {:ok, _activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      result =
+        build_conn()
+        |> get("/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert [] = result
+    end
   end
 
   defp local_and_remote_activities do
@@ -486,7 +527,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
         |> assign(:token, insert(:oauth_token, user: user_two, scopes: ["read:statuses"]))
 
       # Only direct should be visible here
-      res_conn = get(conn_user_two, "api/v1/timelines/direct")
+      res_conn = get(conn_user_two, "/api/v1/timelines/direct")
 
       assert [status] = json_response_and_validate_schema(res_conn, :ok)
 
@@ -498,14 +539,14 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
         build_conn()
         |> assign(:user, user_one)
         |> assign(:token, insert(:oauth_token, user: user_one, scopes: ["read:statuses"]))
-        |> get("api/v1/timelines/direct")
+        |> get("/api/v1/timelines/direct")
 
       [status] = json_response_and_validate_schema(res_conn, :ok)
 
       assert %{"visibility" => "direct"} = status
 
       # Both should be visible here
-      res_conn = get(conn_user_two, "api/v1/timelines/home")
+      res_conn = get(conn_user_two, "/api/v1/timelines/home")
 
       [_s1, _s2] = json_response_and_validate_schema(res_conn, :ok)
 
@@ -518,14 +559,14 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
           })
       end)
 
-      res_conn = get(conn_user_two, "api/v1/timelines/direct")
+      res_conn = get(conn_user_two, "/api/v1/timelines/direct")
 
       statuses = json_response_and_validate_schema(res_conn, :ok)
       assert length(statuses) == 20
 
       max_id = List.last(statuses)["id"]
 
-      res_conn = get(conn_user_two, "api/v1/timelines/direct?max_id=#{max_id}")
+      res_conn = get(conn_user_two, "/api/v1/timelines/direct?max_id=#{max_id}")
 
       assert [status] = json_response_and_validate_schema(res_conn, :ok)
 
@@ -550,7 +591,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
           visibility: "direct"
         })
 
-      res_conn = get(conn, "api/v1/timelines/direct")
+      res_conn = get(conn, "/api/v1/timelines/direct")
 
       [status] = json_response_and_validate_schema(res_conn, :ok)
       assert status["id"] == direct.id
@@ -903,7 +944,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     end
   end
 
-  describe "hashtag timeline handling of :restrict_unauthenticated setting" do
+  describe "hashtag timeline handling of restrict_unauthenticated setting" do
     setup do
       user = insert(:user)
       {:ok, activity1} = CommonAPI.post(user, %{status: "test #tag1"})
