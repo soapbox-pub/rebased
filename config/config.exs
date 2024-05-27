@@ -82,6 +82,10 @@ config :ex_aws, :s3,
   # region: "us-east-1", # may be required for Amazon AWS
   scheme: "https://"
 
+config :pleroma, Pleroma.Uploaders.IPFS,
+  post_gateway_url: nil,
+  get_gateway_url: nil
+
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
   pack_extensions: [".png", ".gif"],
@@ -411,6 +415,11 @@ config :pleroma, :mrf_vocabulary,
   accept: [],
   reject: []
 
+config :pleroma, :mrf_dnsrbl,
+  nameserver: "127.0.0.1",
+  port: 53,
+  zone: "bl.pleroma.com"
+
 # threshold of 7 days
 config :pleroma, :mrf_object_age,
   threshold: 604_800,
@@ -439,6 +448,8 @@ config :pleroma, :mrf_anti_duplication,
 config :pleroma, :mrf_force_mention,
   mention_parent: true,
   mention_quoted: true
+
+config :pleroma, :mrf_antimentionspam, user_age_limit: 30_000
 
 config :pleroma, :rich_media,
   enabled: true,
@@ -597,7 +608,7 @@ config :pleroma, Oban,
     attachments_cleanup: 1,
     new_users_digest: 1,
     mute_expire: 5,
-    search_indexing: 10,
+    search_indexing: [limit: 10, paused: true],
     rich_media_expiration: 2,
     check_domain_resolve: 1
   ],

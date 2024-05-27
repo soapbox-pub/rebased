@@ -235,6 +235,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert Activity.get_in_reply_to_activity(activity).id == replied_to.id
     end
 
+    test "replying to a deleted status", %{user: user, conn: conn} do
+      {:ok, status} = CommonAPI.post(user, %{status: "cofe"})
+      {:ok, _deleted_status} = CommonAPI.delete(status.id, user)
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/statuses", %{"status" => "xD", "in_reply_to_id" => status.id})
+      |> json_response_and_validate_schema(422)
+    end
+
     test "replying to a direct message with visibility other than direct", %{
       user: user,
       conn: conn

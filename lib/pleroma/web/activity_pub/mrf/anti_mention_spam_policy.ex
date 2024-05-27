@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.AntiMentionSpamPolicy do
+  alias Pleroma.Config
   alias Pleroma.User
   require Pleroma.Constants
 
@@ -11,8 +12,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiMentionSpamPolicy do
   defp user_has_posted?(%User{} = u), do: u.note_count > 0
 
   defp user_has_age?(%User{} = u) do
-    diff = NaiveDateTime.utc_now() |> NaiveDateTime.diff(u.inserted_at, :second)
-    diff >= :timer.seconds(30)
+    user_age_limit = Config.get([:mrf_antimentionspam, :user_age_limit], 30_000)
+    diff = NaiveDateTime.utc_now() |> NaiveDateTime.diff(u.inserted_at, :millisecond)
+    diff >= user_age_limit
   end
 
   defp good_reputation?(%User{} = u) do

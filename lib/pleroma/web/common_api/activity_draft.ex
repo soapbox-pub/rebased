@@ -178,14 +178,22 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
 
   defp in_reply_to(%{params: %{in_reply_to_status_id: ""}} = draft), do: draft
 
-  defp in_reply_to(%{params: %{in_reply_to_status_id: id}} = draft) when is_binary(id) do
-    case Activity.get_by_id(id) do
-      %Activity{} = activity ->
-        %__MODULE__{draft | in_reply_to: activity}
+  defp in_reply_to(%{params: %{in_reply_to_status_id: :deleted}} = draft) do
+    add_error(draft, dgettext("errors", "Cannot reply to a deleted status"))
+  end
 
-      _ ->
-        add_error(draft, dgettext("errors", "The post being replied to was deleted"))
-    end
+  defp in_reply_to(%{params: %{in_reply_to_status_id: id} = params} = draft) when is_binary(id) do
+    activity = Activity.get_by_id(id)
+
+    params =
+      if is_nil(activity) do
+        # Deleted activities are returned as nil
+        Map.put(params, :in_reply_to_status_id, :deleted)
+      else
+        Map.put(params, :in_reply_to_status_id, activity)
+      end
+
+    in_reply_to(%{draft | params: params})
   end
 
   defp in_reply_to(%{params: %{in_reply_to_status_id: %Activity{} = in_reply_to}} = draft) do
