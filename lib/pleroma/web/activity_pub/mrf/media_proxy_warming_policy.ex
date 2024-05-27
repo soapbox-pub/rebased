@@ -22,11 +22,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
 
       Logger.debug("Prefetching #{inspect(url)} as #{inspect(prefetch_url)}")
 
-      if Pleroma.Config.get(:env) == :test do
-        fetch(prefetch_url)
-      else
-        Task.start(fn -> fetch(prefetch_url) end)
-      end
+      fetch(prefetch_url)
     end
   end
 
