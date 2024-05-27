@@ -219,3 +219,43 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "read:mutes"
 msgstr ""
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "push"
+msgstr ""
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:backups"
+msgstr ""
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:chats"
+msgstr ""
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:media"
+msgstr ""
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:reports"
+msgstr ""
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:chats"
+msgstr ""
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:follow"
+msgstr ""
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:reports"
+msgstr ""
