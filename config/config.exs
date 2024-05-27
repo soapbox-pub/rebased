@@ -818,27 +818,27 @@ config :pleroma, :connections_pool,
 
 config :pleroma, :pools,
   federation: [
-    size: 50,
-    max_waiting: 10,
+    size: 75,
+    max_waiting: 20,
     recv_timeout: 10_000
   ],
   media: [
-    size: 50,
+    size: 75,
     max_waiting: 20,
     recv_timeout: 15_000
   ],
   rich_media: [
     size: 25,
     max_waiting: 20,
-     recv_timeout: 15_000
-   ],
+    recv_timeout: 15_000
+  ],
   upload: [
     size: 25,
-    max_waiting: 5,
+    max_waiting: 20,
     recv_timeout: 15_000
   ],
   default: [
-    size: 10,
+    size: 50,
     max_waiting: 2,
     recv_timeout: 5_000
   ]
