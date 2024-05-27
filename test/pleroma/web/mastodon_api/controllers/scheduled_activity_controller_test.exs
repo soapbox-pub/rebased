@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
+  use Oban.Testing, repo: Pleroma.Repo
   use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Repo
@@ -78,7 +79,7 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
         }
       )
 
-    job = Repo.one(from(j in Oban.Job, where: j.queue == "scheduled_activities"))
+    job = Repo.one(from(j in Oban.Job, where: j.queue == "federator_outgoing"))
 
     assert job.args == %{"activity_id" => scheduled_activity.id}
     assert DateTime.truncate(job.scheduled_at, :second) == to_datetime(scheduled_at)
@@ -124,9 +125,11 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
         }
       )
 
-    job = Repo.one(from(j in Oban.Job, where: j.queue == "scheduled_activities"))
-
-    assert job.args == %{"activity_id" => scheduled_activity.id}
+    assert_enqueued(
+      worker: Pleroma.Workers.ScheduledActivityWorker,
+      args: %{"activity_id" => scheduled_activity.id},
+      queue: :federator_outgoing
+    )
 
     res_conn =
       conn
@@ -135,7 +138,11 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
 
     assert %{} = json_response_and_validate_schema(res_conn, 200)
     refute Repo.get(ScheduledActivity, scheduled_activity.id)
-    refute Repo.get(Oban.Job, job.id)
+
+    refute_enqueued(
+      worker: Pleroma.Workers.ScheduledActivityWorker,
+      args: %{"activity_id" => scheduled_activity.id}
+    )
 
     res_conn =
       conn

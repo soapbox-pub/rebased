@@ -9,7 +9,7 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorker do
 
   import Ecto.Query
 
-  use Pleroma.Workers.WorkerHelper, queue: "mailer"
+  use Pleroma.Workers.WorkerHelper, queue: "background"
 
   @impl Oban.Worker
   def perform(_job) do

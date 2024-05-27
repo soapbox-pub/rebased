@@ -44,7 +44,7 @@ defmodule Pleroma.Web.Federator do
   end
 
   def incoming_ap_doc(%{"type" => "Delete"} = params) do
-    ReceiverWorker.enqueue("incoming_ap_doc", %{"params" => params}, priority: 3)
+    ReceiverWorker.enqueue("incoming_ap_doc", %{"params" => params}, priority: 3, queue: :slow)
   end
 
   def incoming_ap_doc(params) do

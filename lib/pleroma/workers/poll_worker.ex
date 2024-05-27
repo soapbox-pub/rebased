@@ -6,7 +6,7 @@ defmodule Pleroma.Workers.PollWorker do
   @moduledoc """
   Generates notifications when a poll ends.
   """
-  use Pleroma.Workers.WorkerHelper, queue: "poll_notifications"
+  use Pleroma.Workers.WorkerHelper, queue: "background"
 
   alias Pleroma.Activity
   alias Pleroma.Notification

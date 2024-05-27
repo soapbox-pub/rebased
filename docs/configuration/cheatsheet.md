@@ -473,6 +473,7 @@ This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls start
 * ``ct_max_age``: The maximum age for the `Expect-CT` header if sent.
 * ``referrer_policy``: The referrer policy to use, either `"same-origin"` or `"no-referrer"`.
 * ``report_uri``: Adds the specified url to `report-uri` and `report-to` group in CSP header.
+* `allow_unsafe_eval`: Adds `wasm-unsafe-eval` to the CSP header. Needed for some non-essential frontend features like Flash emulation.
 
 ### Pleroma.Web.Plugs.RemoteIp
 

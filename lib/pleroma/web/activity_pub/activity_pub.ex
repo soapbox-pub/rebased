@@ -979,8 +979,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_replies(query, %{exclude_replies: true}) do
     from(
-      [_activity, object] in query,
-      where: fragment("?->>'inReplyTo' is null", object.data)
+      [activity, object] in query,
+      where:
+        fragment("?->>'inReplyTo' is null or ?->>'type' = 'Announce'", object.data, activity.data)
     )
   end
 

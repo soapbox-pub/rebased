@@ -135,13 +135,13 @@ config :pleroma, Pleroma.Web.Endpoint,
 config :logger, :console,
   level: :debug,
   format: "\n$time $metadata[$level] $message\n",
-  metadata: [:request_id]
+  metadata: [:actor, :path, :type, :user]
 
 config :logger, :ex_syslogger,
   level: :debug,
   ident: "pleroma",
   format: "$metadata[$level] $message",
-  metadata: [:request_id]
+  metadata: [:actor, :path, :type, :user]
 
 config :mime, :types, %{
   "application/xml" => ["xml"],
@@ -410,6 +410,11 @@ config :pleroma, :mrf_vocabulary,
   accept: [],
   reject: []
 
+config :pleroma, :mrf_dnsrbl,
+  nameserver: "127.0.0.1",
+  port: 53,
+  zone: "bl.pleroma.com"
+
 # threshold of 7 days
 config :pleroma, :mrf_object_age,
   threshold: 604_800,
@@ -429,6 +434,8 @@ config :pleroma, :mrf_inline_quote, template: "<bdi>RT:</bdi> {url}"
 config :pleroma, :mrf_force_mention,
   mention_parent: true,
   mention_quoted: true
+
+config :pleroma, :mrf_antimentionspam, user_age_limit: 30_000
 
 config :pleroma, :rich_media,
   enabled: true,
@@ -512,7 +519,8 @@ config :pleroma, :http_security,
   sts: false,
   sts_max_age: 31_536_000,
   ct_max_age: 2_592_000,
-  referrer_policy: "same-origin"
+  referrer_policy: "same-origin",
+  allow_unsafe_eval: false
 
 config :cors_plug,
   max_age: 86_400,
@@ -574,24 +582,14 @@ config :pleroma, Oban,
   log: false,
   queues: [
     activity_expiration: 10,
-    token_expiration: 5,
-    filter_expiration: 1,
-    backup: 1,
     federator_incoming: 5,
     federator_outgoing: 5,
     ingestion_queue: 50,
     web_push: 50,
-    mailer: 10,
     transmogrifier: 20,
-    scheduled_activities: 10,
-    poll_notifications: 10,
     background: 5,
-    remote_fetcher: 2,
-    attachments_cleanup: 1,
-    new_users_digest: 1,
-    mute_expire: 5,
     search_indexing: [limit: 10, paused: true],
-    rich_media_expiration: 2
+    slow: 1
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
@@ -925,6 +923,19 @@ config :pleroma, Pleroma.Application,
   streamer_registry: true
 
 config :pleroma, Pleroma.Uploaders.Uploader, timeout: 30_000
+
+config :pleroma, Pleroma.Search.QdrantSearch,
+  qdrant_url: "http://127.0.0.1:6333/",
+  qdrant_api_key: "",
+  openai_url: "http://127.0.0.1:11345",
+  # The healthcheck url has to be set to nil when used with the real openai
+  # API, as it doesn't have a healthcheck endpoint.
+  openai_healthcheck_url: "http://127.0.0.1:11345/health",
+  openai_model: "snowflake/snowflake-arctic-embed-xs",
+  openai_api_key: "",
+  qdrant_index_configuration: %{
+    vectors: %{size: 384, distance: "Cosine"}
+  }
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

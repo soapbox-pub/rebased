@@ -8,7 +8,7 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
   alias Pleroma.Object
   alias Pleroma.Repo
 
-  use Pleroma.Workers.WorkerHelper, queue: "attachments_cleanup"
+  use Pleroma.Workers.WorkerHelper, queue: "slow"
 
   @impl Oban.Worker
   def perform(%Job{

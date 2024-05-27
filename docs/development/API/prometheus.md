@@ -1,44 +1,47 @@
-# Prometheus Metrics
+# Prometheus / OpenTelemetry Metrics
 
-Pleroma includes support for exporting metrics via the [prometheus_ex](https://github.com/deadtrickster/prometheus.ex) library.
+Pleroma includes support for exporting metrics via the [prom_ex](https://github.com/akoutmos/prom_ex) library.
+The metrics are exposed by a dedicated webserver/port to improve privacy and security.
 
 Config example:
 
 ```
-config :prometheus, Pleroma.Web.Endpoint.MetricsExporter,
-  enabled: true,
-  auth: {:basic, "myusername", "mypassword"},
-  ip_whitelist: ["127.0.0.1"],
-  path: "/api/pleroma/app_metrics",
-  format: :text
-```
-
-* `enabled` (Pleroma extension) enables the endpoint
-* `ip_whitelist` (Pleroma extension) could be used to restrict access only to specified IPs
-* `auth` sets the authentication (`false` for no auth; configurable to HTTP Basic Auth, see [prometheus-plugs](https://github.com/deadtrickster/prometheus-plugs#exporting) documentation)
-* `format` sets the output format (`:text` or `:protobuf`)
-* `path` sets the path to app metrics page 
-
-
-## `/api/pleroma/app_metrics`
-
-### Exports Prometheus application metrics
-
-* Method: `GET`
-* Authentication: not required by default (see configuration options above)
-* Params: none
-* Response: text
-
-## Grafana
-
-### Config example
-
-The following is a config example to use with [Grafana](https://grafana.com)
+config :pleroma, Pleroma.PromEx,
+  disabled: false,
+  manual_metrics_start_delay: :no_delay,
+  drop_metrics_groups: [],
+  grafana: [
+    host: System.get_env("GRAFANA_HOST", "http://localhost:3000"),
+    auth_token: System.get_env("GRAFANA_TOKEN"),
+    upload_dashboards_on_start: false,
+    folder_name: "BEAM",
+    annotate_app_lifecycle: true
+  ],
+  metrics_server: [
+    port: 4021,
+    path: "/metrics",
+    protocol: :http,
+    pool_size: 5,
+    cowboy_opts: [],
+    auth_strategy: :none
+  ],
+  datasource: "Prometheus"
 
 ```
-  - job_name: 'beam'
-    metrics_path: /api/pleroma/app_metrics
-    scheme: https
+
+PromEx supports the ability to automatically publish dashboards to your Grafana server as well as register Annotations. If you do not wish to configure this capability you must generate the dashboard JSON files and import them directly. You can find the mix commands in the upstream [documentation](https://hexdocs.pm/prom_ex/Mix.Tasks.PromEx.Dashboard.Export.html). You can find the list of modules enabled in Pleroma for which you should generate dashboards for by examining the contents of the `lib/pleroma/prom_ex.ex` module.
+
+## prometheus.yml
+
+The following is a bare minimum config example to use with [Prometheus](https://prometheus.io) or Prometheus-compatible software like [VictoriaMetrics](https://victoriametrics.com).
+
+```
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'pleroma'
+    scheme: http
     static_configs:
-    - targets: ['pleroma.soykaf.com']
+    - targets: ['pleroma.soykaf.com:4021']
 ```
