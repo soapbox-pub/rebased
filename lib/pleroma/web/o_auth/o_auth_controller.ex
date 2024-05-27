@@ -310,7 +310,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       after_token_exchange(conn, %{token: token})
     else
       _error ->
-        handle_token_exchange_error(conn, :invalid_credentails)
+        handle_token_exchange_error(conn, :invalid_credentials)
     end
   end
 
@@ -610,13 +610,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
-  @spec validate_scopes(App.t(), map() | list()) ::
+  @spec validate_scopes(App.t(), list()) ::
           {:ok, list()} | {:error, :missing_scopes | :unsupported_scopes}
-  defp validate_scopes(%App{} = app, params) when is_map(params) do
-    requested_scopes = Scopes.fetch_scopes(params, app.scopes)
-    validate_scopes(app, requested_scopes)
-  end
-
   defp validate_scopes(%App{} = app, requested_scopes) when is_list(requested_scopes) do
     Scopes.validate(requested_scopes, app.scopes)
   end

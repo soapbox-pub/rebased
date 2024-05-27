@@ -57,7 +57,7 @@ defmodule Pleroma.Web.Push.Impl do
   end
 
   def perform(_) do
-    Logger.warn("Unknown notification type")
+    Logger.warning("Unknown notification type")
     {:error, :unknown_type}
   end
 
@@ -192,6 +192,7 @@ defmodule Pleroma.Web.Push.Impl do
   def format_title(%{type: type}, mastodon_type) do
     case mastodon_type || type do
       "mention" -> "New Mention"
+      "status" -> "New Status"
       "follow" -> "New Follower"
       "follow_request" -> "New Follow Request"
       "reblog" -> "New Repeat"

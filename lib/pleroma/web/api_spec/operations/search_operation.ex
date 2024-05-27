@@ -70,7 +70,7 @@ defmodule Pleroma.Web.ApiSpec.SearchOperation do
         Operation.parameter(
           :account_id,
           :query,
-          FlakeID,
+          FlakeID.schema(),
           "If provided, statuses returned will be authored only by this account"
         ),
         Operation.parameter(
@@ -116,7 +116,7 @@ defmodule Pleroma.Web.ApiSpec.SearchOperation do
         Operation.parameter(
           :account_id,
           :query,
-          FlakeID,
+          FlakeID.schema(),
           "If provided, statuses returned will be authored only by this account"
         ),
         Operation.parameter(

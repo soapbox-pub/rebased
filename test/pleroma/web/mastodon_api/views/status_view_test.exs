@@ -11,17 +11,20 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.RichMedia.Card
 
   require Bitwise
 
+  import Mox
+  import OpenApiSpex.TestAssertions
   import Pleroma.Factory
   import Tesla.Mock
-  import OpenApiSpex.TestAssertions
 
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -198,6 +201,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert_schema(status, "Status", Pleroma.Web.ApiSpec.spec())
   end
 
+  @tag capture_log: true
   test "returns a temporary ap_id based user for activities missing db users" do
     user = insert(:user)
 
@@ -326,6 +330,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         conversation_id: convo_id,
         context: object_data["context"],
         in_reply_to_account_acct: nil,
+        quote: nil,
+        quote_id: nil,
+        quote_url: nil,
+        quote_visible: false,
         content: %{"text/plain" => HTML.strip_tags(object_data["content"])},
         spoiler_text: %{"text/plain" => HTML.strip_tags(object_data["summary"])},
         expires_at: nil,
@@ -333,7 +341,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         thread_muted: false,
         emoji_reactions: [],
         parent_visible: false,
-        pinned_at: nil
+        pinned_at: nil,
+        quotes_count: 0,
+        bookmark_folder: nil
       }
     }
 
@@ -420,6 +430,88 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     [status] = StatusView.render("index.json", %{activities: [activity], as: :activity})
 
     assert status.in_reply_to_id == to_string(note.id)
+  end
+
+  test "a quote post" do
+    post = insert(:note_activity)
+    user = insert(:user)
+
+    {:ok, quote_post} = CommonAPI.post(user, %{status: "he", quote_id: post.id})
+    {:ok, quoted_quote_post} = CommonAPI.post(user, %{status: "yo", quote_id: quote_post.id})
+
+    status = StatusView.render("show.json", %{activity: quoted_quote_post})
+
+    assert status.pleroma.quote.id == to_string(quote_post.id)
+    assert status.pleroma.quote_id == to_string(quote_post.id)
+    assert status.pleroma.quote_url == Object.normalize(quote_post).data["id"]
+    assert status.pleroma.quote_visible
+
+    # Quotes don't go more than one level deep
+    refute status.pleroma.quote.pleroma.quote
+    assert status.pleroma.quote.pleroma.quote_id == to_string(post.id)
+    assert status.pleroma.quote.pleroma.quote_url == Object.normalize(post).data["id"]
+    assert status.pleroma.quote.pleroma.quote_visible
+
+    # In an index
+    [status] = StatusView.render("index.json", %{activities: [quoted_quote_post], as: :activity})
+
+    assert status.pleroma.quote.id == to_string(quote_post.id)
+  end
+
+  test "quoted private post" do
+    user = insert(:user)
+
+    # Insert a private post
+    private = insert(:followers_only_note_activity, user: user)
+    private_object = Object.normalize(private)
+
+    # Create a public post quoting the private post
+    quote_private =
+      insert(:note_activity, note: insert(:note, data: %{"quoteUrl" => private_object.data["id"]}))
+
+    status = StatusView.render("show.json", %{activity: quote_private})
+
+    # The quote isn't rendered
+    refute status.pleroma.quote
+    assert status.pleroma.quote_url == private_object.data["id"]
+    refute status.pleroma.quote_visible
+
+    # After following the user, the quote is rendered
+    follower = insert(:user)
+    CommonAPI.follow(follower, user)
+
+    status = StatusView.render("show.json", %{activity: quote_private, for: follower})
+    assert status.pleroma.quote.id == to_string(private.id)
+    assert status.pleroma.quote_visible
+  end
+
+  test "quoted direct message" do
+    # Insert a direct message
+    direct = insert(:direct_note_activity)
+    direct_object = Object.normalize(direct)
+
+    # Create a public post quoting the direct message
+    quote_direct =
+      insert(:note_activity, note: insert(:note, data: %{"quoteUrl" => direct_object.data["id"]}))
+
+    status = StatusView.render("show.json", %{activity: quote_direct})
+
+    # The quote isn't rendered
+    refute status.pleroma.quote
+    assert status.pleroma.quote_url == direct_object.data["id"]
+    refute status.pleroma.quote_visible
+  end
+
+  test "repost of quote post" do
+    post = insert(:note_activity)
+    user = insert(:user)
+
+    {:ok, quote_post} = CommonAPI.post(user, %{status: "he", quote_id: post.id})
+    {:ok, repost} = CommonAPI.repeat(quote_post.id, user)
+
+    [status] = StatusView.render("index.json", %{activities: [repost], as: :activity})
+
+    assert status.reblog.pleroma.quote.id == to_string(post.id)
   end
 
   test "contains mentions" do
@@ -641,56 +733,105 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   describe "rich media cards" do
     test "a rich media card without a site name renders correctly" do
-      page_url = "http://example.com"
+      page_url = "https://example.com"
 
-      card = %{
-        url: page_url,
-        image: page_url <> "/example.jpg",
-        title: "Example website"
-      }
+      {:ok, card} =
+        Card.create(page_url, %{image: page_url <> "/example.jpg", title: "Example website"})
 
-      %{provider_name: "example.com"} =
-        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+      assert match?(%{provider_name: "example.com"}, StatusView.render("card.json", card))
     end
 
     test "a rich media card without a site name or image renders correctly" do
-      page_url = "http://example.com"
+      page_url = "https://example.com"
 
-      card = %{
-        url: page_url,
-        title: "Example website"
+      fields = %{
+        "url" => page_url,
+        "title" => "Example website"
       }
 
-      %{provider_name: "example.com"} =
-        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+      {:ok, card} = Card.create(page_url, fields)
+
+      assert match?(%{provider_name: "example.com"}, StatusView.render("card.json", card))
     end
 
     test "a rich media card without an image renders correctly" do
-      page_url = "http://example.com"
+      page_url = "https://example.com"
 
-      card = %{
-        url: page_url,
-        site_name: "Example site name",
-        title: "Example website"
+      fields = %{
+        "url" => page_url,
+        "site_name" => "Example site name",
+        "title" => "Example website"
       }
 
-      %{provider_name: "example.com"} =
-        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+      {:ok, card} = Card.create(page_url, fields)
+
+      assert match?(%{provider_name: "example.com"}, StatusView.render("card.json", card))
+    end
+
+    test "a rich media card without descriptions returns the fields with empty strings" do
+      page_url = "https://example.com"
+
+      fields = %{
+        "url" => page_url,
+        "site_name" => "Example site name",
+        "title" => "Example website"
+      }
+
+      {:ok, card} = Card.create(page_url, fields)
+
+      assert match?(
+               %{description: "", image_description: ""},
+               StatusView.render("card.json", card)
+             )
     end
 
     test "a rich media card with all relevant data renders correctly" do
-      page_url = "http://example.com"
+      page_url = "https://example.com"
 
-      card = %{
-        url: page_url,
-        site_name: "Example site name",
-        title: "Example website",
-        image: page_url <> "/example.jpg",
-        description: "Example description"
+      fields = %{
+        "url" => page_url,
+        "site_name" => "Example site name",
+        "title" => "Example website",
+        "image" => page_url <> "/example.jpg",
+        "description" => "Example description"
       }
 
-      %{provider_name: "example.com"} =
-        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+      {:ok, card} = Card.create(page_url, fields)
+
+      assert match?(%{provider_name: "example.com"}, StatusView.render("card.json", card))
+    end
+
+    test "a rich media card has all media proxied" do
+      clear_config([:media_proxy, :enabled], true)
+      clear_config([:media_preview_proxy, :enabled])
+
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
+
+      page_url = "https://example.com"
+
+      fields = %{
+        "url" => page_url,
+        "site_name" => "Example site name",
+        "title" => "Example website",
+        "image" => page_url <> "/example.jpg",
+        "audio" => page_url <> "/example.ogg",
+        "video" => page_url <> "/example.mp4",
+        "description" => "Example description"
+      }
+
+      {:ok, card} = Card.create(page_url, fields)
+
+      %{
+        provider_name: "example.com",
+        image: image,
+        pleroma: %{opengraph: og}
+      } = StatusView.render("card.json", card)
+
+      assert String.match?(image, ~r/\/proxy\//)
+      assert String.match?(og["image"], ~r/\/proxy\//)
+      assert String.match?(og["audio"], ~r/\/proxy\//)
+      assert String.match?(og["video"], ~r/\/proxy\//)
     end
   end
 

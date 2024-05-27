@@ -23,21 +23,21 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   require Logger
   require Pleroma.Constants
 
-  def attachments_from_ids(%{media_ids: ids, descriptions: desc}) do
-    attachments_from_ids_descs(ids, desc)
+  def attachments_from_ids(%{media_ids: ids, descriptions: desc}, user) do
+    attachments_from_ids_descs(ids, desc, user)
   end
 
-  def attachments_from_ids(%{media_ids: ids}) do
-    attachments_from_ids_no_descs(ids)
+  def attachments_from_ids(%{media_ids: ids}, user) do
+    attachments_from_ids_no_descs(ids, user)
   end
 
-  def attachments_from_ids(_), do: []
+  def attachments_from_ids(_, _), do: []
 
-  def attachments_from_ids_no_descs([]), do: []
+  def attachments_from_ids_no_descs([], _), do: []
 
-  def attachments_from_ids_no_descs(ids) do
+  def attachments_from_ids_no_descs(ids, user) do
     Enum.map(ids, fn media_id ->
-      case get_attachment(media_id) do
+      case get_attachment(media_id, user) do
         %Object{data: data} -> data
         _ -> nil
       end
@@ -45,21 +45,27 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Enum.reject(&is_nil/1)
   end
 
-  def attachments_from_ids_descs([], _), do: []
+  def attachments_from_ids_descs([], _, _), do: []
 
-  def attachments_from_ids_descs(ids, descs_str) do
+  def attachments_from_ids_descs(ids, descs_str, user) do
     {_, descs} = Jason.decode(descs_str)
 
     Enum.map(ids, fn media_id ->
-      with %Object{data: data} <- get_attachment(media_id) do
+      with %Object{data: data} <- get_attachment(media_id, user) do
         Map.put(data, "name", descs[media_id])
       end
     end)
     |> Enum.reject(&is_nil/1)
   end
 
-  defp get_attachment(media_id) do
-    Repo.get(Object, media_id)
+  defp get_attachment(media_id, user) do
+    with %Object{data: data} = object <- Repo.get(Object, media_id),
+         %{"type" => type} when type in Pleroma.Constants.upload_object_types() <- data,
+         :ok <- Object.authorize_access(object, user) do
+      object
+    else
+      _ -> nil
+    end
   end
 
   @spec get_to_and_cc(ActivityDraft.t()) :: {list(String.t()), list(String.t())}
@@ -103,7 +109,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def get_to_and_cc(%{visibility: "direct"} = draft) do
     # If the OP is a DM already, add the implicit actor.
-    if draft.in_reply_to && Visibility.is_direct?(draft.in_reply_to) do
+    if draft.in_reply_to && Visibility.direct?(draft.in_reply_to) do
       {Enum.uniq([draft.in_reply_to.data["actor"] | draft.mentions]), []}
     else
       {draft.mentions, []}
@@ -315,13 +321,13 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       format_asctime(date)
     else
       _e ->
-        Logger.warn("Date #{date} in wrong format, must be ISO 8601")
+        Logger.warning("Date #{date} in wrong format, must be ISO 8601")
         ""
     end
   end
 
   def date_to_asctime(date) do
-    Logger.warn("Date #{date} in wrong format, must be ISO 8601")
+    Logger.warning("Date #{date} in wrong format, must be ISO 8601")
     ""
   end
 

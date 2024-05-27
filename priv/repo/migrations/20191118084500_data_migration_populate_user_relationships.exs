@@ -63,7 +63,7 @@ defmodule Pleroma.Repo.Migrations.DataMigrationPopulateUserRelationships do
             ON CONFLICT (source_id, relationship_type, target_id) DO NOTHING
             """)
           else
-            _ -> Logger.warn("Unresolved #{field} reference: (#{source_uuid}, #{target_id})")
+            _ -> Logger.warning("Unresolved #{field} reference: (#{source_uuid}, #{target_id})")
           end
         end
       end

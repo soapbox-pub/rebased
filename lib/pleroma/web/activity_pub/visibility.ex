@@ -11,28 +11,28 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
 
   require Pleroma.Constants
 
-  @spec is_public?(Object.t() | Activity.t() | map()) :: boolean()
-  def is_public?(%Object{data: %{"type" => "Tombstone"}}), do: false
-  def is_public?(%Object{data: data}), do: is_public?(data)
-  def is_public?(%Activity{data: %{"type" => "Move"}}), do: true
-  def is_public?(%Activity{data: data}), do: is_public?(data)
-  def is_public?(%{"directMessage" => true}), do: false
+  @spec public?(Object.t() | Activity.t() | map()) :: boolean()
+  def public?(%Object{data: %{"type" => "Tombstone"}}), do: false
+  def public?(%Object{data: data}), do: public?(data)
+  def public?(%Activity{data: %{"type" => "Move"}}), do: true
+  def public?(%Activity{data: data}), do: public?(data)
+  def public?(%{"directMessage" => true}), do: false
 
-  def is_public?(data) do
+  def public?(data) do
     Utils.label_in_message?(Pleroma.Constants.as_public(), data) or
       Utils.label_in_message?(Utils.as_local_public(), data)
   end
 
-  def is_local_public?(%Object{data: data}), do: is_local_public?(data)
-  def is_local_public?(%Activity{data: data}), do: is_local_public?(data)
+  def local_public?(%Object{data: data}), do: local_public?(data)
+  def local_public?(%Activity{data: data}), do: local_public?(data)
 
-  def is_local_public?(data) do
+  def local_public?(data) do
     Utils.label_in_message?(Utils.as_local_public(), data) and
       not Utils.label_in_message?(Pleroma.Constants.as_public(), data)
   end
 
-  def is_private?(activity) do
-    with false <- is_public?(activity),
+  def private?(activity) do
+    with false <- public?(activity),
          %User{follower_address: follower_address} <-
            User.get_cached_by_ap_id(activity.data["actor"]) do
       follower_address in activity.data["to"]
@@ -41,20 +41,20 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
     end
   end
 
-  def is_announceable?(activity, user, public \\ true) do
-    is_public?(activity) ||
-      (!public && is_private?(activity) && activity.data["actor"] == user.ap_id)
+  def announceable?(activity, user, public \\ true) do
+    public?(activity) ||
+      (!public && private?(activity) && activity.data["actor"] == user.ap_id)
   end
 
-  def is_direct?(%Activity{data: %{"directMessage" => true}}), do: true
-  def is_direct?(%Object{data: %{"directMessage" => true}}), do: true
+  def direct?(%Activity{data: %{"directMessage" => true}}), do: true
+  def direct?(%Object{data: %{"directMessage" => true}}), do: true
 
-  def is_direct?(activity) do
-    !is_public?(activity) && !is_private?(activity)
+  def direct?(activity) do
+    !public?(activity) && !private?(activity)
   end
 
-  def is_list?(%{data: %{"listMessage" => _}}), do: true
-  def is_list?(_), do: false
+  def list?(%{data: %{"listMessage" => _}}), do: true
+  def list?(_), do: false
 
   @spec visible_for_user?(Object.t() | Activity.t() | nil, User.t() | nil) :: boolean()
   def visible_for_user?(%Object{data: %{"type" => "Tombstone"}}, _), do: false
@@ -77,7 +77,7 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
       when module in [Activity, Object] do
     if restrict_unauthenticated_access?(message),
       do: false,
-      else: is_public?(message) and not is_local_public?(message)
+      else: public?(message) and not local_public?(message)
   end
 
   def visible_for_user?(%{__struct__: module} = message, user)
@@ -86,8 +86,8 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
     y = [message.data["actor"]] ++ message.data["to"] ++ (message.data["cc"] || [])
 
     user_is_local = user.local
-    federatable = not is_local_public?(message)
-    (is_public?(message) || Enum.any?(x, &(&1 in y))) and (user_is_local || federatable)
+    federatable = not local_public?(message)
+    (public?(message) || Enum.any?(x, &(&1 in y))) and (user_is_local || federatable)
   end
 
   def entire_thread_visible_for_user?(%Activity{} = activity, %User{} = user) do

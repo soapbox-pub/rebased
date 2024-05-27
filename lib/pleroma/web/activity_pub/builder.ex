@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   This module encodes our addressing policies and general shape of our objects.
   """
 
+  alias Pleroma.Activity
   alias Pleroma.Emoji
   alias Pleroma.Object
   alias Pleroma.User
@@ -131,7 +132,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   def emoji_react(actor, object, emoji) do
     with {:ok, data, meta} <- object_action(actor, object) do
       data =
-        if Emoji.is_unicode_emoji?(emoji) do
+        if Emoji.unicode?(emoji) do
           unicode_emoji_react(object, data, emoji)
         else
           custom_emoji_react(object, data, emoji)
@@ -217,6 +218,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
         "tag" => Keyword.values(draft.tags) |> Enum.uniq()
       }
       |> add_in_reply_to(draft.in_reply_to)
+      |> add_quote(draft.quote_post)
       |> Map.merge(draft.extra)
 
     {:ok, data, []}
@@ -227,6 +229,16 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   defp add_in_reply_to(object, in_reply_to) do
     with %Object{} = in_reply_to_object <- Object.normalize(in_reply_to, fetch: false) do
       Map.put(object, "inReplyTo", in_reply_to_object.data["id"])
+    else
+      _ -> object
+    end
+  end
+
+  defp add_quote(object, nil), do: object
+
+  defp add_quote(object, quote_post) do
+    with %Object{} = quote_object <- Object.normalize(quote_post, fetch: false) do
+      Map.put(object, "quoteUrl", quote_object.data["id"])
     else
       _ -> object
     end
@@ -336,7 +348,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
         actor.ap_id == Relay.ap_id() ->
           [actor.follower_address]
 
-        public? and Visibility.is_local_public?(object) ->
+        public? and Visibility.local_public?(object) ->
           [actor.follower_address, object.data["actor"], Utils.as_local_public()]
 
         public? ->
@@ -364,7 +376,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
     # Address the actor of the object, and our actor's follower collection if the post is public.
     to =
-      if Visibility.is_public?(object) do
+      if Visibility.public?(object) do
         [actor.follower_address, object.data["actor"]]
       else
         [object.data["actor"]]

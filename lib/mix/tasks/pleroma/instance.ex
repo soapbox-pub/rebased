@@ -266,12 +266,20 @@ defmodule Mix.Tasks.Pleroma.Instance do
       config_dir = Path.dirname(config_path)
       psql_dir = Path.dirname(psql_path)
 
+      # Note: Distros requiring group read (0o750) on those directories should
+      # pre-create the directories.
       [config_dir, psql_dir, static_dir, uploads_dir]
       |> Enum.reject(&File.exists?/1)
-      |> Enum.map(&File.mkdir_p!/1)
+      |> Enum.each(fn dir ->
+        File.mkdir_p!(dir)
+        File.chmod!(dir, 0o700)
+      end)
 
       shell_info("Writing config to #{config_path}.")
 
+      # Sadly no fchmod(2) equivalent in Elixir…
+      File.touch!(config_path)
+      File.chmod!(config_path, 0o640)
       File.write(config_path, result_config)
       shell_info("Writing the postgres script to #{psql_path}.")
       File.write(psql_path, result_psql)
@@ -284,14 +292,13 @@ defmodule Mix.Tasks.Pleroma.Instance do
 
       if db_configurable? do
         shell_info(
-          " Please transfer your config to the database after running database migrations. Refer to \"Transfering the config to/from the database\" section of the docs for more information."
+          " Please transfer your config to the database after running database migrations. Refer to \"Transferring the config to/from the database\" section of the docs for more information."
         )
       end
     else
       shell_error(
         "The task would have overwritten the following files:\n" <>
-          (Enum.map(will_overwrite, &"- #{&1}\n") |> Enum.join("")) <>
-          "Rerun with `--force` to overwrite them."
+          Enum.map_join(will_overwrite, &"- #{&1}\n") <> "Rerun with `--force` to overwrite them."
       )
     end
   end
@@ -345,6 +352,4 @@ defmodule Mix.Tasks.Pleroma.Instance do
 
     enabled_filters
   end
-
-  defp upload_filters(_), do: []
 end

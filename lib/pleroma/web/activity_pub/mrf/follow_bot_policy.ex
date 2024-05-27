@@ -19,7 +19,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicy do
       try_follow(follower, message)
     else
       nil ->
-        Logger.warn(
+        Logger.warning(
           "#{__MODULE__} skipped because of missing `:mrf_follow_bot, :follower_nickname` configuration, the :follower_nickname
             account does not exist, or the account is not correctly configured as a bot."
         )

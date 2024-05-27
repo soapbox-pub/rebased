@@ -12,6 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
+  alias Pleroma.Tests.Helpers
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -19,25 +20,38 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Workers.ScheduledActivityWorker
 
+  import Mox
   import Pleroma.Factory
 
   setup do: clear_config([:instance, :federating])
   setup do: clear_config([:instance, :allow_relay])
-  setup do: clear_config([:rich_media, :enabled])
   setup do: clear_config([:mrf, :policies])
   setup do: clear_config([:mrf_keyword, :reject])
+
+  setup do
+    Pleroma.UnstubbedConfigMock
+    |> stub_with(Pleroma.Config)
+
+    Pleroma.StaticStubbedConfigMock
+    |> stub(:get, fn
+      [:rich_media, :enabled] -> false
+      path -> Pleroma.Test.StaticConfig.get(path)
+    end)
+
+    :ok
+  end
 
   describe "posting statuses" do
     setup do: oauth_access(["write:statuses"])
 
     test "posting a status does not increment reblog_count when relaying", %{conn: conn} do
       clear_config([:instance, :federating], true)
-      Config.get([:instance, :allow_relay], true)
+      clear_config([:instance, :allow_relay], true)
 
       response =
         conn
         |> put_req_header("content-type", "application/json")
-        |> post("api/v1/statuses", %{
+        |> post("/api/v1/statuses", %{
           "content_type" => "text/plain",
           "source" => "Pleroma FE",
           "status" => "Hello world",
@@ -50,7 +64,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       response =
         conn
-        |> get("api/v1/statuses/#{response["id"]}", %{})
+        |> get("/api/v1/statuses/#{response["id"]}", %{})
         |> json_response_and_validate_schema(200)
 
       assert response["reblogs_count"] == 0
@@ -109,7 +123,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       conn_four =
         conn
         |> put_req_header("content-type", "application/json")
-        |> post("api/v1/statuses", %{
+        |> post("/api/v1/statuses", %{
           "status" => "oolong",
           "expires_in" => expires_in
         })
@@ -125,6 +139,28 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       )
     end
 
+    test "posting a quote post", %{conn: conn} do
+      user = insert(:user)
+
+      {:ok, %{id: activity_id} = activity} = CommonAPI.post(user, %{status: "yolo"})
+      %{data: %{"id" => quote_url}} = Object.normalize(activity)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "indeed",
+          "quote_id" => activity_id
+        })
+
+      assert %{
+               "id" => id,
+               "pleroma" => %{"quote" => %{"id" => ^activity_id}, "quote_url" => ^quote_url}
+             } = json_response_and_validate_schema(conn, 200)
+
+      assert Activity.get_by_id(id)
+    end
+
     test "it fails to create a status if `expires_in` is less or equal than an hour", %{
       conn: conn
     } do
@@ -134,7 +170,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert %{"error" => "Expiry date is too soon"} =
                conn
                |> put_req_header("content-type", "application/json")
-               |> post("api/v1/statuses", %{
+               |> post("/api/v1/statuses", %{
                  "status" => "oolong",
                  "expires_in" => expires_in
                })
@@ -146,7 +182,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert %{"error" => "Expiry date is too soon"} =
                conn
                |> put_req_header("content-type", "application/json")
-               |> post("api/v1/statuses", %{
+               |> post("/api/v1/statuses", %{
                  "status" => "oolong",
                  "expires_in" => expires_in
                })
@@ -160,7 +196,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert %{"error" => "[KeywordPolicy] Matches with rejected keyword"} =
                conn
                |> put_req_header("content-type", "application/json")
-               |> post("api/v1/statuses", %{"status" => "GNO/Linux"})
+               |> post("/api/v1/statuses", %{"status" => "GNO/Linux"})
                |> json_response_and_validate_schema(422)
     end
 
@@ -197,6 +233,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       assert activity.data["context"] == replied_to.data["context"]
       assert Activity.get_in_reply_to_activity(activity).id == replied_to.id
+    end
+
+    test "replying to a deleted status", %{user: user, conn: conn} do
+      {:ok, status} = CommonAPI.post(user, %{status: "cofe"})
+      {:ok, _deleted_status} = CommonAPI.delete(status.id, user)
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/statuses", %{"status" => "xD", "in_reply_to_id" => status.id})
+      |> json_response_and_validate_schema(422)
     end
 
     test "replying to a direct message with visibility other than direct", %{
@@ -293,59 +339,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert real_status == fake_status
     end
 
-    test "fake statuses' preview card is not cached", %{conn: conn} do
-      clear_config([:rich_media, :enabled], true)
-
-      Tesla.Mock.mock(fn
-        %{
-          method: :get,
-          url: "https://example.com/twitter-card"
-        } ->
-          %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/twitter_card.html")}
-
-        env ->
-          apply(HttpRequestMock, :request, [env])
-      end)
-
-      conn1 =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/statuses", %{
-          "status" => "https://example.com/ogp",
-          "preview" => true
-        })
-
-      conn2 =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/statuses", %{
-          "status" => "https://example.com/twitter-card",
-          "preview" => true
-        })
-
-      assert %{"card" => %{"title" => "The Rock"}} = json_response_and_validate_schema(conn1, 200)
-
-      assert %{"card" => %{"title" => "Small Island Developing States Photo Submission"}} =
-               json_response_and_validate_schema(conn2, 200)
-    end
-
-    test "posting a status with OGP link preview", %{conn: conn} do
-      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-      clear_config([:rich_media, :enabled], true)
-
-      conn =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/statuses", %{
-          "status" => "https://example.com/ogp"
-        })
-
-      assert %{"id" => id, "card" => %{"title" => "The Rock"}} =
-               json_response_and_validate_schema(conn, 200)
-
-      assert Activity.get_by_id(id)
-    end
-
     test "posting a direct status", %{conn: conn} do
       user2 = insert(:user)
       content = "direct cofe @#{user2.nickname}"
@@ -353,7 +346,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       conn =
         conn
         |> put_req_header("content-type", "application/json")
-        |> post("api/v1/statuses", %{"status" => content, "visibility" => "direct"})
+        |> post("/api/v1/statuses", %{"status" => content, "visibility" => "direct"})
 
       assert %{"id" => id} = response = json_response_and_validate_schema(conn, 200)
       assert response["visibility"] == "direct"
@@ -390,7 +383,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       result =
         conn
-        |> get("api/v1/statuses/#{activity}")
+        |> get("/api/v1/statuses/#{activity}")
 
       assert %{
                "content" => "cofe is my copilot",
@@ -419,7 +412,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       result =
         conn
-        |> get("api/v1/statuses/#{activity}")
+        |> get("/api/v1/statuses/#{activity}")
 
       assert %{
                "content" => "club mate is my wingman",
@@ -771,6 +764,49 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     {:ok, local: local, remote: remote}
   end
 
+  defp local_and_remote_context_activities do
+    local_user_1 = insert(:user)
+    local_user_2 = insert(:user)
+    remote_user = insert(:user, local: false)
+
+    {:ok, %{id: id1, data: %{"context" => context}}} =
+      CommonAPI.post(local_user_1, %{status: "post"})
+
+    {:ok, %{id: id2} = post} =
+      CommonAPI.post(local_user_2, %{status: "local reply", in_reply_to_status_id: id1})
+
+    params = %{
+      "@context" => "https://www.w3.org/ns/activitystreams",
+      "actor" => remote_user.ap_id,
+      "type" => "Create",
+      "context" => context,
+      "id" => "#{remote_user.ap_id}/activities/1",
+      "inReplyTo" => post.data["id"],
+      "object" => %{
+        "type" => "Note",
+        "content" => "remote reply",
+        "context" => context,
+        "id" => "#{remote_user.ap_id}/objects/1",
+        "attributedTo" => remote_user.ap_id,
+        "to" => [
+          local_user_1.ap_id,
+          local_user_2.ap_id,
+          "https://www.w3.org/ns/activitystreams#Public"
+        ]
+      },
+      "to" => [
+        local_user_1.ap_id,
+        local_user_2.ap_id,
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    }
+
+    {:ok, job} = Pleroma.Web.Federator.incoming_ap_doc(params)
+    {:ok, remote_activity} = ObanHelpers.perform(job)
+
+    %{locals: [id1, id2], remote: remote_activity.id, context: context}
+  end
+
   describe "status with restrict unauthenticated activities for local and remote" do
     setup do: local_and_remote_activities()
 
@@ -954,6 +990,230 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       res_conn = get(conn, "/api/v1/statuses?ids[]=#{local.id}&ids[]=#{remote.id}")
 
       assert length(json_response_and_validate_schema(res_conn, 200)) == 2
+    end
+  end
+
+  describe "getting status contexts restricted unauthenticated for local and remote" do
+    setup do: local_and_remote_context_activities()
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :local], true)
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :remote], true)
+
+    test "if user is unauthenticated", %{conn: conn, locals: [post_id, _]} do
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      assert json_response_and_validate_schema(res_conn, 200) == %{
+               "ancestors" => [],
+               "descendants" => []
+             }
+    end
+
+    test "if user is unauthenticated reply", %{conn: conn, locals: [_, reply_id]} do
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      assert json_response_and_validate_schema(res_conn, 200) == %{
+               "ancestors" => [],
+               "descendants" => []
+             }
+    end
+
+    test "if user is authenticated", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      %{"ancestors" => [], "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert reply_id in descendant_ids
+      assert remote_reply_id in descendant_ids
+    end
+
+    test "if user is authenticated reply", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      %{"ancestors" => ancestors, "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      ancestor_ids =
+        ancestors
+        |> Enum.map(& &1["id"])
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert post_id in ancestor_ids
+      assert remote_reply_id in descendant_ids
+    end
+  end
+
+  describe "getting status contexts restricted unauthenticated for local" do
+    setup do: local_and_remote_context_activities()
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :local], true)
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :remote], false)
+
+    test "if user is unauthenticated", %{
+      conn: conn,
+      locals: [post_id, reply_id],
+      remote: remote_reply_id
+    } do
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      %{"ancestors" => [], "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert reply_id not in descendant_ids
+      assert remote_reply_id in descendant_ids
+    end
+
+    test "if user is unauthenticated reply", %{
+      conn: conn,
+      locals: [post_id, reply_id],
+      remote: remote_reply_id
+    } do
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      %{"ancestors" => ancestors, "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      ancestor_ids =
+        ancestors
+        |> Enum.map(& &1["id"])
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert post_id not in ancestor_ids
+      assert remote_reply_id in descendant_ids
+    end
+
+    test "if user is authenticated", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      %{"ancestors" => [], "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert reply_id in descendant_ids
+      assert remote_reply_id in descendant_ids
+    end
+
+    test "if user is authenticated reply", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      %{"ancestors" => ancestors, "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      ancestor_ids =
+        ancestors
+        |> Enum.map(& &1["id"])
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert post_id in ancestor_ids
+      assert remote_reply_id in descendant_ids
+    end
+  end
+
+  describe "getting status contexts restricted unauthenticated for remote" do
+    setup do: local_and_remote_context_activities()
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :local], false)
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :remote], true)
+
+    test "if user is unauthenticated", %{
+      conn: conn,
+      locals: [post_id, reply_id],
+      remote: remote_reply_id
+    } do
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      %{"ancestors" => [], "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert reply_id in descendant_ids
+      assert remote_reply_id not in descendant_ids
+    end
+
+    test "if user is unauthenticated reply", %{
+      conn: conn,
+      locals: [post_id, reply_id],
+      remote: remote_reply_id
+    } do
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      %{"ancestors" => ancestors, "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      ancestor_ids =
+        ancestors
+        |> Enum.map(& &1["id"])
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert post_id in ancestor_ids
+      assert remote_reply_id not in descendant_ids
+    end
+
+    test "if user is authenticated", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      %{"ancestors" => [], "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      reply_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert reply_id in reply_ids
+      assert remote_reply_id in reply_ids
+    end
+
+    test "if user is authenticated reply", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      %{"ancestors" => ancestors, "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      ancestor_ids =
+        ancestors
+        |> Enum.map(& &1["id"])
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert post_id in ancestor_ids
+      assert remote_reply_id in descendant_ids
     end
   end
 
@@ -1355,7 +1615,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert %{"id" => id} =
                conn
                |> put_req_header("content-type", "application/json")
-               |> post("api/v1/statuses", %{
+               |> post("/api/v1/statuses", %{
                  "status" => "oolong",
                  "expires_in" => expires_in
                })
@@ -1390,87 +1650,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         args: %{activity_id: id},
         scheduled_at: expires_at
       )
-    end
-  end
-
-  describe "cards" do
-    setup do
-      clear_config([:rich_media, :enabled], true)
-
-      oauth_access(["read:statuses"])
-    end
-
-    test "returns rich-media card", %{conn: conn, user: user} do
-      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-
-      {:ok, activity} = CommonAPI.post(user, %{status: "https://example.com/ogp"})
-
-      card_data = %{
-        "image" => "http://ia.media-imdb.com/images/rock.jpg",
-        "provider_name" => "example.com",
-        "provider_url" => "https://example.com",
-        "title" => "The Rock",
-        "type" => "link",
-        "url" => "https://example.com/ogp",
-        "description" =>
-          "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
-        "pleroma" => %{
-          "opengraph" => %{
-            "image" => "http://ia.media-imdb.com/images/rock.jpg",
-            "title" => "The Rock",
-            "type" => "video.movie",
-            "url" => "https://example.com/ogp",
-            "description" =>
-              "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer."
-          }
-        }
-      }
-
-      response =
-        conn
-        |> get("/api/v1/statuses/#{activity.id}/card")
-        |> json_response_and_validate_schema(200)
-
-      assert response == card_data
-
-      # works with private posts
-      {:ok, activity} =
-        CommonAPI.post(user, %{status: "https://example.com/ogp", visibility: "direct"})
-
-      response_two =
-        conn
-        |> get("/api/v1/statuses/#{activity.id}/card")
-        |> json_response_and_validate_schema(200)
-
-      assert response_two == card_data
-    end
-
-    test "replaces missing description with an empty string", %{conn: conn, user: user} do
-      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-
-      {:ok, activity} = CommonAPI.post(user, %{status: "https://example.com/ogp-missing-data"})
-
-      response =
-        conn
-        |> get("/api/v1/statuses/#{activity.id}/card")
-        |> json_response_and_validate_schema(:ok)
-
-      assert response == %{
-               "type" => "link",
-               "title" => "Pleroma",
-               "description" => "",
-               "image" => nil,
-               "provider_name" => "example.com",
-               "provider_url" => "https://example.com",
-               "url" => "https://example.com/ogp-missing-data",
-               "pleroma" => %{
-                 "opengraph" => %{
-                   "title" => "Pleroma",
-                   "type" => "website",
-                   "url" => "https://example.com/ogp-missing-data"
-                 }
-               }
-             }
     end
   end
 
@@ -1516,6 +1695,60 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     assert [json_response_and_validate_schema(response2, 200)] ==
              json_response_and_validate_schema(bookmarks, 200)
+  end
+
+  test "bookmark folders" do
+    %{conn: conn, user: user} = oauth_access(["write:bookmarks", "read:bookmarks"])
+
+    {:ok, folder} = Pleroma.BookmarkFolder.create(user.id, "folder")
+    author = insert(:user)
+
+    folder_bookmarks_uri = "/api/v1/bookmarks?folder_id=#{folder.id}"
+
+    {:ok, activity1} = CommonAPI.post(author, %{status: "heweoo?"})
+    {:ok, activity2} = CommonAPI.post(author, %{status: "heweoo!"})
+
+    # Add bookmark with a folder
+    response =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/statuses/#{activity1.id}/bookmark", %{folder_id: folder.id})
+
+    assert json_response_and_validate_schema(response, 200)["bookmarked"] == true
+
+    assert json_response_and_validate_schema(response, 200)["pleroma"]["bookmark_folder"] ==
+             folder.id
+
+    response =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/statuses/#{activity2.id}/bookmark")
+
+    assert json_response_and_validate_schema(response, 200)["bookmarked"] == true
+    assert json_response_and_validate_schema(response, 200)["pleroma"]["bookmark_folder"] == nil
+
+    bookmarks =
+      get(conn, folder_bookmarks_uri)
+      |> json_response_and_validate_schema(200)
+
+    assert length(bookmarks) == 1
+
+    # Update folder for existing bookmark
+    response =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/statuses/#{activity2.id}/bookmark", %{folder_id: folder.id})
+
+    assert json_response_and_validate_schema(response, 200)["bookmarked"] == true
+
+    assert json_response_and_validate_schema(response, 200)["pleroma"]["bookmark_folder"] ==
+             folder.id
+
+    bookmarks =
+      get(conn, folder_bookmarks_uri)
+      |> json_response_and_validate_schema(200)
+
+    assert length(bookmarks) == 2
   end
 
   describe "conversation muting" do
@@ -1605,7 +1838,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       conn
       |> assign(:user, user3)
       |> assign(:token, insert(:oauth_token, user: user3, scopes: ["read:statuses"]))
-      |> get("api/v1/timelines/home")
+      |> get("/api/v1/timelines/home")
 
     [reblogged_activity] = json_response_and_validate_schema(conn3, 200)
 
@@ -1876,7 +2109,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     # Using the header for pagination works correctly
     [next, _] = get_resp_header(result, "link") |> hd() |> String.split(", ")
-    [_, max_id] = Regex.run(~r/max_id=([^&]+)/, next)
+    [next_url, _next_rel] = String.split(next, ";")
+    next_url = String.trim_trailing(next_url, ">") |> String.trim_leading("<")
+
+    max_id = Helpers.get_query_parameter(next_url, "max_id")
 
     assert max_id == third_favorite.id
 

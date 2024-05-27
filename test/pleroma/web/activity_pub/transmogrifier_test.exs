@@ -123,18 +123,38 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert activity.data["context"] == object.data["context"]
     end
 
-    test "it drops link tags" do
+    test "it keeps link tags" do
       insert(:user, ap_id: "https://example.org/users/alice")
 
       message = File.read!("test/fixtures/fep-e232.json") |> Jason.decode!()
 
+      assert capture_log(fn ->
+               assert {:ok, activity} = Transmogrifier.handle_incoming(message)
+               object = Object.normalize(activity)
+               assert [%{"type" => "Mention"}, %{"type" => "Link"}] = object.data["tag"]
+             end) =~ "Object rejected while fetching"
+    end
+
+    test "it accepts quote posts" do
+      insert(:user, ap_id: "https://misskey.io/users/7rkrarq81i")
+
+      object = File.read!("test/fixtures/quote_post/misskey_quote_post.json") |> Jason.decode!()
+
+      message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "type" => "Create",
+        "actor" => "https://misskey.io/users/7rkrarq81i",
+        "object" => object
+      }
+
       assert {:ok, activity} = Transmogrifier.handle_incoming(message)
 
+      # Object was created in the database
       object = Object.normalize(activity)
-      assert length(object.data["tag"]) == 1
+      assert object.data["quoteUrl"] == "https://misskey.io/notes/8vs6wxufd0"
 
-      tag = object.data["tag"] |> List.first()
-      assert tag["type"] == "Mention"
+      # It fetched the quoted post
+      assert Object.normalize("https://misskey.io/notes/8vs6wxufd0")
     end
   end
 
@@ -350,6 +370,20 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                }
              } = prepared["object"]
     end
+
+    test "it prepares a quote post" do
+      user = insert(:user)
+
+      {:ok, quoted_post} = CommonAPI.post(user, %{status: "hey"})
+      {:ok, quote_post} = CommonAPI.post(user, %{status: "hey", quote_id: quoted_post.id})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(quote_post.data)
+
+      %{data: %{"id" => quote_id}} = Object.normalize(quoted_post)
+
+      assert modified["object"]["quoteUrl"] == quote_id
+      assert modified["object"]["quoteUri"] == quote_id
+    end
   end
 
   describe "actor rewriting" do
@@ -376,7 +410,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert capture_log(fn ->
                {:error, _} = Transmogrifier.handle_incoming(data)
-             end) =~ "Object containment failed"
+             end) =~ "Object rejected while fetching"
     end
 
     test "it rejects activities which reference objects that have an incorrect attribution (variant 1)" do
@@ -391,7 +425,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert capture_log(fn ->
                {:error, _} = Transmogrifier.handle_incoming(data)
-             end) =~ "Object containment failed"
+             end) =~ "Object rejected while fetching"
     end
 
     test "it rejects activities which reference objects that have an incorrect attribution (variant 2)" do
@@ -406,7 +440,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert capture_log(fn ->
                {:error, _} = Transmogrifier.handle_incoming(data)
-             end) =~ "Object containment failed"
+             end) =~ "Object rejected while fetching"
     end
   end
 

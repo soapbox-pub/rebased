@@ -7,10 +7,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicyTest do
   use Pleroma.Tests.Helpers
 
   alias Pleroma.HTTP
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy
 
   import Mock
+  import Mox
 
   @message %{
     "type" => "Create",
@@ -41,6 +43,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicyTest do
       }
     }
   }
+
+  setup do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
+    :ok
+  end
 
   setup do: clear_config([:media_proxy, :enabled], true)
 

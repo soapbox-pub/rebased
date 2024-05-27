@@ -4,9 +4,20 @@
 
 defmodule Pleroma.Web.PleromaAPI.BackupViewTest do
   use Pleroma.DataCase, async: true
+
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User.Backup
   alias Pleroma.Web.PleromaAPI.BackupView
+
+  import Mox
   import Pleroma.Factory
+
+  setup do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
+    :ok
+  end
 
   test "it renders the ID" do
     user = insert(:user)

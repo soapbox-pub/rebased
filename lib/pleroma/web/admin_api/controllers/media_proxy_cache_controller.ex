@@ -11,7 +11,7 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
 
   plug(
     OAuthScopesPlug,
@@ -27,7 +27,7 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
 
   defdelegate open_api_operation(action), to: Spec.MediaProxyCacheOperation
 
-  def index(%{assigns: %{user: _}} = conn, params) do
+  def index(%{assigns: %{user: _}, private: %{open_api_spex: %{params: params}}} = conn, _) do
     entries = fetch_entries(params)
     urls = paginate_entries(entries, params.page, params.page_size)
 
@@ -59,12 +59,19 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
     Enum.slice(entries, offset, page_size)
   end
 
-  def delete(%{assigns: %{user: _}, body_params: %{urls: urls}} = conn, _) do
+  def delete(
+        %{assigns: %{user: _}, private: %{open_api_spex: %{body_params: %{urls: urls}}}} = conn,
+        _
+      ) do
     MediaProxy.remove_from_banned_urls(urls)
     json(conn, %{})
   end
 
-  def purge(%{assigns: %{user: _}, body_params: %{urls: urls, ban: ban}} = conn, _) do
+  def purge(
+        %{assigns: %{user: _}, private: %{open_api_spex: %{body_params: %{urls: urls, ban: ban}}}} =
+          conn,
+        _
+      ) do
     MediaProxy.Invalidation.purge(urls)
 
     if ban do

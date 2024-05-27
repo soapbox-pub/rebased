@@ -200,7 +200,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {result, _, []} = Utils.format_input(code, "text/markdown")
 
       assert result ==
-               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{mario.ap_id}" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{luigi.id}" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what’s up?</p>]
+               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{mario.ap_id}" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{luigi.id}" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what&#39;s up?</p>]
     end
 
     test "remote mentions" do
@@ -211,7 +211,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {result, _, []} = Utils.format_input(code, "text/markdown")
 
       assert result ==
-               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{mario.ap_id}" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{luigi.id}" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what’s up?</p>]
+               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{mario.ap_id}" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{luigi.id}" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what&#39;s up?</p>]
     end
 
     test "raw HTML" do
@@ -229,7 +229,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     test "blockquote" do
       code = ~s[> whoms't are you quoting?]
       {result, [], []} = Utils.format_input(code, "text/markdown")
-      assert result == "<blockquote><p>whoms’t are you quoting?</p></blockquote>"
+      assert result == "<blockquote><p>whoms&#39;t are you quoting?</p></blockquote>"
     end
 
     test "code" do
@@ -586,41 +586,61 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     end
   end
 
-  describe "attachments_from_ids_descs/2" do
+  describe "attachments_from_ids_descs/3" do
     test "returns [] when attachment ids is empty" do
-      assert Utils.attachments_from_ids_descs([], "{}") == []
+      assert Utils.attachments_from_ids_descs([], "{}", nil) == []
     end
 
     test "returns list attachments with desc" do
-      object = insert(:note)
+      user = insert(:user)
+      object = insert(:attachment, %{user: user})
       desc = Jason.encode!(%{object.id => "test-desc"})
 
-      assert Utils.attachments_from_ids_descs(["#{object.id}", "34"], desc) == [
+      assert Utils.attachments_from_ids_descs(["#{object.id}", "34"], desc, user) == [
                Map.merge(object.data, %{"name" => "test-desc"})
              ]
     end
   end
 
-  describe "attachments_from_ids/1" do
+  describe "attachments_from_ids/2" do
     test "returns attachments with descs" do
-      object = insert(:note)
+      user = insert(:user)
+      object = insert(:attachment, %{user: user})
       desc = Jason.encode!(%{object.id => "test-desc"})
 
-      assert Utils.attachments_from_ids(%{
-               media_ids: ["#{object.id}"],
-               descriptions: desc
-             }) == [
+      assert Utils.attachments_from_ids(
+               %{
+                 media_ids: ["#{object.id}"],
+                 descriptions: desc
+               },
+               user
+             ) == [
                Map.merge(object.data, %{"name" => "test-desc"})
              ]
     end
 
     test "returns attachments without descs" do
-      object = insert(:note)
-      assert Utils.attachments_from_ids(%{media_ids: ["#{object.id}"]}) == [object.data]
+      user = insert(:user)
+      object = insert(:attachment, %{user: user})
+      assert Utils.attachments_from_ids(%{media_ids: ["#{object.id}"]}, user) == [object.data]
     end
 
     test "returns [] when not pass media_ids" do
-      assert Utils.attachments_from_ids(%{}) == []
+      assert Utils.attachments_from_ids(%{}, nil) == []
+    end
+
+    test "returns [] when media_ids not belong to current user" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      object = insert(:attachment, %{user: user})
+
+      assert Utils.attachments_from_ids(%{media_ids: ["#{object.id}"]}, user2) == []
+    end
+
+    test "checks that the object is of upload type" do
+      object = insert(:note)
+      assert Utils.attachments_from_ids(%{media_ids: ["#{object.id}"]}, nil) == []
     end
   end
 
