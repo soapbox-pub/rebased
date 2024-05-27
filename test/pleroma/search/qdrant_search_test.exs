@@ -15,6 +15,18 @@ defmodule Pleroma.Search.QdrantSearchTest do
   alias Pleroma.Workers.SearchIndexingWorker
 
   describe "Qdrant search" do
+    test "returns the correct healthcheck endpoints" do
+      Config
+      |> expect(:get, 1, fn
+        [Pleroma.Search.QdrantSearch, key], nil ->
+          %{qdrant_url: "https://qdrant.url"}[key]
+      end)
+
+      health_endpoints = QdrantSearch.healthcheck_endpoints()
+
+      assert "https://qdrant.url/healthz" in health_endpoints
+    end
+
     test "searches for a term by encoding it and sending it to qdrant" do
       user = insert(:user)
 

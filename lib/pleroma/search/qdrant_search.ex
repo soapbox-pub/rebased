@@ -139,6 +139,17 @@ defmodule Pleroma.Search.QdrantSearch do
         []
     end
   end
+
+  @impl true
+  def healthcheck_endpoints do
+    qdrant_health =
+      Config.get([Pleroma.Search.QdrantSearch, :qdrant_url])
+      |> URI.parse()
+      |> Map.put(:path, "/healthz")
+      |> URI.to_string()
+
+    [qdrant_health]
+  end
 end
 
 defmodule Pleroma.Search.QdrantSearch.OpenAIClient do
