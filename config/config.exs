@@ -919,6 +919,9 @@ config :pleroma, Pleroma.Search.QdrantSearch,
   qdrant_url: "http://127.0.0.1:6333/",
   qdrant_api_key: "",
   openai_url: "http://127.0.0.1:11345",
+  # The healthcheck url has to be set to nil when used with the real openai
+  # API, as it doesn't have a healthcheck endpoint.
+  openai_healthcheck_url: "http://127.0.0.1:11345/health",
   openai_model: "snowflake/snowflake-arctic-embed-xs",
   openai_api_key: "",
   qdrant_index_configuration: %{

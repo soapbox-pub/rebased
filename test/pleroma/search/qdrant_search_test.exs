@@ -16,15 +16,29 @@ defmodule Pleroma.Search.QdrantSearchTest do
 
   describe "Qdrant search" do
     test "returns the correct healthcheck endpoints" do
+      # No openai healthcheck URL
       Config
-      |> expect(:get, 1, fn
+      |> expect(:get, 2, fn
         [Pleroma.Search.QdrantSearch, key], nil ->
           %{qdrant_url: "https://qdrant.url"}[key]
       end)
 
-      health_endpoints = QdrantSearch.healthcheck_endpoints()
+      [health_endpoint] = QdrantSearch.healthcheck_endpoints()
 
-      assert "https://qdrant.url/healthz" in health_endpoints
+      assert "https://qdrant.url/healthz" == health_endpoint
+
+      # Set openai healthcheck URL
+      Config
+      |> expect(:get, 2, fn
+        [Pleroma.Search.QdrantSearch, key], nil ->
+          %{qdrant_url: "https://qdrant.url", openai_healthcheck_url: "https://openai.url/health"}[
+            key
+          ]
+      end)
+
+      [_, health_endpoint] = QdrantSearch.healthcheck_endpoints()
+
+      assert "https://openai.url/health" == health_endpoint
     end
 
     test "searches for a term by encoding it and sending it to qdrant" do

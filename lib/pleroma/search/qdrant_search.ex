@@ -148,7 +148,9 @@ defmodule Pleroma.Search.QdrantSearch do
       |> Map.put(:path, "/healthz")
       |> URI.to_string()
 
-    [qdrant_health]
+    openai_health = Config.get([Pleroma.Search.QdrantSearch, :openai_healthcheck_url])
+
+    [qdrant_health, openai_health] |> Enum.filter(& &1)
   end
 end
 
