@@ -827,6 +827,11 @@ config :pleroma, :pools,
     max_waiting: 20,
     recv_timeout: 15_000
   ],
+  rich_media: [
+    size: 25,
+    max_waiting: 20,
+     recv_timeout: 15_000
+   ],
   upload: [
     size: 25,
     max_waiting: 5,
@@ -844,6 +849,10 @@ config :pleroma, :hackney_pools,
     timeout: 150_000
   ],
   media: [
+    max_connections: 50,
+    timeout: 150_000
+  ],
+  rich_media: [
     max_connections: 50,
     timeout: 150_000
   ],
