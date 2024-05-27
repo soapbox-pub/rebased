@@ -184,4 +184,15 @@ defmodule Pleroma.Search.Meilisearch do
   def remove_from_index(object) do
     meili_delete("/indexes/objects/documents/#{object.id}")
   end
+
+  @impl true
+  def healthcheck_endpoints do
+    endpoint =
+      Config.get([Pleroma.Search.Meilisearch, :url])
+      |> URI.parse()
+      |> Map.put(:path, "/health")
+      |> URI.to_string()
+
+    [endpoint]
+  end
 end
