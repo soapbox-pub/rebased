@@ -282,7 +282,7 @@ defmodule Pleroma.Upload do
         end
 
       Pleroma.Uploaders.IPFS ->
-        Config.get([Pleroma.Uploaders.IPFS, :get_gateway_url])
+        @config_impl.get([Pleroma.Uploaders.IPFS, :get_gateway_url])
 
       _ ->
         public_endpoint || upload_base_url || Pleroma.Web.Endpoint.url() <> "/media/"

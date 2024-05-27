@@ -6,11 +6,12 @@ defmodule Pleroma.Uploaders.IPFS do
   @behaviour Pleroma.Uploaders.Uploader
   require Logger
 
-  alias Pleroma.Config
   alias Tesla.Multipart
 
+  @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
+
   defp get_final_url(method) do
-    config = Config.get([__MODULE__])
+    config = @config_impl.get([__MODULE__])
     post_base_url = Keyword.get(config, :post_gateway_url)
 
     Path.join([post_base_url, method])
@@ -69,7 +70,7 @@ defmodule Pleroma.Uploaders.IPFS do
   @impl true
   def delete_file(file) do
     case Pleroma.HTTP.post(delete_file_endpoint(), "", [], params: [arg: file]) do
-      {:ok, %{status_code: 204}} -> :ok
+      {:ok, %{status: 204}} -> :ok
       error -> {:error, inspect(error)}
     end
   end
