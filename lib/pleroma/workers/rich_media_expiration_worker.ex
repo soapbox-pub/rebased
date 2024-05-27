@@ -6,7 +6,7 @@ defmodule Pleroma.Workers.RichMediaExpirationWorker do
   alias Pleroma.Web.RichMedia.Card
 
   use Oban.Worker,
-    queue: :rich_media_expiration
+    queue: :background
 
   @impl Oban.Worker
   def perform(%Job{args: %{"url" => url} = _args}) do
