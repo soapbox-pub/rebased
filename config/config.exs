@@ -135,13 +135,13 @@ config :pleroma, Pleroma.Web.Endpoint,
 config :logger, :console,
   level: :debug,
   format: "\n$time $metadata[$level] $message\n",
-  metadata: [:request_id]
+  metadata: [:actor, :path, :type, :user]
 
 config :logger, :ex_syslogger,
   level: :debug,
   ident: "pleroma",
   format: "$metadata[$level] $message",
-  metadata: [:request_id]
+  metadata: [:actor, :path, :type, :user]
 
 config :mime, :types, %{
   "application/xml" => ["xml"],
