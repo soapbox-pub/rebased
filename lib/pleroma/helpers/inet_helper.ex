@@ -25,6 +25,6 @@ defmodule Pleroma.Helpers.InetHelper do
         InetCidr.v6?(InetCidr.parse_address!(proxy)) -> proxy <> "/128"
       end
 
-    InetCidr.parse(proxy, true)
+    InetCidr.parse_cidr!(proxy, true)
   end
 end
