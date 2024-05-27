@@ -1,0 +1,1 @@
+pleroma_ctl: Use realpath(1) instead of readlink(1)

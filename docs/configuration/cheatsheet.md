@@ -662,6 +662,19 @@ config :ex_aws, :s3,
   host: "s3.eu-central-1.amazonaws.com"
 ```
 
+#### Pleroma.Uploaders.IPFS
+
+* `post_gateway_url`: URL with port of POST Gateway (unauthenticated)
+* `get_gateway_url`: URL of public GET Gateway
+
+Example:
+
+```elixir
+config :pleroma, Pleroma.Uploaders.IPFS,
+  post_gateway_url: "http://localhost:5001",
+  get_gateway_url: "http://{CID}.ipfs.mydomain.com"
+```
+
 ### Upload filters
 
 #### Pleroma.Upload.Filter.AnonymizeFilename

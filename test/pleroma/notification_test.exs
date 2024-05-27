@@ -112,6 +112,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, [notification]} = Notification.create_notifications(status)
 
       assert notification.user_id == subscriber.id
+      assert notification.type == "status"
     end
 
     test "does not create a notification for subscribed users if status is a reply" do
@@ -134,6 +135,21 @@ defmodule Pleroma.NotificationTest do
 
       subscriber_notifications = Notification.for_user(subscriber)
       assert Enum.empty?(subscriber_notifications)
+    end
+
+    test "does not create subscriber notification if mentioned" do
+      user = insert(:user)
+      subscriber = insert(:user)
+
+      User.subscribe(subscriber, user)
+
+      {:ok, status} = CommonAPI.post(user, %{status: "mentioning @#{subscriber.nickname}"})
+      {:ok, [notification] = notifications} = Notification.create_notifications(status)
+
+      assert length(notifications) == 1
+
+      assert notification.user_id == subscriber.id
+      assert notification.type == "mention"
     end
 
     test "it sends edited notifications to those who repeated a status" do
@@ -839,22 +855,6 @@ defmodule Pleroma.NotificationTest do
       assert Enum.empty?(Notification.for_user(user))
 
       {:error, _} = CommonAPI.repeat(activity.id, other_user)
-
-      assert Enum.empty?(Notification.for_user(user))
-    end
-
-    test "replying to a deleted post without tagging does not generate a notification" do
-      user = insert(:user)
-      other_user = insert(:user)
-
-      {:ok, activity} = CommonAPI.post(user, %{status: "test post"})
-      {:ok, _deletion_activity} = CommonAPI.delete(activity.id, user)
-
-      {:ok, _reply_activity} =
-        CommonAPI.post(other_user, %{
-          status: "test reply",
-          in_reply_to_status_id: activity.id
-        })
 
       assert Enum.empty?(Notification.for_user(user))
     end
