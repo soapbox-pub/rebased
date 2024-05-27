@@ -901,7 +901,6 @@ config :pleroma, Pleroma.User.Backup,
   process_chunk_size: 100
 
 config :pleroma, ConcurrentLimiter, [
-  {Pleroma.Web.RichMedia.Helpers, [max_running: 5, max_waiting: 5]},
   {Pleroma.Search, [max_running: 30, max_waiting: 50]}
 ]
 
