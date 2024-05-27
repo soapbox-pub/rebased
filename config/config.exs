@@ -415,6 +415,13 @@ config :pleroma, :mrf_object_age,
   threshold: 604_800,
   actions: [:delist, :strip_followers]
 
+config :pleroma, :mrf_nsfw_api,
+  url: "http://127.0.0.1:5000/",
+  threshold: 0.7,
+  mark_sensitive: true,
+  unlist: false,
+  reject: false
+
 config :pleroma, :mrf_follow_bot, follower_nickname: nil
 
 config :pleroma, :mrf_inline_quote, template: "<bdi>RT:</bdi> {url}"
