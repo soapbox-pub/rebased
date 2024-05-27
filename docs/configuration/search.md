@@ -10,6 +10,30 @@ To use built-in search that has no external dependencies, set the search module 
 
 While it has no external dependencies, it has problems with performance and relevancy.
 
+## QdrantSearch
+
+This uses the vector search engine [Qdrant](https://qdrant.tech) to search the posts in a vector space. This needs a way to generate embeddings and uses the [OpenAI API](https://platform.openai.com/docs/guides/embeddings/what-are-embeddings). This is implemented by several project besides OpenAI itself, including the python-based fastembed-server found in `supplemental/search/fastembed-api`.
+
+The default settings will support a setup where both the fastembed server and Qdrant run on the same system as pleroma. To use it, set the search provider and run the fastembed server, see the README in `supplemental/search/fastembed-api`:
+
+> config :pleroma, Pleroma.Search, module: Pleroma.Search.QdrantSearch
+
+Then, start the Qdrant server, see [here](https://qdrant.tech/documentation/quick-start/) for instructions.
+
+You will also need to create the Qdrant index once by running `mix pleroma.search.indexer create_index`. Running `mix pleroma.search.indexer index` will retroactively index the last 100_000 activities.
+
+### Indexing and model options
+
+To see the available configuration options, check out the QdrantSearch section in `config/config.exs`.
+
+The default indexing option work for the default model (`snowflake-arctic-embed-xs`). To optimize for a low memory footprint, adjust the index configuration as described in the [Qdrant docs](https://qdrant.tech/documentation/guides/optimize/). See also [this blog post](https://qdrant.tech/articles/memory-consumption/) that goes into detail.
+
+Different embedding models will need different vector size settings. You can see a list of the models supported by the fastembed server [here](https://qdrant.github.io/fastembed/examples/Supported_Models), including their vector dimensions. These vector dimensions need to be set in the `qdrant_index_configuration`. 
+
+E.g, If you want to use `sentence-transformers/all-MiniLM-L6-v2` as a model, you will not need to adjust things, because it and `snowflake-arctic-embed-xs` are both 384 dimensional models. If you want to use `snowflake/snowflake-arctic-embed-l`, you will need to adjust the `size` parameter in the `qdrant_index_configuration` to 1024, as it has a dimension of 1024.
+
+When using a different model, you will need do drop the index and recreate it (`mix pleroma.search.indexer drop_index` and `mix pleroma.search.indexer create_index`), as the different embeddings are not compatible with each other.
+
 ## Meilisearch
 
 Note that it's quite a bit more memory hungry than PostgreSQL (around 4-5G for ~1.2 million

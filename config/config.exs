@@ -933,6 +933,19 @@ config :pleroma, Pleroma.Application,
 
 config :pleroma, Pleroma.Uploaders.Uploader, timeout: 30_000
 
+config :pleroma, Pleroma.Search.QdrantSearch,
+  qdrant_url: "http://127.0.0.1:6333/",
+  qdrant_api_key: "",
+  openai_url: "http://127.0.0.1:11345",
+  # The healthcheck url has to be set to nil when used with the real openai
+  # API, as it doesn't have a healthcheck endpoint.
+  openai_healthcheck_url: "http://127.0.0.1:11345/health",
+  openai_model: "snowflake/snowflake-arctic-embed-xs",
+  openai_api_key: "",
+  qdrant_index_configuration: %{
+    vectors: %{size: 384, distance: "Cosine"}
+  }
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
