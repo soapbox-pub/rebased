@@ -430,6 +430,8 @@ config :pleroma, :mrf_force_mention,
   mention_parent: true,
   mention_quoted: true
 
+config :pleroma, :mrf_antimentionspam, user_age_limit: 30_000
+
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],
