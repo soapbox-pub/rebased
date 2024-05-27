@@ -9,6 +9,7 @@ defmodule Pleroma.Search.QdrantSearch do
   alias __MODULE__.QdrantClient
 
   import Pleroma.Search.Meilisearch, only: [object_to_search_data: 1]
+  import Pleroma.Search.DatabaseSearch, only: [maybe_fetch: 3]
 
   @impl true
   def create_index do
@@ -115,8 +116,8 @@ defmodule Pleroma.Search.QdrantSearch do
   end
 
   @impl true
-  def search(_user, query, options) do
-    query = "Represent this sentence for searching relevant passages: #{query}"
+  def search(user, original_query, options) do
+    query = "Represent this sentence for searching relevant passages: #{original_query}"
 
     with {:ok, embedding} <- get_embedding(query),
          {:ok, %{body: %{"result" => result}}} <-
@@ -134,6 +135,7 @@ defmodule Pleroma.Search.QdrantSearch do
       |> Activity.restrict_deactivated_users()
       |> Ecto.Query.order_by([a], fragment("array_position(?, ?)", ^ids, a.id))
       |> Pleroma.Repo.all()
+      |> maybe_fetch(user, original_query)
     else
       _ ->
         []
