@@ -37,7 +37,7 @@ defmodule Pleroma.HTTP do
 
   See `Pleroma.HTTP.request/5`
   """
-  @spec post(Request.url(), String.t(), Request.headers(), keyword()) ::
+  @spec post(Request.url(), Tesla.Env.body(), Request.headers(), keyword()) ::
           {:ok, Env.t()} | {:error, any()}
   def post(url, body, headers \\ [], options \\ []),
     do: request(:post, url, body, headers, options)
@@ -56,7 +56,7 @@ defmodule Pleroma.HTTP do
   `{:ok, %Tesla.Env{}}` or `{:error, error}`
 
   """
-  @spec request(method(), Request.url(), String.t(), Request.headers(), keyword()) ::
+  @spec request(method(), Request.url(), Tesla.Env.body(), Request.headers(), keyword()) ::
           {:ok, Env.t()} | {:error, any()}
   def request(method, url, body, headers, options) when is_binary(url) do
     uri = URI.parse(url)
