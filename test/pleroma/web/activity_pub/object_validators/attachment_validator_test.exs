@@ -27,19 +27,22 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
     end
 
     test "works with honkerific attachments" do
-      attachment = %{
+      honk = %{
         "mediaType" => "",
-        "name" => "",
-        "summary" => "298p3RG7j27tfsZ9RQ.jpg",
+        "summary" => "Select your spirit chonk",
+        "name" => "298p3RG7j27tfsZ9RQ.jpg",
         "type" => "Document",
         "url" => "https://honk.tedunangst.com/d/298p3RG7j27tfsZ9RQ.jpg"
       }
 
       assert {:ok, attachment} =
-               AttachmentValidator.cast_and_validate(attachment)
+               honk
+               |> AttachmentValidator.cast_and_validate()
                |> Ecto.Changeset.apply_action(:insert)
 
       assert attachment.mediaType == "application/octet-stream"
+      assert attachment.summary == "Select your spirit chonk"
+      assert attachment.name == "298p3RG7j27tfsZ9RQ.jpg"
     end
 
     test "works with an unknown but valid mime type" do

@@ -591,45 +591,78 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert mention.url == recipient.ap_id
   end
 
-  test "attachments" do
-    object = %{
-      "type" => "Image",
-      "url" => [
-        %{
-          "mediaType" => "image/png",
-          "href" => "someurl",
-          "width" => 200,
-          "height" => 100
-        }
-      ],
-      "blurhash" => "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn",
-      "uuid" => 6
-    }
+  describe "attachments" do
+    test "Complete Mastodon style" do
+      object = %{
+        "type" => "Image",
+        "url" => [
+          %{
+            "mediaType" => "image/png",
+            "href" => "someurl",
+            "width" => 200,
+            "height" => 100
+          }
+        ],
+        "blurhash" => "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn",
+        "uuid" => 6
+      }
 
-    expected = %{
-      id: "1638338801",
-      type: "image",
-      url: "someurl",
-      remote_url: "someurl",
-      preview_url: "someurl",
-      text_url: "someurl",
-      description: nil,
-      pleroma: %{mime_type: "image/png"},
-      meta: %{original: %{width: 200, height: 100, aspect: 2}},
-      blurhash: "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn"
-    }
+      expected = %{
+        id: "1638338801",
+        type: "image",
+        url: "someurl",
+        remote_url: "someurl",
+        preview_url: "someurl",
+        text_url: "someurl",
+        description: nil,
+        pleroma: %{mime_type: "image/png"},
+        meta: %{original: %{width: 200, height: 100, aspect: 2}},
+        blurhash: "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn"
+      }
 
-    api_spec = Pleroma.Web.ApiSpec.spec()
+      api_spec = Pleroma.Web.ApiSpec.spec()
 
-    assert expected == StatusView.render("attachment.json", %{attachment: object})
-    assert_schema(expected, "Attachment", api_spec)
+      assert expected == StatusView.render("attachment.json", %{attachment: object})
+      assert_schema(expected, "Attachment", api_spec)
 
-    # If theres a "id", use that instead of the generated one
-    object = Map.put(object, "id", 2)
-    result = StatusView.render("attachment.json", %{attachment: object})
+      # If theres a "id", use that instead of the generated one
+      object = Map.put(object, "id", 2)
+      result = StatusView.render("attachment.json", %{attachment: object})
 
-    assert %{id: "2"} = result
-    assert_schema(result, "Attachment", api_spec)
+      assert %{id: "2"} = result
+      assert_schema(result, "Attachment", api_spec)
+    end
+
+    test "Honkerific" do
+      object = %{
+        "type" => "Image",
+        "url" => [
+          %{
+            "mediaType" => "image/png",
+            "href" => "someurl"
+          }
+        ],
+        "name" => "fool.jpeg",
+        "summary" => "they have played us for absolute fools."
+      }
+
+      expected = %{
+        blurhash: nil,
+        description: "they have played us for absolute fools.",
+        id: "1638338801",
+        pleroma: %{mime_type: "image/png", name: "fool.jpeg"},
+        preview_url: "someurl",
+        remote_url: "someurl",
+        text_url: "someurl",
+        type: "image",
+        url: "someurl"
+      }
+
+      api_spec = Pleroma.Web.ApiSpec.spec()
+
+      assert expected == StatusView.render("attachment.json", %{attachment: object})
+      assert_schema(expected, "Attachment", api_spec)
+    end
   end
 
   test "put the url advertised in the Activity in to the url attribute" do

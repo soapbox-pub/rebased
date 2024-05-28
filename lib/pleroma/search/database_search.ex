@@ -48,6 +48,15 @@ defmodule Pleroma.Search.DatabaseSearch do
   @impl true
   def remove_from_index(_object), do: :ok
 
+  @impl true
+  def create_index, do: :ok
+
+  @impl true
+  def drop_index, do: :ok
+
+  @impl true
+  def healthcheck_endpoints, do: nil
+
   def maybe_restrict_author(query, %User{} = author) do
     Activity.Queries.by_author(query, author)
   end

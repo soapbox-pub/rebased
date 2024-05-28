@@ -5973,3 +5973,87 @@ msgstr ""
 msgctxt "config label at :pleroma-:instance > :languages"
 msgid "Languages"
 msgstr ""
+
+#: lib/pleroma/docs/translator.ex:5
+#, elixir-autogen, elixir-format
+msgctxt "config description at :pleroma-:mrf_emoji"
+msgid "Reject or force-unlisted emojis whose URLs or names match a keyword or [Regex](https://hexdocs.pm/elixir/Regex.html)."
+msgstr ""
+
+#: lib/pleroma/docs/translator.ex:5
+#, elixir-autogen, elixir-format
+msgctxt "config description at :pleroma-:mrf_emoji > :federated_timeline_removal_shortcode"
+msgid "  A list of patterns which result in message with emojis whose shortcodes match being removed from federated timelines (a.k.a unlisted). This will apply only to statuses.\n\n  Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.\n"
+msgstr ""
+
+#: lib/pleroma/docs/translator.ex:5
+#, elixir-autogen, elixir-format
+msgctxt "config description at :pleroma-:mrf_emoji > :federated_timeline_removal_url"
+msgid "  A list of patterns which result in message with emojis whose URLs match being removed from federated timelines (a.k.a unlisted). This will apply only to statuses.\n\n  Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.\n"
+msgstr ""
+
+#: lib/pleroma/docs/translator.ex:5
+#, elixir-autogen, elixir-format
+msgctxt "config description at :pleroma-:mrf_emoji > :remove_shortcode"
+msgid "  A list of patterns which result in emoji whose shortcode matches being removed from the message. This will apply to statuses, emoji reactions, and user profiles.\n\n  Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.\n"
+msgstr ""
+
+#: lib/pleroma/docs/translator.ex:5
+#, elixir-autogen, elixir-format
+msgctxt "config description at :pleroma-:mrf_emoji > :remove_url"
+msgid "  A list of patterns which result in emoji whose URL matches being removed from the message. This will apply to statuses, emoji reactions, and user profiles.\n\n  Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.\n"
+msgstr ""
+
+#: lib/pleroma/docs/translator.ex:5
+#, elixir-autogen, elixir-format
+msgctxt "config description at :pleroma-Pleroma.User.Backup > :process_chunk_size"
+msgid "The number of activities to fetch in the backup job for each chunk."
+msgstr ""
+
+#: lib/pleroma/docs/translator.ex:5
+#, elixir-autogen, elixir-format
+msgctxt "config description at :pleroma-Pleroma.User.Backup > :process_wait_time"
+msgid "The amount of time to wait for backup to report progress, in milliseconds. If no progress is received from the backup job for that much time, terminate it and deem it failed."
+msgstr ""
+
+#: lib/pleroma/docs/translator.ex:5
+#, elixir-autogen, elixir-format
+msgctxt "config label at :pleroma-:mrf_emoji"
+msgid "MRF Emoji"
+msgstr ""
+
+#: lib/pleroma/docs/translator.ex:5
+#, elixir-autogen, elixir-format
+msgctxt "config label at :pleroma-:mrf_emoji > :federated_timeline_removal_shortcode"
+msgid "Federated timeline removal shortcode"
+msgstr ""
+
+#: lib/pleroma/docs/translator.ex:5
+#, elixir-autogen, elixir-format
+msgctxt "config label at :pleroma-:mrf_emoji > :federated_timeline_removal_url"
+msgid "Federated timeline removal url"
+msgstr ""
+
+#: lib/pleroma/docs/translator.ex:5
+#, elixir-autogen, elixir-format
+msgctxt "config label at :pleroma-:mrf_emoji > :remove_shortcode"
+msgid "Remove shortcode"
+msgstr ""
+
+#: lib/pleroma/docs/translator.ex:5
+#, elixir-autogen, elixir-format
+msgctxt "config label at :pleroma-:mrf_emoji > :remove_url"
+msgid "Remove url"
+msgstr ""
+
+#: lib/pleroma/docs/translator.ex:5
+#, elixir-autogen, elixir-format
+msgctxt "config label at :pleroma-Pleroma.User.Backup > :process_chunk_size"
+msgid "Process Chunk Size"
+msgstr ""
+
+#: lib/pleroma/docs/translator.ex:5
+#, elixir-autogen, elixir-format
+msgctxt "config label at :pleroma-Pleroma.User.Backup > :process_wait_time"
+msgid "Process Wait Time"
+msgstr ""

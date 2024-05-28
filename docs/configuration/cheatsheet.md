@@ -41,6 +41,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `allow_relay`: Permits remote instances to subscribe to all public posts of your instance. This may increase the visibility of your instance.
 * `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network. Note that there is a dependent setting restricting or allowing unauthenticated access to specific resources, see `restrict_unauthenticated` for more details.
 * `quarantined_instances`: ActivityPub instances where private (DMs, followers-only) activities will not be send.
+* `rejected_instances`: ActivityPub instances to reject requests from if authorized_fetch_mode is enabled.
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML).
 * `extended_nickname_format`: Set to `true` to use extended local nicknames format (allows underscores/dashes). This will break federation with
     older software for theses nicknames.
@@ -284,6 +285,7 @@ Notes:
 * `deny_follow_blocked`: Whether to disallow following an account that has blocked the user in question
 * `sign_object_fetches`: Sign object fetches with HTTP signatures
 * `authorized_fetch_mode`: Require HTTP signatures for AP fetches
+* `authorized_fetch_mode_exceptions`: List of IPs (CIDR format accepted) to exempt from HTTP Signatures requirement (for example to allow debugging, you shouldn't otherwise need this)
 
 ## Pleroma.User
 
@@ -472,6 +474,7 @@ This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls start
 * ``ct_max_age``: The maximum age for the `Expect-CT` header if sent.
 * ``referrer_policy``: The referrer policy to use, either `"same-origin"` or `"no-referrer"`.
 * ``report_uri``: Adds the specified url to `report-uri` and `report-to` group in CSP header.
+* `allow_unsafe_eval`: Adds `wasm-unsafe-eval` to the CSP header. Needed for some non-essential frontend features like Flash emulation.
 
 ### Pleroma.Web.Plugs.RemoteIp
 
@@ -659,6 +662,19 @@ config :ex_aws, :s3,
   access_key_id: "xxxxxxxxxx",
   secret_access_key: "yyyyyyyyyy",
   host: "s3.eu-central-1.amazonaws.com"
+```
+
+#### Pleroma.Uploaders.IPFS
+
+* `post_gateway_url`: URL with port of POST Gateway (unauthenticated)
+* `get_gateway_url`: URL of public GET Gateway
+
+Example:
+
+```elixir
+config :pleroma, Pleroma.Uploaders.IPFS,
+  post_gateway_url: "http://localhost:5001",
+  get_gateway_url: "http://{CID}.ipfs.mydomain.com"
 ```
 
 ### Upload filters

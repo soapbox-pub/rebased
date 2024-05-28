@@ -138,6 +138,31 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: Pleroma.Uploaders.IPFS,
+    type: :group,
+    description: "IPFS uploader-related settings",
+    children: [
+      %{
+        key: :get_gateway_url,
+        type: :string,
+        description: "GET Gateway URL",
+        suggestions: [
+          "https://ipfs.mydomain.com/{CID}",
+          "https://{CID}.ipfs.mydomain.com/"
+        ]
+      },
+      %{
+        key: :post_gateway_url,
+        type: :string,
+        description: "POST Gateway URL",
+        suggestions: [
+          "http://localhost:5001/"
+        ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: Pleroma.Uploaders.S3,
     type: :group,
     description: "S3 uploader-related settings",
@@ -747,6 +772,18 @@ config :pleroma, :config_description, [
         suggestions: [
           {"quarantined.com", "Reason"},
           {"*.quarantined.com", "Reason"}
+        ]
+      },
+      %{
+        key: :rejected_instances,
+        type: {:list, :tuple},
+        key_placeholder: "instance",
+        value_placeholder: "reason",
+        description:
+          "List of ActivityPub instances to reject requests from if authorized_fetch_mode is enabled",
+        suggestions: [
+          {"rejected.com", "Reason"},
+          {"*.rejected.com", "Reason"}
         ]
       },
       %{
@@ -1790,6 +1827,12 @@ config :pleroma, :config_description, [
         key: :authorized_fetch_mode,
         type: :boolean,
         description: "Require HTTP signatures for AP fetches"
+      },
+      %{
+        key: :authorized_fetch_mode_exceptions,
+        type: {:list, :string},
+        description:
+          "List of IPs (CIDR format accepted) to exempt from HTTP Signatures requirement (for example to allow debugging, you shouldn't otherwise need this)"
       },
       %{
         key: :note_replies_output_limit,

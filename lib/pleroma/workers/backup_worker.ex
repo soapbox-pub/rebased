@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.BackupWorker do
-  use Oban.Worker, queue: :backup, max_attempts: 1
+  use Oban.Worker, queue: :slow, max_attempts: 1
 
   alias Oban.Job
   alias Pleroma.User.Backup

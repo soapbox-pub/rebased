@@ -76,12 +76,26 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     })
   end
 
+  def render("rules.json", _) do
+    Pleroma.Rule.query()
+    |> Pleroma.Repo.all()
+    |> render_many(__MODULE__, "rule.json", as: :rule)
+  end
+
+  def render("rule.json", %{rule: rule}) do
+    %{
+      id: to_string(rule.id),
+      text: rule.text,
+      hint: rule.hint || ""
+    }
+  end
+
   defp common_information(instance) do
     %{
-      title: Keyword.get(instance, :name),
-      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
       languages: Keyword.get(instance, :languages, ["en"]),
-      rules: []
+      rules: render(__MODULE__, "rules.json"),
+      title: Keyword.get(instance, :name),
+      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})"
     }
   end
 
@@ -138,6 +152,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
   def federation do
     quarantined = Config.get([:instance, :quarantined_instances], [])
+    rejected = Config.get([:instance, :rejected_instances], [])
 
     if Config.get([:mrf, :transparency]) do
       {:ok, data} = MRF.describe()
@@ -157,6 +172,12 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           |> Enum.map(fn {instance, reason} -> {instance, %{"reason" => reason}} end)
           |> Map.new()
       })
+      |> Map.put(
+        :rejected_instances,
+        rejected
+        |> Enum.map(fn {instance, reason} -> {instance, %{"reason" => reason}} end)
+        |> Map.new()
+      )
     else
       %{}
     end
@@ -213,6 +234,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
   defp configuration2 do
     configuration()
+    |> put_in([:accounts, :max_pinned_statuses], Config.get([:instance, :max_pinned_statuses], 0))
+    |> put_in([:statuses, :characters_reserved_per_url], 0)
     |> Map.merge(%{
       urls: %{
         streaming: Pleroma.Web.Endpoint.websocket_url(),

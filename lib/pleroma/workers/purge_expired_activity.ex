@@ -7,7 +7,7 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
   Worker which purges expired activity.
   """
 
-  use Oban.Worker, queue: :activity_expiration, max_attempts: 1, unique: [period: :infinity]
+  use Oban.Worker, queue: :slow, max_attempts: 1, unique: [period: :infinity]
 
   import Ecto.Query
 
@@ -59,7 +59,7 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
   def get_expiration(id) do
     from(j in Oban.Job,
       where: j.state == "scheduled",
-      where: j.queue == "activity_expiration",
+      where: j.queue == "slow",
       where: fragment("?->>'activity_id' = ?", j.args, ^id)
     )
     |> Pleroma.Repo.one()

@@ -46,10 +46,30 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
     }
   end
 
+  def rules_operation do
+    %Operation{
+      tags: ["Instance misc"],
+      summary: "Retrieve list of instance rules",
+      operationId: "InstanceController.rules",
+      responses: %{
+        200 => Operation.response("Array of domains", "application/json", array_of_rules())
+      }
+    }
+  end
+
   defp instance do
     %Schema{
       type: :object,
       properties: %{
+        accounts: %Schema{
+          type: :object,
+          properties: %{
+            max_featured_tags: %Schema{
+              type: :integer,
+              description: "The maximum number of featured tags allowed for each account."
+            }
+          }
+        },
         uri: %Schema{type: :string, description: "The domain name of the instance"},
         title: %Schema{type: :string, description: "The title of the website"},
         description: %Schema{
@@ -172,7 +192,8 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
         "urls" => %{
           "streaming_api" => "wss://lain.com"
         },
-        "version" => "2.7.2 (compatible; Pleroma 2.0.50-536-g25eec6d7-develop)"
+        "version" => "2.7.2 (compatible; Pleroma 2.0.50-536-g25eec6d7-develop)",
+        "rules" => array_of_rules()
       }
     }
   end
@@ -272,6 +293,19 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
           type: :object,
           description: "Instance configuration",
           properties: %{
+            accounts: %Schema{
+              type: :object,
+              properties: %{
+                max_featured_tags: %Schema{
+                  type: :integer,
+                  description: "The maximum number of featured tags allowed for each account."
+                },
+                max_pinned_statuses: %Schema{
+                  type: :integer,
+                  description: "The maximum number of pinned statuses for each account."
+                }
+              }
+            },
             urls: %Schema{
               type: :object,
               properties: %{
@@ -285,6 +319,11 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
               type: :object,
               description: "A map with poll limits for local statuses",
               properties: %{
+                characters_reserved_per_url: %Schema{
+                  type: :integer,
+                  description:
+                    "Each URL in a status will be assumed to be exactly this many characters."
+                },
                 max_characters: %Schema{
                   type: :integer,
                   description: "Posts character limit (CW/Subject included in the counter)"
@@ -342,6 +381,20 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
       type: :array,
       items: %Schema{type: :string},
       example: ["pleroma.site", "lain.com", "bikeshed.party"]
+    }
+  end
+
+  defp array_of_rules do
+    %Schema{
+      type: :array,
+      items: %Schema{
+        type: :object,
+        properties: %{
+          id: %Schema{type: :string},
+          text: %Schema{type: :string},
+          hint: %Schema{type: :string}
+        }
+      }
     }
   end
 end
