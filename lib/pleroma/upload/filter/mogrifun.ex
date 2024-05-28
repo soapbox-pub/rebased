@@ -38,7 +38,6 @@ defmodule Pleroma.Upload.Filter.Mogrifun do
     [{"fill", "yellow"}, {"tint", "40"}]
   ]
 
-  @spec filter(Pleroma.Upload.t()) :: {:ok, atom()} | {:error, String.t()}
   def filter(%Pleroma.Upload{tempfile: file, content_type: "image" <> _}) do
     try do
       Filter.Mogrify.do_filter(file, [Enum.random(@filters)])

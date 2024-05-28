@@ -9,8 +9,6 @@ defmodule Pleroma.Upload.Filter.Exiftool.StripLocation do
   """
   @behaviour Pleroma.Upload.Filter
 
-  @spec filter(Pleroma.Upload.t()) :: {:ok, any()} | {:error, String.t()}
-
   # Formats not compatible with exiftool at this time
   def filter(%Pleroma.Upload{content_type: "image/heic"}), do: {:ok, :noop}
   def filter(%Pleroma.Upload{content_type: "image/webp"}), do: {:ok, :noop}
