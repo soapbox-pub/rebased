@@ -27,7 +27,7 @@ defmodule Pleroma.Signature do
 
       _ ->
         case Pleroma.Web.WebFinger.finger(maybe_ap_id) do
-          %{"ap_id" => ap_id} -> {:ok, ap_id}
+          {:ok, %{"ap_id" => ap_id}} -> {:ok, ap_id}
           _ -> {:error, maybe_ap_id}
         end
     end

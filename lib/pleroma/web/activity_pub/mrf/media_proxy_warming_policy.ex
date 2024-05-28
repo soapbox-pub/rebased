@@ -11,11 +11,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
 
   require Logger
 
-  @adapter_options [
-    pool: :media,
-    recv_timeout: 10_000
-  ]
-
   @impl true
   def history_awareness, do: :auto
 
@@ -27,17 +22,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
 
       Logger.debug("Prefetching #{inspect(url)} as #{inspect(prefetch_url)}")
 
-      if Pleroma.Config.get(:env) == :test do
-        fetch(prefetch_url)
-      else
-        ConcurrentLimiter.limit(__MODULE__, fn ->
-          Task.start(fn -> fetch(prefetch_url) end)
-        end)
-      end
+      fetch(prefetch_url)
     end
   end
 
-  defp fetch(url), do: HTTP.get(url, [], @adapter_options)
+  defp fetch(url) do
+    http_client_opts = Pleroma.Config.get([:media_proxy, :proxy_opts, :http], pool: :media)
+    HTTP.get(url, [], http_client_opts)
+  end
 
   defp preload(%{"object" => %{"attachment" => attachments}} = _message) do
     Enum.each(attachments, fn

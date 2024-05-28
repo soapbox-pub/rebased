@@ -43,10 +43,7 @@ defmodule Pleroma.SignatureTest do
     end
 
     test "it returns error when not found user" do
-      assert capture_log(fn ->
-               assert Signature.fetch_public_key(make_fake_conn("https://test-ap-id")) ==
-                        {:error, :error}
-             end) =~ "[error] Could not decode user"
+      assert Signature.fetch_public_key(make_fake_conn("https://test-ap-id")) == {:error, :error}
     end
 
     test "it returns error if public key is nil" do
@@ -124,7 +121,7 @@ defmodule Pleroma.SignatureTest do
 
     test "it calls webfinger for 'acct:' accounts" do
       with_mock(Pleroma.Web.WebFinger,
-        finger: fn _ -> %{"ap_id" => "https://gensokyo.2hu/users/raymoo"} end
+        finger: fn _ -> {:ok, %{"ap_id" => "https://gensokyo.2hu/users/raymoo"}} end
       ) do
         assert Signature.key_id_to_actor_id("acct:raymoo@gensokyo.2hu") ==
                  {:ok, "https://gensokyo.2hu/users/raymoo"}

@@ -25,6 +25,17 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
 
   setup_all do: clear_config([:instance, :federating], true)
 
+  describe "should_federate?/1" do
+    test "it returns false when the inbox is nil" do
+      refute Publisher.should_federate?(nil, false)
+      refute Publisher.should_federate?(nil, true)
+    end
+
+    test "it returns true when public is true" do
+      assert Publisher.should_federate?(false, true)
+    end
+  end
+
   describe "gather_webfinger_links/1" do
     test "it returns links" do
       user = insert(:user)
@@ -205,6 +216,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       refute called(Instances.set_reachable(inbox))
     end
 
+    @tag capture_log: true
     test_with_mock "calls `Instances.set_unreachable` on target inbox on non-2xx HTTP response code",
                    Instances,
                    [:passthrough],
@@ -212,7 +224,8 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       actor = insert(:user)
       inbox = "http://404.site/users/nick1/inbox"
 
-      assert {:error, _} = Publisher.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+      assert {:discard, _} =
+               Publisher.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
 
       assert called(Instances.set_unreachable(inbox))
     end
@@ -268,7 +281,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
 
   describe "publish/2" do
     test_with_mock "doesn't publish a non-public activity to quarantined instances.",
-                   Pleroma.Web.Federator.Publisher,
+                   Pleroma.Web.ActivityPub.Publisher,
                    [:passthrough],
                    [] do
       Config.put([:instance, :quarantined_instances], [{"domain.com", "some reason"}])
@@ -276,8 +289,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       follower =
         insert(:user, %{
           local: false,
-          inbox: "https://domain.com/users/nick1/inbox",
-          ap_enabled: true
+          inbox: "https://domain.com/users/nick1/inbox"
         })
 
       actor = insert(:user, follower_address: follower.ap_id)
@@ -296,7 +308,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       assert res == :ok
 
       assert not called(
-               Pleroma.Web.Federator.Publisher.enqueue_one(Publisher, %{
+               Publisher.enqueue_one(%{
                  inbox: "https://domain.com/users/nick1/inbox",
                  actor_id: actor.id,
                  id: note_activity.data["id"]
@@ -305,7 +317,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
     end
 
     test_with_mock "Publishes a non-public activity to non-quarantined instances.",
-                   Pleroma.Web.Federator.Publisher,
+                   Pleroma.Web.ActivityPub.Publisher,
                    [:passthrough],
                    [] do
       Config.put([:instance, :quarantined_instances], [{"somedomain.com", "some reason"}])
@@ -313,8 +325,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       follower =
         insert(:user, %{
           local: false,
-          inbox: "https://domain.com/users/nick1/inbox",
-          ap_enabled: true
+          inbox: "https://domain.com/users/nick1/inbox"
         })
 
       actor = insert(:user, follower_address: follower.ap_id)
@@ -333,23 +344,49 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       assert res == :ok
 
       assert called(
-               Pleroma.Web.Federator.Publisher.enqueue_one(Publisher, %{
-                 inbox: "https://domain.com/users/nick1/inbox",
-                 actor_id: actor.id,
-                 id: note_activity.data["id"]
-               })
+               Publisher.enqueue_one(
+                 %{
+                   inbox: "https://domain.com/users/nick1/inbox",
+                   actor_id: actor.id,
+                   id: note_activity.data["id"]
+                 },
+                 priority: 1
+               )
+             )
+    end
+
+    test_with_mock "Publishes to directly addressed actors with higher priority.",
+                   Pleroma.Web.ActivityPub.Publisher,
+                   [:passthrough],
+                   [] do
+      note_activity = insert(:direct_note_activity)
+
+      actor = Pleroma.User.get_by_ap_id(note_activity.data["actor"])
+
+      res = Publisher.publish(actor, note_activity)
+
+      assert res == :ok
+
+      assert called(
+               Publisher.enqueue_one(
+                 %{
+                   inbox: :_,
+                   actor_id: actor.id,
+                   id: note_activity.data["id"]
+                 },
+                 priority: 0
+               )
              )
     end
 
     test_with_mock "publishes an activity with BCC to all relevant peers.",
-                   Pleroma.Web.Federator.Publisher,
+                   Pleroma.Web.ActivityPub.Publisher,
                    [:passthrough],
                    [] do
       follower =
         insert(:user, %{
           local: false,
-          inbox: "https://domain.com/users/nick1/inbox",
-          ap_enabled: true
+          inbox: "https://domain.com/users/nick1/inbox"
         })
 
       actor = insert(:user, follower_address: follower.ap_id)
@@ -367,7 +404,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       assert res == :ok
 
       assert called(
-               Pleroma.Web.Federator.Publisher.enqueue_one(Publisher, %{
+               Publisher.enqueue_one(%{
                  inbox: "https://domain.com/users/nick1/inbox",
                  actor_id: actor.id,
                  id: note_activity.data["id"]
@@ -376,21 +413,19 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
     end
 
     test_with_mock "publishes a delete activity to peers who signed fetch requests to the create acitvity/object.",
-                   Pleroma.Web.Federator.Publisher,
+                   Pleroma.Web.ActivityPub.Publisher,
                    [:passthrough],
                    [] do
       fetcher =
         insert(:user,
           local: false,
-          inbox: "https://domain.com/users/nick1/inbox",
-          ap_enabled: true
+          inbox: "https://domain.com/users/nick1/inbox"
         )
 
       another_fetcher =
         insert(:user,
           local: false,
-          inbox: "https://domain2.com/users/nick1/inbox",
-          ap_enabled: true
+          inbox: "https://domain2.com/users/nick1/inbox"
         )
 
       actor = insert(:user)
@@ -419,19 +454,25 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       assert res == :ok
 
       assert called(
-               Pleroma.Web.Federator.Publisher.enqueue_one(Publisher, %{
-                 inbox: "https://domain.com/users/nick1/inbox",
-                 actor_id: actor.id,
-                 id: delete.data["id"]
-               })
+               Publisher.enqueue_one(
+                 %{
+                   inbox: "https://domain.com/users/nick1/inbox",
+                   actor_id: actor.id,
+                   id: delete.data["id"]
+                 },
+                 priority: 1
+               )
              )
 
       assert called(
-               Pleroma.Web.Federator.Publisher.enqueue_one(Publisher, %{
-                 inbox: "https://domain2.com/users/nick1/inbox",
-                 actor_id: actor.id,
-                 id: delete.data["id"]
-               })
+               Publisher.enqueue_one(
+                 %{
+                   inbox: "https://domain2.com/users/nick1/inbox",
+                   actor_id: actor.id,
+                   id: delete.data["id"]
+                 },
+                 priority: 1
+               )
              )
     end
   end

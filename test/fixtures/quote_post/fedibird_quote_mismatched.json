@@ -1,0 +1,54 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    {
+      "ostatus": "http://ostatus.org#",
+      "atomUri": "ostatus:atomUri",
+      "inReplyToAtomUri": "ostatus:inReplyToAtomUri",
+      "conversation": "ostatus:conversation",
+      "sensitive": "as:sensitive",
+      "toot": "http://joinmastodon.org/ns#",
+      "votersCount": "toot:votersCount",
+      "fedibird": "http://fedibird.com/ns#",
+      "quoteUri": "fedibird:quoteUri",
+      "expiry": "fedibird:expiry"
+    }
+  ],
+  "id": "https://fedibird.com/users/noellabo/statuses/107712183700212249",
+  "type": "Note",
+  "summary": null,
+  "inReplyTo": null,
+  "published": "2022-01-30T15:44:50Z",
+  "url": "https://fedibird.com/@noellabo/107712183700212249",
+  "attributedTo": "https://fedibird.com/users/noellabo",
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "cc": [
+    "https://fedibird.com/users/noellabo/followers"
+  ],
+  "sensitive": false,
+  "atomUri": "https://fedibird.com/users/noellabo/statuses/107712183700212249",
+  "inReplyToAtomUri": null,
+  "conversation": "tag:fedibird.com,2022-01-30:objectId=107712183700170473:objectType=Conversation",
+  "context": "https://fedibird.com/contexts/107712183700170473",
+  "quoteUri": "https://unnerv.jp/users/UN_NERV/statuses/107712176849067434",
+  "_misskey_quote": "https://unnerv.jp/users/UN_NERV/statuses/107712176849067434",
+  "_misskey_content": "揺れていたようだ",
+  "content": "<p>揺れていたようだ<span class=\"quote-inline\"><br/>QT: <a class=\"status-url-link\" data-status-account-acct=\"UN_NERV@unnerv.jp\" data-status-id=\"107712177062934465\" href=\"https://unnerv.jp/@UN_NERV/107712176849067434\" rel=\"nofollow noopener noreferrer\" target=\"_blank\"><span class=\"invisible\">https://</span><span class=\"ellipsis\">unnerv.jp/@UN_NERV/10771217684</span><span class=\"invisible\">9067434</span></a></span></p>",
+  "contentMap": {
+    "ja": "<p>揺れていたようだ<span class=\"quote-inline\"><br/>QT: <a class=\"status-url-link\" data-status-account-acct=\"UN_NERV@unnerv.jp\" data-status-id=\"107712177062934465\" href=\"https://unnerv.jp/@UN_NERV/107712176849067434\" rel=\"nofollow noopener noreferrer\" target=\"_blank\"><span class=\"invisible\">https://</span><span class=\"ellipsis\">unnerv.jp/@UN_NERV/10771217684</span><span class=\"invisible\">9067434</span></a></span></p>"
+  },
+  "attachment": [],
+  "tag": [],
+  "replies": {
+    "id": "https://fedibird.com/users/noellabo/statuses/107712183700212249/replies",
+    "type": "Collection",
+    "first": {
+      "type": "CollectionPage",
+      "next": "https://fedibird.com/users/noellabo/statuses/107712183700212249/replies?only_other_accounts=true&page=true",
+      "partOf": "https://fedibird.com/users/noellabo/statuses/107712183700212249/replies",
+      "items": []
+    }
+  }
+}

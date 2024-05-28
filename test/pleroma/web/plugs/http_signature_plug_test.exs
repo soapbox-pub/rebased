@@ -93,6 +93,25 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlugTest do
       assert conn.state == :sent
       assert conn.resp_body == "Request not signed"
     end
+
+    test "exempts specific IPs from `authorized_fetch_mode_exceptions`", %{conn: conn} do
+      clear_config([:activitypub, :authorized_fetch_mode_exceptions], ["192.168.0.0/24"])
+
+      with_mock HTTPSignatures, validate_conn: fn _ -> false end do
+        conn =
+          conn
+          |> Map.put(:remote_ip, {192, 168, 0, 1})
+          |> put_req_header(
+            "signature",
+            "keyId=\"http://mastodon.example.org/users/admin#main-key"
+          )
+          |> HTTPSignaturePlug.call(%{})
+
+        assert conn.remote_ip == {192, 168, 0, 1}
+        assert conn.halted == false
+        assert called(HTTPSignatures.validate_conn(:_))
+      end
+    end
   end
 
   test "rejects requests from `rejected_instances` when `authorized_fetch_mode` is enabled" do

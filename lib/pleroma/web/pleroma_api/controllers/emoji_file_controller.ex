@@ -8,7 +8,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
   alias Pleroma.Emoji.Pack
   alias Pleroma.Web.ApiSpec
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
 
   plug(
     Pleroma.Web.Plugs.OAuthScopesPlug,
@@ -22,7 +22,10 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
 
   defdelegate open_api_operation(action), to: ApiSpec.PleromaEmojiFileOperation
 
-  def create(%{body_params: params} = conn, %{name: pack_name}) do
+  def create(
+        %{private: %{open_api_spex: %{body_params: params, params: %{name: pack_name}}}} = conn,
+        _
+      ) do
     filename = params[:filename] || get_filename(params[:file])
     shortcode = params[:shortcode] || Path.basename(filename, Path.extname(filename))
 
@@ -49,7 +52,17 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
     end
   end
 
-  def update(%{body_params: %{shortcode: shortcode} = params} = conn, %{name: pack_name}) do
+  def update(
+        %{
+          private: %{
+            open_api_spex: %{
+              body_params: %{shortcode: shortcode} = params,
+              params: %{name: pack_name}
+            }
+          }
+        } = conn,
+        _
+      ) do
     new_shortcode = params[:new_shortcode]
     new_filename = params[:new_filename]
     force = params[:force]
@@ -80,7 +93,10 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
     end
   end
 
-  def delete(conn, %{name: pack_name, shortcode: shortcode}) do
+  def delete(
+        %{private: %{open_api_spex: %{params: %{name: pack_name, shortcode: shortcode}}}} = conn,
+        _
+      ) do
     with {:ok, pack} <- Pack.load_pack(pack_name),
          {:ok, pack} <- Pack.delete_file(pack, shortcode) do
       json(conn, pack.files)

@@ -16,4 +16,15 @@ defmodule Pleroma.Helpers.InetHelper do
   def parse_address(ip) do
     :inet.parse_address(ip)
   end
+
+  def parse_cidr(proxy) when is_binary(proxy) do
+    proxy =
+      cond do
+        "/" in String.codepoints(proxy) -> proxy
+        InetCidr.v4?(InetCidr.parse_address!(proxy)) -> proxy <> "/32"
+        InetCidr.v6?(InetCidr.parse_address!(proxy)) -> proxy <> "/128"
+      end
+
+    InetCidr.parse_cidr!(proxy, true)
+  end
 end

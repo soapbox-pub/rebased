@@ -10,176 +10,176 @@
 msgid ""
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:122
+#, elixir-autogen, elixir-format
 msgid "%{name} - %{count} is not a multiple of %{multiple}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:131
+#, elixir-autogen, elixir-format
 msgid "%{name} - %{value} is larger than exclusive maximum %{max}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:140
+#, elixir-autogen, elixir-format
 msgid "%{name} - %{value} is larger than inclusive maximum %{max}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:149
+#, elixir-autogen, elixir-format
 msgid "%{name} - %{value} is smaller than exclusive minimum %{min}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:158
+#, elixir-autogen, elixir-format
 msgid "%{name} - %{value} is smaller than inclusive minimum %{min}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:102
+#, elixir-autogen, elixir-format
 msgid "%{name} - Array items must be unique."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:114
+#, elixir-autogen, elixir-format
 msgid "%{name} - Array length %{length} is larger than maxItems: %{}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:106
+#, elixir-autogen, elixir-format
 msgid "%{name} - Array length %{length} is smaller than minItems: %{min}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:166
+#, elixir-autogen, elixir-format
 msgid "%{name} - Invalid %{type}. Got: %{value}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:174
+#, elixir-autogen, elixir-format
 msgid "%{name} - Invalid format. Expected %{format}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:51
+#, elixir-autogen, elixir-format
 msgid "%{name} - Invalid schema.type. Got: %{type}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:178
+#, elixir-autogen, elixir-format
 msgid "%{name} - Invalid value for enum."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:95
+#, elixir-autogen, elixir-format
 msgid "%{name} - String length is larger than maxLength: %{length}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:88
+#, elixir-autogen, elixir-format
 msgid "%{name} - String length is smaller than minLength: %{length}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:63
+#, elixir-autogen, elixir-format
 msgid "%{name} - null value where %{type} expected."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:60
+#, elixir-autogen, elixir-format
 msgid "%{name} - null value."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:182
+#, elixir-autogen, elixir-format
 msgid "Failed to cast to any schema in %{polymorphic_type}"
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:71
+#, elixir-autogen, elixir-format
 msgid "Failed to cast value as %{invalid_schema}. Value must be castable using `allOf` schemas listed."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:84
+#, elixir-autogen, elixir-format
 msgid "Failed to cast value to one of: %{failed_schemas}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:78
+#, elixir-autogen, elixir-format
 msgid "Failed to cast value using any of: %{failed_schemas}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:212
+#, elixir-autogen, elixir-format
 msgid "Invalid value for header: %{name}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:204
+#, elixir-autogen, elixir-format
 msgid "Missing field: %{name}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:208
+#, elixir-autogen, elixir-format
 msgid "Missing header: %{name}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:196
+#, elixir-autogen, elixir-format
 msgid "No value provided for required discriminator `%{field}`."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:216
+#, elixir-autogen, elixir-format
 msgid "Object property count %{property_count} is greater than maxProperties: %{max_properties}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:224
+#, elixir-autogen, elixir-format
 msgid "Object property count %{property_count} is less than minProperties: %{min_properties}"
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/templates/static_fe/static_fe/error.html.eex:2
+#, elixir-autogen, elixir-format
 msgid "Oops"
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:188
+#, elixir-autogen, elixir-format
 msgid "Unexpected field: %{name}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:200
+#, elixir-autogen, elixir-format
 msgid "Unknown schema: %{name}."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:192
+#, elixir-autogen, elixir-format
 msgid "Value used as discriminator for `%{field}` matches no schemas."
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/templates/embed/show.html.eex:43
 #: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:37
+#, elixir-autogen, elixir-format
 msgid "announces"
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/templates/embed/show.html.eex:44
 #: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:38
+#, elixir-autogen, elixir-format
 msgid "likes"
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/templates/embed/show.html.eex:42
 #: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:36
+#, elixir-autogen, elixir-format
 msgid "replies"
 msgstr ""
 
-#, elixir-autogen, elixir-format
 #: lib/pleroma/web/templates/embed/show.html.eex:27
 #: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:22
+#, elixir-autogen, elixir-format
 msgid "sensitive media"
 msgstr ""

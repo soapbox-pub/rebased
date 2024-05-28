@@ -5,18 +5,17 @@
 defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
   require Pleroma.Constants
 
+  alias Pleroma.Web.ActivityPub.MRF.Utils
+
   @moduledoc "Reject or Word-Replace messages with a keyword or regex"
 
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
-  defp string_matches?(string, _) when not is_binary(string) do
-    false
-  end
 
   defp string_matches?(string, pattern) when is_binary(pattern) do
     String.contains?(string, pattern)
   end
 
-  defp string_matches?(string, pattern) do
+  defp string_matches?(string, %Regex{} = pattern) do
     String.match?(string, pattern)
   end
 
@@ -128,7 +127,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
 
   @impl true
   def describe do
-    # This horror is needed to convert regex sigils to strings
     mrf_keyword =
       Pleroma.Config.get(:mrf_keyword, [])
       |> Enum.map(fn {key, value} ->
@@ -136,21 +134,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
          Enum.map(value, fn
            {pattern, replacement} ->
              %{
-               "pattern" =>
-                 if not is_binary(pattern) do
-                   inspect(pattern)
-                 else
-                   pattern
-                 end,
+               "pattern" => Utils.describe_regex_or_string(pattern),
                "replacement" => replacement
              }
 
            pattern ->
-             if not is_binary(pattern) do
-               inspect(pattern)
-             else
-               pattern
-             end
+             Utils.describe_regex_or_string(pattern)
          end)}
       end)
       |> Enum.into(%{})

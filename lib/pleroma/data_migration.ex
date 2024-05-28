@@ -12,6 +12,8 @@ defmodule Pleroma.DataMigration do
   import Ecto.Changeset
   import Ecto.Query
 
+  @type t :: %__MODULE__{}
+
   schema "data_migrations" do
     field(:name, :string)
     field(:state, State, default: :pending)

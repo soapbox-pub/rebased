@@ -21,10 +21,6 @@ msgstr ""
 #~ ##
 #~ ## Use "mix gettext.extract --merge" or "mix gettext.merge"
 #~ ## to merge POT files into PO files.
-#~ msgid ""
-#~ msgstr ""
-#~ "Language: en_test\n"
-#~ "Plural-Forms: nplurals=2\n"
 
 #, elixir-format
 #: lib/pleroma/web/templates/twitter_api/remote_follow/follow.html.eex:9

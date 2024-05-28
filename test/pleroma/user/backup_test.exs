@@ -9,10 +9,14 @@ defmodule Pleroma.User.BackupTest do
   import Mock
   import Pleroma.Factory
   import Swoosh.TestAssertions
+  import Mox
 
   alias Pleroma.Bookmark
   alias Pleroma.Tests.ObanHelpers
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
+  alias Pleroma.Uploaders.S3.ExAwsMock
   alias Pleroma.User.Backup
+  alias Pleroma.User.Backup.ProcessorMock
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Workers.BackupWorker
 
@@ -20,6 +24,14 @@ defmodule Pleroma.User.BackupTest do
     clear_config([Pleroma.Upload, :uploader])
     clear_config([Backup, :limit_days])
     clear_config([Pleroma.Emails.Mailer, :enabled], true)
+
+    ConfigMock
+    |> stub_with(Pleroma.Config)
+
+    ProcessorMock
+    |> stub_with(Pleroma.User.Backup.Processor)
+
+    :ok
   end
 
   test "it does not requrie enabled email" do
@@ -39,7 +51,7 @@ defmodule Pleroma.User.BackupTest do
     assert_enqueued(worker: BackupWorker, args: args)
 
     backup = Backup.get(args["backup_id"])
-    assert %Backup{user_id: ^user_id, processed: false, file_size: 0} = backup
+    assert %Backup{user_id: ^user_id, processed: false, file_size: 0, state: :pending} = backup
   end
 
   test "it return an error if the export limit is over" do
@@ -59,7 +71,30 @@ defmodule Pleroma.User.BackupTest do
     assert {:ok, %Oban.Job{args: %{"backup_id" => backup_id} = args}} = Backup.create(user)
     assert {:ok, backup} = perform_job(BackupWorker, args)
     assert backup.file_size > 0
-    assert %Backup{id: ^backup_id, processed: true, user_id: ^user_id} = backup
+    assert %Backup{id: ^backup_id, processed: true, user_id: ^user_id, state: :complete} = backup
+
+    delete_job_args = %{"op" => "delete", "backup_id" => backup_id}
+
+    assert_enqueued(worker: BackupWorker, args: delete_job_args)
+    assert {:ok, backup} = perform_job(BackupWorker, delete_job_args)
+    refute Backup.get(backup_id)
+
+    email = Pleroma.Emails.UserEmail.backup_is_ready_email(backup)
+
+    assert_email_sent(
+      to: {user.name, user.email},
+      html_body: email.html_body
+    )
+  end
+
+  test "it updates states of the backup" do
+    clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+    %{id: user_id} = user = insert(:user)
+
+    assert {:ok, %Oban.Job{args: %{"backup_id" => backup_id} = args}} = Backup.create(user)
+    assert {:ok, backup} = perform_job(BackupWorker, args)
+    assert backup.file_size > 0
+    assert %Backup{id: ^backup_id, processed: true, user_id: ^user_id, state: :complete} = backup
 
     delete_job_args = %{"op" => "delete", "backup_id" => backup_id}
 
@@ -131,6 +166,7 @@ defmodule Pleroma.User.BackupTest do
 
   test "it creates a zip archive with user data" do
     user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
+    %{ap_id: other_ap_id} = other_user = insert(:user)
 
     {:ok, %{object: %{data: %{"id" => id1}}} = status1} =
       CommonAPI.post(user, %{status: "status1"})
@@ -147,8 +183,10 @@ defmodule Pleroma.User.BackupTest do
     Bookmark.create(user.id, status2.id)
     Bookmark.create(user.id, status3.id)
 
+    CommonAPI.follow(user, other_user)
+
     assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
-    assert {:ok, path} = Backup.export(backup)
+    assert {:ok, path} = Backup.export(backup, self())
     assert {:ok, zipfile} = :zip.zip_open(String.to_charlist(path), [:memory])
     assert {:ok, {'actor.json', json}} = :zip.zip_get('actor.json', zipfile)
 
@@ -226,8 +264,67 @@ defmodule Pleroma.User.BackupTest do
              "type" => "OrderedCollection"
            } = Jason.decode!(json)
 
+    assert {:ok, {'following.json', json}} = :zip.zip_get('following.json', zipfile)
+
+    assert %{
+             "@context" => "https://www.w3.org/ns/activitystreams",
+             "id" => "following.json",
+             "orderedItems" => [^other_ap_id],
+             "totalItems" => 1,
+             "type" => "OrderedCollection"
+           } = Jason.decode!(json)
+
     :zip.zip_close(zipfile)
     File.rm!(path)
+  end
+
+  test "it counts the correct number processed" do
+    user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
+
+    Enum.map(1..120, fn i ->
+      {:ok, status} = CommonAPI.post(user, %{status: "status #{i}"})
+      CommonAPI.favorite(user, status.id)
+      Bookmark.create(user.id, status.id)
+    end)
+
+    assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
+    {:ok, backup} = Backup.process(backup)
+
+    assert backup.processed_number == 1 + 120 + 120 + 120
+
+    Backup.delete(backup)
+  end
+
+  test "it handles errors" do
+    user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
+
+    Enum.map(1..120, fn i ->
+      {:ok, _status} = CommonAPI.post(user, %{status: "status #{i}"})
+    end)
+
+    assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
+
+    with_mock Pleroma.Web.ActivityPub.Transmogrifier,
+              [:passthrough],
+              prepare_outgoing: fn data ->
+                object =
+                  data["object"]
+                  |> Pleroma.Object.normalize(fetch: false)
+                  |> Map.get(:data)
+
+                data = data |> Map.put("object", object)
+
+                if String.contains?(data["object"]["content"], "119"),
+                  do: raise(%Postgrex.Error{}),
+                  else: {:ok, data}
+              end do
+      {:ok, backup} = Backup.process(backup)
+      assert backup.processed
+      assert backup.state == :complete
+      assert backup.processed_number == 1 + 119
+
+      Backup.delete(backup)
+    end
   end
 
   describe "it uploads and deletes a backup archive" do
@@ -246,7 +343,7 @@ defmodule Pleroma.User.BackupTest do
       Bookmark.create(user.id, status3.id)
 
       assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
-      assert {:ok, path} = Backup.export(backup)
+      assert {:ok, path} = Backup.export(backup, self())
 
       [path: path, backup: backup]
     end
@@ -255,14 +352,14 @@ defmodule Pleroma.User.BackupTest do
       clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.S3)
       clear_config([Pleroma.Uploaders.S3, :streaming_enabled], false)
 
-      with_mock ExAws,
-        request: fn
-          %{http_method: :put} -> {:ok, :ok}
-          %{http_method: :delete} -> {:ok, %{status_code: 204}}
-        end do
-        assert {:ok, %Pleroma.Upload{}} = Backup.upload(backup, path)
-        assert {:ok, _backup} = Backup.delete(backup)
-      end
+      ExAwsMock
+      |> expect(:request, 2, fn
+        %{http_method: :put} -> {:ok, :ok}
+        %{http_method: :delete} -> {:ok, %{status_code: 204}}
+      end)
+
+      assert {:ok, %Pleroma.Upload{}} = Backup.upload(backup, path)
+      assert {:ok, _backup} = Backup.delete(backup)
     end
 
     test "Local", %{path: path, backup: backup} do

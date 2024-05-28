@@ -6,7 +6,6 @@ defmodule Pleroma.Web.Feed.FeedView do
   use Phoenix.HTML
   use Pleroma.Web, :view
 
-  alias Pleroma.Formatter
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.Gettext
@@ -72,7 +71,9 @@ defmodule Pleroma.Web.Feed.FeedView do
 
   def last_activity(activities), do: List.last(activities)
 
-  def activity_title(%{"content" => content, "summary" => summary} = data, opts \\ %{}) do
+  def activity_title(%{"content" => content} = data, opts \\ %{}) do
+    summary = Map.get(data, "summary", "")
+
     title =
       cond do
         summary != "" -> summary
@@ -81,9 +82,8 @@ defmodule Pleroma.Web.Feed.FeedView do
       end
 
     title
-    |> Pleroma.Web.Metadata.Utils.scrub_html()
-    |> Pleroma.Emoji.Formatter.demojify()
-    |> Formatter.truncate(opts[:max_length], opts[:omission])
+    |> Pleroma.Web.Metadata.Utils.scrub_html_and_truncate(opts[:max_length], opts[:omission])
+    |> HtmlEntities.encode()
   end
 
   def activity_description(data) do
@@ -132,7 +132,7 @@ defmodule Pleroma.Web.Feed.FeedView do
     |> safe_to_string()
   end
 
-  @spec to_rfc3339(String.t() | NativeDateTime.t()) :: String.t()
+  @spec to_rfc3339(String.t() | NaiveDateTime.t()) :: String.t()
   def to_rfc3339(date) when is_binary(date) do
     date
     |> Timex.parse!("{ISO:Extended}")
@@ -145,7 +145,7 @@ defmodule Pleroma.Web.Feed.FeedView do
     |> Timex.format!("{RFC3339}")
   end
 
-  @spec to_rfc2822(String.t() | DateTime.t() | NativeDateTime.t()) :: String.t()
+  @spec to_rfc2822(String.t() | DateTime.t() | NaiveDateTime.t()) :: String.t()
   def to_rfc2822(datestr) when is_binary(datestr) do
     datestr
     |> Timex.parse!("{ISO:Extended}")

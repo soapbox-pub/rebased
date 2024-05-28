@@ -9,7 +9,7 @@ defmodule Pleroma.Activity.Queries do
 
   import Ecto.Query, only: [from: 2, where: 3]
 
-  @type query :: Ecto.Queryable.t() | Activity.t()
+  @type query :: Ecto.Queryable.t() | Pleroma.Activity.t()
 
   alias Pleroma.Activity
   alias Pleroma.User

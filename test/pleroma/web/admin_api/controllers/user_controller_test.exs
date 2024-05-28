@@ -19,6 +19,11 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
 

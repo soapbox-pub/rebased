@@ -5,11 +5,29 @@
 defmodule Pleroma.Workers.RemoteFetcherWorker do
   alias Pleroma.Object.Fetcher
 
-  use Pleroma.Workers.WorkerHelper, queue: "remote_fetcher"
+  use Pleroma.Workers.WorkerHelper, queue: "background"
 
   @impl Oban.Worker
   def perform(%Job{args: %{"op" => "fetch_remote", "id" => id} = args}) do
-    {:ok, _object} = Fetcher.fetch_object_from_id(id, depth: args["depth"])
+    case Fetcher.fetch_object_from_id(id, depth: args["depth"]) do
+      {:ok, _object} ->
+        :ok
+
+      {:error, :forbidden} ->
+        {:discard, :forbidden}
+
+      {:error, :not_found} ->
+        {:discard, :not_found}
+
+      {:error, :allowed_depth} ->
+        {:discard, :allowed_depth}
+
+      {:error, _} = e ->
+        e
+
+      e ->
+        {:error, e}
+    end
   end
 
   @impl Oban.Worker

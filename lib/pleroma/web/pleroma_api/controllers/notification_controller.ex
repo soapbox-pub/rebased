@@ -7,7 +7,7 @@ defmodule Pleroma.Web.PleromaAPI.NotificationController do
 
   alias Pleroma.Notification
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
 
   plug(
     Pleroma.Web.Plugs.OAuthScopesPlug,
@@ -16,9 +16,16 @@ defmodule Pleroma.Web.PleromaAPI.NotificationController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaNotificationOperation
 
-  def mark_as_read(%{assigns: %{user: user}, body_params: %{id: notification_id}} = conn, _) do
-    with {:ok, notification} <- Notification.read_one(user, notification_id) do
-      render(conn, "show.json", notification: notification, for: user)
+  def mark_as_read(
+        %{
+          assigns: %{user: user},
+          private: %{open_api_spex: %{body_params: %{id: notification_id}}}
+        } = conn,
+        _
+      ) do
+    with {:ok, _} <- Notification.read_one(user, notification_id) do
+      conn
+      |> json("ok")
     else
       {:error, message} ->
         conn
@@ -27,12 +34,19 @@ defmodule Pleroma.Web.PleromaAPI.NotificationController do
     end
   end
 
-  def mark_as_read(%{assigns: %{user: user}, body_params: %{max_id: max_id}} = conn, _) do
-    notifications =
-      user
-      |> Notification.set_read_up_to(max_id)
-      |> Enum.take(80)
-
-    render(conn, "index.json", notifications: notifications, for: user)
+  def mark_as_read(
+        %{assigns: %{user: user}, private: %{open_api_spex: %{body_params: %{max_id: max_id}}}} =
+          conn,
+        _
+      ) do
+    with {:ok, _} <- Notification.set_read_up_to(user, max_id) do
+      conn
+      |> json("ok")
+    else
+      {:error, message} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{"error" => message})
+    end
   end
 end

@@ -31,12 +31,19 @@ defmodule Pleroma.Upload.Filter.Exiftool.StripLocationTest do
     refute String.match?(exif_filtered, ~r/GPS/)
   end
 
-  test "verify webp files are skipped" do
-    upload = %Pleroma.Upload{
-      name: "sample.webp",
-      content_type: "image/webp"
-    }
+  test "verify webp, heic, svg  files are skipped" do
+    uploads =
+      ~w{webp heic svg svg+xml}
+      |> Enum.map(fn type ->
+        %Pleroma.Upload{
+          name: "sample.#{type}",
+          content_type: "image/#{type}"
+        }
+      end)
 
-    assert Filter.Exiftool.StripLocation.filter(upload) == {:ok, :noop}
+    uploads
+    |> Enum.each(fn upload ->
+      assert Filter.Exiftool.StripLocation.filter(upload) == {:ok, :noop}
+    end)
   end
 end

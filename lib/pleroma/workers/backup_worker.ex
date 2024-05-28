@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.BackupWorker do
-  use Oban.Worker, queue: :backup, max_attempts: 1
+  use Oban.Worker, queue: :slow, max_attempts: 1
 
   alias Oban.Job
   alias Pleroma.User.Backup
@@ -51,7 +51,7 @@ defmodule Pleroma.Workers.BackupWorker do
   end
 
   @impl Oban.Worker
-  def timeout(_job), do: :timer.seconds(900)
+  def timeout(_job), do: :infinity
 
   defp has_email?(user) do
     not is_nil(user.email) and user.email != ""
