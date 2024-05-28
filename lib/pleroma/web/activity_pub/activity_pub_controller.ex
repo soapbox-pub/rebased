@@ -522,7 +522,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     conn
   end
 
-  defp log_inbox_metadata(conn = %{params: %{"actor" => actor, "type" => type}}, _) do
+  defp log_inbox_metadata(%{params: %{"actor" => actor, "type" => type}} = conn, _) do
     Logger.metadata(actor: actor, type: type)
     conn
   end
