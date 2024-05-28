@@ -4,13 +4,14 @@
 
 defmodule Pleroma.Web.Plugs.HTTPSignaturePlugTest do
   use Pleroma.Web.ConnCase, async: true
-  alias Pleroma.Web.Plugs.HTTPSignaturePlug
-  alias Pleroma.StubbedHTTPSignaturesMock, as: HTTPSignaturesMock
-  alias Pleroma.StaticStubbedConfigMock, as: ConfigMock
 
-  import Plug.Conn
-  import Phoenix.Controller, only: [put_format: 2]
+  alias Pleroma.StaticStubbedConfigMock, as: ConfigMock
+  alias Pleroma.StubbedHTTPSignaturesMock, as: HTTPSignaturesMock
+  alias Pleroma.Web.Plugs.HTTPSignaturePlug
+
   import Mox
+  import Phoenix.Controller, only: [put_format: 2]
+  import Plug.Conn
 
   test "it calls HTTPSignatures to check validity if the actor signed it" do
     params = %{"actor" => "http://mastodon.example.org/users/admin"}
