@@ -74,6 +74,7 @@ defmodule Pleroma.Notification do
     reblog
     poll
     status
+    update
     pleroma:participation_accepted
     pleroma:participation_request
     pleroma:event_reminder

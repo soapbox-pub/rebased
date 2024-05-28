@@ -208,6 +208,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
         "follow_request",
         "poll",
         "status",
+        "update",
         "pleroma:participation_accepted",
         "pleroma:participation_request",
         "pleroma:event_reminder",
@@ -227,6 +228,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
       - `pleroma:chat_mention` - Someone mentioned you in a chat message
       - `pleroma:report` - Someone was reported
       - `status` - Someone you are subscribed to created a status
+      - `update` - A status you interacted with was updated
       - `pleroma:event_reminder` – An event you are participating in or created is taking place soon
       - `pleroma:event_update` – An event you are participating in was edited
       - `pleroma:participation_request - Someone wants to participate in your event
