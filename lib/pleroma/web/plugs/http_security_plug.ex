@@ -3,26 +3,27 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
-  alias Pleroma.Config
   import Plug.Conn
 
   require Logger
 
+  @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
+
   def init(opts), do: opts
 
   def call(conn, _options) do
-    if Config.get([:http_security, :enabled]) do
+    if @config_impl.get([:http_security, :enabled]) do
       conn
       |> merge_resp_headers(headers())
-      |> maybe_send_sts_header(Config.get([:http_security, :sts]))
+      |> maybe_send_sts_header(@config_impl.get([:http_security, :sts]))
     else
       conn
     end
   end
 
   def primary_frontend do
-    with %{"name" => frontend} <- Config.get([:frontends, :primary]),
-         available <- Config.get([:frontends, :available]),
+    with %{"name" => frontend} <- @config_impl.get([:frontends, :primary]),
+         available <- @config_impl.get([:frontends, :available]),
          %{} = primary_frontend <- Map.get(available, frontend) do
       {:ok, primary_frontend}
     end
@@ -37,8 +38,8 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
   end
 
   def headers do
-    referrer_policy = Config.get([:http_security, :referrer_policy])
-    report_uri = Config.get([:http_security, :report_uri])
+    referrer_policy = @config_impl.get([:http_security, :referrer_policy])
+    report_uri = @config_impl.get([:http_security, :report_uri])
     custom_http_frontend_headers = custom_http_frontend_headers()
 
     headers = [
@@ -87,11 +88,11 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
   @csp_start [Enum.join(static_csp_rules, ";") <> ";"]
 
   defp csp_string do
-    scheme = Config.get([Pleroma.Web.Endpoint, :url])[:scheme]
+    scheme = @config_impl.get([Pleroma.Web.Endpoint, :url])[:scheme]
     static_url = Pleroma.Web.Endpoint.static_url()
     websocket_url = Pleroma.Web.Endpoint.websocket_url()
-    report_uri = Config.get([:http_security, :report_uri])
-    sentry_dsn = Config.get([:frontend_configurations, :soapbox_fe, "sentryDsn"])
+    report_uri = @config_impl.get([:http_security, :report_uri])
+    sentry_dsn = @config_impl.get([:frontend_configurations, :soapbox_fe, "sentryDsn"])
 
     img_src = "img-src 'self' data: blob:"
     media_src = "media-src 'self'"
@@ -99,8 +100,8 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
 
     # Strict multimedia CSP enforcement only when MediaProxy is enabled
     {img_src, media_src, connect_src} =
-      if Config.get([:media_proxy, :enabled]) &&
-           !Config.get([:media_proxy, :proxy_opts, :redirect_on_failure]) do
+      if @config_impl.get([:media_proxy, :enabled]) &&
+           !@config_impl.get([:media_proxy, :proxy_opts, :redirect_on_failure]) do
         sources = build_csp_multimedia_source_list()
 
         {
@@ -117,7 +118,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
       end
 
     connect_src =
-      if Config.get(:env) == :dev do
+      if @config_impl.get([:env]) == :dev do
         [connect_src, " http://localhost:3035/"]
       else
         connect_src
@@ -131,10 +132,14 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
       end
 
     script_src =
-      if Config.get(:env) == :dev do
-        "script-src 'self' 'unsafe-eval'"
+      if @config_impl.get([:http_security, :allow_unsafe_eval]) do
+        if @config_impl.get([:env]) == :dev do
+          "script-src 'self' 'unsafe-eval'"
+        else
+          "script-src 'self' 'wasm-unsafe-eval'"
+        end
       else
-        "script-src 'self' 'wasm-unsafe-eval'"
+        "script-src 'self'"
       end
 
     report = if report_uri, do: ["report-uri ", report_uri, ";report-to csp-endpoint"]
@@ -170,11 +175,11 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
   defp build_csp_multimedia_source_list do
     media_proxy_whitelist =
       [:media_proxy, :whitelist]
-      |> Config.get()
+      |> @config_impl.get()
       |> build_csp_from_whitelist([])
 
-    captcha_method = Config.get([Pleroma.Captcha, :method])
-    captcha_endpoint = Config.get([captcha_method, :endpoint])
+    captcha_method = @config_impl.get([Pleroma.Captcha, :method])
+    captcha_endpoint = @config_impl.get([captcha_method, :endpoint])
 
     map_tile_server_endpoint = map_tile_server()
 
@@ -184,7 +189,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
         [Pleroma.Upload, :base_url],
         [Pleroma.Uploaders.S3, :public_endpoint]
       ]
-      |> Enum.map(&Config.get/1)
+      |> Enum.map(&@config_impl.get/1)
 
     [captcha_endpoint | base_endpoints]
     |> Enum.map(&build_csp_param/1)
@@ -195,7 +200,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
 
   defp map_tile_server do
     with tile_server when is_binary(tile_server) <-
-           Config.get([:frontend_configurations, :soapbox_fe, "tileServer"]),
+           @config_impl.get([:frontend_configurations, :soapbox_fe, "tileServer"]),
          %{host: host} <- URI.parse(tile_server) do
       ["*.#{host}"]
     else
@@ -222,7 +227,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
   end
 
   def warn_if_disabled do
-    unless Config.get([:http_security, :enabled]) do
+    unless @config_impl.get([:http_security, :enabled]) do
       Logger.warning("
                                  .i;;;;i.
                                iYcviii;vXY:
@@ -267,8 +272,8 @@ your instance and your users via malicious posts:
   end
 
   defp maybe_send_sts_header(conn, true) do
-    max_age_sts = Config.get([:http_security, :sts_max_age])
-    max_age_ct = Config.get([:http_security, :ct_max_age])
+    max_age_sts = @config_impl.get([:http_security, :sts_max_age])
+    max_age_ct = @config_impl.get([:http_security, :ct_max_age])
 
     merge_resp_headers(conn, [
       {"strict-transport-security", "max-age=#{max_age_sts}; includeSubDomains"},

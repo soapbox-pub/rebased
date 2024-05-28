@@ -775,6 +775,18 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :rejected_instances,
+        type: {:list, :tuple},
+        key_placeholder: "instance",
+        value_placeholder: "reason",
+        description:
+          "List of ActivityPub instances to reject requests from if authorized_fetch_mode is enabled",
+        suggestions: [
+          {"rejected.com", "Reason"},
+          {"*.rejected.com", "Reason"}
+        ]
+      },
+      %{
         key: :static_dir,
         type: :string,
         description: "Instance static directory",
@@ -1847,6 +1859,12 @@ config :pleroma, :config_description, [
         key: :authorized_fetch_mode,
         type: :boolean,
         description: "Require HTTP signatures for AP fetches"
+      },
+      %{
+        key: :authorized_fetch_mode_exceptions,
+        type: {:list, :string},
+        description:
+          "List of IPs (CIDR format accepted) to exempt from HTTP Signatures requirement (for example to allow debugging, you shouldn't otherwise need this)"
       },
       %{
         key: :note_replies_output_limit,

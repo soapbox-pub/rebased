@@ -135,13 +135,13 @@ config :pleroma, Pleroma.Web.Endpoint,
 config :logger, :console,
   level: :debug,
   format: "\n$time $metadata[$level] $message\n",
-  metadata: [:request_id]
+  metadata: [:actor, :path, :type, :user]
 
 config :logger, :ex_syslogger,
   level: :debug,
   ident: "pleroma",
   format: "$metadata[$level] $message",
-  metadata: [:request_id]
+  metadata: [:actor, :path, :type, :user]
 
 config :mime, :types, %{
   "application/xml" => ["xml"],
@@ -192,6 +192,7 @@ config :pleroma, :instance,
   allow_relay: true,
   public: true,
   quarantined_instances: [],
+  rejected_instances: [],
   static_dir: "instance/static/",
   allowed_post_formats: [
     "text/plain",
@@ -529,7 +530,8 @@ config :pleroma, :http_security,
   sts: false,
   sts_max_age: 31_536_000,
   ct_max_age: 2_592_000,
-  referrer_policy: "same-origin"
+  referrer_policy: "same-origin",
+  allow_unsafe_eval: false
 
 config :cors_plug,
   max_age: 86_400,
@@ -591,26 +593,15 @@ config :pleroma, Oban,
   log: false,
   queues: [
     activity_expiration: 10,
-    token_expiration: 5,
-    filter_expiration: 1,
-    backup: 1,
-    federator_incoming: 50,
-    federator_outgoing: 50,
+    federator_incoming: 5,
+    federator_outgoing: 5,
     ingestion_queue: 50,
     web_push: 50,
-    mailer: 10,
     transmogrifier: 20,
-    scheduled_activities: 10,
-    poll_notifications: 10,
     notifications: 20,
     background: 5,
-    remote_fetcher: 2,
-    attachments_cleanup: 1,
-    new_users_digest: 1,
-    mute_expire: 5,
     search_indexing: [limit: 10, paused: true],
-    rich_media_expiration: 2,
-    check_domain_resolve: 1
+    slow: 1
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
@@ -860,22 +851,27 @@ config :pleroma, :connections_pool,
 
 config :pleroma, :pools,
   federation: [
-    size: 50,
-    max_waiting: 10,
+    size: 75,
+    max_waiting: 20,
     recv_timeout: 10_000
   ],
   media: [
-    size: 50,
+    size: 75,
+    max_waiting: 20,
+    recv_timeout: 15_000
+  ],
+  rich_media: [
+    size: 25,
     max_waiting: 20,
     recv_timeout: 15_000
   ],
   upload: [
     size: 25,
-    max_waiting: 5,
+    max_waiting: 20,
     recv_timeout: 15_000
   ],
   default: [
-    size: 10,
+    size: 50,
     max_waiting: 2,
     recv_timeout: 5_000
   ]
@@ -886,6 +882,10 @@ config :pleroma, :hackney_pools,
     timeout: 150_000
   ],
   media: [
+    max_connections: 50,
+    timeout: 150_000
+  ],
+  rich_media: [
     max_connections: 50,
     timeout: 150_000
   ],
@@ -934,8 +934,6 @@ config :pleroma, Pleroma.User.Backup,
   process_chunk_size: 100
 
 config :pleroma, ConcurrentLimiter, [
-  {Pleroma.Web.RichMedia.Helpers, [max_running: 5, max_waiting: 5]},
-  {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]},
   {Pleroma.Search, [max_running: 30, max_waiting: 50]},
   {Pleroma.Webhook.Notify, [max_running: 5, max_waiting: 200]}
 ]
@@ -977,6 +975,19 @@ config :pleroma, Pleroma.Application,
   streamer_registry: true
 
 config :pleroma, Pleroma.Uploaders.Uploader, timeout: 30_000
+
+config :pleroma, Pleroma.Search.QdrantSearch,
+  qdrant_url: "http://127.0.0.1:6333/",
+  qdrant_api_key: "",
+  openai_url: "http://127.0.0.1:11345",
+  # The healthcheck url has to be set to nil when used with the real openai
+  # API, as it doesn't have a healthcheck endpoint.
+  openai_healthcheck_url: "http://127.0.0.1:11345/health",
+  openai_model: "snowflake/snowflake-arctic-embed-xs",
+  openai_api_key: "",
+  qdrant_index_configuration: %{
+    vectors: %{size: 384, distance: "Cosine"}
+  }
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

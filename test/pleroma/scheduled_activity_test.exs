@@ -31,8 +31,7 @@ defmodule Pleroma.ScheduledActivityTest do
       {:ok, sa1} = ScheduledActivity.create(user, attrs)
       {:ok, sa2} = ScheduledActivity.create(user, attrs)
 
-      jobs =
-        Repo.all(from(j in Oban.Job, where: j.queue == "scheduled_activities", select: j.args))
+      jobs = Repo.all(from(j in Oban.Job, where: j.queue == "federator_outgoing", select: j.args))
 
       assert jobs == [%{"activity_id" => sa1.id}, %{"activity_id" => sa2.id}]
     end

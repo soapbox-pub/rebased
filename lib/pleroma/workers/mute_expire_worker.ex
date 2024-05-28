@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.MuteExpireWorker do
-  use Pleroma.Workers.WorkerHelper, queue: "mute_expire"
+  use Pleroma.Workers.WorkerHelper, queue: "background"
 
   @impl Oban.Worker
   def perform(%Job{args: %{"op" => "unmute_user", "muter_id" => muter_id, "mutee_id" => mutee_id}}) do

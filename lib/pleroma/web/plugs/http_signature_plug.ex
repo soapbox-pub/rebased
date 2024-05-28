@@ -3,13 +3,21 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
+  alias Pleroma.Helpers.InetHelper
+
   import Plug.Conn
   import Phoenix.Controller, only: [get_format: 1, text: 2]
 
-  alias Pleroma.Config
   alias Pleroma.Web.ActivityPub.MRF
 
   require Logger
+
+  @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
+  @http_signatures_impl Application.compile_env(
+                          :pleroma,
+                          [__MODULE__, :http_signatures_impl],
+                          HTTPSignatures
+                        )
 
   def init(options) do
     options
@@ -39,7 +47,7 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
       |> put_req_header("(request-target)", request_target)
       |> put_req_header("@request-target", request_target)
 
-    HTTPSignatures.validate_conn(conn)
+    @http_signatures_impl.validate_conn(conn)
   end
 
   defp validate_signature(conn) do
@@ -105,28 +113,30 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
 
   defp maybe_require_signature(%{assigns: %{valid_signature: true}} = conn), do: conn
 
-  defp maybe_require_signature(conn) do
-    cond do
-      get_ip(conn) in Config.get([:instance, :trusted_unsigned], []) ->
-        conn
-        |> assign(:valid_signature, true)
-        |> assign(:actor_id, Pleroma.Web.ActivityPub.Relay.ap_id())
+  defp maybe_require_signature(%{remote_ip: remote_ip} = conn) do
+    if @config_impl.get([:activitypub, :authorized_fetch_mode], false) do
+      exceptions =
+        @config_impl.get([:activitypub, :authorized_fetch_mode_exceptions], [])
+        |> Enum.map(&InetHelper.parse_cidr/1)
 
-      Pleroma.Config.get([:activitypub, :authorized_fetch_mode], false) ->
+      if Enum.any?(exceptions, fn x -> InetCidr.contains?(x, remote_ip) end) do
+        conn
+      else
         conn
         |> put_status(:unauthorized)
         |> text("Request not signed")
         |> halt()
-
-      true ->
-        conn
+      end
+    else
+      conn
     end
   end
 
   defp maybe_filter_requests(%{halted: true} = conn), do: conn
 
   defp maybe_filter_requests(conn) do
-    if Pleroma.Config.get([:activitypub, :authorized_fetch_mode], false) do
+    if @config_impl.get([:activitypub, :authorized_fetch_mode], false) and
+         conn.assigns[:actor_id] do
       %{host: host} = URI.parse(conn.assigns.actor_id)
 
       if MRF.subdomain_match?(rejected_domains(), host) do
@@ -142,26 +152,8 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
   end
 
   defp rejected_domains do
-    Config.get([:instance, :rejected_instances], [])
+    @config_impl.get([:instance, :rejected_instances])
     |> Pleroma.Web.ActivityPub.MRF.instance_list_from_tuples()
     |> Pleroma.Web.ActivityPub.MRF.subdomains_regex()
-  end
-
-  defp get_ip(conn) do
-    forwarded_for =
-      conn
-      |> Plug.Conn.get_req_header("x-forwarded-for")
-      |> List.first()
-
-    if forwarded_for do
-      forwarded_for
-      |> String.split(",")
-      |> Enum.map(&String.trim/1)
-      |> List.first()
-    else
-      conn.remote_ip
-      |> :inet_parse.ntoa()
-      |> to_string()
-    end
   end
 end

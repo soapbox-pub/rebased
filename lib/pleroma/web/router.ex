@@ -29,6 +29,7 @@ defmodule Pleroma.Web.Router do
   pipeline :browser do
     plug(:accepts, ["html"])
     plug(:fetch_session)
+    plug(Pleroma.Web.Plugs.LoggerMetadataUser)
   end
 
   pipeline :oauth do
@@ -67,12 +68,14 @@ defmodule Pleroma.Web.Router do
     plug(:fetch_session)
     plug(:authenticate)
     plug(OpenApiSpex.Plug.PutApiSpec, module: Pleroma.Web.ApiSpec)
+    plug(Pleroma.Web.Plugs.LoggerMetadataUser)
   end
 
   pipeline :no_auth_or_privacy_expectations_api do
     plug(:base_api)
     plug(:after_auth)
     plug(Pleroma.Web.Plugs.IdempotencyPlug)
+    plug(Pleroma.Web.Plugs.LoggerMetadataUser)
   end
 
   # Pipeline for app-related endpoints (no user auth checks — app-bound tokens must be supported)
@@ -83,12 +86,14 @@ defmodule Pleroma.Web.Router do
   pipeline :api do
     plug(:expect_public_instance_or_user_authentication)
     plug(:no_auth_or_privacy_expectations_api)
+    plug(Pleroma.Web.Plugs.LoggerMetadataUser)
   end
 
   pipeline :authenticated_api do
     plug(:expect_user_authentication)
     plug(:no_auth_or_privacy_expectations_api)
     plug(Pleroma.Web.Plugs.EnsureAuthenticatedPlug)
+    plug(Pleroma.Web.Plugs.LoggerMetadataUser)
   end
 
   pipeline :admin_api do
@@ -99,6 +104,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.EnsureAuthenticatedPlug)
     plug(Pleroma.Web.Plugs.UserIsStaffPlug)
     plug(Pleroma.Web.Plugs.IdempotencyPlug)
+    plug(Pleroma.Web.Plugs.LoggerMetadataUser)
   end
 
   pipeline :require_admin do
@@ -179,6 +185,7 @@ defmodule Pleroma.Web.Router do
     plug(:browser)
     plug(:authenticate)
     plug(Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug)
+    plug(Pleroma.Web.Plugs.LoggerMetadataUser)
   end
 
   pipeline :well_known do
@@ -193,6 +200,7 @@ defmodule Pleroma.Web.Router do
   pipeline :pleroma_api do
     plug(:accepts, ["html", "json"])
     plug(OpenApiSpex.Plug.PutApiSpec, module: Pleroma.Web.ApiSpec)
+    plug(Pleroma.Web.Plugs.LoggerMetadataUser)
   end
 
   pipeline :mailbox_preview do

@@ -23,6 +23,8 @@ defmodule Pleroma.Web.Endpoint do
 
   plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
 
+  plug(Pleroma.Web.Plugs.LoggerMetadataPath)
+
   plug(Pleroma.Web.Plugs.SetLocalePlug)
   plug(CORSPlug)
   plug(Pleroma.Web.Plugs.HTTPSecurityPlug)

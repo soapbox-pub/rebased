@@ -62,6 +62,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     when action in [:following, :followers, :pinned, :inbox, :outbox, :update_outbox]
   )
 
+  plug(:log_inbox_metadata when action in [:inbox])
   plug(:set_requester_reachable when action in [:inbox])
   plug(:relay_active? when action in [:relay])
 
@@ -530,6 +531,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
     conn
   end
+
+  defp log_inbox_metadata(%{params: %{"actor" => actor, "type" => type}} = conn, _) do
+    Logger.metadata(actor: actor, type: type)
+    conn
+  end
+
+  defp log_inbox_metadata(conn, _), do: conn
 
   def upload_media(%{assigns: %{user: %User{} = user}} = conn, %{"file" => file} = data) do
     with {:ok, object} <-
