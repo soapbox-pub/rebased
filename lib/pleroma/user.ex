@@ -2053,7 +2053,8 @@ defmodule Pleroma.User do
            %{scheme: scheme, userinfo: nil, host: host}
            when not_empty_string(host) and scheme in ["http", "https"] <-
              URI.parse(value),
-           {:not_idn, true} <- {:not_idn, to_string(:idna.encode(host)) == host},
+           {:not_idn, true} <-
+             {:not_idn, match?(^host, to_string(:idna.encode(to_charlist(host))))},
            "me" <- Pleroma.Web.RelMe.maybe_put_rel_me(value, profile_urls) do
         CommonUtils.to_masto_date(NaiveDateTime.utc_now())
       else
