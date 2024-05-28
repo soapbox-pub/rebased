@@ -21,16 +21,18 @@ Replaces embedded objects with references to them in the `objects` table. Only n
     mix pleroma.database remove_embedded_objects [option ...]
     ```
 
-
 ### Options
 - `--vacuum` - run `VACUUM FULL` after the embedded objects are replaced with their references
 
 ## Prune old remote posts from the database
 
-This will prune remote posts older than 90 days (configurable with [`config :pleroma, :instance, remote_post_retention_days`](../../configuration/cheatsheet.md#instance)) from the database, they will be refetched from source when accessed.
+This will prune remote posts older than 90 days (configurable with [`config :pleroma, :instance, remote_post_retention_days`](../../configuration/cheatsheet.md#instance)) from the database. Pruned posts may be refetched in some cases.
+
+!!! note
+    The disk space will only be reclaimed after a proper vacuum. By default Postgresql does this for you on a regular basis, but if your instance has been running for a long time and there are many rows deleted, it may be advantageous to use `VACUUM FULL` (e.g. by using the `--vacuum` option).
 
 !!! danger
-    The disk space will only be reclaimed after `VACUUM FULL`. You may run out of disk space during the execution of the task or vacuuming if you don't have about 1/3rds of the database size free.
+    You may run out of disk space during the execution of the task or vacuuming if you don't have about 1/3rds of the database size free. Vacuum causes a substantial increase in I/O traffic, and may lead to a degraded experience while it is running.
 
 === "OTP"
 
@@ -45,7 +47,11 @@ This will prune remote posts older than 90 days (configurable with [`config :ple
     ```
 
 ### Options
-- `--vacuum` - run `VACUUM FULL` after the objects are pruned
+
+- `--keep-threads` - Don't prune posts when they are part of a thread where at least one post has seen local interaction (e.g. one of the posts is a local post, or is favourited by a local user, or has been repeated by a local user...). It also won't delete posts when at least one of the posts in that thread is kept (e.g. because one of the posts has seen recent activity).
+- `--keep-non-public` - Keep non-public posts like DM's and followers-only, even if they are remote.
+- `--prune-orphaned-activities` - Also prune orphaned activities afterwards. Activities are things like Like, Create, Announce, Flag (aka reports). They can significantly help reduce the database size.  Note: this can take a very long time.
+- `--vacuum` - Run `VACUUM FULL` after the objects are pruned. This should not be used on a regular basis, but is useful if your instance has been running for a long time before pruning.
 
 ## Create a conversation for all existing DMs
 
@@ -92,6 +98,9 @@ Can be safely re-run
     ```
 
 ## Vacuum the database
+
+!!! note
+    By default Postgresql has an autovacuum deamon running. While the tasks described here can help in some cases, they shouldn't be needed on a regular basis. See [the Postgresql docs on vacuuming](https://www.postgresql.org/docs/current/sql-vacuum.html) for more information on this.
 
 ### Analyze
 

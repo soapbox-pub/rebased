@@ -67,43 +67,168 @@ defmodule Mix.Tasks.Pleroma.Database do
       OptionParser.parse(
         args,
         strict: [
-          vacuum: :boolean
+          vacuum: :boolean,
+          keep_threads: :boolean,
+          keep_non_public: :boolean,
+          prune_orphaned_activities: :boolean
         ]
       )
 
     start_pleroma()
 
     deadline = Pleroma.Config.get([:instance, :remote_post_retention_days])
+    time_deadline = NaiveDateTime.utc_now() |> NaiveDateTime.add(-(deadline * 86_400))
 
-    Logger.info("Pruning objects older than #{deadline} days")
+    log_message = "Pruning objects older than #{deadline} days"
 
-    time_deadline =
-      NaiveDateTime.utc_now()
-      |> NaiveDateTime.add(-(deadline * 86_400))
+    log_message =
+      if Keyword.get(options, :keep_non_public) do
+        log_message <> ", keeping non public posts"
+      else
+        log_message
+      end
 
-    from(o in Object,
-      where:
-        fragment(
-          "?->'to' \\? ? OR ?->'cc' \\? ?",
-          o.data,
-          ^Pleroma.Constants.as_public(),
-          o.data,
-          ^Pleroma.Constants.as_public()
-        ),
-      where: o.inserted_at < ^time_deadline,
-      where:
+    log_message =
+      if Keyword.get(options, :keep_threads) do
+        log_message <> ", keeping threads intact"
+      else
+        log_message
+      end
+
+    log_message =
+      if Keyword.get(options, :prune_orphaned_activities) do
+        log_message <> ", pruning orphaned activities"
+      else
+        log_message
+      end
+
+    log_message =
+      if Keyword.get(options, :vacuum) do
+        log_message <>
+          ", doing a full vacuum (you shouldn't do this as a recurring maintanance task)"
+      else
+        log_message
+      end
+
+    Logger.info(log_message)
+
+    if Keyword.get(options, :keep_threads) do
+      # We want to delete objects from threads where
+      # 1. the newest post is still old
+      # 2. none of the activities is local
+      # 3. none of the activities is bookmarked
+      # 4. optionally none of the posts is non-public
+      deletable_context =
+        if Keyword.get(options, :keep_non_public) do
+          Pleroma.Activity
+          |> join(:left, [a], b in Pleroma.Bookmark, on: a.id == b.activity_id)
+          |> group_by([a], fragment("? ->> 'context'::text", a.data))
+          |> having(
+            [a],
+            not fragment(
+              # Posts (checked on Create Activity) is non-public
+              "bool_or((not(?->'to' \\? ? OR ?->'cc' \\? ?)) and ? ->> 'type' = 'Create')",
+              a.data,
+              ^Pleroma.Constants.as_public(),
+              a.data,
+              ^Pleroma.Constants.as_public(),
+              a.data
+            )
+          )
+        else
+          Pleroma.Activity
+          |> join(:left, [a], b in Pleroma.Bookmark, on: a.id == b.activity_id)
+          |> group_by([a], fragment("? ->> 'context'::text", a.data))
+        end
+        |> having([a], max(a.updated_at) < ^time_deadline)
+        |> having([a], not fragment("bool_or(?)", a.local))
+        |> having([_, b], fragment("max(?::text) is null", b.id))
+        |> select([a], fragment("? ->> 'context'::text", a.data))
+
+      Pleroma.Object
+      |> where([o], fragment("? ->> 'context'::text", o.data) in subquery(deletable_context))
+    else
+      if Keyword.get(options, :keep_non_public) do
+        Pleroma.Object
+        |> where(
+          [o],
+          fragment(
+            "?->'to' \\? ? OR ?->'cc' \\? ?",
+            o.data,
+            ^Pleroma.Constants.as_public(),
+            o.data,
+            ^Pleroma.Constants.as_public()
+          )
+        )
+      else
+        Pleroma.Object
+      end
+      |> where([o], o.updated_at < ^time_deadline)
+      |> where(
+        [o],
         fragment("split_part(?->>'actor', '/', 3) != ?", o.data, ^Pleroma.Web.Endpoint.host())
-    )
+      )
+    end
     |> Repo.delete_all(timeout: :infinity)
 
-    prune_hashtags_query = """
+    if !Keyword.get(options, :keep_threads) do
+      # Without the --keep-threads option, it's possible that bookmarked
+      # objects have been deleted. We remove the corresponding bookmarks.
+      """
+      delete from public.bookmarks
+      where id in (
+        select b.id from public.bookmarks b
+        left join public.activities a on b.activity_id = a.id
+        left join public.objects o on a."data" ->> 'object' = o.data ->> 'id'
+        where o.id is null
+      )
+      """
+      |> Repo.query([], timeout: :infinity)
+    end
+
+    if Keyword.get(options, :prune_orphaned_activities) do
+      # Prune activities who link to a single object
+      """
+      delete from public.activities
+      where id in (
+        select a.id from public.activities a
+        left join public.objects o on a.data ->> 'object' = o.data ->> 'id'
+        left join public.activities a2 on a.data ->> 'object' = a2.data ->> 'id'
+        left join public.users u  on a.data ->> 'object' = u.ap_id
+        where not a.local
+        and jsonb_typeof(a."data" -> 'object') = 'string'
+        and o.id is null
+        and a2.id is null
+        and u.id is null
+      )
+      """
+      |> Repo.query([], timeout: :infinity)
+
+      # Prune activities who link to an array of objects
+      """
+      delete from public.activities
+      where id in (
+        select a.id from public.activities a
+        join json_array_elements_text((a."data" -> 'object')::json) as j on jsonb_typeof(a."data" -> 'object') = 'array'
+        left join public.objects o on j.value = o.data ->> 'id'
+        left join public.activities a2 on j.value = a2.data ->> 'id'
+        left join public.users u  on j.value = u.ap_id
+        group by a.id
+        having max(o.data ->> 'id') is null
+        and max(a2.data ->> 'id') is null
+        and max(u.ap_id) is null
+      )
+      """
+      |> Repo.query([], timeout: :infinity)
+    end
+
+    """
     DELETE FROM hashtags AS ht
     WHERE NOT EXISTS (
       SELECT 1 FROM hashtags_objects hto
       WHERE ht.id = hto.hashtag_id)
     """
-
-    Repo.query(prune_hashtags_query)
+    |> Repo.query()
 
     if Keyword.get(options, :vacuum) do
       Maintenance.vacuum("full")
