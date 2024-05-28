@@ -352,12 +352,17 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
     end
 
     test "We don't have unexpected tables which may contain objects that are referenced by activities" do
-      # We can delete orphaned activities. For that we look for the objects they reference in the 'objects', 'activities', and 'users' table.
-      # If someone adds another table with objects (idk, maybe with separate relations, or collections or w/e), then we need to make sure we
-      # add logic for that in the 'prune_objects' task so that we don't wrongly delete their corresponding activities.
+      # We can delete orphaned activities. For that we look for the objects
+      # they reference in the 'objects', 'activities', and 'users' table.
+      # If someone adds another table with objects (idk, maybe with separate
+      # relations, or collections or w/e), then we need to make sure we
+      # add logic for that in the 'prune_objects' task so that we don't
+      # wrongly delete their corresponding activities.
       # So when someone adds (or removes) a table, this test will fail.
-      # Either the table contains objects which can be referenced from the activities table
-      # => in that case the prune_objects job should be adapted so we don't delete activities who still have the referenced object.
+      # Either the table contains objects which can be referenced from the
+      # activities table
+      # => in that case the prune_objects job should be adapted so we don't
+      #    delete activities who still have the referenced object.
       # Or it doesn't contain objects which can be referenced from the activities table
       # => in that case you can add/remove the table to/from this (sorted) list.
 
@@ -463,7 +468,8 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
       })
       |> Repo.insert()
 
-      # The remote activities without existing reference, and only the remote activities without existing reference, are deleted
+      # The remote activities without existing reference,
+      # and only the remote activities without existing reference, are deleted
       # if, and only if, we provide the --prune-orphaned-activities option
       assert length(Repo.all(Activity)) == 5
       Mix.Tasks.Pleroma.Database.run(["prune_objects"])
