@@ -2053,7 +2053,8 @@ defmodule Pleroma.User do
            %{scheme: scheme, userinfo: nil, host: host}
            when not_empty_string(host) and scheme in ["http", "https"] <-
              URI.parse(value),
-           {:not_idn, true} <- {:not_idn, to_string(:idna.encode(host)) == host},
+           {:not_idn, true} <-
+             {:not_idn, match?(^host, to_string(:idna.encode(to_charlist(host))))},
            "me" <- Pleroma.Web.RelMe.maybe_put_rel_me(value, profile_urls) do
         CommonUtils.to_masto_date(NaiveDateTime.utc_now())
       else
@@ -2727,7 +2728,7 @@ defmodule Pleroma.User do
     end
   end
 
-  @spec add_to_block(User.t(), User.t()) ::
+  @spec remove_from_block(User.t(), User.t()) ::
           {:ok, UserRelationship.t()} | {:ok, nil} | {:error, Ecto.Changeset.t()}
   defp remove_from_block(%User{} = user, %User{} = blocked) do
     with {:ok, relationship} <- UserRelationship.delete_block(user, blocked) do
