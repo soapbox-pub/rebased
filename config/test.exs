@@ -155,6 +155,10 @@ config :pleroma, Pleroma.ScheduledActivity, config_impl: Pleroma.UnstubbedConfig
 config :pleroma, Pleroma.Web.RichMedia.Helpers, config_impl: Pleroma.StaticStubbedConfigMock
 config :pleroma, Pleroma.Uploaders.IPFS, config_impl: Pleroma.UnstubbedConfigMock
 config :pleroma, Pleroma.Web.Plugs.HTTPSecurityPlug, config_impl: Pleroma.StaticStubbedConfigMock
+config :pleroma, Pleroma.Web.Plugs.HTTPSignaturePlug, config_impl: Pleroma.StaticStubbedConfigMock
+
+config :pleroma, Pleroma.Web.Plugs.HTTPSignaturePlug,
+  http_signatures_impl: Pleroma.StubbedHTTPSignaturesMock
 
 peer_module =
   if String.to_integer(System.otp_release()) >= 25 do

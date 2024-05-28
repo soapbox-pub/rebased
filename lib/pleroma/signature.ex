@@ -44,8 +44,7 @@ defmodule Pleroma.Signature do
   defp remove_suffix(uri, []), do: uri
 
   def fetch_public_key(conn) do
-    with %{"keyId" => kid} <- HTTPSignatures.signature_for_conn(conn),
-         {:ok, actor_id} <- key_id_to_actor_id(kid),
+    with {:ok, actor_id} <- get_actor_id(conn),
          {:ok, public_key} <- User.get_public_key_for_ap_id(actor_id) do
       {:ok, public_key}
     else
@@ -55,11 +54,20 @@ defmodule Pleroma.Signature do
   end
 
   def refetch_public_key(conn) do
-    with %{"keyId" => kid} <- HTTPSignatures.signature_for_conn(conn),
-         {:ok, actor_id} <- key_id_to_actor_id(kid),
+    with {:ok, actor_id} <- get_actor_id(conn),
          {:ok, _user} <- ActivityPub.make_user_from_ap_id(actor_id),
          {:ok, public_key} <- User.get_public_key_for_ap_id(actor_id) do
       {:ok, public_key}
+    else
+      e ->
+        {:error, e}
+    end
+  end
+
+  def get_actor_id(conn) do
+    with %{"keyId" => kid} <- HTTPSignatures.signature_for_conn(conn),
+         {:ok, actor_id} <- key_id_to_actor_id(kid) do
+      {:ok, actor_id}
     else
       e ->
         {:error, e}

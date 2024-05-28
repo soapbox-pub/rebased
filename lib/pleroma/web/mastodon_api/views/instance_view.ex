@@ -152,6 +152,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
   def federation do
     quarantined = Config.get([:instance, :quarantined_instances], [])
+    rejected = Config.get([:instance, :rejected_instances], [])
 
     if Config.get([:mrf, :transparency]) do
       {:ok, data} = MRF.describe()
@@ -171,6 +172,12 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           |> Enum.map(fn {instance, reason} -> {instance, %{"reason" => reason}} end)
           |> Map.new()
       })
+      |> Map.put(
+        :rejected_instances,
+        rejected
+        |> Enum.map(fn {instance, reason} -> {instance, %{"reason" => reason}} end)
+        |> Map.new()
+      )
     else
       %{}
     end
