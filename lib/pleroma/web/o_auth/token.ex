@@ -96,7 +96,7 @@ defmodule Pleroma.Web.OAuth.Token do
     |> validate_required([:valid_until])
   end
 
-  @spec create(App.t(), User.t(), map()) :: {:ok, Token} | {:error, Ecto.Changeset.t()}
+  @spec create(App.t(), User.t(), map()) :: {:ok, Token.t()} | {:error, Ecto.Changeset.t()}
   def create(%App{} = app, %User{} = user, attrs \\ %{}) do
     with {:ok, token} <- do_create(app, user, attrs) do
       if Pleroma.Config.get([:oauth2, :clean_expired_tokens]) do
