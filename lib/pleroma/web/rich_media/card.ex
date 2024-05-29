@@ -77,19 +77,23 @@ defmodule Pleroma.Web.RichMedia.Card do
 
   @spec get_or_backfill_by_url(String.t(), map()) :: t() | nil
   def get_or_backfill_by_url(url, backfill_opts \\ %{}) do
-    case get_by_url(url) do
-      %__MODULE__{} = card ->
-        card
+    if @config_impl.get([:rich_media, :enabled]) do
+      case get_by_url(url) do
+        %__MODULE__{} = card ->
+          card
 
-      nil ->
-        backfill_opts = Map.put(backfill_opts, :url, url)
+        nil ->
+          backfill_opts = Map.put(backfill_opts, :url, url)
 
-        Backfill.start(backfill_opts)
+          Backfill.start(backfill_opts)
 
-        nil
+          nil
 
-      :error ->
-        nil
+        :error ->
+          nil
+      end
+    else
+      nil
     end
   end
 

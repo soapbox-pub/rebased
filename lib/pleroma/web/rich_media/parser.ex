@@ -15,10 +15,14 @@ defmodule Pleroma.Web.RichMedia.Parser do
 
   @spec parse(String.t()) :: {:ok, map()} | {:error, any()}
   def parse(url) do
-    with :ok <- validate_page_url(url),
+    with {_, true} <- {:config, @config_impl.get([:rich_media, :enabled])},
+         :ok <- validate_page_url(url),
          {:ok, data} <- parse_url(url) do
       data = Map.put(data, "url", url)
       {:ok, data}
+    else
+      {:config, _} -> {:error, :rich_media_disabled}
+      e -> e
     end
   end
 
