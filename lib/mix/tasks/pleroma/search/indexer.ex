@@ -33,15 +33,18 @@ defmodule Mix.Tasks.Pleroma.Search.Indexer do
       OptionParser.parse(
         options,
         strict: [
-          limit: :integer
+          chunk: :integer,
+          limit: :integer,
+          step: :integer
         ]
       )
 
     start_pleroma()
 
+    chunk_size = Keyword.get(options, :chunk, 100)
     limit = Keyword.get(options, :limit, 100_000)
+    per_step = Keyword.get(options, :step, 1000)
 
-    per_step = 1000
     chunks = max(div(limit, per_step), 1)
 
     1..chunks
@@ -65,7 +68,7 @@ defmodule Mix.Tasks.Pleroma.Search.Indexer do
       IO.puts("Got #{length(ids)} activities, adding to indexer")
 
       ids
-      |> Enum.chunk_every(100)
+      |> Enum.chunk_every(chunk_size)
       |> Enum.each(fn chunk ->
         IO.puts("Adding #{length(chunk)} activities to indexing queue")
 
