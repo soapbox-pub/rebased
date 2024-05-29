@@ -104,7 +104,8 @@ defmodule Pleroma.Web.RichMedia.Card do
   @spec get_by_activity(Activity.t()) :: t() | nil | :error
   # Fake/Draft activity
   def get_by_activity(%Activity{id: "pleroma:fakeid"} = activity) do
-    with %Object{} = object <- Object.normalize(activity, fetch: false),
+    with {_, true} <- {:config, @config_impl.get([:rich_media, :enabled])},
+         %Object{} = object <- Object.normalize(activity, fetch: false),
          url when not is_nil(url) <- HTML.extract_first_external_url_from_object(object) do
       case get_by_url(url) do
         # Cache hit
