@@ -188,7 +188,8 @@ defmodule Pleroma.Mixfile do
       {:exile,
        git: "https://github.com/akash-akya/exile.git",
        ref: "be87c33b02a7c3c5d22d2ece01fbd462355b28ef"},
-      {:bandit, "~> 1.2"},
+      {:bandit, "~> 1.5.2"},
+      {:websock_adapter, "~> 0.5.6"},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
