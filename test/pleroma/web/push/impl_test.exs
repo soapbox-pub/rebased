@@ -351,7 +351,10 @@ defmodule Pleroma.Web.Push.ImplTest do
       user = insert(:user, nickname: "Bob")
 
       user2 =
-        insert(:user, nickname: "Rob", notification_settings: %{hide_notification_contents: false})
+        insert(:user,
+          nickname: "Rob",
+          notification_settings: %{hide_notification_contents: false}
+        )
 
       {:ok, activity} =
         CommonAPI.post(user, %{

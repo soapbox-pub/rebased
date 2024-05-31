@@ -197,12 +197,12 @@ defmodule Pleroma.User.Backup do
   end
 
   @files [
-    'actor.json',
-    'outbox.json',
-    'likes.json',
-    'bookmarks.json',
-    'followers.json',
-    'following.json'
+    ~c"actor.json",
+    ~c"outbox.json",
+    ~c"likes.json",
+    ~c"bookmarks.json",
+    ~c"followers.json",
+    ~c"following.json"
   ]
   @spec export(Pleroma.User.Backup.t(), pid()) :: {:ok, String.t()} | :error
   def export(%__MODULE__{} = backup, caller_pid) do

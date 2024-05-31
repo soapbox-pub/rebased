@@ -467,7 +467,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     # Create a public post quoting the private post
     quote_private =
-      insert(:note_activity, note: insert(:note, data: %{"quoteUrl" => private_object.data["id"]}))
+      insert(:note_activity,
+        note: insert(:note, data: %{"quoteUrl" => private_object.data["id"]})
+      )
 
     status = StatusView.render("show.json", %{activity: quote_private})
 

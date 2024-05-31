@@ -169,9 +169,9 @@ unit-testing-1.13.4-otp-25-erratic:
     - mix ecto.migrate
     - mix test --only=erratic
 
-formatting-1.13:
+formatting-1.15:
   extends: .build_changes_policy
-  image: &formatting_elixir elixir:1.13-alpine
+  image: &formatting_elixir elixir:1.15-alpine
   stage: lint
   cache: *testing_cache_policy
   before_script: &current_bfr_script

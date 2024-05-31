@@ -55,11 +55,11 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
 
     xml = parse(response)
 
-    assert xpath(xml, ~x"//feed/title/text()") == '#pleromaart'
+    assert xpath(xml, ~x"//feed/title/text()") == ~c"#pleromaart"
 
     assert xpath(xml, ~x"//feed/entry/title/text()"l) == [
-             '42 This is :moominmamm...',
-             'yeah #PleromaArt'
+             ~c"42 This is :moominmamm...",
+             ~c"yeah #PleromaArt"
            ]
 
     assert xpath(xml, ~x"//feed/entry/author/name/text()"ls) == [user.nickname, user.nickname]
@@ -73,10 +73,10 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
     resp = response(conn, 200)
     xml = parse(resp)
 
-    assert xpath(xml, ~x"//feed/title/text()") == '#pleromaart'
+    assert xpath(xml, ~x"//feed/title/text()") == ~c"#pleromaart"
 
     assert xpath(xml, ~x"//feed/entry/title/text()"l) == [
-             'yeah #PleromaArt'
+             ~c"yeah #PleromaArt"
            ]
   end
 
@@ -120,20 +120,20 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
       |> response(200)
 
     xml = parse(response)
-    assert xpath(xml, ~x"//channel/title/text()") == '#pleromaart'
+    assert xpath(xml, ~x"//channel/title/text()") == ~c"#pleromaart"
 
     assert xpath(xml, ~x"//channel/description/text()"s) ==
              "These are public toots tagged with #pleromaart. You can interact with them if you have an account anywhere in the fediverse."
 
     assert xpath(xml, ~x"//channel/link/text()") ==
-             '#{Pleroma.Web.Endpoint.url()}/tags/pleromaart.rss'
+             ~c"#{Pleroma.Web.Endpoint.url()}/tags/pleromaart.rss"
 
     assert xpath(xml, ~x"//channel/webfeeds:logo/text()") ==
-             '#{Pleroma.Web.Endpoint.url()}/static/logo.svg'
+             ~c"#{Pleroma.Web.Endpoint.url()}/static/logo.svg"
 
     assert xpath(xml, ~x"//channel/item/title/text()"l) == [
-             '42 This is :moominmamm...',
-             'yeah #PleromaArt'
+             ~c"42 This is :moominmamm...",
+             ~c"yeah #PleromaArt"
            ]
 
     assert xpath(xml, ~x"//channel/item/pubDate/text()"sl) == [
@@ -160,7 +160,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
       |> response(200)
 
     xml = parse(response)
-    assert xpath(xml, ~x"//channel/title/text()") == '#pleromaart'
+    assert xpath(xml, ~x"//channel/title/text()") == ~c"#pleromaart"
 
     assert xpath(xml, ~x"//channel/description/text()"s) ==
              "These are public toots tagged with #pleromaart. You can interact with them if you have an account anywhere in the fediverse."
@@ -174,10 +174,10 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
     resp = response(conn, 200)
     xml = parse(resp)
 
-    assert xpath(xml, ~x"//channel/title/text()") == '#pleromaart'
+    assert xpath(xml, ~x"//channel/title/text()") == ~c"#pleromaart"
 
     assert xpath(xml, ~x"//channel/item/title/text()"l) == [
-             'yeah #PleromaArt'
+             ~c"yeah #PleromaArt"
            ]
   end
 
