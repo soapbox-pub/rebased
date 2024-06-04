@@ -63,19 +63,25 @@ defmodule Pleroma.Web.Push.Impl do
 
   @doc "Push message to web"
   def push_message(body, sub, api_key, subscription) do
-    case WebPushEncryption.send_web_push(body, sub, api_key) do
-      {:ok, %{status: code}} when code in 400..499 ->
-        Logger.debug("Removing subscription record")
-        Repo.delete!(subscription)
-        :ok
+    try do
+      case WebPushEncryption.send_web_push(body, sub, api_key) do
+        {:ok, %{status: code}} when code in 400..499 ->
+          Logger.debug("Removing subscription record")
+          Repo.delete!(subscription)
+          :ok
 
-      {:ok, %{status: code}} when code in 200..299 ->
-        :ok
+        {:ok, %{status: code}} when code in 200..299 ->
+          :ok
 
-      {:ok, %{status: code}} ->
-        Logger.error("Web Push Notification failed with code: #{code}")
-        :error
+        {:ok, %{status: code}} ->
+          Logger.error("Web Push Notification failed with code: #{code}")
+          :error
 
+        error ->
+          Logger.error("Web Push Notification failed with #{inspect(error)}")
+          :error
+      end
+    rescue
       error ->
         Logger.error("Web Push Notification failed with #{inspect(error)}")
         :error

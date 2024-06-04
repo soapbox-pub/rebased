@@ -103,7 +103,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.DNSRBLPolicy do
         {:ok, object}
       else
         Task.start(fn ->
-          reason = rblquery(query, :txt) || "undefined"
+          reason =
+            case rblquery(query, :txt) do
+              [[result]] -> result
+              _ -> "undefined"
+            end
 
           Logger.warning(
             "DNSRBL Rejected activity from #{actor_host} for reason: #{inspect(reason)}"

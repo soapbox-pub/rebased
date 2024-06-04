@@ -548,7 +548,7 @@ defmodule Pleroma.Notification do
 
   NOTE: might be called for FAKE Activities, see ActivityPub.Utils.get_notified_from_object/1
   """
-  @spec get_notified_from_activity(Activity.t(), boolean()) :: {list(User.t()), list(User.t())}
+  @spec get_notified_from_activity(Activity.t(), boolean()) :: list(User.t())
   def get_notified_from_activity(activity, local_only \\ true)
 
   def get_notified_from_activity(%Activity{data: %{"type" => type}} = activity, local_only)

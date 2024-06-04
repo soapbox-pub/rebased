@@ -83,8 +83,8 @@ config :ex_aws, :s3,
   scheme: "https://"
 
 config :pleroma, Pleroma.Uploaders.IPFS,
-  post_gateway_url: nil,
-  get_gateway_url: nil
+  post_gateway_url: "http://localhost:5001",
+  get_gateway_url: "http://localhost:8080"
 
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],

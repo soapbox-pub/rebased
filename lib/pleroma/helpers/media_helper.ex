@@ -25,7 +25,7 @@ defmodule Pleroma.Helpers.MediaHelper do
   end
 
   def image_resize(url, options) do
-    with {:ok, env} <- HTTP.get(url, [], pool: :media),
+    with {:ok, env} <- HTTP.get(url, [], http_client_opts()),
          {:ok, resized} <-
            Operation.thumbnail_buffer(env.body, options.max_width,
              height: options.max_height,
@@ -45,8 +45,8 @@ defmodule Pleroma.Helpers.MediaHelper do
   @spec video_framegrab(String.t()) :: {:ok, binary()} | {:error, any()}
   def video_framegrab(url) do
     with executable when is_binary(executable) <- System.find_executable("ffmpeg"),
-         false <- @cachex.exists?(:failed_media_helper_cache, url),
-         {:ok, env} <- HTTP.get(url, [], pool: :media),
+         {:ok, false} <- @cachex.exists?(:failed_media_helper_cache, url),
+         {:ok, env} <- HTTP.get(url, [], http_client_opts()),
          {:ok, pid} <- StringIO.open(env.body) do
       body_stream = IO.binstream(pid, 1)
 
@@ -71,17 +71,19 @@ defmodule Pleroma.Helpers.MediaHelper do
         end)
 
       case Task.yield(task, 5_000) do
-        nil ->
+        {:ok, result} ->
+          {:ok, result}
+
+        _ ->
           Task.shutdown(task)
           @cachex.put(:failed_media_helper_cache, url, nil)
           {:error, {:ffmpeg, :timeout}}
-
-        result ->
-          {:ok, result}
       end
     else
       nil -> {:error, {:ffmpeg, :command_not_found}}
       {:error, _} = error -> error
     end
   end
+
+  defp http_client_opts, do: Pleroma.Config.get([:media_proxy, :proxy_opts, :http], pool: :media)
 end
