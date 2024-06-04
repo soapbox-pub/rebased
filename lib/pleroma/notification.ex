@@ -479,6 +479,8 @@ defmodule Pleroma.Notification do
           end
         end)
 
+      stream(notifications)
+
       {:ok, notifications}
     end
   end
