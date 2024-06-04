@@ -292,8 +292,6 @@ defmodule Pleroma.Application do
     config = Config.get(ConcurrentLimiter, [])
 
     [
-      Pleroma.Web.RichMedia.Helpers,
-      Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy,
       Pleroma.Search
     ]
     |> Enum.each(fn module ->
