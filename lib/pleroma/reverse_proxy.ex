@@ -8,7 +8,7 @@ defmodule Pleroma.ReverseProxy do
                       ~w(if-unmodified-since if-none-match) ++ @range_headers
   @resp_cache_headers ~w(etag date last-modified)
   @keep_resp_headers @resp_cache_headers ++
-                       ~w(content-type content-disposition content-encoding) ++
+                       ~w(content-length content-type content-disposition content-encoding) ++
                        ~w(content-range accept-ranges vary)
   @default_cache_control_header "public, max-age=1209600"
   @valid_resp_codes [200, 206, 304]
@@ -180,6 +180,7 @@ defmodule Pleroma.ReverseProxy do
     result =
       conn
       |> put_resp_headers(build_resp_headers(headers, opts))
+      |> streaming_compat
       |> send_chunked(status)
       |> chunk_reply(client, opts)
 
@@ -416,5 +417,18 @@ defmodule Pleroma.ReverseProxy do
       end
 
     @cachex.put(:failed_proxy_url_cache, url, true, ttl: ttl)
+  end
+
+  # When Cowboy handles a chunked response with a content-length header it streams
+  # over HTTP 1.1 instead of chunking. Bandit cannot stream over HTTP 1.1 so the header
+  # must be stripped or it breaks RFC compliance for Transfer Encoding: Chunked. RFC9112§6.2
+  #
+  # HTTP2 is always streamed for all adapters.
+  defp streaming_compat(conn) do
+    with Phoenix.Endpoint.Cowboy2Adapter <- Pleroma.Web.Endpoint.config(:adapter) do
+      conn
+    else
+      _ -> delete_resp_header(conn, "content-length")
+    end
   end
 end
