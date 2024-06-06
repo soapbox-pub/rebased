@@ -177,6 +177,12 @@ config :pleroma, Pleroma.Application,
   streamer_registry: false,
   test_http_pools: true
 
+config :pleroma, Pleroma.Web.Streaming,
+  sync_streaming: true
+
+config :pleroma, Pleroma.Web.MastodonAPI.StatusView,
+  sync_fetching: true
+
 config :pleroma, Pleroma.Uploaders.Uploader, timeout: 1_000
 
 config :pleroma, Pleroma.Emoji.Loader, test_emoji: true
