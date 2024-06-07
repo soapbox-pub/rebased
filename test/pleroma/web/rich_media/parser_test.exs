@@ -13,6 +13,8 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
     mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
   end
 
+  setup_all do: clear_config([:rich_media, :enabled], true)
+
   test "returns error when no metadata present" do
     assert {:error, _} = Parser.parse("https://example.com/empty")
   end
@@ -126,5 +128,11 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
     |> Enum.each(fn url ->
       assert :error == Parser.parse(url)
     end)
+  end
+
+  test "returns error when disabled" do
+    clear_config([:rich_media, :enabled], false)
+
+    assert match?({:error, :rich_media_disabled}, Parser.parse("https://example.com/ogp"))
   end
 end
