@@ -77,19 +77,23 @@ defmodule Pleroma.Web.RichMedia.Card do
 
   @spec get_or_backfill_by_url(String.t(), map()) :: t() | nil
   def get_or_backfill_by_url(url, backfill_opts \\ %{}) do
-    case get_by_url(url) do
-      %__MODULE__{} = card ->
-        card
+    if @config_impl.get([:rich_media, :enabled]) do
+      case get_by_url(url) do
+        %__MODULE__{} = card ->
+          card
 
-      nil ->
-        backfill_opts = Map.put(backfill_opts, :url, url)
+        nil ->
+          backfill_opts = Map.put(backfill_opts, :url, url)
 
-        Backfill.start(backfill_opts)
+          Backfill.start(backfill_opts)
 
-        nil
+          nil
 
-      :error ->
-        nil
+        :error ->
+          nil
+      end
+    else
+      nil
     end
   end
 
@@ -104,7 +108,8 @@ defmodule Pleroma.Web.RichMedia.Card do
   @spec get_by_activity(Activity.t()) :: t() | nil | :error
   # Fake/Draft activity
   def get_by_activity(%Activity{id: "pleroma:fakeid"} = activity) do
-    with %Object{} = object <- Object.normalize(activity, fetch: false),
+    with {_, true} <- {:config, @config_impl.get([:rich_media, :enabled])},
+         %Object{} = object <- Object.normalize(activity, fetch: false),
          url when not is_nil(url) <- HTML.extract_first_external_url_from_object(object) do
       case get_by_url(url) do
         # Cache hit
