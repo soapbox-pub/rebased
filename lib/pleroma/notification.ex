@@ -479,6 +479,8 @@ defmodule Pleroma.Notification do
           end
         end)
 
+      stream(notifications)
+
       {:ok, notifications}
     end
   end
@@ -757,8 +759,9 @@ defmodule Pleroma.Notification do
     |> Repo.update_all(set: [seen: true])
   end
 
-  @spec send(list(Notification.t())) :: :ok
-  def send(notifications) do
+  @doc "Streams a list of notifications over websockets and web push"
+  @spec stream(list(Notification.t())) :: :ok
+  def stream(notifications) do
     Enum.each(notifications, fn notification ->
       Streamer.stream(["user", "user:notification"], notification)
       Push.send(notification)
