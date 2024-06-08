@@ -25,6 +25,8 @@ defmodule Pleroma.Web.Push do
 
   def enabled, do: match?([subject: _, public_key: _, private_key: _], vapid_config())
 
+  @spec send(Pleroma.Notification.t()) ::
+          {:ok, Oban.Job.t()} | {:error, Oban.Job.changeset() | term()}
   def send(notification) do
     WebPusherWorker.enqueue("web_push", %{"notification_id" => notification.id})
   end
