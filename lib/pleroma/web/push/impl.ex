@@ -29,7 +29,6 @@ defmodule Pleroma.Web.Push.Impl do
       when activity_type in @types do
     actor = User.get_cached_by_ap_id(notification.activity.data["actor"])
 
-    mastodon_type = notification.type
     gcm_api_key = Application.get_env(:web_push_encryption, :gcm_api_key)
     avatar_url = User.avatar_url(actor)
     object = Object.normalize(activity, fetch: false)
@@ -37,11 +36,11 @@ defmodule Pleroma.Web.Push.Impl do
     direct_conversation_id = Activity.direct_conversation_id(activity, user)
 
     for subscription <- fetch_subscriptions(user_id),
-        Subscription.enabled?(subscription, mastodon_type) do
+        Subscription.enabled?(subscription, notification.type) do
       %{
         access_token: subscription.token.token,
         notification_id: notification.id,
-        notification_type: mastodon_type,
+        notification_type: notification.type,
         icon: avatar_url,
         preferred_locale: "en",
         pleroma: %{
@@ -49,7 +48,7 @@ defmodule Pleroma.Web.Push.Impl do
           direct_conversation_id: direct_conversation_id
         }
       }
-      |> Map.merge(build_content(notification, actor, object, mastodon_type))
+      |> Map.merge(build_content(notification, actor, object))
       |> Jason.encode!()
       |> push_message(build_sub(subscription), gcm_api_key, subscription)
     end
@@ -106,31 +105,24 @@ defmodule Pleroma.Web.Push.Impl do
     }
   end
 
-  def build_content(notification, actor, object, mastodon_type \\ nil)
-
   def build_content(
         %{
           user: %{notification_settings: %{hide_notification_contents: true}}
         } = notification,
         _actor,
-        _object,
-        mastodon_type
+        _object
       ) do
-    %{body: format_title(notification, mastodon_type)}
+    %{body: format_title(notification)}
   end
 
-  def build_content(notification, actor, object, mastodon_type) do
-    mastodon_type = mastodon_type || notification.type
-
+  def build_content(notification, actor, object) do
     %{
-      title: format_title(notification, mastodon_type),
-      body: format_body(notification, actor, object, mastodon_type)
+      title: format_title(notification),
+      body: format_body(notification, actor, object)
     }
   end
 
-  def format_body(activity, actor, object, mastodon_type \\ nil)
-
-  def format_body(_activity, actor, %{data: %{"type" => "ChatMessage"} = data}, _) do
+  def format_body(_activity, actor, %{data: %{"type" => "ChatMessage"} = data}) do
     case data["content"] do
       nil -> "@#{actor.nickname}: (Attachment)"
       content -> "@#{actor.nickname}: #{Utils.scrub_html_and_truncate(content, 80)}"
@@ -140,8 +132,7 @@ defmodule Pleroma.Web.Push.Impl do
   def format_body(
         %{activity: %{data: %{"type" => "Create"}}},
         actor,
-        %{data: %{"content" => content}},
-        _mastodon_type
+        %{data: %{"content" => content}}
       ) do
     "@#{actor.nickname}: #{Utils.scrub_html_and_truncate(content, 80)}"
   end
@@ -149,8 +140,7 @@ defmodule Pleroma.Web.Push.Impl do
   def format_body(
         %{activity: %{data: %{"type" => "Announce"}}},
         actor,
-        %{data: %{"content" => content}},
-        _mastodon_type
+        %{data: %{"content" => content}}
       ) do
     "@#{actor.nickname} repeated: #{Utils.scrub_html_and_truncate(content, 80)}"
   end
@@ -158,8 +148,7 @@ defmodule Pleroma.Web.Push.Impl do
   def format_body(
         %{activity: %{data: %{"type" => "EmojiReact", "content" => content}}},
         actor,
-        _object,
-        _mastodon_type
+        _object
       ) do
     "@#{actor.nickname} reacted with #{content}"
   end
@@ -167,13 +156,10 @@ defmodule Pleroma.Web.Push.Impl do
   def format_body(
         %{activity: %{data: %{"type" => type}}} = notification,
         actor,
-        _object,
-        mastodon_type
+        _object
       )
       when type in ["Follow", "Like"] do
-    mastodon_type = mastodon_type || notification.type
-
-    case mastodon_type do
+    case notification.type do
       "follow" -> "@#{actor.nickname} has followed you"
       "follow_request" -> "@#{actor.nickname} has requested to follow you"
       "favourite" -> "@#{actor.nickname} has favorited your post"
@@ -183,20 +169,17 @@ defmodule Pleroma.Web.Push.Impl do
   def format_body(
         %{activity: %{data: %{"type" => "Update"}}},
         actor,
-        _object,
-        _mastodon_type
+        _object
       ) do
     "@#{actor.nickname} edited a status"
   end
 
-  def format_title(activity, mastodon_type \\ nil)
-
-  def format_title(%{activity: %{data: %{"directMessage" => true}}}, _mastodon_type) do
+  def format_title(%{activity: %{data: %{"directMessage" => true}}}) do
     "New Direct Message"
   end
 
-  def format_title(%{type: type}, mastodon_type) do
-    case mastodon_type || type do
+  def format_title(%{type: type}) do
+    case type do
       "mention" -> "New Mention"
       "status" -> "New Status"
       "follow" -> "New Follower"
