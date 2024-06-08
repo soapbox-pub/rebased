@@ -15,7 +15,7 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
     retry_timeout: 1_000
   ]
 
-  @type pool() :: :federation | :upload | :media | :default
+  @type pool() :: :federation | :upload | :media | :rich_media | :default
 
   @spec options(keyword(), URI.t()) :: keyword()
   def options(incoming_opts \\ [], %URI{} = uri) do
