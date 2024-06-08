@@ -27,10 +27,10 @@ defmodule Pleroma.Web.Push.Impl do
         } = notification
       )
       when activity_type in @types do
-    actor = User.get_cached_by_ap_id(notification.activity.data["actor"])
+    user = User.get_cached_by_ap_id(notification.activity.data["actor"])
 
     gcm_api_key = Application.get_env(:web_push_encryption, :gcm_api_key)
-    avatar_url = User.avatar_url(actor)
+    avatar_url = User.avatar_url(user)
     object = Object.normalize(activity, fetch: false)
     user = User.get_cached_by_id(user_id)
     direct_conversation_id = Activity.direct_conversation_id(activity, user)
@@ -48,7 +48,7 @@ defmodule Pleroma.Web.Push.Impl do
           direct_conversation_id: direct_conversation_id
         }
       }
-      |> Map.merge(build_content(notification, actor, object))
+      |> Map.merge(build_content(notification, user, object))
       |> Jason.encode!()
       |> push_message(build_sub(subscription), gcm_api_key, subscription)
     end
@@ -109,71 +109,73 @@ defmodule Pleroma.Web.Push.Impl do
         %{
           user: %{notification_settings: %{hide_notification_contents: true}}
         } = notification,
-        _actor,
+        _user,
         _object
       ) do
     %{body: format_title(notification)}
   end
 
-  def build_content(notification, actor, object) do
+  def build_content(notification, user, object) do
     %{
       title: format_title(notification),
-      body: format_body(notification, actor, object)
+      body: format_body(notification, user, object)
     }
   end
 
-  def format_body(_activity, actor, %{data: %{"type" => "ChatMessage"} = data}) do
-    case data["content"] do
-      nil -> "@#{actor.nickname}: (Attachment)"
-      content -> "@#{actor.nickname}: #{Utils.scrub_html_and_truncate(content, 80)}"
+  @spec format_body(Notification.t(), User.t(), Object.t()) :: String.t()
+  def format_body(_notification, user, %{data: %{"type" => "ChatMessage"} = object}) do
+    case object["content"] do
+      nil -> "@#{user.nickname}: (Attachment)"
+      content -> "@#{user.nickname}: #{Utils.scrub_html_and_truncate(content, 80)}"
     end
   end
 
   def format_body(
         %{activity: %{data: %{"type" => "Create"}}},
-        actor,
+        user,
         %{data: %{"content" => content}}
       ) do
-    "@#{actor.nickname}: #{Utils.scrub_html_and_truncate(content, 80)}"
+    "@#{user.nickname}: #{Utils.scrub_html_and_truncate(content, 80)}"
   end
 
   def format_body(
         %{activity: %{data: %{"type" => "Announce"}}},
-        actor,
+        user,
         %{data: %{"content" => content}}
       ) do
-    "@#{actor.nickname} repeated: #{Utils.scrub_html_and_truncate(content, 80)}"
+    "@#{user.nickname} repeated: #{Utils.scrub_html_and_truncate(content, 80)}"
   end
 
   def format_body(
         %{activity: %{data: %{"type" => "EmojiReact", "content" => content}}},
-        actor,
+        user,
         _object
       ) do
-    "@#{actor.nickname} reacted with #{content}"
+    "@#{user.nickname} reacted with #{content}"
   end
 
   def format_body(
         %{activity: %{data: %{"type" => type}}} = notification,
-        actor,
+        user,
         _object
       )
       when type in ["Follow", "Like"] do
     case notification.type do
-      "follow" -> "@#{actor.nickname} has followed you"
-      "follow_request" -> "@#{actor.nickname} has requested to follow you"
-      "favourite" -> "@#{actor.nickname} has favorited your post"
+      "follow" -> "@#{user.nickname} has followed you"
+      "follow_request" -> "@#{user.nickname} has requested to follow you"
+      "favourite" -> "@#{user.nickname} has favorited your post"
     end
   end
 
   def format_body(
         %{activity: %{data: %{"type" => "Update"}}},
-        actor,
+        user,
         _object
       ) do
-    "@#{actor.nickname} edited a status"
+    "@#{user.nickname} edited a status"
   end
 
+  @spec format_title(Notification.t()) :: String.t()
   def format_title(%{activity: %{data: %{"directMessage" => true}}}) do
     "New Direct Message"
   end
