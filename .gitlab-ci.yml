@@ -121,7 +121,7 @@ benchmark:
     - mix ecto.migrate
     - mix pleroma.load_testing
 
-unit-testing-1.12.3:
+unit-testing-1.13.4-otp-25:
   extends:
   - .build_changes_policy
   - .using-ci-base
@@ -155,7 +155,7 @@ unit-testing-1.15.8-otp-26:
   services: *testing_services
   script: *testing_script
 
-unit-testing-1.12-erratic:
+unit-testing-1.13.4-otp-25-erratic:
   extends:
   - .build_changes_policy
   - .using-ci-base
