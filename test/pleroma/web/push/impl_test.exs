@@ -239,7 +239,7 @@ defmodule Pleroma.Web.Push.ImplTest do
 
     {:ok, [notification]} = Notification.create_poll_notifications(activity)
 
-    assert Impl.format_title(notification) == "Poll Results"
+    expected_title = "Poll Results"
 
     expected_body =
       """
@@ -250,7 +250,9 @@ defmodule Pleroma.Web.Push.ImplTest do
       """
       |> String.trim_trailing("\n")
 
-    assert Impl.format_body(notification, user, question) == expected_body
+    content = Impl.build_content(notification, user, question)
+
+    assert match?(%{title: ^expected_title, body: ^expected_body}, content)
   end
 
   describe "build_content/3" do
