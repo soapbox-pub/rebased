@@ -131,6 +131,24 @@ defmodule Pleroma.Web.Push.Impl do
   end
 
   def format_body(
+        %{type: "poll"} = _notification,
+        _user,
+        %{data: %{"content" => content} = data} = _object
+      ) do
+    options = Map.get(data, "anyOf") || Map.get(data, "oneOf")
+
+    content_text = content <> "\n"
+
+    options_text =
+      Enum.map(options, fn x -> "○ #{x["name"]}" end)
+      |> Enum.join("\n")
+
+    [content_text, options_text]
+    |> Enum.join("\n")
+    |> Utils.scrub_html_and_truncate(80)
+  end
+
+  def format_body(
         %{activity: %{data: %{"type" => "Create"}}},
         user,
         %{data: %{"content" => content}}
@@ -191,6 +209,7 @@ defmodule Pleroma.Web.Push.Impl do
       "update" -> "New Update"
       "pleroma:chat_mention" -> "New Chat Message"
       "pleroma:emoji_reaction" -> "New Reaction"
+      "poll" -> "Poll Results"
       type -> "New #{String.capitalize(type || "event")}"
     end
   end

@@ -232,6 +232,27 @@ defmodule Pleroma.Web.Push.ImplTest do
              "New Direct Message"
   end
 
+  test "renders poll notification" do
+    user = insert(:user)
+    question = insert(:question, user: user)
+    activity = insert(:question_activity, question: question)
+
+    {:ok, [notification]} = Notification.create_poll_notifications(activity)
+
+    assert Impl.format_title(notification) == "Poll Results"
+
+    expected_body =
+      """
+      Which flavor of ice cream do you prefer?
+
+      ○ chocolate
+      ○ vanilla
+      """
+      |> String.trim_trailing("\n")
+
+    assert Impl.format_body(notification, user, question) == expected_body
+  end
+
   describe "build_content/3" do
     test "builds content for chat messages" do
       user = insert(:user)
