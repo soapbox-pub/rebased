@@ -1,4 +1,4 @@
-image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.13.4-otp-24
+image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.13.4-otp-25
 
 variables: &global_variables
   # Only used for the release
@@ -72,7 +72,7 @@ check-changelog:
   tags:
     - amd64
 
-build-1.13.4:
+build-1.13.4-otp-25:
   extends:
   - .build_changes_policy
   - .using-ci-base
@@ -80,12 +80,12 @@ build-1.13.4:
   script:
   - mix compile --force
 
-build-1.15.7-otp-25:
+build-1.15.8-otp-26:
   extends:
   - .build_changes_policy
   - .using-ci-base
   stage: build
-  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15-otp25
+  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15.8-otp-26
   allow_failure: true
   script:
   - mix compile --force
@@ -121,7 +121,7 @@ benchmark:
     - mix ecto.migrate
     - mix pleroma.load_testing
 
-unit-testing-1.12.3:
+unit-testing-1.13.4-otp-25:
   extends:
   - .build_changes_policy
   - .using-ci-base
@@ -144,18 +144,18 @@ unit-testing-1.12.3:
         coverage_format: cobertura
         path: coverage.xml
 
-unit-testing-1.15.7-otp-25:
+unit-testing-1.15.8-otp-26:
   extends:
   - .build_changes_policy
   - .using-ci-base
   stage: test
-  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15-otp25
+  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15.8-otp-26
   allow_failure: true
   cache: *testing_cache_policy
   services: *testing_services
   script: *testing_script
 
-unit-testing-1.12-erratic:
+unit-testing-1.13.4-otp-25-erratic:
   extends:
   - .build_changes_policy
   - .using-ci-base
