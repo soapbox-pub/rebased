@@ -16,6 +16,7 @@ defmodule Pleroma.Web.Push.Impl do
   require Logger
   import Ecto.Query
 
+  @body_chars 140
   @types ["Create", "Follow", "Announce", "Like", "Move", "EmojiReact", "Update"]
 
   @doc "Performs sending notifications for user subscriptions"
@@ -126,7 +127,7 @@ defmodule Pleroma.Web.Push.Impl do
   def format_body(_notification, user, %{data: %{"type" => "ChatMessage"} = object}) do
     case object["content"] do
       nil -> "@#{user.nickname}: (Attachment)"
-      content -> "@#{user.nickname}: #{Utils.scrub_html_and_truncate(content, 80)}"
+      content -> "@#{user.nickname}: #{Utils.scrub_html_and_truncate(content, @body_chars)}"
     end
   end
 
@@ -145,7 +146,7 @@ defmodule Pleroma.Web.Push.Impl do
 
     [content_text, options_text]
     |> Enum.join("\n")
-    |> Utils.scrub_html_and_truncate(80)
+    |> Utils.scrub_html_and_truncate(@body_chars)
   end
 
   def format_body(
@@ -153,7 +154,7 @@ defmodule Pleroma.Web.Push.Impl do
         user,
         %{data: %{"content" => content}}
       ) do
-    "@#{user.nickname}: #{Utils.scrub_html_and_truncate(content, 80)}"
+    "@#{user.nickname}: #{Utils.scrub_html_and_truncate(content, @body_chars)}"
   end
 
   def format_body(
@@ -161,7 +162,7 @@ defmodule Pleroma.Web.Push.Impl do
         user,
         %{data: %{"content" => content}}
       ) do
-    "@#{user.nickname} repeated: #{Utils.scrub_html_and_truncate(content, 80)}"
+    "@#{user.nickname} repeated: #{Utils.scrub_html_and_truncate(content, @body_chars)}"
   end
 
   def format_body(
