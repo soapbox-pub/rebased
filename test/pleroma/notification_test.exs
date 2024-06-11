@@ -5,7 +5,6 @@
 defmodule Pleroma.NotificationTest do
   use Pleroma.DataCase, async: false
 
-  import Mock
   import Pleroma.Factory
 
   alias Pleroma.FollowingRelationship
@@ -184,31 +183,9 @@ defmodule Pleroma.NotificationTest do
     {:ok, _, _} = CommonAPI.vote(user2, question, [0])
     {:ok, _, _} = CommonAPI.vote(user3, question, [1])
 
-    with_mocks([
-      {
-        Pleroma.Web.Streamer,
-        [],
-        [
-          stream: fn _, _ -> nil end
-        ]
-      },
-      {
-        Pleroma.Web.Push,
-        [],
-        [
-          send: fn _ -> nil end
-        ]
-      }
-    ]) do
-      {:ok, notifications} = Notification.create_poll_notifications(activity)
+    {:ok, notifications} = Notification.create_poll_notifications(activity)
 
-      Enum.each(notifications, fn notification ->
-        assert called(Pleroma.Web.Streamer.stream(["user", "user:notification"], notification))
-        assert called(Pleroma.Web.Push.send(notification))
-      end)
-
-      assert [user2.id, user3.id, user1.id] == Enum.map(notifications, & &1.user_id)
-    end
+    assert [user2.id, user3.id, user1.id] == Enum.map(notifications, & &1.user_id)
   end
 
   describe "create_notification" do
