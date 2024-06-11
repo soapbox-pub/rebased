@@ -201,19 +201,15 @@ defmodule Pleroma.Web.Push.Impl do
     "New Direct Message"
   end
 
-  def format_title(%{type: type}) do
-    case type do
-      "mention" -> "New Mention"
-      "status" -> "New Status"
-      "follow" -> "New Follower"
-      "follow_request" -> "New Follow Request"
-      "reblog" -> "New Repeat"
-      "favourite" -> "New Favorite"
-      "update" -> "New Update"
-      "pleroma:chat_mention" -> "New Chat Message"
-      "pleroma:emoji_reaction" -> "New Reaction"
-      "poll" -> "Poll Results"
-      type -> "New #{String.capitalize(type || "event")}"
-    end
-  end
+  def format_title(%{type: "mention"}), do: "New Mention"
+  def format_title(%{type: "status"}), do: "New Status"
+  def format_title(%{type: "follow"}), do: "New Follower"
+  def format_title(%{type: "follow_request"}), do: "New Follow Request"
+  def format_title(%{type: "reblog"}), do: "New Repeat"
+  def format_title(%{type: "favourite"}), do: "New Favorite"
+  def format_title(%{type: "update"}), do: "New Update"
+  def format_title(%{type: "pleroma:chat_mention"}), do: "New Chat Message"
+  def format_title(%{type: "pleroma:emoji_reaction"}), do: "New Reaction"
+  def format_title(%{type: "poll"}), do: "Poll Results"
+  def format_title(%{type: type}), do: "New #{String.capitalize(type || "event")}"
 end
