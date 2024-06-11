@@ -21,9 +21,7 @@ defmodule Pleroma.Web.Push.Impl do
 
   @doc "Builds webpush notification payloads for the subscriptions enabled by the receiving user"
   @spec build(Notification.t()) ::
-          list(%{content: map(), subscription: Subscription.t()})
-          | :error
-          | {:error, :unknown_type}
+          list(%{content: map(), subscription: Subscription.t()}) | []
   def build(
         %{
           activity: %{data: %{"type" => activity_type}} = activity,
@@ -62,9 +60,9 @@ defmodule Pleroma.Web.Push.Impl do
     end)
   end
 
-  def build(_) do
-    Logger.warning("Unknown notification type")
-    {:error, :unknown_type}
+  def build(notif) do
+    Logger.warning("WebPush: unknown activity type: #{inspect(notif)}")
+    []
   end
 
   @doc "Deliver push notification to the provided webpush subscription"

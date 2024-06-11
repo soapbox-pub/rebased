@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.Push.ImplTest do
   use Pleroma.DataCase, async: true
 
+  import ExUnit.CaptureLog
   import Mox
   import Pleroma.Factory
 
@@ -62,8 +63,10 @@ defmodule Pleroma.Web.Push.ImplTest do
   end
 
   @tag capture_log: true
-  test "returns error if notif does not match " do
-    assert Impl.build(%{}) == {:error, :unknown_type}
+  test "returns error if notification activity type does not match" do
+    assert capture_log(fn ->
+             assert Impl.build(%{}) == []
+           end) =~ "WebPush: unknown activity type"
   end
 
   @tag capture_log: true
