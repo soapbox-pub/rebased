@@ -54,7 +54,7 @@ defmodule Pleroma.Web.ApiSpec.CastAndValidate do
 
       {:error, reason} ->
         Logger.error(
-          "Strict ApiSpec: request denied to #{conn.path_info} with params #{inspect(conn.params)}"
+          "Strict ApiSpec: request denied to #{conn.request_path} with params #{inspect(conn.params)}"
         )
 
         opts = render_error.init(reason)
