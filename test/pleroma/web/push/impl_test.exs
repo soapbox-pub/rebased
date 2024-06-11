@@ -417,4 +417,23 @@ defmodule Pleroma.Web.Push.ImplTest do
              }
     end
   end
+
+  test "build/1 notification payload body starts with nickname of actor the notification originated from" do
+    user = insert(:user, nickname: "Bob")
+    user2 = insert(:user, nickname: "Tom")
+    insert(:push_subscription, user: user2, data: %{alerts: %{"mention" => true}})
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        status: "@Tom Hey are you okay?"
+      })
+
+    {:ok, [notification]} = Notification.create_notifications(activity)
+
+    [push] = Impl.build(notification)
+
+    {:ok, payload} = Jason.decode(push.payload)
+
+    assert String.starts_with?(payload["body"], "@Bob:")
+  end
 end
