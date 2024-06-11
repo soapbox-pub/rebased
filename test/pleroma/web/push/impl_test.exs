@@ -41,7 +41,7 @@ defmodule Pleroma.Web.Push.ImplTest do
     }
   }
   @api_key "BASgACIHpN1GYgzSRp"
-  @message "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini..."
+  @message "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis finibus turpis."
 
   test "performs sending notifications" do
     user = insert(:user)
@@ -129,7 +129,7 @@ defmodule Pleroma.Web.Push.ImplTest do
              user,
              object
            ) ==
-             "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini..."
+             "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis finibus turpis."
 
     assert Impl.format_title(%{activity: activity, type: "mention"}) ==
              "New Mention"
@@ -161,7 +161,7 @@ defmodule Pleroma.Web.Push.ImplTest do
     object = Object.normalize(activity, fetch: false)
 
     assert Impl.format_body(%{activity: announce_activity}, user, object) ==
-             "@#{user.nickname} repeated: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini..."
+             "@#{user.nickname} repeated: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis finibus turpis."
 
     assert Impl.format_title(%{activity: announce_activity, type: "reblog"}) ==
              "New Repeat"
@@ -230,6 +230,29 @@ defmodule Pleroma.Web.Push.ImplTest do
 
     assert Impl.format_title(%{activity: activity}) ==
              "New Direct Message"
+  end
+
+  test "renders poll notification" do
+    user = insert(:user)
+    question = insert(:question, user: user)
+    activity = insert(:question_activity, question: question)
+
+    {:ok, [notification]} = Notification.create_poll_notifications(activity)
+
+    expected_title = "Poll Results"
+
+    expected_body =
+      """
+      Which flavor of ice cream do you prefer?
+
+      ○ chocolate
+      ○ vanilla
+      """
+      |> String.trim_trailing("\n")
+
+    content = Impl.build_content(notification, user, question)
+
+    assert match?(%{title: ^expected_title, body: ^expected_body}, content)
   end
 
   describe "build_content/3" do
@@ -344,7 +367,7 @@ defmodule Pleroma.Web.Push.ImplTest do
 
       assert Impl.build_content(notif, actor, object) == %{
                body:
-                 "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini...",
+                 "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis finibus turpis.",
                title: "New Direct Message"
              }
 
@@ -362,7 +385,7 @@ defmodule Pleroma.Web.Push.ImplTest do
 
       assert Impl.build_content(notif, actor, object) == %{
                body:
-                 "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini...",
+                 "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis finibus turpis.",
                title: "New Mention"
              }
 
