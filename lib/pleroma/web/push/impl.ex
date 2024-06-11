@@ -19,69 +19,72 @@ defmodule Pleroma.Web.Push.Impl do
   @body_chars 140
   @types ["Create", "Follow", "Announce", "Like", "Move", "EmojiReact", "Update"]
 
-  @doc "Performs sending notifications for user subscriptions"
-  @spec perform(Notification.t()) :: list(any) | :error | {:error, :unknown_type}
-  def perform(
+  @doc "Builds webpush notification payloads for the subscriptions enabled by the receiving user"
+  @spec build(Notification.t()) ::
+          list(%{content: map(), subscription: Subscription.t()})
+          | :error
+          | {:error, :unknown_type}
+  def build(
         %{
           activity: %{data: %{"type" => activity_type}} = activity,
-          user: %User{id: user_id}
+          user: user
         } = notification
       )
       when activity_type in @types do
-    user = User.get_cached_by_ap_id(notification.activity.data["actor"])
+    notification_actor = User.get_cached_by_ap_id(notification.activity.data["actor"])
+    avatar_url = User.avatar_url(notification_actor)
 
-    gcm_api_key = Application.get_env(:web_push_encryption, :gcm_api_key)
-    avatar_url = User.avatar_url(user)
     object = Object.normalize(activity, fetch: false)
-    user = User.get_cached_by_id(user_id)
     direct_conversation_id = Activity.direct_conversation_id(activity, user)
 
-    for subscription <- fetch_subscriptions(user_id),
-        Subscription.enabled?(subscription, notification.type) do
-      %{
-        access_token: subscription.token.token,
-        notification_id: notification.id,
-        notification_type: notification.type,
-        icon: avatar_url,
-        preferred_locale: "en",
-        pleroma: %{
-          activity_id: notification.activity.id,
-          direct_conversation_id: direct_conversation_id
+    subscriptions = fetch_subscriptions(user.id)
+
+    subscriptions
+    |> Enum.filter(&Subscription.enabled?(&1, notification.type))
+    |> Enum.map(fn subscription ->
+      payload =
+        %{
+          access_token: subscription.token.token,
+          notification_id: notification.id,
+          notification_type: notification.type,
+          icon: avatar_url,
+          preferred_locale: "en",
+          pleroma: %{
+            activity_id: notification.activity.id,
+            direct_conversation_id: direct_conversation_id
+          }
         }
-      }
-      |> Map.merge(build_content(notification, user, object))
-      |> Jason.encode!()
-      |> push_message(build_sub(subscription), gcm_api_key, subscription)
-    end
-    |> (&{:ok, &1}).()
+        |> Map.merge(build_content(notification, notification_actor, object))
+        |> Jason.encode!()
+
+      %{payload: payload, subscription: subscription}
+    end)
   end
 
-  def perform(_) do
+  def build(_) do
     Logger.warning("Unknown notification type")
     {:error, :unknown_type}
   end
 
-  @doc "Push message to web"
-  def push_message(body, sub, api_key, subscription) do
-    try do
-      case WebPushEncryption.send_web_push(body, sub, api_key) do
-        {:ok, %{status: code}} when code in 400..499 ->
-          Logger.debug("Removing subscription record")
-          Repo.delete!(subscription)
-          :ok
+  @doc "Deliver push notification to the provided webpush subscription"
+  @spec deliver(%{payload: String.t(), subscription: Subscription.t()}) :: :ok | :error
+  def deliver(%{payload: payload, subscription: subscription}) do
+    gcm_api_key = Application.get_env(:web_push_encryption, :gcm_api_key)
+    formatted_subscription = build_sub(subscription)
 
-        {:ok, %{status: code}} when code in 200..299 ->
-          :ok
+    case WebPushEncryption.send_web_push(payload, formatted_subscription, gcm_api_key) do
+      {:ok, %{status: code}} when code in 200..299 ->
+        :ok
 
-        {:ok, %{status: code}} ->
-          Logger.error("Web Push Notification failed with code: #{code}")
-          :error
+      {:ok, %{status: code}} when code in 400..499 ->
+        Logger.debug("Removing subscription record")
+        Repo.delete!(subscription)
+        :ok
 
-        error ->
-          Logger.error("Web Push Notification failed with #{inspect(error)}")
-          :error
-      end
-    rescue
+      {:ok, %{status: code}} ->
+        Logger.error("Web Push Notification failed with code: #{code}")
+        :error
+
       error ->
         Logger.error("Web Push Notification failed with #{inspect(error)}")
         :error
@@ -140,9 +143,7 @@ defmodule Pleroma.Web.Push.Impl do
 
     content_text = content <> "\n"
 
-    options_text =
-      Enum.map(options, fn x -> "○ #{x["name"]}" end)
-      |> Enum.join("\n")
+    options_text = Enum.map_join(options, "\n", fn x -> "○ #{x["name"]}" end)
 
     [content_text, options_text]
     |> Enum.join("\n")

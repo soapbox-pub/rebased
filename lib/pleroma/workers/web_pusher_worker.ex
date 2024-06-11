@@ -5,6 +5,7 @@
 defmodule Pleroma.Workers.WebPusherWorker do
   alias Pleroma.Notification
   alias Pleroma.Repo
+  alias Pleroma.Web.Push.Impl
 
   use Pleroma.Workers.WorkerHelper, queue: "web_push"
 
@@ -15,7 +16,8 @@ defmodule Pleroma.Workers.WebPusherWorker do
       |> Repo.get(notification_id)
       |> Repo.preload([:activity, :user])
 
-    Pleroma.Web.Push.Impl.perform(notification)
+    Impl.build(notification)
+    |> Enum.each(&Impl.deliver(&1))
   end
 
   @impl Oban.Worker
