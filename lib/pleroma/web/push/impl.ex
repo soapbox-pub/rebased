@@ -27,7 +27,7 @@ defmodule Pleroma.Web.Push.Impl do
   def build(
         %{
           activity: %{data: %{"type" => activity_type}} = activity,
-          user: user
+          user_id: user_id
         } = notification
       )
       when activity_type in @types do
@@ -35,9 +35,10 @@ defmodule Pleroma.Web.Push.Impl do
     avatar_url = User.avatar_url(notification_actor)
 
     object = Object.normalize(activity, fetch: false)
+    user = User.get_cached_by_id(user_id)
     direct_conversation_id = Activity.direct_conversation_id(activity, user)
 
-    subscriptions = fetch_subscriptions(user.id)
+    subscriptions = fetch_subscriptions(user_id)
 
     subscriptions
     |> Enum.filter(&Subscription.enabled?(&1, notification.type))
