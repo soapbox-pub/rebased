@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.Push.ImplTest do
   use Pleroma.DataCase, async: true
 
+  import ExUnit.CaptureLog
   import Mox
   import Pleroma.Factory
 
@@ -32,17 +33,6 @@ defmodule Pleroma.Web.Push.ImplTest do
     :ok
   end
 
-  @sub %{
-    endpoint: "https://example.com/example/1234",
-    keys: %{
-      auth: "8eDyX_uCN0XRhSbY5hs7Hg==",
-      p256dh:
-        "BCIWgsnyXDv1VkhqL2P7YRBvdeuDnlwAPT2guNhdIoW3IP7GmHh1SMKPLxRf7x8vJy6ZFK3ol2ohgn_-0yP7QQA="
-    }
-  }
-  @api_key "BASgACIHpN1GYgzSRp"
-  @message "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis finibus turpis."
-
   test "performs sending notifications" do
     user = insert(:user)
     user2 = insert(:user)
@@ -68,39 +58,67 @@ defmodule Pleroma.Web.Push.ImplTest do
         type: "mention"
       )
 
-    assert Impl.perform(notif) == {:ok, [:ok, :ok]}
+    Impl.build(notif)
+    |> Enum.each(fn push -> assert match?(:ok, Impl.deliver(push)) end)
   end
 
   @tag capture_log: true
-  test "returns error if notif does not match " do
-    assert Impl.perform(%{}) == {:error, :unknown_type}
-  end
-
-  test "successful message sending" do
-    assert Impl.push_message(@message, @sub, @api_key, %Subscription{}) == :ok
+  test "returns error if notification activity type does not match" do
+    assert capture_log(fn ->
+             assert Impl.build(%{}) == []
+           end) =~ "WebPush: unknown activity type"
   end
 
   @tag capture_log: true
   test "fail message sending" do
-    assert Impl.push_message(
-             @message,
-             Map.merge(@sub, %{endpoint: "https://example.com/example/bad"}),
-             @api_key,
-             %Subscription{}
-           ) == :error
+    user = insert(:user)
+
+    insert(:push_subscription,
+      user: user,
+      endpoint: "https://example.com/example/bad",
+      data: %{alerts: %{"follow" => true}}
+    )
+
+    other_user = insert(:user)
+    {:ok, _, _, activity} = CommonAPI.follow(user, other_user)
+
+    notif =
+      insert(:notification,
+        user: user,
+        activity: activity,
+        type: "follow"
+      )
+
+    [push] = Impl.build(notif)
+
+    assert Impl.deliver(push) == :error
   end
 
   test "delete subscription if result send message between 400..500" do
-    subscription = insert(:push_subscription)
+    user = insert(:user)
 
-    assert Impl.push_message(
-             @message,
-             Map.merge(@sub, %{endpoint: "https://example.com/example/not_found"}),
-             @api_key,
-             subscription
-           ) == :ok
+    bad_subscription =
+      insert(:push_subscription,
+        user: user,
+        endpoint: "https://example.com/example/not_found",
+        data: %{alerts: %{"follow" => true}}
+      )
 
-    refute Pleroma.Repo.get(Subscription, subscription.id)
+    other_user = insert(:user)
+    {:ok, _, _, activity} = CommonAPI.follow(user, other_user)
+
+    notif =
+      insert(:notification,
+        user: user,
+        activity: activity,
+        type: "follow"
+      )
+
+    [push] = Impl.build(notif)
+
+    assert Impl.deliver(push) == :ok
+
+    refute Pleroma.Repo.get(Subscription, bad_subscription.id)
   end
 
   test "deletes subscription when token has been deleted" do
@@ -401,5 +419,24 @@ defmodule Pleroma.Web.Push.ImplTest do
                title: "New Favorite"
              }
     end
+  end
+
+  test "build/1 notification payload body starts with nickname of actor the notification originated from" do
+    user = insert(:user, nickname: "Bob")
+    user2 = insert(:user, nickname: "Tom")
+    insert(:push_subscription, user: user2, data: %{alerts: %{"mention" => true}})
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        status: "@Tom Hey are you okay?"
+      })
+
+    {:ok, [notification]} = Notification.create_notifications(activity)
+
+    [push] = Impl.build(notification)
+
+    {:ok, payload} = Jason.decode(push.payload)
+
+    assert String.starts_with?(payload["body"], "@Bob:")
   end
 end
