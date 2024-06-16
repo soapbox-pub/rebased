@@ -953,9 +953,12 @@ defmodule Pleroma.UserTest do
 
       {:ok, user} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
 
-      assert user.inbox
+      # User was updated async, fetch from cache now
+      updated_user = User.get_cached_by_ap_id(user.ap_id)
 
-      refute user.last_refreshed_at == orig_user.last_refreshed_at
+      assert updated_user.inbox
+
+      refute updated_user.last_refreshed_at == orig_user.last_refreshed_at
     end
 
     test "if nicknames clash, the old user gets a prefix with the old id to the nickname" do
