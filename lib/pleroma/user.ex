@@ -38,6 +38,7 @@ defmodule Pleroma.User do
   alias Pleroma.Web.OAuth
   alias Pleroma.Web.RelMe
   alias Pleroma.Workers.BackgroundWorker
+  alias Pleroma.Workers.UserRefreshWorker
 
   require Logger
   require Pleroma.Constants
@@ -2165,12 +2166,9 @@ defmodule Pleroma.User do
   end
 
   defp maybe_refresh(user) do
-    fun = fn -> needs_update?(user) && fetch_by_ap_id(user.ap_id) end
-
-    if Config.get([__MODULE__, :sync_refreshing], false) do
-      fun.()
-    else
-      Task.start(fun)
+    if needs_update?(user) do
+      UserRefreshWorker.new(%{"ap_id" => user.ap_id})
+      |> Oban.insert()
     end
   end
 

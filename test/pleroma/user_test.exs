@@ -953,8 +953,12 @@ defmodule Pleroma.UserTest do
 
       {:ok, user} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
 
-      # User was updated async, fetch from cache now
-      updated_user = User.get_cached_by_ap_id(user.ap_id)
+      # Oban job was generated to refresh the stale user
+      assert_enqueued(worker: "Pleroma.Workers.UserRefreshWorker", args: %{"ap_id" => user.ap_id})
+
+      # Run job to refresh the user; just capture its output instead of fetching it again
+      assert {:ok, updated_user} =
+               perform_job(Pleroma.Workers.UserRefreshWorker, %{"ap_id" => user.ap_id})
 
       assert updated_user.inbox
 
