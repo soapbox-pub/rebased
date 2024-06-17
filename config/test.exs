@@ -183,6 +183,8 @@ config :pleroma, Pleroma.Emoji.Loader, test_emoji: true
 
 config :pleroma, Pleroma.Web.RichMedia.Backfill, provider: Pleroma.Web.RichMedia.Backfill
 
+config :pleroma, Pleroma.User, sync_refreshing: true
+
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
 else

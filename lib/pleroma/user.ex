@@ -2154,20 +2154,23 @@ defmodule Pleroma.User do
 
   def fetch_by_ap_id(ap_id), do: ActivityPub.make_user_from_ap_id(ap_id)
 
+  @spec get_or_fetch_by_ap_id(String.t()) :: {:ok, User.t()} | {:error, any()}
   def get_or_fetch_by_ap_id(ap_id) do
-    cached_user = get_cached_by_ap_id(ap_id)
+    with cached_user = %User{} <- get_cached_by_ap_id(ap_id),
+         _ <- maybe_refresh(cached_user) do
+      {:ok, cached_user}
+    else
+      _ -> fetch_by_ap_id(ap_id)
+    end
+  end
 
-    maybe_fetched_user = needs_update?(cached_user) && fetch_by_ap_id(ap_id)
+  defp maybe_refresh(user) do
+    fun = fn -> needs_update?(user) && fetch_by_ap_id(user.ap_id) end
 
-    case {cached_user, maybe_fetched_user} do
-      {_, {:ok, %User{} = user}} ->
-        {:ok, user}
-
-      {%User{} = user, _} ->
-        {:ok, user}
-
-      _ ->
-        {:error, :not_found}
+    if Config.get([__MODULE__, :sync_refreshing], false) do
+      fun.()
+    else
+      Task.start(fun)
     end
   end
 
