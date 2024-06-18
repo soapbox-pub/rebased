@@ -952,9 +952,16 @@ defmodule Pleroma.UserTest do
 
       {:ok, user} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
 
-      assert user.inbox
+      # Oban job was generated to refresh the stale user
+      assert_enqueued(worker: "Pleroma.Workers.UserRefreshWorker", args: %{"ap_id" => user.ap_id})
 
-      refute user.last_refreshed_at == orig_user.last_refreshed_at
+      # Run job to refresh the user; just capture its output instead of fetching it again
+      assert {:ok, updated_user} =
+               perform_job(Pleroma.Workers.UserRefreshWorker, %{"ap_id" => user.ap_id})
+
+      assert updated_user.inbox
+
+      refute updated_user.last_refreshed_at == orig_user.last_refreshed_at
     end
 
     test "if nicknames clash, the old user gets a prefix with the old id to the nickname" do
