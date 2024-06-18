@@ -19,7 +19,6 @@ defmodule Pleroma.User.BackupAsyncTest do
     %{backup: backup}
   end
 
-  @tag capture_log: true
   test "it handles unrecoverable exceptions", %{backup: backup} do
     ProcessorMock
     |> expect(:do_process, fn _, _ ->
@@ -34,7 +33,6 @@ defmodule Pleroma.User.BackupAsyncTest do
     assert backup.state == :failed
   end
 
-  @tag capture_log: true
   test "it handles timeouts", %{backup: backup} do
     ProcessorMock
     |> expect(:do_process, fn _, _ ->

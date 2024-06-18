@@ -201,7 +201,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert_schema(status, "Status", Pleroma.Web.ApiSpec.spec())
   end
 
-  @tag capture_log: true
   test "returns a temporary ap_id based user for activities missing db users" do
     user = insert(:user)
 

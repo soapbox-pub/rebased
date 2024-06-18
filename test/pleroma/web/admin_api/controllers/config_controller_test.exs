@@ -194,7 +194,6 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
     setup do: clear_config(:configurable_from_database, true)
 
-    @tag capture_log: true
     test "create new config setting in db", %{conn: conn} do
       ueberauth = Application.get_env(:ueberauth, Ueberauth)
       on_exit(fn -> Application.put_env(:ueberauth, Ueberauth, ueberauth) end)
@@ -316,7 +315,6 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       assert Application.get_env(:idna, :key5) == {"string", Pleroma.Captcha.NotReal, []}
     end
 
-    @tag capture_log: true
     test "save configs setting without explicit key", %{conn: conn} do
       adapter = Application.get_env(:http, :adapter)
       send_user_agent = Application.get_env(:http, :send_user_agent)
@@ -1229,7 +1227,6 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       assert ":proxy_url" in db
     end
 
-    @tag capture_log: true
     test "doesn't set keys not in the whitelist", %{conn: conn} do
       clear_config(:database_config_whitelist, [
         {:pleroma, :key1},

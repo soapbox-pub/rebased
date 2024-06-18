@@ -71,7 +71,6 @@ defmodule Pleroma.Web.Push.ImplTest do
     assert Impl.perform(notif) == {:ok, [:ok, :ok]}
   end
 
-  @tag capture_log: true
   test "returns error if notif does not match " do
     assert Impl.perform(%{}) == {:error, :unknown_type}
   end
@@ -80,7 +79,6 @@ defmodule Pleroma.Web.Push.ImplTest do
     assert Impl.push_message(@message, @sub, @api_key, %Subscription{}) == :ok
   end
 
-  @tag capture_log: true
   test "fail message sending" do
     assert Impl.push_message(
              @message,
