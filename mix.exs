@@ -73,14 +73,15 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [
-        :logger,
-        :runtime_tools,
-        :comeonin,
-        :fast_sanitize,
-        :os_mon,
-        :ssl
-      ],
+      extra_applications:
+        [
+          :logger,
+          :runtime_tools,
+          :comeonin,
+          :fast_sanitize,
+          :os_mon,
+          :ssl
+        ] ++ logger_application(),
       included_applications: [:ex_syslogger]
     ]
   end
@@ -107,6 +108,14 @@ defmodule Pleroma.Mixfile do
       end)
 
     for s <- oauth_strategy_packages, do: {String.to_atom(s), ">= 0.0.0"}
+  end
+
+  defp logger_application do
+    if Version.match?(System.version(), "<1.15.0-rc.0") do
+      []
+    else
+      [:logger_backends]
+    end
   end
 
   defp logger_deps do
