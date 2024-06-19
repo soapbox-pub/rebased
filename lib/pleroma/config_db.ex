@@ -165,8 +165,7 @@ defmodule Pleroma.ConfigDB do
       {:pleroma, :ecto_repos},
       {:mime, :types},
       {:cors_plug, [:max_age, :methods, :expose, :headers]},
-      {:swarm, :node_blacklist},
-      {:logger, :backends}
+      {:swarm, :node_blacklist}
     ]
 
     Enum.any?(full_key_update, fn

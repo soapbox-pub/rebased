@@ -13,13 +13,6 @@ defmodule Pleroma.Config.TransferTask do
 
   @type env() :: :test | :benchmark | :dev | :prod
 
-  @add_backend if Version.match?(System.version(), "< 1.15.0-rc.0"),
-                 do: &Logger.add_backend/1,
-                 else: &LoggerBackends.add/1
-  @remove_backend if Version.match?(System.version(), "< 1.15.0-rc.0"),
-                    do: &Logger.remove_backend/1,
-                    else: &LoggerBackends.remove/1
-
   defp reboot_time_keys,
     do: [
       {:pleroma, :hackney_pools},
@@ -51,14 +44,9 @@ defmodule Pleroma.Config.TransferTask do
     with {_, true} <- {:configurable, Config.get(:configurable_from_database)} do
       # We need to restart applications for loaded settings take effect
 
-      {logger, other} =
+      settings =
         (Repo.all(ConfigDB) ++ deleted_settings)
         |> Enum.map(&merge_with_default/1)
-        |> Enum.split_with(fn {group, _, _, _} -> group in [:logger] end)
-
-      logger
-      |> Enum.sort()
-      |> Enum.each(&configure/1)
 
       started_applications = Application.started_applications()
 
@@ -71,7 +59,7 @@ defmodule Pleroma.Config.TransferTask do
           [:pleroma | reject]
         end
 
-      other
+      settings
       |> Enum.map(&update/1)
       |> Enum.uniq()
       |> Enum.reject(&(&1 in reject))
@@ -107,42 +95,6 @@ defmodule Pleroma.Config.TransferTask do
       end
 
     {group, key, value, merged}
-  end
-
-  # change logger configuration in runtime, without restart
-  defp configure({_, :backends, _, merged}) do
-    # removing current backends
-    Enum.each(Application.get_env(:logger, :backends), @remove_backend)
-
-    Enum.each(merged, @add_backend)
-
-    :ok = update_env(:logger, :backends, merged)
-  end
-
-  defp configure({_, key, _, merged})
-       when key in [:console, Logger.Backends.Console, :ex_syslogger] do
-    backend =
-      case key do
-        :ex_syslogger -> {ExSyslogger, :ex_syslogger}
-        :console -> Logger.Backends.Console
-        Logger.Backends.Console -> Logger.Backends.Console
-        key -> key
-      end
-
-    merged =
-      if backend == Logger.Backends.Console do
-        put_in(merged[:format], merged[:format] <> "\n")
-      else
-        merged
-      end
-
-    Logger.configure_backend(backend, merged)
-    :ok = update_env(:logger, key, merged)
-  end
-
-  defp configure({_, key, _, merged}) do
-    Logger.configure([{key, merged}])
-    :ok = update_env(:logger, key, merged)
   end
 
   defp update({group, key, value, merged}) do
