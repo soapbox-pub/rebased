@@ -151,20 +151,6 @@ unit-testing-1.15.8-otp-26:
   services: *testing_services
   script: *testing_script
 
-unit-testing-1.13.4-otp-25-erratic:
-  extends:
-  - .build_changes_policy
-  - .using-ci-base
-  stage: test
-  retry: 2
-  allow_failure: true
-  cache: *testing_cache_policy
-  services: *testing_services
-  script:
-    - mix ecto.create
-    - mix ecto.migrate
-    - mix pleroma.test_runner --only=erratic
-
 formatting-1.15:
   extends: .build_changes_policy
   image: &formatting_elixir elixir:1.15-alpine
