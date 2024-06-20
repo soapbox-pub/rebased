@@ -18,9 +18,7 @@ workflow:
     - if: $CI_COMMIT_BRANCH
 
 cache: &global_cache_policy
-  key:
-    files:
-      - mix.lock
+  key: $CI_JOB_IMAGE-$CI_COMMIT_SHORT_SHA
   paths:
     - deps
     - _build
