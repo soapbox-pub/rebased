@@ -55,23 +55,23 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
 
       uri = URI.parse("https://some-domain.com")
       opts = Gun.options([receive_conn: false], uri)
-      assert opts[:proxy] == {'localhost', 8123}
+      assert opts[:proxy] == {~c"localhost", 8123}
     end
 
     test "parses tuple proxy scheme host and port" do
-      clear_config([:http, :proxy_url], {:socks, 'localhost', 1234})
+      clear_config([:http, :proxy_url], {:socks, ~c"localhost", 1234})
 
       uri = URI.parse("https://some-domain.com")
       opts = Gun.options([receive_conn: false], uri)
-      assert opts[:proxy] == {:socks, 'localhost', 1234}
+      assert opts[:proxy] == {:socks, ~c"localhost", 1234}
     end
 
     test "passed opts have more weight than defaults" do
-      clear_config([:http, :proxy_url], {:socks5, 'localhost', 1234})
+      clear_config([:http, :proxy_url], {:socks5, ~c"localhost", 1234})
       uri = URI.parse("https://some-domain.com")
-      opts = Gun.options([receive_conn: false, proxy: {'example.com', 4321}], uri)
+      opts = Gun.options([receive_conn: false, proxy: {~c"example.com", 4321}], uri)
 
-      assert opts[:proxy] == {'example.com', 4321}
+      assert opts[:proxy] == {~c"example.com", 4321}
     end
   end
 end

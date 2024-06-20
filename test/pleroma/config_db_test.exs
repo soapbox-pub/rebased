@@ -312,7 +312,7 @@ defmodule Pleroma.ConfigDBTest do
     test "proxy tuple with domain" do
       assert ConfigDB.to_elixir_types(%{
                "tuple" => [":proxy_url", %{"tuple" => [":socks5", "domain.com", 1234]}]
-             }) == {:proxy_url, {:socks5, 'domain.com', 1234}}
+             }) == {:proxy_url, {:socks5, ~c"domain.com", 1234}}
     end
 
     test "proxy tuple with ip" do

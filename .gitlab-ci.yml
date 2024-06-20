@@ -86,7 +86,6 @@ build-1.15.8-otp-26:
   - .using-ci-base
   stage: build
   image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15.8-otp-26
-  allow_failure: true
   script:
   - mix compile --force
 
@@ -136,7 +135,7 @@ unit-testing-1.13.4-otp-25:
   script: &testing_script
     - mix ecto.create
     - mix ecto.migrate
-    - mix test --cover --preload-modules
+    - mix pleroma.test_runner --cover --preload-modules
   coverage: '/^Line total: ([^ ]*%)$/'
   artifacts:
     reports:
@@ -150,7 +149,6 @@ unit-testing-1.15.8-otp-26:
   - .using-ci-base
   stage: test
   image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15.8-otp-26
-  allow_failure: true
   cache: *testing_cache_policy
   services: *testing_services
   script: *testing_script
@@ -167,11 +165,11 @@ unit-testing-1.13.4-otp-25-erratic:
   script:
     - mix ecto.create
     - mix ecto.migrate
-    - mix test --only=erratic
+    - mix pleroma.test_runner --only=erratic
 
-formatting-1.13:
+formatting-1.15:
   extends: .build_changes_policy
-  image: &formatting_elixir elixir:1.13-alpine
+  image: &formatting_elixir elixir:1.15-alpine
   stage: lint
   cache: *testing_cache_policy
   before_script: &current_bfr_script

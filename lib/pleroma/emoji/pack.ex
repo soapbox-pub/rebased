@@ -416,10 +416,10 @@ defmodule Pleroma.Emoji.Pack do
   end
 
   defp create_archive_and_cache(pack, hash) do
-    files = ['pack.json' | Enum.map(pack.files, fn {_, file} -> to_charlist(file) end)]
+    files = [~c"pack.json" | Enum.map(pack.files, fn {_, file} -> to_charlist(file) end)]
 
     {:ok, {_, result}} =
-      :zip.zip('#{pack.name}.zip', files, [:memory, cwd: to_charlist(pack.path)])
+      :zip.zip(~c"#{pack.name}.zip", files, [:memory, cwd: to_charlist(pack.path)])
 
     ttl_per_file = Pleroma.Config.get!([:emoji, :shared_pack_cache_seconds_per_file])
     overall_ttl = :timer.seconds(ttl_per_file * Enum.count(files))
@@ -586,7 +586,7 @@ defmodule Pleroma.Emoji.Pack do
     with :ok <- File.mkdir_p!(local_pack.path) do
       files = Enum.map(remote_pack["files"], fn {_, path} -> to_charlist(path) end)
       # Fallback cannot contain a pack.json file
-      files = if pack_info[:fallback], do: files, else: ['pack.json' | files]
+      files = if pack_info[:fallback], do: files, else: [~c"pack.json" | files]
 
       :zip.unzip(archive, cwd: to_charlist(local_pack.path), file_list: files)
     end

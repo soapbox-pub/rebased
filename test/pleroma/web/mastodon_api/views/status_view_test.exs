@@ -201,7 +201,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert_schema(status, "Status", Pleroma.Web.ApiSpec.spec())
   end
 
-  @tag capture_log: true
   test "returns a temporary ap_id based user for activities missing db users" do
     user = insert(:user)
 
@@ -467,7 +466,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     # Create a public post quoting the private post
     quote_private =
-      insert(:note_activity, note: insert(:note, data: %{"quoteUrl" => private_object.data["id"]}))
+      insert(:note_activity,
+        note: insert(:note, data: %{"quoteUrl" => private_object.data["id"]})
+      )
 
     status = StatusView.render("show.json", %{activity: quote_private})
 

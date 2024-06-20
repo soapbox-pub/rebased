@@ -71,7 +71,7 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
          equalityMatch: fn _type, _value -> :ok end,
          wholeSubtree: fn -> :ok end,
          search: fn _connection, _options ->
-           {:ok, {:eldap_search_result, [{:eldap_entry, '', []}], []}}
+           {:ok, {:eldap_search_result, [{:eldap_entry, ~c"", []}], []}}
          end,
          close: fn _connection ->
            send(self(), :close_connection)

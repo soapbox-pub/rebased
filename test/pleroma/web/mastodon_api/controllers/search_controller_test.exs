@@ -130,7 +130,6 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       assert [] = results["statuses"]
     end
 
-    @tag capture_log: true
     test "constructs hashtags from search query", %{conn: conn} do
       results =
         conn

@@ -60,3 +60,6 @@ pleroma.iml
 *~
 *#
 *.swp
+
+archive-*
+.gitlab-ci-local

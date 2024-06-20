@@ -536,7 +536,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
              end) =~ "Unsupported URI scheme"
     end
 
-    @tag capture_log: true
     test "returns {:ok, %Object{}} for success case" do
       assert {:ok, %Object{}} =
                Transmogrifier.get_obj_helper(

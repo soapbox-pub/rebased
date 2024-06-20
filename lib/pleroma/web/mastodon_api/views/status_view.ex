@@ -8,6 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   require Pleroma.Constants
 
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.HTML
   alias Pleroma.Maps
   alias Pleroma.Object
@@ -30,7 +31,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   # pagination is restricted to 40 activities at a time
   defp fetch_rich_media_for_activities(activities) do
     Enum.each(activities, fn activity ->
-      spawn(fn -> Card.get_by_activity(activity) end)
+      fun = fn -> Card.get_by_activity(activity) end
+
+      if Config.get([__MODULE__, :sync_fetching], false) do
+        fun.()
+      else
+        spawn(fun)
+      end
     end)
   end
 

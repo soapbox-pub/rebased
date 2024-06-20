@@ -2705,7 +2705,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert user.name == " "
   end
 
-  @tag capture_log: true
   test "pin_data_from_featured_collection will ignore unsupported values" do
     assert %{} ==
              ActivityPub.pin_data_from_featured_collection(%{

@@ -76,6 +76,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
     end
 
     test "/api/v2/media, upload_limit", %{conn: conn, user: user} do
+      clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
       desc = "Description of the binary"
 
       upload_limit = Config.get([:instance, :upload_limit]) * 8 + 8

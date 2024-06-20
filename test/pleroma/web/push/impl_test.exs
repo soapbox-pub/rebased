@@ -62,14 +62,12 @@ defmodule Pleroma.Web.Push.ImplTest do
     |> Enum.each(fn push -> assert match?(:ok, Impl.deliver(push)) end)
   end
 
-  @tag capture_log: true
   test "returns error if notification activity type does not match" do
     assert capture_log(fn ->
              assert Impl.build(%{}) == []
            end) =~ "WebPush: unknown activity type"
   end
 
-  @tag capture_log: true
   test "fail message sending" do
     user = insert(:user)
 
@@ -369,7 +367,10 @@ defmodule Pleroma.Web.Push.ImplTest do
       user = insert(:user, nickname: "Bob")
 
       user2 =
-        insert(:user, nickname: "Rob", notification_settings: %{hide_notification_contents: false})
+        insert(:user,
+          nickname: "Rob",
+          notification_settings: %{hide_notification_contents: false}
+        )
 
       {:ok, activity} =
         CommonAPI.post(user, %{

@@ -172,7 +172,13 @@ defmodule Pleroma.Web.Streamer do
   def stream(topics, items) do
     if should_env_send?() do
       for topic <- List.wrap(topics), item <- List.wrap(items) do
-        spawn(fn -> do_stream(topic, item) end)
+        fun = fn -> do_stream(topic, item) end
+
+        if Config.get([__MODULE__, :sync_streaming], false) do
+          fun.()
+        else
+          spawn(fun)
+        end
       end
     end
   end

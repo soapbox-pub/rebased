@@ -134,7 +134,10 @@ defmodule Pleroma.Object.Updater do
     else
       %{updated_object: updated_data} =
         updated_data
-        |> maybe_update_history(original_data, updated: updated, use_history_in_new_object?: false)
+        |> maybe_update_history(original_data,
+          updated: updated,
+          use_history_in_new_object?: false
+        )
 
       updated_data
       |> Map.put("updated", date)
