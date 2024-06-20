@@ -8,6 +8,7 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.OpengraphTest do
 
   import Mox
 
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.RichMedia.Card
 
@@ -35,6 +36,18 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.OpengraphTest do
     end)
 
     Card.get_or_backfill_by_url(url)
+
+    # Find the backfill job
+    expected_job =
+      [
+        worker: "Pleroma.Workers.RichMediaWorker",
+        args: %{"op" => "backfill", "url" => url}
+      ]
+
+    assert_enqueued(expected_job)
+
+    # Run it manually
+    ObanHelpers.perform_all()
 
     assert_enqueued(
       worker: Pleroma.Workers.RichMediaWorker,
