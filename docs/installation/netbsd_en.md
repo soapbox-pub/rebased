@@ -162,7 +162,7 @@ $ MIX_ENV=prod mix ecto.migrate
 ## Configuring nginx
 
 Install the example configuration file
-(`<PLACEHOLDER>` or `/home/pleroma/pleroma/installation/pleroma.nginx`) to
+(`$PREFIX/share/examples/pleroma/pleroma.nginx` or `/home/pleroma/pleroma/installation/pleroma.nginx`) to
 `$PREFIX/etc/nginx.conf`.
 
 Note that it will need to be wrapped in a `http {}` block. You should add
@@ -258,7 +258,7 @@ For properly functioning instance, you will need pleroma (backend service), ngin
 
 First, copy the script (pkgsrc variant)
 ```
-# cp $PREFIX/share/examples/rc.d/pleroma /etc/rc.d
+# cp $PREFIX/share/examples/pleroma/pleroma.rc /etc/rc.d/pleroma
 ```
 
 or source variant
