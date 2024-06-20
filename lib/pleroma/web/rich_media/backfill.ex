@@ -6,7 +6,7 @@ defmodule Pleroma.Web.RichMedia.Backfill do
   alias Pleroma.Web.RichMedia.Card
   alias Pleroma.Web.RichMedia.Parser
   alias Pleroma.Web.RichMedia.Parser.TTL
-  alias Pleroma.Workers.RichMediaExpirationWorker
+  alias Pleroma.Workers.RichMediaWorker
 
   require Logger
 
@@ -72,7 +72,7 @@ defmodule Pleroma.Web.RichMedia.Backfill do
       {:ok, ttl} when is_number(ttl) ->
         timestamp = DateTime.from_unix!(ttl)
 
-        RichMediaExpirationWorker.new(%{"url" => url}, scheduled_at: timestamp)
+        RichMediaWorker.new(%{"op" => "expire", "url" => url}, scheduled_at: timestamp)
         |> Oban.insert()
 
       _ ->

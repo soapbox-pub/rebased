@@ -74,7 +74,10 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrlTest do
 
     Card.get_or_backfill_by_url(url)
 
-    assert_enqueued(worker: Pleroma.Workers.RichMediaExpirationWorker, args: %{"url" => url})
+    assert_enqueued(
+      worker: Pleroma.Workers.RichMediaWorker,
+      args: %{"op" => "expire", "url" => url}
+    )
 
     [%Oban.Job{scheduled_at: scheduled_at}] = all_enqueued()
 
