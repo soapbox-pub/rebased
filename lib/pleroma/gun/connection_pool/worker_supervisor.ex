@@ -37,7 +37,7 @@ defmodule Pleroma.Gun.ConnectionPool.WorkerSupervisor do
   def start_worker(opts, false) do
     case DynamicSupervisor.start_child(__MODULE__, {Worker, opts}) do
       {:error, :max_children} ->
-        spawn(fn -> free_pool() end)
+        free_pool()
         start_worker(opts, true)
 
       res ->
