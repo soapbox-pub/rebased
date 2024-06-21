@@ -20,7 +20,7 @@ defmodule Pleroma.Web.PleromaAPI.BackupController do
   end
 
   def create(%{assigns: %{user: user}} = conn, _params) do
-    with {:ok, _} <- Backup.create(user) do
+    with {:ok, _} <- Backup.user(user) do
       backups = Backup.list(user)
       render(conn, "index.json", backups: backups)
     end
