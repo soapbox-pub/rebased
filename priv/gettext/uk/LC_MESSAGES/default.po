@@ -3,14 +3,17 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-09-18 19:11+0300\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2024-06-23 04:02+0000\n"
+"Last-Translator: Pleroma User <keine@partyheld.de>\n"
+"Language-Team: Ukrainian <https://translate.pleroma.social/projects/pleroma/"
+"pleroma-backend-domain-default/uk/>\n"
 "Language: uk\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Translate Toolkit 3.7.2\n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 4.13.1\n"
 
 ## This file is a PO Template file.
 ##
@@ -21,126 +24,127 @@ msgstr ""
 ## Run "mix gettext.extract" to bring this file up to
 ## date. Leave "msgstr"s empty as changing them here as no
 ## effect: edit them in PO (.po) files instead.
-
 #: lib/pleroma/web/api_spec/render_error.ex:122
 #, elixir-autogen, elixir-format
 msgid "%{name} - %{count} is not a multiple of %{multiple}."
-msgstr ""
+msgstr "%{name} - %{count} не є множиною %{multiple}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:131
 #, elixir-autogen, elixir-format
 msgid "%{name} - %{value} is larger than exclusive maximum %{max}."
-msgstr ""
+msgstr "%{name} - %{value} більше ніж максимум %{max} (невключно)."
 
 #: lib/pleroma/web/api_spec/render_error.ex:140
 #, elixir-autogen, elixir-format
 msgid "%{name} - %{value} is larger than inclusive maximum %{max}."
-msgstr ""
+msgstr "%{name} - %{value} більше ніж максимум %{max} (включно)."
 
 #: lib/pleroma/web/api_spec/render_error.ex:149
 #, elixir-autogen, elixir-format
 msgid "%{name} - %{value} is smaller than exclusive minimum %{min}."
-msgstr ""
+msgstr "%{name} - %{value} менше ніж мінімум %{min} (не включно)."
 
 #: lib/pleroma/web/api_spec/render_error.ex:158
 #, elixir-autogen, elixir-format
 msgid "%{name} - %{value} is smaller than inclusive minimum %{min}."
-msgstr ""
+msgstr "%{name} - %{value} менше ніж мінімум %{min} (включно)."
 
 #: lib/pleroma/web/api_spec/render_error.ex:102
 #, elixir-autogen, elixir-format
 msgid "%{name} - Array items must be unique."
-msgstr ""
+msgstr "%{name} - елементи масиву мають бути унікальними."
 
 #: lib/pleroma/web/api_spec/render_error.ex:114
 #, elixir-autogen, elixir-format
 msgid "%{name} - Array length %{length} is larger than maxItems: %{}."
-msgstr ""
+msgstr "%{name} - довжина масиву %{length} більша, ніж maxItems: %{}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:106
 #, elixir-autogen, elixir-format
 msgid "%{name} - Array length %{length} is smaller than minItems: %{min}."
-msgstr ""
+msgstr "%{name} - довжина масиву %{length} менше ніж minItems: %{min}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:166
 #, elixir-autogen, elixir-format
 msgid "%{name} - Invalid %{type}. Got: %{value}."
-msgstr ""
+msgstr "%{name} - Невірна/ий %{type}. Отримано: %{value}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:174
 #, elixir-autogen, elixir-format
 msgid "%{name} - Invalid format. Expected %{format}."
-msgstr ""
+msgstr "%{name} - Невірний формат. Має бути %{format}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:51
 #, elixir-autogen, elixir-format
 msgid "%{name} - Invalid schema.type. Got: %{type}."
-msgstr ""
+msgstr "%{name} - Невірна schema.type. Отримано: %{type}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:178
 #, elixir-autogen, elixir-format
 msgid "%{name} - Invalid value for enum."
-msgstr ""
+msgstr "%{name} - Невірне значення для типу enum."
 
 #: lib/pleroma/web/api_spec/render_error.ex:95
 #, elixir-autogen, elixir-format
 msgid "%{name} - String length is larger than maxLength: %{length}."
-msgstr ""
+msgstr "%{name} - Довжина рядочку більша, ніж maxLength: %{length}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:88
 #, elixir-autogen, elixir-format
 msgid "%{name} - String length is smaller than minLength: %{length}."
-msgstr ""
+msgstr "%{name} - Довжина рядочку менша, ніж minLength: %{length}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:63
 #, elixir-autogen, elixir-format
 msgid "%{name} - null value where %{type} expected."
-msgstr ""
+msgstr "%{name} - значення типу null замість %{type}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:60
 #, elixir-autogen, elixir-format
 msgid "%{name} - null value."
-msgstr ""
+msgstr "%{name} - значення типу null."
 
 #: lib/pleroma/web/api_spec/render_error.ex:182
 #, elixir-autogen, elixir-format
 msgid "Failed to cast to any schema in %{polymorphic_type}"
-msgstr ""
+msgstr "Не вдалось сконвертувати до any schema в %{polymorphic_type}"
 
 #: lib/pleroma/web/api_spec/render_error.ex:71
 #, elixir-autogen, elixir-format
 msgid "Failed to cast value as %{invalid_schema}. Value must be castable using `allOf` schemas listed."
 msgstr ""
+"Не вдалось сконвертувати значення як %{invalid_schema}. Значення має бути "
+"перетворюваним через список схем у `allOf`."
 
 #: lib/pleroma/web/api_spec/render_error.ex:84
 #, elixir-autogen, elixir-format
 msgid "Failed to cast value to one of: %{failed_schemas}."
-msgstr ""
+msgstr "Не вдалось сконвертувати значення до one of: %{failed_schemas}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:78
 #, elixir-autogen, elixir-format
 msgid "Failed to cast value using any of: %{failed_schemas}."
-msgstr ""
+msgstr "Не вдалось сконвертувати значення через any of: %{failed_schemas}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:212
 #, elixir-autogen, elixir-format
 msgid "Invalid value for header: %{name}."
-msgstr ""
+msgstr "Невірне значення для заголовку: %{name}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:204
 #, elixir-autogen, elixir-format
 msgid "Missing field: %{name}."
-msgstr ""
+msgstr "Пропущене поле: %{name}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:208
 #, elixir-autogen, elixir-format
 msgid "Missing header: %{name}."
-msgstr ""
+msgstr "Пропущений заголовок: %{name}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:196
 #, elixir-autogen, elixir-format
 msgid "No value provided for required discriminator `%{field}`."
-msgstr ""
+msgstr "Немає значення для обов'язкового розділителя `%{field}`."
 
 #: lib/pleroma/web/api_spec/render_error.ex:216
 #, elixir-autogen, elixir-format
@@ -155,17 +159,17 @@ msgstr ""
 #: lib/pleroma/web/templates/static_fe/static_fe/error.html.eex:2
 #, elixir-autogen, elixir-format
 msgid "Oops"
-msgstr ""
+msgstr "Ой, лишенько"
 
 #: lib/pleroma/web/api_spec/render_error.ex:188
 #, elixir-autogen, elixir-format
 msgid "Unexpected field: %{name}."
-msgstr ""
+msgstr "Невідоме поле: %{name}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:200
 #, elixir-autogen, elixir-format
 msgid "Unknown schema: %{name}."
-msgstr ""
+msgstr "Невідома схема: %{name}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:192
 #, elixir-autogen, elixir-format
@@ -176,22 +180,22 @@ msgstr ""
 #: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:37
 #, elixir-autogen, elixir-format
 msgid "announces"
-msgstr ""
+msgstr "анонси"
 
 #: lib/pleroma/web/templates/embed/show.html.eex:44
 #: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:38
 #, elixir-autogen, elixir-format
 msgid "likes"
-msgstr ""
+msgstr "вподобання"
 
 #: lib/pleroma/web/templates/embed/show.html.eex:42
 #: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:36
 #, elixir-autogen, elixir-format
 msgid "replies"
-msgstr ""
+msgstr "відповіді"
 
 #: lib/pleroma/web/templates/embed/show.html.eex:27
 #: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:22
 #, elixir-autogen, elixir-format
 msgid "sensitive media"
-msgstr ""
+msgstr "чутливе медіа"
