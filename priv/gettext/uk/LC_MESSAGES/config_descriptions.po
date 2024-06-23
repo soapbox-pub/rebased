@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-09-18 19:11+0300\n"
-"PO-Revision-Date: 2024-06-23 04:02+0000\n"
+"PO-Revision-Date: 2024-06-24 02:05+0000\n"
 "Last-Translator: Pleroma User <keine@partyheld.de>\n"
 "Language-Team: Ukrainian <https://translate.pleroma.social/projects/pleroma/"
 "pleroma-backend-domain-config_descriptions/uk/>\n"
@@ -2826,7 +2826,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:welcome > :chat_message > :sender_nickname"
 msgid "The nickname of the local user that sends a welcome chat message"
-msgstr ""
+msgstr "Локального користувач, який надсилатиме вітальне повідомлення"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -2857,24 +2857,32 @@ msgstr ""
 msgctxt "config description at :pleroma-:welcome > :email > :html"
 msgid "HTML content of the welcome email. EEX template with user and instance_name variables can be used."
 msgstr ""
+"Зміст вітального листа у HTML. Можна використовувати EEX шаблон, в якому "
+"доступні змінні `user` та `instance_name`."
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:welcome > :email > :sender"
 msgid "Email address and/or nickname that will be used to send the welcome email."
 msgstr ""
+"Адреса електронної пошти та/або нікнейм, що буде використано для надсилання "
+"вітального листа."
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:welcome > :email > :subject"
 msgid "Subject of the welcome email. EEX template with user and instance_name variables can be used."
 msgstr ""
+"Тема вітального листа. Можна використовувати EEX шаблон, в якому доступні "
+"змінні `user` та `instance_name`."
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:welcome > :email > :text"
 msgid "Text content of the welcome email. EEX template with user and instance_name variables can be used."
 msgstr ""
+"Текст вітального листа. Можна використовувати EEX шаблон, в якому доступні "
+"змінні `user` та `instance_name`."
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
