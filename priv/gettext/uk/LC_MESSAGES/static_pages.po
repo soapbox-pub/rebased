@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-06-22 06:33+0300\n"
-"PO-Revision-Date: 2024-06-23 04:02+0000\n"
+"PO-Revision-Date: 2024-06-24 02:05+0000\n"
 "Last-Translator: Pleroma User <keine@partyheld.de>\n"
 "Language-Team: Ukrainian <https://translate.pleroma.social/projects/pleroma/"
 "pleroma-backend-domain-static_pages/uk/>\n"
@@ -542,19 +542,19 @@ msgstr "Запрошення до %{instance_name}"
 #, elixir-autogen, elixir-format
 msgctxt "welcome email html body"
 msgid "Welcome to %{instance_name}!"
-msgstr "Вітаємо у %{instance_name}!"
+msgstr "Ласкаво просимо до %{instance_name}!"
 
 #: lib/pleroma/emails/user_email.ex:41
 #, elixir-autogen, elixir-format
 msgctxt "welcome email subject"
 msgid "Welcome to %{instance_name}!"
-msgstr "Вітаємо у %{instance_name}!"
+msgstr "Ласкаво просимо до %{instance_name}!"
 
 #: lib/pleroma/emails/user_email.ex:65
 #, elixir-autogen, elixir-format
 msgctxt "welcome email text body"
 msgid "Welcome to %{instance_name}!"
-msgstr "Вітаємо у %{instance_name}!"
+msgstr "Ласкаво просимо до %{instance_name}!"
 
 #: lib/pleroma/emails/user_email.ex:368
 #, elixir-autogen, elixir-format
