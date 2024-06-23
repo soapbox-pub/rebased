@@ -197,7 +197,7 @@ defmodule Pleroma.User.BackupTest do
     assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
     assert {:ok, path} = Backup.export(backup, self())
     assert {:ok, zipfile} = :zip.zip_open(String.to_charlist(path), [:memory])
-    assert {:ok, {'actor.json', json}} = :zip.zip_get('actor.json', zipfile)
+    assert {:ok, {~c"actor.json", json}} = :zip.zip_get(~c"actor.json", zipfile)
 
     assert %{
              "@context" => [
@@ -222,7 +222,7 @@ defmodule Pleroma.User.BackupTest do
              "url" => "http://cofe.io/users/cofe"
            } = Jason.decode!(json)
 
-    assert {:ok, {'outbox.json', json}} = :zip.zip_get('outbox.json', zipfile)
+    assert {:ok, {~c"outbox.json", json}} = :zip.zip_get(~c"outbox.json", zipfile)
 
     assert %{
              "@context" => "https://www.w3.org/ns/activitystreams",
@@ -253,7 +253,7 @@ defmodule Pleroma.User.BackupTest do
              "type" => "OrderedCollection"
            } = Jason.decode!(json)
 
-    assert {:ok, {'likes.json', json}} = :zip.zip_get('likes.json', zipfile)
+    assert {:ok, {~c"likes.json", json}} = :zip.zip_get(~c"likes.json", zipfile)
 
     assert %{
              "@context" => "https://www.w3.org/ns/activitystreams",
@@ -263,7 +263,7 @@ defmodule Pleroma.User.BackupTest do
              "type" => "OrderedCollection"
            } = Jason.decode!(json)
 
-    assert {:ok, {'bookmarks.json', json}} = :zip.zip_get('bookmarks.json', zipfile)
+    assert {:ok, {~c"bookmarks.json", json}} = :zip.zip_get(~c"bookmarks.json", zipfile)
 
     assert %{
              "@context" => "https://www.w3.org/ns/activitystreams",
@@ -273,7 +273,7 @@ defmodule Pleroma.User.BackupTest do
              "type" => "OrderedCollection"
            } = Jason.decode!(json)
 
-    assert {:ok, {'following.json', json}} = :zip.zip_get('following.json', zipfile)
+    assert {:ok, {~c"following.json", json}} = :zip.zip_get(~c"following.json", zipfile)
 
     assert %{
              "@context" => "https://www.w3.org/ns/activitystreams",
@@ -283,7 +283,7 @@ defmodule Pleroma.User.BackupTest do
              "type" => "OrderedCollection"
            } = Jason.decode!(json)
 
-    assert {:ok, {'chats.json', json}} = :zip.zip_get('chats.json', zipfile)
+    assert {:ok, {~c"chats.json", json}} = :zip.zip_get(~c"chats.json", zipfile)
 
     chat_id = "http://localhost:4001/chats/#{chat.id}"
 
@@ -302,7 +302,7 @@ defmodule Pleroma.User.BackupTest do
              "type" => "OrderedCollection"
            } = Jason.decode!(json)
 
-    assert {:ok, {'chat_messages.json', json}} = :zip.zip_get('chat_messages.json', zipfile)
+    assert {:ok, {~c"chat_messages.json", json}} = :zip.zip_get(~c"chat_messages.json", zipfile)
 
     chat_id = "http://localhost:4001/chats/#{chat.id}"
 

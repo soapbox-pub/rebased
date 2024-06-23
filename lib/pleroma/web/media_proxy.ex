@@ -75,8 +75,7 @@ defmodule Pleroma.Web.MediaProxy do
     %{host: domain} = URI.parse(url)
 
     mediaproxy_whitelist_domains =
-      [:media_proxy, :whitelist]
-      |> Config.get()
+      Config.get([:media_proxy, :whitelist], [])
       |> Kernel.++(["#{Upload.base_url()}"])
       |> Enum.map(&maybe_get_domain_from_url/1)
 

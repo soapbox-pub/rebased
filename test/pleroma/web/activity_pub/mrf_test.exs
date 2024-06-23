@@ -65,7 +65,6 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
       refute MRF.subdomain_match?(regexes, "example.com")
     end
 
-    @tag capture_log: true
     test "logs sensible error on accidental wildcard" do
       assert_raise Regex.CompileError, fn ->
         assert capture_log(MRF.subdomains_regex(["*unsafe.tld"])) =~

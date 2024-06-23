@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.RichMedia.CardTest do
   use Pleroma.DataCase, async: true
 
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.RichMedia.Card
@@ -36,6 +37,8 @@ defmodule Pleroma.Web.RichMedia.CardTest do
         content_type: "text/markdown"
       })
 
+    ObanHelpers.perform_all()
+
     assert %Card{url_hash: ^url_hash, fields: _} = Card.get_by_activity(activity)
   end
 
@@ -50,6 +53,7 @@ defmodule Pleroma.Web.RichMedia.CardTest do
 
     # Force a backfill
     Card.get_by_activity(activity)
+    ObanHelpers.perform_all()
 
     assert match?(
              %Card{url_hash: ^original_url_hash, fields: _},
@@ -62,6 +66,7 @@ defmodule Pleroma.Web.RichMedia.CardTest do
 
     # Force a backfill
     Card.get_by_activity(activity)
+    ObanHelpers.perform_all()
 
     assert match?(
              %Card{url_hash: ^updated_url_hash, fields: _},

@@ -51,7 +51,6 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
       clear_config(:configurable_from_database, true)
     end
 
-    @tag capture_log: true
     test "config migration refused when deprecated settings are found" do
       clear_config([:media_proxy, :whitelist], ["domain_without_scheme.com"])
       assert config_records() == []

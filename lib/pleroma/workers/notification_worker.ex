@@ -16,7 +16,7 @@ defmodule Pleroma.Workers.NotificationWorker do
   def perform(%Job{args: %{"op" => "create", "activity_id" => activity_id}}) do
     with %Activity{} = activity <- find_activity(activity_id),
          {:ok, notifications} <- Notification.create_notifications(activity) do
-      Notification.send(notifications)
+      Notification.stream(notifications)
     end
   end
 

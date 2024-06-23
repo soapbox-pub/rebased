@@ -12,7 +12,7 @@ defmodule Pleroma.Mixfile do
       elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: Mix.compilers(),
-      elixirc_options: [warnings_as_errors: warnings_as_errors()],
+      elixirc_options: [warnings_as_errors: warnings_as_errors(), prune_code_paths: false],
       xref: [exclude: [:eldap]],
       dialyzer: [plt_add_apps: [:mix, :eldap]],
       start_permanent: Mix.env() == :prod,
@@ -75,14 +75,15 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [
-        :logger,
-        :runtime_tools,
-        :comeonin,
-        :fast_sanitize,
-        :os_mon,
-        :ssl
-      ],
+      extra_applications:
+        [
+          :logger,
+          :runtime_tools,
+          :comeonin,
+          :fast_sanitize,
+          :os_mon,
+          :ssl
+        ] ++ logger_application(),
       included_applications: [:ex_syslogger]
     ]
   end
@@ -109,6 +110,22 @@ defmodule Pleroma.Mixfile do
       end)
 
     for s <- oauth_strategy_packages, do: {String.to_atom(s), ">= 0.0.0"}
+  end
+
+  defp logger_application do
+    if Version.match?(System.version(), "<1.15.0-rc.0") do
+      []
+    else
+      [:logger_backends]
+    end
+  end
+
+  defp logger_deps do
+    if Version.match?(System.version(), "<1.15.0-rc.0") do
+      []
+    else
+      [{:logger_backends, "~> 1.0"}]
+    end
   end
 
   # Specifies your project dependencies.
@@ -202,7 +219,7 @@ defmodule Pleroma.Mixfile do
       {:websockex, "~> 0.4.3", only: :test},
       {:benchee, "~> 1.0", only: :benchmark},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
-    ] ++ oauth_deps()
+    ] ++ oauth_deps() ++ logger_deps()
   end
 
   # Aliases are shortcuts or tasks specific to the current project.

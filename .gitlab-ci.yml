@@ -1,4 +1,4 @@
-image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.13.4-otp-24
+image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.13.4-otp-25
 
 variables: &global_variables
   # Only used for the release
@@ -18,9 +18,7 @@ workflow:
     - if: $CI_COMMIT_BRANCH
 
 cache: &global_cache_policy
-  key:
-    files:
-      - mix.lock
+  key: $CI_JOB_IMAGE-$CI_COMMIT_SHORT_SHA
   paths:
     - deps
     - _build
@@ -72,7 +70,7 @@ check-changelog:
   tags:
     - amd64
 
-build-1.13.4:
+build-1.13.4-otp-25:
   extends:
   - .build_changes_policy
   - .using-ci-base
@@ -80,13 +78,12 @@ build-1.13.4:
   script:
   - mix compile --force
 
-build-1.15.7-otp-25:
+build-1.15.8-otp-26:
   extends:
   - .build_changes_policy
   - .using-ci-base
   stage: build
-  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15-otp25
-  allow_failure: true
+  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15.8-otp-26
   script:
   - mix compile --force
 
@@ -121,7 +118,7 @@ benchmark:
     - mix ecto.migrate
     - mix pleroma.load_testing
 
-unit-testing-1.12.3:
+unit-testing-1.13.4-otp-25:
   extends:
   - .build_changes_policy
   - .using-ci-base
@@ -136,7 +133,7 @@ unit-testing-1.12.3:
   script: &testing_script
     - mix ecto.create
     - mix ecto.migrate
-    - mix test --cover --preload-modules
+    - mix pleroma.test_runner --cover --preload-modules
   coverage: '/^Line total: ([^ ]*%)$/'
   artifacts:
     reports:
@@ -144,34 +141,19 @@ unit-testing-1.12.3:
         coverage_format: cobertura
         path: coverage.xml
 
-unit-testing-1.15.7-otp-25:
+unit-testing-1.15.8-otp-26:
   extends:
   - .build_changes_policy
   - .using-ci-base
   stage: test
-  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15-otp25
-  allow_failure: true
+  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.15.8-otp-26
   cache: *testing_cache_policy
   services: *testing_services
   script: *testing_script
 
-unit-testing-1.12-erratic:
-  extends:
-  - .build_changes_policy
-  - .using-ci-base
-  stage: test
-  retry: 2
-  allow_failure: true
-  cache: *testing_cache_policy
-  services: *testing_services
-  script:
-    - mix ecto.create
-    - mix ecto.migrate
-    - mix test --only=erratic
-
-formatting-1.13:
+formatting-1.15:
   extends: .build_changes_policy
-  image: &formatting_elixir elixir:1.13-alpine
+  image: &formatting_elixir elixir:1.15-alpine
   stage: lint
   cache: *testing_cache_policy
   before_script: &current_bfr_script

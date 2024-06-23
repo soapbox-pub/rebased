@@ -16,72 +16,74 @@ defmodule Pleroma.Web.Push.Impl do
   require Logger
   import Ecto.Query
 
+  @body_chars 140
   @types ["Create", "Follow", "Announce", "Like", "Move", "EmojiReact", "Update"]
 
-  @doc "Performs sending notifications for user subscriptions"
-  @spec perform(Notification.t()) :: list(any) | :error | {:error, :unknown_type}
-  def perform(
+  @doc "Builds webpush notification payloads for the subscriptions enabled by the receiving user"
+  @spec build(Notification.t()) ::
+          list(%{content: map(), subscription: Subscription.t()}) | []
+  def build(
         %{
           activity: %{data: %{"type" => activity_type}} = activity,
-          user: %User{id: user_id}
+          user_id: user_id
         } = notification
       )
       when activity_type in @types do
-    actor = User.get_cached_by_ap_id(notification.activity.data["actor"])
+    notification_actor = User.get_cached_by_ap_id(notification.activity.data["actor"])
+    avatar_url = User.avatar_url(notification_actor)
 
-    mastodon_type = notification.type
-    gcm_api_key = Application.get_env(:web_push_encryption, :gcm_api_key)
-    avatar_url = User.avatar_url(actor)
     object = Object.normalize(activity, fetch: false)
     user = User.get_cached_by_id(user_id)
     direct_conversation_id = Activity.direct_conversation_id(activity, user)
 
-    for subscription <- fetch_subscriptions(user_id),
-        Subscription.enabled?(subscription, mastodon_type) do
-      %{
-        access_token: subscription.token.token,
-        notification_id: notification.id,
-        notification_type: mastodon_type,
-        icon: avatar_url,
-        preferred_locale: "en",
-        pleroma: %{
-          activity_id: notification.activity.id,
-          direct_conversation_id: direct_conversation_id
+    subscriptions = fetch_subscriptions(user_id)
+
+    subscriptions
+    |> Enum.filter(&Subscription.enabled?(&1, notification.type))
+    |> Enum.map(fn subscription ->
+      payload =
+        %{
+          access_token: subscription.token.token,
+          notification_id: notification.id,
+          notification_type: notification.type,
+          icon: avatar_url,
+          preferred_locale: "en",
+          pleroma: %{
+            activity_id: notification.activity.id,
+            direct_conversation_id: direct_conversation_id
+          }
         }
-      }
-      |> Map.merge(build_content(notification, actor, object, mastodon_type))
-      |> Jason.encode!()
-      |> push_message(build_sub(subscription), gcm_api_key, subscription)
-    end
-    |> (&{:ok, &1}).()
+        |> Map.merge(build_content(notification, notification_actor, object))
+        |> Jason.encode!()
+
+      %{payload: payload, subscription: subscription}
+    end)
   end
 
-  def perform(_) do
-    Logger.warning("Unknown notification type")
-    {:error, :unknown_type}
+  def build(notif) do
+    Logger.warning("WebPush: unknown activity type: #{inspect(notif)}")
+    []
   end
 
-  @doc "Push message to web"
-  def push_message(body, sub, api_key, subscription) do
-    try do
-      case WebPushEncryption.send_web_push(body, sub, api_key) do
-        {:ok, %{status: code}} when code in 400..499 ->
-          Logger.debug("Removing subscription record")
-          Repo.delete!(subscription)
-          :ok
+  @doc "Deliver push notification to the provided webpush subscription"
+  @spec deliver(%{payload: String.t(), subscription: Subscription.t()}) :: :ok | :error
+  def deliver(%{payload: payload, subscription: subscription}) do
+    gcm_api_key = Application.get_env(:web_push_encryption, :gcm_api_key)
+    formatted_subscription = build_sub(subscription)
 
-        {:ok, %{status: code}} when code in 200..299 ->
-          :ok
+    case WebPushEncryption.send_web_push(payload, formatted_subscription, gcm_api_key) do
+      {:ok, %{status: code}} when code in 200..299 ->
+        :ok
 
-        {:ok, %{status: code}} ->
-          Logger.error("Web Push Notification failed with code: #{code}")
-          :error
+      {:ok, %{status: code}} when code in 400..499 ->
+        Logger.debug("Removing subscription record")
+        Repo.delete!(subscription)
+        :ok
 
-        error ->
-          Logger.error("Web Push Notification failed with #{inspect(error)}")
-          :error
-      end
-    rescue
+      {:ok, %{status: code}} ->
+        Logger.error("Web Push Notification failed with code: #{code}")
+        :error
+
       error ->
         Logger.error("Web Push Notification failed with #{inspect(error)}")
         :error
@@ -106,107 +108,106 @@ defmodule Pleroma.Web.Push.Impl do
     }
   end
 
-  def build_content(notification, actor, object, mastodon_type \\ nil)
-
   def build_content(
         %{
           user: %{notification_settings: %{hide_notification_contents: true}}
         } = notification,
-        _actor,
-        _object,
-        mastodon_type
+        _user,
+        _object
       ) do
-    %{body: format_title(notification, mastodon_type)}
+    %{body: format_title(notification)}
   end
 
-  def build_content(notification, actor, object, mastodon_type) do
-    mastodon_type = mastodon_type || notification.type
-
+  def build_content(notification, user, object) do
     %{
-      title: format_title(notification, mastodon_type),
-      body: format_body(notification, actor, object, mastodon_type)
+      title: format_title(notification),
+      body: format_body(notification, user, object)
     }
   end
 
-  def format_body(activity, actor, object, mastodon_type \\ nil)
-
-  def format_body(_activity, actor, %{data: %{"type" => "ChatMessage"} = data}, _) do
-    case data["content"] do
-      nil -> "@#{actor.nickname}: (Attachment)"
-      content -> "@#{actor.nickname}: #{Utils.scrub_html_and_truncate(content, 80)}"
+  @spec format_body(Notification.t(), User.t(), Object.t()) :: String.t()
+  def format_body(_notification, user, %{data: %{"type" => "ChatMessage"} = object}) do
+    case object["content"] do
+      nil -> "@#{user.nickname}: (Attachment)"
+      content -> "@#{user.nickname}: #{Utils.scrub_html_and_truncate(content, @body_chars)}"
     end
   end
 
   def format_body(
-        %{activity: %{data: %{"type" => "Create"}}},
-        actor,
-        %{data: %{"content" => content}},
-        _mastodon_type
+        %{type: "poll"} = _notification,
+        _user,
+        %{data: %{"content" => content} = data} = _object
       ) do
-    "@#{actor.nickname}: #{Utils.scrub_html_and_truncate(content, 80)}"
+    options = Map.get(data, "anyOf") || Map.get(data, "oneOf")
+
+    content_text = content <> "\n"
+
+    options_text = Enum.map_join(options, "\n", fn x -> "○ #{x["name"]}" end)
+
+    [content_text, options_text]
+    |> Enum.join("\n")
+    |> Utils.scrub_html_and_truncate(@body_chars)
+  end
+
+  def format_body(
+        %{activity: %{data: %{"type" => "Create"}}},
+        user,
+        %{data: %{"content" => content}}
+      ) do
+    "@#{user.nickname}: #{Utils.scrub_html_and_truncate(content, @body_chars)}"
   end
 
   def format_body(
         %{activity: %{data: %{"type" => "Announce"}}},
-        actor,
-        %{data: %{"content" => content}},
-        _mastodon_type
+        user,
+        %{data: %{"content" => content}}
       ) do
-    "@#{actor.nickname} repeated: #{Utils.scrub_html_and_truncate(content, 80)}"
+    "@#{user.nickname} repeated: #{Utils.scrub_html_and_truncate(content, @body_chars)}"
   end
 
   def format_body(
         %{activity: %{data: %{"type" => "EmojiReact", "content" => content}}},
-        actor,
-        _object,
-        _mastodon_type
+        user,
+        _object
       ) do
-    "@#{actor.nickname} reacted with #{content}"
+    "@#{user.nickname} reacted with #{content}"
   end
 
   def format_body(
         %{activity: %{data: %{"type" => type}}} = notification,
-        actor,
-        _object,
-        mastodon_type
+        user,
+        _object
       )
       when type in ["Follow", "Like"] do
-    mastodon_type = mastodon_type || notification.type
-
-    case mastodon_type do
-      "follow" -> "@#{actor.nickname} has followed you"
-      "follow_request" -> "@#{actor.nickname} has requested to follow you"
-      "favourite" -> "@#{actor.nickname} has favorited your post"
+    case notification.type do
+      "follow" -> "@#{user.nickname} has followed you"
+      "follow_request" -> "@#{user.nickname} has requested to follow you"
+      "favourite" -> "@#{user.nickname} has favorited your post"
     end
   end
 
   def format_body(
         %{activity: %{data: %{"type" => "Update"}}},
-        actor,
-        _object,
-        _mastodon_type
+        user,
+        _object
       ) do
-    "@#{actor.nickname} edited a status"
+    "@#{user.nickname} edited a status"
   end
 
-  def format_title(activity, mastodon_type \\ nil)
-
-  def format_title(%{activity: %{data: %{"directMessage" => true}}}, _mastodon_type) do
+  @spec format_title(Notification.t()) :: String.t()
+  def format_title(%{activity: %{data: %{"directMessage" => true}}}) do
     "New Direct Message"
   end
 
-  def format_title(%{type: type}, mastodon_type) do
-    case mastodon_type || type do
-      "mention" -> "New Mention"
-      "status" -> "New Status"
-      "follow" -> "New Follower"
-      "follow_request" -> "New Follow Request"
-      "reblog" -> "New Repeat"
-      "favourite" -> "New Favorite"
-      "update" -> "New Update"
-      "pleroma:chat_mention" -> "New Chat Message"
-      "pleroma:emoji_reaction" -> "New Reaction"
-      type -> "New #{String.capitalize(type || "event")}"
-    end
-  end
+  def format_title(%{type: "mention"}), do: "New Mention"
+  def format_title(%{type: "status"}), do: "New Status"
+  def format_title(%{type: "follow"}), do: "New Follower"
+  def format_title(%{type: "follow_request"}), do: "New Follow Request"
+  def format_title(%{type: "reblog"}), do: "New Repeat"
+  def format_title(%{type: "favourite"}), do: "New Favorite"
+  def format_title(%{type: "update"}), do: "New Update"
+  def format_title(%{type: "pleroma:chat_mention"}), do: "New Chat Message"
+  def format_title(%{type: "pleroma:emoji_reaction"}), do: "New Reaction"
+  def format_title(%{type: "poll"}), do: "Poll Results"
+  def format_title(%{type: type}), do: "New #{String.capitalize(type || "event")}"
 end
