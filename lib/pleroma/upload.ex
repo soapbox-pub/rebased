@@ -249,14 +249,16 @@ defmodule Pleroma.Upload do
 
   defp url_from_spec(_upload, _base_url, {:url, url}), do: url
 
+  @spec base_url() :: binary
   def base_url do
     uploader = @config_impl.get([Pleroma.Upload, :uploader])
-    upload_base_url = @config_impl.get([Pleroma.Upload, :base_url])
+    upload_fallback_url = Pleroma.Web.Endpoint.url() <> "/media/"
+    upload_base_url = @config_impl.get([Pleroma.Upload, :base_url]) || upload_fallback_url
     public_endpoint = @config_impl.get([uploader, :public_endpoint])
 
     case uploader do
       Pleroma.Uploaders.Local ->
-        upload_base_url || Pleroma.Web.Endpoint.url() <> "/media/"
+        upload_base_url
 
       Pleroma.Uploaders.S3 ->
         bucket = @config_impl.get([Pleroma.Uploaders.S3, :bucket])
@@ -268,11 +270,14 @@ defmodule Pleroma.Upload do
             !is_nil(truncated_namespace) ->
               truncated_namespace
 
-            !is_nil(namespace) ->
+            !is_nil(namespace) and !is_nil(bucket) ->
               namespace <> ":" <> bucket
 
-            true ->
+            !is_nil(bucket) ->
               bucket
+
+            true ->
+              ""
           end
 
         if public_endpoint do
@@ -285,7 +290,7 @@ defmodule Pleroma.Upload do
         @config_impl.get([Pleroma.Uploaders.IPFS, :get_gateway_url])
 
       _ ->
-        public_endpoint || upload_base_url || Pleroma.Web.Endpoint.url() <> "/media/"
+        public_endpoint || upload_base_url
     end
   end
 end

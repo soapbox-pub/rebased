@@ -30,7 +30,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   # pagination is restricted to 40 activities at a time
   defp fetch_rich_media_for_activities(activities) do
     Enum.each(activities, fn activity ->
-      spawn(fn -> Card.get_by_activity(activity) end)
+      Card.get_by_activity(activity)
     end)
   end
 

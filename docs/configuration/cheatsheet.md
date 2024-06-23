@@ -853,7 +853,7 @@ config :logger,
   backends: [{ExSyslogger, :ex_syslogger}]
 
 config :logger, :ex_syslogger,
-  level: :warn
+  level: :warning
 ```
 
 Another example, keeping console output and adding the pid to syslog output:
@@ -862,7 +862,7 @@ config :logger,
   backends: [:console, {ExSyslogger, :ex_syslogger}]
 
 config :logger, :ex_syslogger,
-  level: :warn,
+  level: :warning,
   option: [:pid, :ndelay]
 ```
 

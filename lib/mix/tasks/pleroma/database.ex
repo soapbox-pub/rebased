@@ -351,7 +351,7 @@ defmodule Mix.Tasks.Pleroma.Database do
         )
       end
 
-      shell_info('Done.')
+      shell_info(~c"Done.")
     end
   end
 

@@ -110,7 +110,7 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
         }
 
         params =
-          case List.keyfind(attributes, 'mail', 0) do
+          case List.keyfind(attributes, ~c"mail", 0) do
             {_, [mail]} -> Map.put_new(params, :email, :erlang.list_to_binary(mail))
             _ -> params
           end

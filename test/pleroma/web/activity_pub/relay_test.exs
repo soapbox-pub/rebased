@@ -113,7 +113,6 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
       assert Relay.publish(activity) == {:error, "Not implemented"}
     end
 
-    @tag capture_log: true
     test "returns error when activity not public" do
       activity = insert(:direct_note_activity)
       assert Relay.publish(activity) == {:error, false}

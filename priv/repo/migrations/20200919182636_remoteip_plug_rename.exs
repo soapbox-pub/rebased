@@ -9,7 +9,9 @@ defmodule Pleroma.Repo.Migrations.RemoteipPlugRename do
 
   def up do
     config =
-      from(c in Pleroma.ConfigDB, where: c.group == ^:pleroma and c.key == ^Pleroma.Plugs.RemoteIp)
+      from(c in Pleroma.ConfigDB,
+        where: c.group == ^:pleroma and c.key == ^Pleroma.Plugs.RemoteIp
+      )
       |> Pleroma.Repo.one()
 
     if config do

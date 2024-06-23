@@ -152,7 +152,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   end
 
   describe "public" do
-    @tag capture_log: true
     test "the public timeline", %{conn: conn} do
       user = insert(:user)
 
@@ -828,7 +827,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   describe "hashtag" do
     setup do: oauth_access(["n/a"])
 
-    @tag capture_log: true
     test "hashtag timeline", %{conn: conn} do
       following = insert(:user)
 

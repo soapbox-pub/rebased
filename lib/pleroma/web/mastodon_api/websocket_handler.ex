@@ -104,7 +104,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   end
 
   def handle_info(:close, state) do
-    {:stop, {:closed, 'connection closed by server'}, state}
+    {:stop, {:closed, ~c"connection closed by server"}, state}
   end
 
   def handle_info(msg, state) do

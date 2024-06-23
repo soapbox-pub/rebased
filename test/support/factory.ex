@@ -249,6 +249,7 @@ defmodule Pleroma.Factory do
       "cc" => [user.follower_address],
       "context" => Pleroma.Web.ActivityPub.Utils.generate_context_id(),
       "closed" => DateTime.utc_now() |> DateTime.add(86_400) |> DateTime.to_iso8601(),
+      "content" => "Which flavor of ice cream do you prefer?",
       "oneOf" => [
         %{
           "type" => "Note",

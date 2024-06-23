@@ -216,7 +216,6 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       refute called(Instances.set_reachable(inbox))
     end
 
-    @tag capture_log: true
     test_with_mock "calls `Instances.set_unreachable` on target inbox on non-2xx HTTP response code",
                    Instances,
                    [:passthrough],
