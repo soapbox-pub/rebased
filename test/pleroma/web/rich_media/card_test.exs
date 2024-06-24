@@ -3,12 +3,14 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.CardTest do
+  use Oban.Testing, repo: Pleroma.Repo
   use Pleroma.DataCase, async: true
 
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.RichMedia.Card
+  alias Pleroma.Workers.RichMediaWorker
 
   import Mox
   import Pleroma.Factory
@@ -36,6 +38,11 @@ defmodule Pleroma.Web.RichMedia.CardTest do
         status: "[test](#{url})",
         content_type: "text/markdown"
       })
+
+    assert_enqueued(
+      worker: RichMediaWorker,
+      args: %{"url" => url, "activity_id" => activity.id}
+    )
 
     ObanHelpers.perform_all()
 
