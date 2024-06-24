@@ -39,6 +39,9 @@ defmodule Pleroma.Web.RichMedia.CardTest do
         content_type: "text/markdown"
       })
 
+    Pleroma.Web.ActivityPub.ActivityPubMock
+    |> expect(:stream_out, fn ^activity -> nil end)
+
     assert_enqueued(
       worker: RichMediaWorker,
       args: %{"url" => url, "activity_id" => activity.id}
