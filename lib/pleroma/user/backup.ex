@@ -216,13 +216,15 @@ defmodule Pleroma.User.Backup do
   end
 
   defp tempdir do
+    rand = :crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false)
+    subdir = "backup-#{rand}"
+
     case Config.get([__MODULE__, :tempdir]) do
       nil ->
-        System.tmp_dir!()
+        Path.join([System.tmp_dir!(), subdir])
 
       path ->
-        rand = :crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false)
-        Path.join([path, rand])
+        Path.join([path, subdir])
     end
   end
 
