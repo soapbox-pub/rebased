@@ -7,20 +7,20 @@
      xmlns:poco="http://portablecontacts.net/spec/1.0">
   <channel>
     <title><%= @user.nickname <> "'s timeline" %></title>
-    <link><%= '#{Routes.user_feed_url(@conn, :feed, @user.nickname)}.rss' %></link>
+    <link><%= "#{Routes.user_feed_url(@conn, :feed, @user.nickname)}.rss" %></link>
     <atom:link href="<%= Routes.user_feed_url(@conn, :feed, @user.nickname) <> ".atom" %>"
                rel="self" type="application/rss+xml" />
     <description><%= escape(@user.bio) %></description>
     <image>
       <url><%= logo(@user) %></url>
       <title><%= @user.nickname <> "'s timeline" %></title>
-      <link><%= '#{Routes.user_feed_url(@conn, :feed, @user.nickname)}.rss' %></link>
+      <link><%= "#{Routes.user_feed_url(@conn, :feed, @user.nickname)}.rss" %></link>
     </image>
 
     <%= render Phoenix.Controller.view_module(@conn), "_author.rss", assigns %>
 
     <%= if last_activity(@activities) do %>
-      <link rel="next"><%= '#{Routes.user_feed_url(@conn, :feed, @user.nickname)}.rss?max_id=#{last_activity(@activities).id}' %></link>
+      <link rel="next"><%= "#{Routes.user_feed_url(@conn, :feed, @user.nickname)}.rss?max_id=#{last_activity(@activities).id}" %></link>
     <% end %>
 
     <%= for activity <- @activities do %>
