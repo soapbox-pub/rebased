@@ -600,13 +600,6 @@ config :pleroma, Oban,
     {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
   ]
 
-config :pleroma, :workers,
-  retries: [
-    federator_incoming: 5,
-    federator_outgoing: 5,
-    search_indexing: 2
-  ]
-
 config :pleroma, Pleroma.Formatter,
   class: false,
   rel: "ugc",

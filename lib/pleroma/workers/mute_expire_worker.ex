@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.MuteExpireWorker do
-  use Pleroma.Workers.WorkerHelper, queue: "background"
+  use Oban.Worker, queue: :background
 
-  @impl Oban.Worker
+  @impl true
   def perform(%Job{args: %{"op" => "unmute_user", "muter_id" => muter_id, "mutee_id" => mutee_id}}) do
     Pleroma.User.unmute(muter_id, mutee_id)
     :ok
@@ -18,6 +18,6 @@ defmodule Pleroma.Workers.MuteExpireWorker do
     :ok
   end
 
-  @impl Oban.Worker
+  @impl true
   def timeout(_job), do: :timer.seconds(5)
 end
