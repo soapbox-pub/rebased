@@ -33,6 +33,7 @@ defmodule Pleroma.Language.Translation do
             {:error, :not_found}
           else
             provider.translate(text, source_language, target_language)
+            |> scrub_html()
           end
 
         store_result(result, cache_key)
@@ -112,4 +113,15 @@ defmodule Pleroma.Language.Translation do
   defp store_result(_, _), do: nil
 
   defp content_hash(text), do: :crypto.hash(:sha256, text) |> Base.encode64()
+
+  defp scrub_html({:ok, %{content: content} = result}) when is_binary(content) do
+    scrubbers = Pleroma.Config.get([:markup, :scrub_policy])
+
+    content
+    |> Pleroma.HTML.filter_tags(scrubbers)
+
+    {:ok, %{result | content: content}}
+  end
+
+  defp scrub_html(result), do: result
 end

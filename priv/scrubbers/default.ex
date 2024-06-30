@@ -79,7 +79,9 @@ defmodule Pleroma.HTML.Scrubber.Default do
   Meta.allow_tag_with_this_attribute_values(:span, "class", [
     "h-card",
     "recipients-inline",
-    "quote-inline"
+    "quote-inline",
+    "invisible",
+    "ellipsis"
   ])
 
   Meta.allow_tag_with_these_attributes(:span, ["lang"])
