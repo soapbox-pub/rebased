@@ -1661,7 +1661,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
        }}
     else
       {:error, _} = e -> e
-      e -> {:error, e}
     end
   end
 

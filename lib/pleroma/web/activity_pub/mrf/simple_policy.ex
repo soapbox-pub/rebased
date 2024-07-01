@@ -222,7 +222,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     else
       {:reject, nil} -> {:reject, "[SimplePolicy]"}
       {:reject, _} = e -> e
-      _ -> {:reject, "[SimplePolicy]"}
     end
   end
 
@@ -238,7 +237,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     else
       {:reject, nil} -> {:reject, "[SimplePolicy]"}
       {:reject, _} = e -> e
-      _ -> {:reject, "[SimplePolicy]"}
     end
   end
 
@@ -251,7 +249,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     else
       {:reject, nil} -> {:reject, "[SimplePolicy]"}
       {:reject, _} = e -> e
-      _ -> {:reject, "[SimplePolicy]"}
     end
   end
 
