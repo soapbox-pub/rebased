@@ -620,7 +620,6 @@ defmodule Pleroma.Web.CommonAPI do
       set_visibility(activity, opts)
     else
       nil -> {:error, :not_found}
-      {:error, reason} -> {:error, reason}
     end
   end
 
