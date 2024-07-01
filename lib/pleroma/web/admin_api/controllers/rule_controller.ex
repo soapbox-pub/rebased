@@ -24,7 +24,7 @@ defmodule Pleroma.Web.AdminAPI.RuleController do
 
   plug(OAuthScopesPlug, %{scopes: ["admin:read"]} when action == :index)
 
-  action_fallback(AdminAPI.FallbackController)
+  action_fallback(Pleroma.Web.AdminAPI.FallbackController)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.RuleOperation
 

@@ -204,7 +204,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
       if function_exported?(policy, :config_description, 0) do
         description =
           @default_description
-          |> Map.merge(policy.config_description)
+          |> Map.merge(policy.config_description())
           |> Map.put(:group, :pleroma)
           |> Map.put(:tab, :mrf)
           |> Map.put(:type, :group)

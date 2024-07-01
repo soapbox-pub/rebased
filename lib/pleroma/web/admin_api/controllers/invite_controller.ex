@@ -46,7 +46,6 @@ defmodule Pleroma.Web.AdminAPI.InviteController do
       render(conn, "show.json", invite: updated_invite)
     else
       nil -> {:error, :not_found}
-      error -> error
     end
   end
 
