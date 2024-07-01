@@ -78,12 +78,12 @@ build-1.13.4-otp-25:
   script:
   - mix compile --force
 
-build-1.16.3-otp-26:
+build-1.17.1-otp-26:
   extends:
   - .build_changes_policy
   - .using-ci-base
   stage: build
-  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.16.3-otp-26
+  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.17.1-otp-26
   script:
   - mix compile --force
 
@@ -141,12 +141,12 @@ unit-testing-1.13.4-otp-25:
         coverage_format: cobertura
         path: coverage.xml
 
-unit-testing-1.16.3-otp-26:
+unit-testing-1.17.1-otp-26:
   extends:
   - .build_changes_policy
   - .using-ci-base
   stage: test
-  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.16.3-otp-26
+  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.17.1-otp-26
   cache: *testing_cache_policy
   services: *testing_services
   script: *testing_script
