@@ -80,7 +80,8 @@ defmodule Pleroma.Mixfile do
           :comeonin,
           :fast_sanitize,
           :os_mon,
-          :ssl
+          :ssl,
+          :eldap
         ] ++ logger_application(),
       included_applications: [:ex_syslogger]
     ]
