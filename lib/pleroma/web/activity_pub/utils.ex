@@ -939,26 +939,14 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Repo.all()
   end
 
+  @spec maybe_handle_group_posts(Activity.t()) :: :ok
+  @doc "Automatically repeats posts for local group actor recipients"
   def maybe_handle_group_posts(activity) do
     poster = User.get_cached_by_ap_id(activity.actor)
 
-    mentions =
-      activity.data["to"]
-      |> Enum.filter(&(&1 != activity.actor))
-
-    mentioned_local_groups =
-      User.get_all_by_ap_id(mentions)
-      |> Enum.filter(fn user ->
-        user.actor_type == "Group" and
-          user.local and
-          not User.blocks?(user, poster)
-      end)
-
-    mentioned_local_groups
-    |> Enum.each(fn group ->
-      Pleroma.Web.CommonAPI.repeat(activity.id, group)
-    end)
-
-    :ok
+    User.get_recipients_from_activity(activity)
+    |> Enum.filter(&match?("Group", &1.actor_type))
+    |> Enum.reject(&User.blocks?(&1, poster))
+    |> Enum.each(&Pleroma.Web.CommonAPI.repeat(activity.id, &1))
   end
 end
