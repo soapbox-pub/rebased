@@ -9,29 +9,31 @@ defmodule Pleroma.Upload.Filter.Exiftool.StripLocationTest do
   test "apply exiftool filter" do
     assert Pleroma.Utils.command_available?("exiftool")
 
-    File.cp!(
-      "test/fixtures/DSCN0010.jpg",
-      "test/fixtures/DSCN0010_tmp.jpg"
-    )
+    ~w{jpg png}
+    |> Enum.map(fn type ->
+      File.cp!(
+        "test/fixtures/DSCN0010.#{type}",
+        "test/fixtures/DSCN0010_tmp.#{type}"
+      )
 
-    upload = %Pleroma.Upload{
-      name: "image_with_GPS_data.jpg",
-      content_type: "image/jpeg",
-      path: Path.absname("test/fixtures/DSCN0010.jpg"),
-      tempfile: Path.absname("test/fixtures/DSCN0010_tmp.jpg")
-    }
+      upload = %Pleroma.Upload{
+        name: "image_with_GPS_data.#{type}",
+        content_type: "image/jpeg",
+        path: Path.absname("test/fixtures/DSCN0010.#{type}"),
+        tempfile: Path.absname("test/fixtures/DSCN0010_tmp.#{type}")
+      }
 
-    assert Filter.Exiftool.StripLocation.filter(upload) == {:ok, :filtered}
+      assert Filter.Exiftool.StripLocation.filter(upload) == {:ok, :filtered}
 
-    {exif_original, 0} = System.cmd("exiftool", ["test/fixtures/DSCN0010.jpg"])
-    {exif_filtered, 0} = System.cmd("exiftool", ["test/fixtures/DSCN0010_tmp.jpg"])
+      {exif_original, 0} = System.cmd("exiftool", ["test/fixtures/DSCN0010.#{type}"])
+      {exif_filtered, 0} = System.cmd("exiftool", ["test/fixtures/DSCN0010_tmp.#{type}"])
 
-    refute exif_original == exif_filtered
-    assert String.match?(exif_original, ~r/GPS/)
-    refute String.match?(exif_filtered, ~r/GPS/)
+      assert String.match?(exif_original, ~r/GPS/)
+      refute String.match?(exif_filtered, ~r/GPS/)
+    end)
   end
 
-  test "verify webp, heic, svg  files are skipped" do
+  test "verify webp, heic, svg files are skipped" do
     uploads =
       ~w{webp heic svg svg+xml}
       |> Enum.map(fn type ->

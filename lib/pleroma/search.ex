@@ -16,6 +16,6 @@ defmodule Pleroma.Search do
 
   def healthcheck_endpoints do
     search_module = Pleroma.Config.get([Pleroma.Search, :module])
-    search_module.healthcheck_endpoints
+    search_module.healthcheck_endpoints()
   end
 end

@@ -83,7 +83,7 @@ defmodule Pleroma.Web.RichMedia.Card do
           card
 
         nil ->
-          activity_id = Keyword.get(opts, :activity, nil)
+          activity_id = Keyword.get(opts, :activity_id, nil)
 
           RichMediaWorker.new(%{"op" => "backfill", "url" => url, "activity_id" => activity_id})
           |> Oban.insert()

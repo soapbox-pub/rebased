@@ -1,10 +1,13 @@
 #!/bin/sh
 # PROVIDE: pleroma
-# REQUIRE: DAEMON pgsql
+# REQUIRE: DAEMON pgsql nginx
 
 if [ -f /etc/rc.subr ]; then
 	. /etc/rc.subr
 fi
+
+pleroma_home="/home/pleroma"
+pleroma_user="pleroma"
 
 name="pleroma"
 rcvar=${name}
@@ -19,10 +22,10 @@ pleroma_env="HOME=${pleroma_home} MIX_ENV=prod"
 check_pidfile()
 {
 	pid=$(pgrep -U "${pleroma_user}" /bin/beam.smp$)
-	echo -n "${pid}"
+	printf '%s' "${pid}"
 }
 
-if [ -f /etc/rc.subr -a -d /etc/rc.d -a -f /etc/rc.d/DAEMON ]; then
+if [ -f /etc/rc.subr ] && [ -d /etc/rc.d ] && [ -f /etc/rc.d/DAEMON ]; then
 	# newer NetBSD
 	load_rc_config ${name}
 	run_rc_command "$1"
@@ -39,7 +42,7 @@ else
 		stop)
 			echo "Stopping ${name}."
 			check_pidfile
-			! [ -n ${pid} ] && kill ${pid}
+			! [ -n "${pid}" ] && kill "${pid}"
 			;;
 
 		restart)

@@ -220,9 +220,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          {:ok, object} <- check_object(object) do
       {:ok, object}
     else
-      {:reject, nil} -> {:reject, "[SimplePolicy]"}
       {:reject, _} = e -> e
-      _ -> {:reject, "[SimplePolicy]"}
     end
   end
 
@@ -236,9 +234,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          {:ok, object} <- check_banner_removal(actor_info, object) do
       {:ok, object}
     else
-      {:reject, nil} -> {:reject, "[SimplePolicy]"}
       {:reject, _} = e -> e
-      _ -> {:reject, "[SimplePolicy]"}
     end
   end
 
@@ -249,9 +245,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          {:ok, object} <- check_reject(uri, object) do
       {:ok, object}
     else
-      {:reject, nil} -> {:reject, "[SimplePolicy]"}
       {:reject, _} = e -> e
-      _ -> {:reject, "[SimplePolicy]"}
     end
   end
 
