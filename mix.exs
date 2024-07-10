@@ -82,7 +82,8 @@ defmodule Pleroma.Mixfile do
           :comeonin,
           :fast_sanitize,
           :os_mon,
-          :ssl
+          :ssl,
+          :eldap
         ] ++ logger_application(),
       included_applications: [:ex_syslogger]
     ]
@@ -155,7 +156,7 @@ defmodule Pleroma.Mixfile do
       {:cachex, "~> 3.2"},
       {:csv, "~> 2.4"},
       {:poison, "~> 3.0", override: true},
-      {:tesla, "~> 1.8.0"},
+      {:tesla, "~> 1.11"},
       {:castore, "~> 0.1"},
       {:cowlib, "~> 2.9", override: true},
       {:gun, "~> 2.0.0-rc.1", override: true},
@@ -192,8 +193,8 @@ defmodule Pleroma.Mixfile do
        git: "https://gitlab.com/soapbox-pub/elixir-libraries/remote_ip.git",
        ref: "b647d0deecaa3acb140854fe4bda5b7e1dc6d1c8"},
       {:captcha,
-       git: "https://gitlab.com/soapbox-pub/elixir-libraries/elixir-captcha.git",
-       ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
+       ref: "6630c42aaaab124e697b4e513190c89d8b64e410"},
       {:restarter, path: "./restarter"},
       {:majic, "~> 1.0"},
       {:open_api_spex, "~> 3.16"},

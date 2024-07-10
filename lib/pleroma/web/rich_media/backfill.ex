@@ -11,6 +11,10 @@ defmodule Pleroma.Web.RichMedia.Backfill do
   require Logger
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+  @stream_out_impl Pleroma.Config.get(
+                     [__MODULE__, :stream_out],
+                     Pleroma.Web.ActivityPub.ActivityPub
+                   )
 
   @spec run(map()) ::
           :ok | {:error, {:invalid_metadata, any()} | :body_too_large | {:content, any()} | any()}
@@ -64,7 +68,7 @@ defmodule Pleroma.Web.RichMedia.Backfill do
   defp stream_update(%{"activity_id" => activity_id}) do
     Pleroma.Activity.get_by_id(activity_id)
     |> Pleroma.Activity.normalize()
-    |> Pleroma.Web.ActivityPub.ActivityPub.stream_out()
+    |> @stream_out_impl.stream_out()
   end
 
   defp warm_cache(key, val), do: @cachex.put(:rich_media_cache, key, val)

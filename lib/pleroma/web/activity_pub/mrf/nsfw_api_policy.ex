@@ -137,7 +137,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
       {:ok, object}
     else
       {:nsfw, _data} -> handle_nsfw(object)
-      _ -> {:reject, "NSFW: Attachment rejected"}
     end
   end
 

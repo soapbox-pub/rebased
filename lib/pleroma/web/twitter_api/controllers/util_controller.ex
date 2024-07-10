@@ -207,9 +207,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
           {:error, changeset} ->
             {_, {error, _}} = Enum.at(changeset.errors, 0)
             json(conn, %{error: "New password #{error}."})
-
-          _ ->
-            json(conn, %{error: "Unable to change password."})
         end
 
       {:error, msg} ->

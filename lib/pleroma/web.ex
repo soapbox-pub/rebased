@@ -163,7 +163,7 @@ defmodule Pleroma.Web do
       """
       def safe_render_many(collection, view, template, assigns \\ %{}) do
         Enum.map(collection, fn resource ->
-          as = Map.get(assigns, :as) || view.__resource__
+          as = Map.get(assigns, :as) || view.__resource__()
           assigns = Map.put(assigns, as, resource)
           safe_render(view, template, assigns)
         end)

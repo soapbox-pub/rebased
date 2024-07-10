@@ -690,7 +690,6 @@ defmodule Pleroma.Web.CommonAPI do
       Utils.update_report_state(activity, state)
     else
       nil -> {:error, :not_found}
-      _ -> {:error, dgettext("errors", "Could not update state")}
     end
   end
 
@@ -716,7 +715,6 @@ defmodule Pleroma.Web.CommonAPI do
       set_visibility(activity, opts)
     else
       nil -> {:error, :not_found}
-      {:error, reason} -> {:error, reason}
     end
   end
 
