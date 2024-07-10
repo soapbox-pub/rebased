@@ -91,7 +91,8 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
         end
 
       error ->
-        error
+        Logger.error("Could not bind LDAP user #{name}: #{inspect(error)}")
+        {:error, {:ldap_bind_error, error}}
     end
   end
 
@@ -111,7 +112,8 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
         try_register(name, attributes)
 
       error ->
-        error
+        Logger.error("Couldn't register user because LDAP search failed: #{inspect(error)}")
+        {:error, {:ldap_search_error, error}}
     end
   end
 
