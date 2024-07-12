@@ -152,7 +152,6 @@ defmodule Pleroma.Mixfile do
       {:html_entities, "~> 0.5", override: true},
       {:calendar, "~> 1.0"},
       {:cachex, "~> 3.2"},
-      {:poison, "~> 3.0", override: true},
       {:tesla, "~> 1.11"},
       {:castore, "~> 0.1"},
       {:cowlib, "~> 2.9", override: true},
@@ -205,6 +204,7 @@ defmodule Pleroma.Mixfile do
 
       ## dev & test
       {:phoenix_live_reload, "~> 1.3.3", only: :dev},
+      {:poison, "~> 3.0", only: :test},
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
       {:ex_machina, "~> 2.4", only: :test},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
