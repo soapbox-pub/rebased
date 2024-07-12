@@ -13,6 +13,9 @@ defmodule Pleroma.Workers.RemoteFetcherWorker do
       {:ok, _object} ->
         :ok
 
+      {:rejected, reason} ->
+        {:discard, reason}
+
       {:error, :forbidden} ->
         {:discard, :forbidden}
 
