@@ -123,9 +123,9 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         Logger.error("Publisher failed to inbox #{inbox} with status #{code}")
 
         case response do
-          %{status: 403} -> {:discard, :forbidden}
-          %{status: 404} -> {:discard, :not_found}
-          %{status: 410} -> {:discard, :not_found}
+          %{status: 403} -> {:cancel, :forbidden}
+          %{status: 404} -> {:cancel, :not_found}
+          %{status: 410} -> {:cancel, :not_found}
           _ -> {:error, e}
         end
 
