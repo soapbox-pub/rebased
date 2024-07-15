@@ -46,13 +46,13 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
 
   defp find_activity(id) do
     with nil <- Activity.get_by_id_with_object(id) do
-      {:error, :activity_not_found}
+      {:cancel, :activity_not_found}
     end
   end
 
   defp find_user(ap_id) do
     with nil <- Pleroma.User.get_by_ap_id(ap_id) do
-      {:error, :user_not_found}
+      {:cancel, :user_not_found}
     end
   end
 
