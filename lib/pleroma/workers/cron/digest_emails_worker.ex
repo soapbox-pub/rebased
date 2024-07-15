@@ -58,4 +58,7 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorker do
 
     User.touch_last_digest_emailed_at(user)
   end
+
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
 end

@@ -16,4 +16,7 @@ defmodule Pleroma.Workers.RichMediaWorker do
   def perform(%Job{args: %{"op" => "backfill", "url" => _url} = args}) do
     Backfill.run(args)
   end
+
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
 end
