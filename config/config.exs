@@ -589,7 +589,7 @@ config :pleroma, Oban,
     federator_outgoing: 5,
     web_push: 50,
     transmogrifier: 20,
-    background: 5,
+    background: 20,
     search_indexing: [limit: 10, paused: true],
     slow: 1
   ],
