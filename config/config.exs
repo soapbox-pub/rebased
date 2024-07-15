@@ -591,7 +591,7 @@ config :pleroma, Oban,
     transmogrifier: 20,
     background: 20,
     search_indexing: [limit: 10, paused: true],
-    slow: 1
+    slow: 5
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
