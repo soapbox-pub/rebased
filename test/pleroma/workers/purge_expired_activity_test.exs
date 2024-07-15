@@ -42,7 +42,7 @@ defmodule Pleroma.Workers.PurgeExpiredActivityTest do
     user = Pleroma.User.get_by_ap_id(activity.actor)
     Pleroma.Repo.delete(user)
 
-    assert {:error, :user_not_found} =
+    assert {:cancel, :user_not_found} =
              perform_job(Pleroma.Workers.PurgeExpiredActivity, %{activity_id: activity.id})
   end
 
@@ -53,7 +53,7 @@ defmodule Pleroma.Workers.PurgeExpiredActivityTest do
                expires_at: DateTime.add(DateTime.utc_now(), 3601)
              })
 
-    assert {:error, :activity_not_found} =
+    assert {:cancel, :activity_not_found} =
              perform_job(Pleroma.Workers.PurgeExpiredActivity, %{activity_id: "some_if"})
   end
 end
