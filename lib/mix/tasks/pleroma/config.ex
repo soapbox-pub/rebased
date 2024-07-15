@@ -205,6 +205,35 @@ defmodule Mix.Tasks.Pleroma.Config do
     end
   end
 
+  # Removes any policies that are not a real module
+  # as they will prevent the server from starting
+  def run(["fix_mrf_policies"]) do
+    check_configdb(fn ->
+      start_pleroma()
+
+      group = :pleroma
+      key = :mrf
+
+      %{value: value} =
+        group
+        |> ConfigDB.get_by_group_and_key(key)
+
+      policies =
+        Keyword.get(value, :policies, [])
+        |> Enum.filter(&is_atom(&1))
+        |> Enum.filter(fn mrf ->
+          case Code.ensure_compiled(mrf) do
+            {:module, _} -> true
+            {:error, _} -> false
+          end
+        end)
+
+      value = Keyword.put(value, :policies, policies)
+
+      ConfigDB.update_or_create(%{group: group, key: key, value: value})
+    end)
+  end
+
   @spec migrate_to_db(Path.t() | nil) :: any()
   def migrate_to_db(file_path \\ nil) do
     with :ok <- Pleroma.Config.DeprecationWarnings.warn() do
