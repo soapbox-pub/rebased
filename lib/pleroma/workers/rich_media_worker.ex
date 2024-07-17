@@ -14,7 +14,17 @@ defmodule Pleroma.Workers.RichMediaWorker do
   end
 
   def perform(%Job{args: %{"op" => "backfill", "url" => _url} = args}) do
-    Backfill.run(args)
+    case Backfill.run(args) do
+      :ok ->
+        :ok
+
+      {:error, type}
+      when type in [:invalid_metadata, :body_too_large, :content_type, :validate] ->
+        :cancel
+
+      error ->
+        {:error, error}
+    end
   end
 
   @impl Oban.Worker
