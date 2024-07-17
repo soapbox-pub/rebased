@@ -22,6 +22,10 @@ defmodule Pleroma.Workers.RichMediaWorker do
       when type in [:invalid_metadata, :body_too_large, :content_type, :validate] ->
         {:cancel, type}
 
+      {:error, type}
+      when type in [:get, :head] ->
+        {:error, type}
+
       error ->
         {:error, error}
     end
