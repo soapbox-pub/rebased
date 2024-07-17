@@ -59,6 +59,7 @@ defmodule Pleroma.Object.Fetcher do
   end
 
   # Note: will create a Create activity, which we need internally at the moment.
+  @spec fetch_object_from_id(String.t(), list()) :: {:ok, Object.t()} | {:error | :reject, any()}
   def fetch_object_from_id(id, options \\ []) do
     with {_, nil} <- {:fetch_object, Object.get_cached_by_ap_id(id)},
          {_, true} <- {:allowed_depth, Federator.allowed_thread_distance?(options[:depth])},
