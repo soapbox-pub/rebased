@@ -530,6 +530,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         else
           _ -> e
         end
+      e -> {:error, e}
     end
   end
 
