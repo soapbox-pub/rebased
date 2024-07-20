@@ -1,1 +1,1 @@
-Deleting a post will cancel queued publishing jobs for the deleted activity.
+Deleting or Unfavoriting a post will cancel undelivered publishing jobs for the original activity.

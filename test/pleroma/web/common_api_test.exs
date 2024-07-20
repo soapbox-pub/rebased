@@ -1993,5 +1993,49 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert length(cancelled_jobs) == 2
     end
+
+    test "when unfavoriting posts", %{
+      local_user: local_user,
+      remote_one: remote_user
+    } do
+      {:ok, activity} =
+        CommonAPI.post(remote_user, %{status: "I like turtles!"})
+
+      {:ok, %{data: %{"id" => ap_id}} = _favorite} =
+        CommonAPI.favorite(local_user, activity.id)
+
+      # Generate the publish_one jobs
+      ObanHelpers.perform_all()
+
+      publish_one_jobs =
+        all_enqueued()
+        |> Enum.filter(fn job ->
+          match?(
+            %{
+              state: "available",
+              queue: "federator_outgoing",
+              worker: "Pleroma.Workers.PublisherWorker",
+              args: %{"op" => "publish_one", "params" => %{"id" => ^ap_id}}
+            },
+            job
+          )
+        end)
+
+      assert length(publish_one_jobs) == 1
+
+      # The unfavorite should have triggered cancelling the publish_one jobs
+      assert {:ok, _unfavorite} = CommonAPI.unfavorite(activity.id, local_user)
+
+      # all_enqueued/1 will not return cancelled jobs
+      cancelled_jobs =
+        Oban.Job
+        |> where([j], j.worker == "Pleroma.Workers.PublisherWorker")
+        |> where([j], j.state == "cancelled")
+        |> where([j], j.args["op"] == "publish_one")
+        |> where([j], j.args["params"]["id"] == ^ap_id)
+        |> Pleroma.Repo.all()
+
+      assert length(cancelled_jobs) == 1
+    end
   end
 end

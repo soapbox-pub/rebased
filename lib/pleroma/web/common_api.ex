@@ -277,6 +277,7 @@ defmodule Pleroma.Web.CommonAPI do
            {:find_activity, Activity.get_by_id(id)},
          %Object{} = note <- Object.normalize(activity, fetch: false),
          %Activity{} = like <- Utils.get_existing_like(user.ap_id, note),
+         {_, {:ok, _}} <- {:cancel_jobs, maybe_cancel_jobs(like)},
          {:ok, undo, _} <- Builder.undo(user, like),
          {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
       {:ok, activity}
