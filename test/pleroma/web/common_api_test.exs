@@ -2085,5 +2085,53 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert length(cancelled_jobs) == 2
     end
+
+    test "when unreacting to posts", %{
+      local_user: local_user,
+      remote_one: remote_one,
+      remote_two: remote_two
+    } do
+      {:ok, _, _} = Pleroma.User.follow(remote_one, local_user)
+      {:ok, _, _} = Pleroma.User.follow(remote_two, local_user)
+
+      {:ok, activity} =
+        CommonAPI.post(remote_one, %{status: "Gang gang!!!!"})
+
+      {:ok, %{data: %{"id" => ap_id}} = _react} =
+        CommonAPI.react_with_emoji(activity.id, local_user, "👍")
+
+      # Generate the publish_one jobs
+      ObanHelpers.perform_all()
+
+      publish_one_jobs =
+        all_enqueued()
+        |> Enum.filter(fn job ->
+          match?(
+            %{
+              state: "available",
+              queue: "federator_outgoing",
+              worker: "Pleroma.Workers.PublisherWorker",
+              args: %{"op" => "publish_one", "params" => %{"id" => ^ap_id}}
+            },
+            job
+          )
+        end)
+
+      assert length(publish_one_jobs) == 2
+
+      # The unreact should have triggered cancelling the publish_one jobs
+      assert {:ok, _unreact} = CommonAPI.unreact_with_emoji(activity.id, local_user, "👍")
+
+      # all_enqueued/1 will not return cancelled jobs
+      cancelled_jobs =
+        Oban.Job
+        |> where([j], j.worker == "Pleroma.Workers.PublisherWorker")
+        |> where([j], j.state == "cancelled")
+        |> where([j], j.args["op"] == "publish_one")
+        |> where([j], j.args["params"]["id"] == ^ap_id)
+        |> Pleroma.Repo.all()
+
+      assert length(cancelled_jobs) == 2
+    end
   end
 end

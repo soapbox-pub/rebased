@@ -302,6 +302,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unreact_with_emoji(id, user, emoji) do
     with %Activity{} = reaction_activity <- Utils.get_latest_reaction(id, user, emoji),
+         {_, {:ok, _}} <- {:cancel_jobs, maybe_cancel_jobs(reaction_activity)},
          {:ok, undo, _} <- Builder.undo(user, reaction_activity),
          {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
       {:ok, activity}
