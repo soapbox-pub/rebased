@@ -19,6 +19,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI.ActivityDraft
 
+  import Ecto.Query, only: [where: 3]
   import Pleroma.Web.Gettext
   import Pleroma.Web.CommonAPI.Utils
 
@@ -156,6 +157,7 @@ defmodule Pleroma.Web.CommonAPI do
   def delete(activity_id, user) do
     with {_, %Activity{data: %{"object" => _, "type" => "Create"}} = activity} <-
            {:find_activity, Activity.get_by_id(activity_id, filter: [])},
+         {_, {:ok, _}} <- {:cancel_jobs, maybe_cancel_jobs(activity)},
          {_, %Object{} = object, _} <-
            {:find_object, Object.normalize(activity, fetch: false), activity},
          true <- User.privileged?(user, :messages_delete) || user.ap_id == object.data["actor"],
@@ -671,4 +673,14 @@ defmodule Pleroma.Web.CommonAPI do
         nil
     end
   end
+
+  defp maybe_cancel_jobs(%Activity{data: %{"id" => ap_id}}) do
+    Oban.Job
+    |> where([j], j.worker == "Pleroma.Workers.PublisherWorker")
+    |> where([j], j.args["op"] == "publish_one")
+    |> where([j], j.args["params"]["id"] == ^ap_id)
+    |> Oban.cancel_all_jobs()
+  end
+
+  defp maybe_cancel_jobs(_), do: {:ok, 0}
 end
