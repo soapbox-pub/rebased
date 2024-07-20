@@ -1923,12 +1923,12 @@ defmodule Pleroma.Web.CommonAPITest do
   end
 
   describe "Oban jobs are cancelled" do
-    setup do: clear_config([:instance, :federating], true)
+    setup do
+      clear_config([:instance, :federating], true)
 
-    test "when deleting posts" do
-      user = insert(:user)
+      local_user = insert(:user)
 
-      follower_one =
+      remote_one =
         insert(:user, %{
           local: false,
           nickname: "nick1@domain.com",
@@ -1937,7 +1937,7 @@ defmodule Pleroma.Web.CommonAPITest do
           shared_inbox: "https://domain.com/inbox"
         })
 
-      follower_two =
+      remote_two =
         insert(:user, %{
           local: false,
           nickname: "nick2@example.com",
@@ -1946,11 +1946,19 @@ defmodule Pleroma.Web.CommonAPITest do
           shared_inbox: "https://example.com/inbox"
         })
 
-      {:ok, _, _} = Pleroma.User.follow(follower_one, user)
-      {:ok, _, _} = Pleroma.User.follow(follower_two, user)
+      %{local_user: local_user, remote_one: remote_one, remote_two: remote_two}
+    end
+
+    test "when deleting posts", %{
+      local_user: local_user,
+      remote_one: remote_one,
+      remote_two: remote_two
+    } do
+      {:ok, _, _} = Pleroma.User.follow(remote_one, local_user)
+      {:ok, _, _} = Pleroma.User.follow(remote_two, local_user)
 
       {:ok, %{data: %{"id" => ap_id}} = activity} =
-        CommonAPI.post(user, %{status: "Happy Friday everyone!"})
+        CommonAPI.post(local_user, %{status: "Happy Friday everyone!"})
 
       # Generate the publish_one jobs
       ObanHelpers.perform_all()
@@ -1972,7 +1980,7 @@ defmodule Pleroma.Web.CommonAPITest do
       assert length(publish_one_jobs) == 2
 
       # The delete should have triggered cancelling the publish_one jobs
-      assert {:ok, _delete} = CommonAPI.delete(activity.id, user)
+      assert {:ok, _delete} = CommonAPI.delete(activity.id, local_user)
 
       # all_enqueued/1 will not return cancelled jobs
       cancelled_jobs =
