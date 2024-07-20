@@ -225,6 +225,7 @@ defmodule Pleroma.Web.CommonAPI do
            {:find_activity, Activity.get_by_id(id)},
          %Object{} = note <- Object.normalize(activity, fetch: false),
          %Activity{} = announce <- Utils.get_existing_announce(user.ap_id, note),
+         {_, {:ok, _}} <- {:cancel_jobs, maybe_cancel_jobs(announce)},
          {:ok, undo, _} <- Builder.undo(user, announce),
          {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
       {:ok, activity}
