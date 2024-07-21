@@ -25,10 +25,13 @@ defmodule Pleroma.Web.Metadata.Utils do
     |> scrub_html_and_truncate_object_field(object)
   end
 
-  def scrub_html_and_truncate(%{data: %{"content" => content}} = object) do
+  def scrub_html_and_truncate(%{data: %{"content" => content}} = object)
+      when is_binary(content) and content != "" do
     content
     |> scrub_html_and_truncate_object_field(object)
   end
+
+  def scrub_html_and_truncate(%{}), do: ""
 
   def scrub_html_and_truncate(content, max_length \\ 200, omission \\ "...")
       when is_binary(content) do
