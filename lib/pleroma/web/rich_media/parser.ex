@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parser do
+  alias Pleroma.Web.RichMedia.Helpers
   require Logger
 
   @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
@@ -11,24 +12,26 @@ defmodule Pleroma.Web.RichMedia.Parser do
     Pleroma.Config.get([:rich_media, :parsers])
   end
 
-  def parse(nil), do: nil
+  @type parse_errors :: {:error, :rich_media_disabled | :validate}
 
-  @spec parse(String.t()) :: {:ok, map()} | {:error, any()}
-  def parse(url) do
+  @spec parse(String.t()) ::
+          {:ok, map()} | parse_errors() | Helpers.get_errors()
+  def parse(url) when is_binary(url) do
     with {_, true} <- {:config, @config_impl.get([:rich_media, :enabled])},
-         :ok <- validate_page_url(url),
-         {:ok, data} <- parse_url(url) do
+         {_, :ok} <- {:validate, validate_page_url(url)},
+         {_, {:ok, data}} <- {:parse, parse_url(url)} do
       data = Map.put(data, "url", url)
       {:ok, data}
     else
       {:config, _} -> {:error, :rich_media_disabled}
-      e -> e
+      {:validate, _} -> {:error, :validate}
+      {:parse, error} -> error
     end
   end
 
   defp parse_url(url) do
-    with {:ok, %Tesla.Env{body: html}} <- Pleroma.Web.RichMedia.Helpers.rich_media_get(url),
-         {:ok, html} <- Floki.parse_document(html) do
+    with {:ok, body} <- Helpers.rich_media_get(url),
+         {:ok, html} <- Floki.parse_document(body) do
       html
       |> maybe_parse()
       |> clean_parsed_data()
@@ -50,8 +53,8 @@ defmodule Pleroma.Web.RichMedia.Parser do
     {:ok, data}
   end
 
-  defp check_parsed_data(data) do
-    {:error, {:invalid_metadata, data}}
+  defp check_parsed_data(_data) do
+    {:error, :invalid_metadata}
   end
 
   defp clean_parsed_data(data) do

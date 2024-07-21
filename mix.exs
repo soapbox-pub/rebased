@@ -204,6 +204,7 @@ defmodule Pleroma.Mixfile do
       {:exile, "~> 0.10.0"},
       {:bandit, "~> 1.5.2"},
       {:websock_adapter, "~> 0.5.6"},
+      {:oban_live_dashboard, "~> 0.1.1"},
       {:icalendar, "~> 1.1"},
       {:geospatial, "~> 0.3.0"},
 

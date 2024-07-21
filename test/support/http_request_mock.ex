@@ -1782,7 +1782,7 @@ defmodule HttpRequestMock do
   ]
 
   def head(url, _query, _body, _headers) when url in @rich_media_mocks do
-    {:ok, %Tesla.Env{status: 404, body: ""}}
+    {:ok, %Tesla.Env{status: 200, body: ""}}
   end
 
   def head("https://example.com/pdf-file", _, _, _) do

@@ -60,4 +60,7 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorker do
 
     :ok
   end
+
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
 end

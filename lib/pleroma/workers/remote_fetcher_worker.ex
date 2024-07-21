@@ -13,7 +13,7 @@ defmodule Pleroma.Workers.RemoteFetcherWorker do
       {:ok, _object} ->
         :ok
 
-      {:rejected, reason} ->
+      {:reject, reason} ->
         {:cancel, reason}
 
       {:error, :forbidden} ->
@@ -27,9 +27,6 @@ defmodule Pleroma.Workers.RemoteFetcherWorker do
 
       {:error, _} = e ->
         e
-
-      e ->
-        {:error, e}
     end
   end
 

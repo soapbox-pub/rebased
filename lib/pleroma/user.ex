@@ -40,6 +40,7 @@ defmodule Pleroma.User do
   alias Pleroma.Web.RelMe
   alias Pleroma.Webhook.Notify
   alias Pleroma.Workers.BackgroundWorker
+  alias Pleroma.Workers.DeleteWorker
   alias Pleroma.Workers.UserRefreshWorker
 
   require Logger
@@ -2032,7 +2033,7 @@ defmodule Pleroma.User do
   def delete(%User{} = user) do
     # Purge the user immediately
     purge(user)
-    BackgroundWorker.enqueue("delete_user", %{"user_id" => user.id})
+    DeleteWorker.enqueue("delete_user", %{"user_id" => user.id})
   end
 
   # *Actually* delete the user from the DB

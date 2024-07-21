@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.BackgroundWorker do
-  alias Pleroma.Instances.Instance
   alias Pleroma.User
 
   use Pleroma.Workers.WorkerHelper, queue: "background"
@@ -13,11 +12,6 @@ defmodule Pleroma.Workers.BackgroundWorker do
   def perform(%Job{args: %{"op" => "user_activation", "user_id" => user_id, "status" => status}}) do
     user = User.get_cached_by_id(user_id)
     User.perform(:set_activation_async, user, status)
-  end
-
-  def perform(%Job{args: %{"op" => "delete_user", "user_id" => user_id}}) do
-    user = User.get_cached_by_id(user_id)
-    User.perform(:delete, user)
   end
 
   def perform(%Job{args: %{"op" => "force_password_reset", "user_id" => user_id}}) do
@@ -45,10 +39,6 @@ defmodule Pleroma.Workers.BackgroundWorker do
     User.perform(:verify_fields_links, user)
   end
 
-  def perform(%Job{args: %{"op" => "delete_instance", "host" => host}}) do
-    Instance.perform(:delete_instance, host)
-  end
-
   @impl Oban.Worker
-  def timeout(_job), do: :timer.seconds(900)
+  def timeout(_job), do: :timer.seconds(5)
 end

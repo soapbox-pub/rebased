@@ -13,6 +13,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Rule
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -22,7 +23,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Workers.PollWorker
 
-  import Ecto.Query, only: [from: 2]
+  import Ecto.Query, only: [from: 2, where: 3]
   import Mock
   import Mox
   import Pleroma.Factory
@@ -1966,6 +1967,219 @@ defmodule Pleroma.Web.CommonAPITest do
 
       announces = get_announces_of_object(post.object)
       assert [] = announces
+    end
+  end
+
+  describe "Oban jobs are cancelled" do
+    setup do
+      clear_config([:instance, :federating], true)
+
+      local_user = insert(:user)
+
+      remote_one =
+        insert(:user, %{
+          local: false,
+          nickname: "nick1@domain.com",
+          ap_id: "https://domain.com/users/nick1",
+          inbox: "https://domain.com/users/nick1/inbox",
+          shared_inbox: "https://domain.com/inbox"
+        })
+
+      remote_two =
+        insert(:user, %{
+          local: false,
+          nickname: "nick2@example.com",
+          ap_id: "https://example.com/users/nick2",
+          inbox: "https://example.com/users/nick2/inbox",
+          shared_inbox: "https://example.com/inbox"
+        })
+
+      %{local_user: local_user, remote_one: remote_one, remote_two: remote_two}
+    end
+
+    test "when deleting posts", %{
+      local_user: local_user,
+      remote_one: remote_one,
+      remote_two: remote_two
+    } do
+      {:ok, _, _} = Pleroma.User.follow(remote_one, local_user)
+      {:ok, _, _} = Pleroma.User.follow(remote_two, local_user)
+
+      {:ok, %{data: %{"id" => ap_id}} = activity} =
+        CommonAPI.post(local_user, %{status: "Happy Friday everyone!"})
+
+      # Generate the publish_one jobs
+      ObanHelpers.perform_all()
+
+      publish_one_jobs =
+        all_enqueued()
+        |> Enum.filter(fn job ->
+          match?(
+            %{
+              state: "available",
+              queue: "federator_outgoing",
+              worker: "Pleroma.Workers.PublisherWorker",
+              args: %{"op" => "publish_one", "params" => %{"id" => ^ap_id}}
+            },
+            job
+          )
+        end)
+
+      assert length(publish_one_jobs) == 2
+
+      # The delete should have triggered cancelling the publish_one jobs
+      assert {:ok, _delete} = CommonAPI.delete(activity.id, local_user)
+
+      # all_enqueued/1 will not return cancelled jobs
+      cancelled_jobs =
+        Oban.Job
+        |> where([j], j.worker == "Pleroma.Workers.PublisherWorker")
+        |> where([j], j.state == "cancelled")
+        |> where([j], j.args["op"] == "publish_one")
+        |> where([j], j.args["params"]["id"] == ^ap_id)
+        |> Pleroma.Repo.all()
+
+      assert length(cancelled_jobs) == 2
+    end
+
+    test "when unfavoriting posts", %{
+      local_user: local_user,
+      remote_one: remote_user
+    } do
+      {:ok, activity} =
+        CommonAPI.post(remote_user, %{status: "I like turtles!"})
+
+      {:ok, %{data: %{"id" => ap_id}} = _favorite} =
+        CommonAPI.favorite(local_user, activity.id)
+
+      # Generate the publish_one jobs
+      ObanHelpers.perform_all()
+
+      publish_one_jobs =
+        all_enqueued()
+        |> Enum.filter(fn job ->
+          match?(
+            %{
+              state: "available",
+              queue: "federator_outgoing",
+              worker: "Pleroma.Workers.PublisherWorker",
+              args: %{"op" => "publish_one", "params" => %{"id" => ^ap_id}}
+            },
+            job
+          )
+        end)
+
+      assert length(publish_one_jobs) == 1
+
+      # The unfavorite should have triggered cancelling the publish_one jobs
+      assert {:ok, _unfavorite} = CommonAPI.unfavorite(activity.id, local_user)
+
+      # all_enqueued/1 will not return cancelled jobs
+      cancelled_jobs =
+        Oban.Job
+        |> where([j], j.worker == "Pleroma.Workers.PublisherWorker")
+        |> where([j], j.state == "cancelled")
+        |> where([j], j.args["op"] == "publish_one")
+        |> where([j], j.args["params"]["id"] == ^ap_id)
+        |> Pleroma.Repo.all()
+
+      assert length(cancelled_jobs) == 1
+    end
+
+    test "when unboosting posts", %{
+      local_user: local_user,
+      remote_one: remote_one,
+      remote_two: remote_two
+    } do
+      {:ok, _, _} = Pleroma.User.follow(remote_one, local_user)
+      {:ok, _, _} = Pleroma.User.follow(remote_two, local_user)
+
+      {:ok, activity} =
+        CommonAPI.post(remote_one, %{status: "This is an unpleasant post"})
+
+      {:ok, %{data: %{"id" => ap_id}} = _repeat} =
+        CommonAPI.repeat(activity.id, local_user)
+
+      # Generate the publish_one jobs
+      ObanHelpers.perform_all()
+
+      publish_one_jobs =
+        all_enqueued()
+        |> Enum.filter(fn job ->
+          match?(
+            %{
+              state: "available",
+              queue: "federator_outgoing",
+              worker: "Pleroma.Workers.PublisherWorker",
+              args: %{"op" => "publish_one", "params" => %{"id" => ^ap_id}}
+            },
+            job
+          )
+        end)
+
+      assert length(publish_one_jobs) == 2
+
+      # The unrepeat should have triggered cancelling the publish_one jobs
+      assert {:ok, _unfavorite} = CommonAPI.unrepeat(activity.id, local_user)
+
+      # all_enqueued/1 will not return cancelled jobs
+      cancelled_jobs =
+        Oban.Job
+        |> where([j], j.worker == "Pleroma.Workers.PublisherWorker")
+        |> where([j], j.state == "cancelled")
+        |> where([j], j.args["op"] == "publish_one")
+        |> where([j], j.args["params"]["id"] == ^ap_id)
+        |> Pleroma.Repo.all()
+
+      assert length(cancelled_jobs) == 2
+    end
+
+    test "when unreacting to posts", %{
+      local_user: local_user,
+      remote_one: remote_one,
+      remote_two: remote_two
+    } do
+      {:ok, _, _} = Pleroma.User.follow(remote_one, local_user)
+      {:ok, _, _} = Pleroma.User.follow(remote_two, local_user)
+
+      {:ok, activity} =
+        CommonAPI.post(remote_one, %{status: "Gang gang!!!!"})
+
+      {:ok, %{data: %{"id" => ap_id}} = _react} =
+        CommonAPI.react_with_emoji(activity.id, local_user, "👍")
+
+      # Generate the publish_one jobs
+      ObanHelpers.perform_all()
+
+      publish_one_jobs =
+        all_enqueued()
+        |> Enum.filter(fn job ->
+          match?(
+            %{
+              state: "available",
+              queue: "federator_outgoing",
+              worker: "Pleroma.Workers.PublisherWorker",
+              args: %{"op" => "publish_one", "params" => %{"id" => ^ap_id}}
+            },
+            job
+          )
+        end)
+
+      assert length(publish_one_jobs) == 2
+
+      # The unreact should have triggered cancelling the publish_one jobs
+      assert {:ok, _unreact} = CommonAPI.unreact_with_emoji(activity.id, local_user, "👍")
+
+      # all_enqueued/1 will not return cancelled jobs
+      cancelled_jobs =
+        Oban.Job
+        |> where([j], j.worker == "Pleroma.Workers.PublisherWorker")
+        |> where([j], j.state == "cancelled")
+        |> where([j], j.args["op"] == "publish_one")
+        |> where([j], j.args["params"]["id"] == ^ap_id)
+        |> Pleroma.Repo.all()
+
+      assert length(cancelled_jobs) == 2
     end
   end
 end

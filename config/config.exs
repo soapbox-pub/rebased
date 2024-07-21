@@ -600,9 +600,9 @@ config :pleroma, Oban,
     web_push: 50,
     transmogrifier: 20,
     notifications: 20,
-    background: 5,
+    background: 20,
     search_indexing: [limit: 10, paused: true],
-    slow: 1
+    slow: 5
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [

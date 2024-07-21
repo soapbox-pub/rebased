@@ -19,6 +19,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI.ActivityDraft
 
+  import Ecto.Query, only: [where: 3]
   import Pleroma.Web.Gettext
   import Pleroma.Web.CommonAPI.Utils
 
@@ -156,6 +157,7 @@ defmodule Pleroma.Web.CommonAPI do
   def delete(activity_id, user) do
     with {_, %Activity{data: %{"object" => _, "type" => "Create"}} = activity} <-
            {:find_activity, Activity.get_by_id(activity_id, filter: [])},
+         {_, {:ok, _}} <- {:cancel_jobs, maybe_cancel_jobs(activity)},
          {_, %Object{} = object, _} <-
            {:find_object, Object.normalize(activity, fetch: false), activity},
          true <- User.privileged?(user, :messages_delete) || user.ap_id == object.data["actor"],
@@ -223,6 +225,7 @@ defmodule Pleroma.Web.CommonAPI do
            {:find_activity, Activity.get_by_id(id)},
          %Object{} = note <- Object.normalize(activity, fetch: false),
          %Activity{} = announce <- Utils.get_existing_announce(user.ap_id, note),
+         {_, {:ok, _}} <- {:cancel_jobs, maybe_cancel_jobs(announce)},
          {:ok, undo, _} <- Builder.undo(user, announce),
          {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
       {:ok, activity}
@@ -275,6 +278,7 @@ defmodule Pleroma.Web.CommonAPI do
            {:find_activity, Activity.get_by_id(id)},
          %Object{} = note <- Object.normalize(activity, fetch: false),
          %Activity{} = like <- Utils.get_existing_like(user.ap_id, note),
+         {_, {:ok, _}} <- {:cancel_jobs, maybe_cancel_jobs(like)},
          {:ok, undo, _} <- Builder.undo(user, like),
          {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
       {:ok, activity}
@@ -298,6 +302,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unreact_with_emoji(id, user, emoji) do
     with %Activity{} = reaction_activity <- Utils.get_latest_reaction(id, user, emoji),
+         {_, {:ok, _}} <- {:cancel_jobs, maybe_cancel_jobs(reaction_activity)},
          {:ok, undo, _} <- Builder.undo(user, reaction_activity),
          {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
       {:ok, activity}
@@ -807,4 +812,14 @@ defmodule Pleroma.Web.CommonAPI do
       _ -> {:error, nil}
     end
   end
+
+  defp maybe_cancel_jobs(%Activity{data: %{"id" => ap_id}}) do
+    Oban.Job
+    |> where([j], j.worker == "Pleroma.Workers.PublisherWorker")
+    |> where([j], j.args["op"] == "publish_one")
+    |> where([j], j.args["params"]["id"] == ^ap_id)
+    |> Oban.cancel_all_jobs()
+  end
+
+  defp maybe_cancel_jobs(_), do: {:ok, 0}
 end

@@ -154,4 +154,19 @@ This forcibly removes all saved values in the database.
 
     ```sh
     mix pleroma.config [--force] reset
+
+    ```
+
+## Remove invalid MRF modules from the database
+
+This forcibly removes any enabled MRF that does not exist and will fix the ability of the instance to start.
+
+=== "OTP"
+    ```sh
+    ./bin/pleroma_ctl config fix_mrf_policies
+    ```
+
+=== "From Source"
+    ```sh
+    mix pleroma.config fix_mrf_policies
     ```

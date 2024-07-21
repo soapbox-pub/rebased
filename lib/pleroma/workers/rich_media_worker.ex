@@ -14,6 +14,23 @@ defmodule Pleroma.Workers.RichMediaWorker do
   end
 
   def perform(%Job{args: %{"op" => "backfill", "url" => _url} = args}) do
-    Backfill.run(args)
+    case Backfill.run(args) do
+      :ok ->
+        :ok
+
+      {:error, type}
+      when type in [:invalid_metadata, :body_too_large, :content_type, :validate] ->
+        {:cancel, type}
+
+      {:error, type}
+      when type in [:get, :head] ->
+        {:error, type}
+
+      error ->
+        {:error, error}
+    end
   end
+
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
 end
