@@ -48,7 +48,7 @@ defmodule Pleroma.Workers.ReceiverWorker do
       {:error, :origin_containment_failed} -> {:cancel, :origin_containment_failed}
       {:error, :already_present} -> {:cancel, :already_present}
       {:error, {:validate_object, _} = reason} -> {:cancel, reason}
-      {:error, {:validate, _} = reason} -> {:cancel, reason}
+      {:error, {:error, {:validate, {:error, _changeset} = reason}}} -> {:cancel, reason}
       {:error, {:reject, _} = reason} -> {:cancel, reason}
       {:signature, false} -> {:cancel, :invalid_signature}
       {:error, "Object has been deleted"} = reason -> {:cancel, reason}
