@@ -1,0 +1,1 @@
+PollWorker jobs will not retry if the activity no longer exists.
