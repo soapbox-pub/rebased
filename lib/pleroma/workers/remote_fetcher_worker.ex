@@ -31,5 +31,5 @@ defmodule Pleroma.Workers.RemoteFetcherWorker do
   end
 
   @impl Oban.Worker
-  def timeout(_job), do: :timer.seconds(10)
+  def timeout(_job), do: :timer.seconds(15)
 end
