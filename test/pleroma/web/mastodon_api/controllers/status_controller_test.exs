@@ -1771,7 +1771,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "cannot mute already muted conversation", %{conn: conn, user: user, activity: activity} do
-      {:ok, _} = CommonAPI.add_mute(user, activity)
+      {:ok, _} = CommonAPI.add_mute(activity, user)
 
       conn =
         conn
@@ -1784,7 +1784,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "unmute conversation", %{conn: conn, user: user, activity: activity} do
-      {:ok, _} = CommonAPI.add_mute(user, activity)
+      {:ok, _} = CommonAPI.add_mute(activity, user)
 
       id_str = to_string(activity.id)
 

@@ -693,7 +693,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{other_user.nickname}!"})
 
-      {:ok, _} = CommonAPI.add_mute(other_user, activity)
+      {:ok, _} = CommonAPI.add_mute(activity, other_user)
 
       {:ok, same_context_activity} =
         CommonAPI.post(user, %{

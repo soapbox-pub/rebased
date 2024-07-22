@@ -1172,7 +1172,7 @@ defmodule Pleroma.Web.CommonAPITest do
                n.type == "mention" && n.activity_id == reply_activity.id
              end)
 
-      {:ok, _} = CommonAPI.add_mute(author, activity)
+      {:ok, _} = CommonAPI.add_mute(activity, author)
       assert CommonAPI.thread_muted?(author, activity)
 
       assert Repo.aggregate(
@@ -1197,12 +1197,12 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "add mute", %{user: user, activity: activity} do
-      {:ok, _} = CommonAPI.add_mute(user, activity)
+      {:ok, _} = CommonAPI.add_mute(activity, user)
       assert CommonAPI.thread_muted?(user, activity)
     end
 
     test "add expiring mute", %{user: user, activity: activity} do
-      {:ok, _} = CommonAPI.add_mute(user, activity, %{expires_in: 60})
+      {:ok, _} = CommonAPI.add_mute(activity, user, %{expires_in: 60})
       assert CommonAPI.thread_muted?(user, activity)
 
       worker = Pleroma.Workers.MuteExpireWorker
@@ -1218,20 +1218,20 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "remove mute", %{user: user, activity: activity} do
-      CommonAPI.add_mute(user, activity)
+      CommonAPI.add_mute(activity, user)
       {:ok, _} = CommonAPI.remove_mute(activity, user)
       refute CommonAPI.thread_muted?(user, activity)
     end
 
     test "remove mute by ids", %{user: user, activity: activity} do
-      CommonAPI.add_mute(user, activity)
+      CommonAPI.add_mute(activity, user)
       {:ok, _} = CommonAPI.remove_mute(activity.id, user.id)
       refute CommonAPI.thread_muted?(user, activity)
     end
 
     test "check that mutes can't be duplicate", %{user: user, activity: activity} do
-      CommonAPI.add_mute(user, activity)
-      {:error, _} = CommonAPI.add_mute(user, activity)
+      CommonAPI.add_mute(activity, user)
+      {:error, _} = CommonAPI.add_mute(activity, user)
     end
   end
 

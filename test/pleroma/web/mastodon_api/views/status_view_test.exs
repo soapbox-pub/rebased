@@ -388,7 +388,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     assert status.pleroma.thread_muted == false
 
-    {:ok, activity} = CommonAPI.add_mute(user, activity)
+    {:ok, activity} = CommonAPI.add_mute(activity, user)
 
     status = StatusView.render("show.json", %{activity: activity, for: user})
 

@@ -552,8 +552,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec add_mute(User.t(), Activity.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
-  def add_mute(user, activity, params \\ %{}) do
+  @spec add_mute(Activity.t(), User.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
+  def add_mute(activity, user, params \\ %{}) do
     expires_in = Map.get(params, :expires_in, 0)
 
     with {:ok, _} <- ThreadMute.add_mute(user.id, activity.data["context"]),

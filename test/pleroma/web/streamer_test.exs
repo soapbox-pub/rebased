@@ -430,7 +430,7 @@ defmodule Pleroma.Web.StreamerTest do
       user2 = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "super hot take"})
-      {:ok, _} = CommonAPI.add_mute(user, activity)
+      {:ok, _} = CommonAPI.add_mute(activity, user)
 
       Streamer.get_topic_and_add_socket("user:notification", user, oauth_token)
 
@@ -878,7 +878,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       {:ok, user2, user, _activity} = CommonAPI.follow(user2, user)
       {:ok, activity} = CommonAPI.post(user, %{status: "super hot take"})
-      {:ok, _} = CommonAPI.add_mute(user2, activity)
+      {:ok, _} = CommonAPI.add_mute(activity, user2)
 
       assert_receive {:render_with_user, _, _, ^activity, _}
       assert Streamer.filtered_by_user?(user2, activity)

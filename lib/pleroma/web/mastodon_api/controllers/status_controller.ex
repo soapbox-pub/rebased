@@ -453,7 +453,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
         _
       ) do
     with %Activity{} = activity <- Activity.get_by_id(id),
-         {:ok, activity} <- CommonAPI.add_mute(user, activity, params) do
+         {:ok, activity} <- CommonAPI.add_mute(activity, user, params) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
     end
   end
