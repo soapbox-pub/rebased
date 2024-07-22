@@ -1434,7 +1434,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert User.subscribed_to?(follower, followed)
 
-      {:ok, follower} = CommonAPI.unfollow(follower, followed)
+      {:ok, follower} = CommonAPI.unfollow(followed, follower)
 
       refute User.subscribed_to?(follower, followed)
     end
@@ -1446,7 +1446,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert User.endorses?(follower, followed)
 
-      {:ok, follower} = CommonAPI.unfollow(follower, followed)
+      {:ok, follower} = CommonAPI.unfollow(followed, follower)
 
       refute User.endorses?(follower, followed)
     end
@@ -1459,7 +1459,7 @@ defmodule Pleroma.Web.CommonAPITest do
                CommonAPI.follow(followed, follower)
 
       assert User.get_follow_state(follower, followed) == :follow_pending
-      assert {:ok, follower} = CommonAPI.unfollow(follower, followed)
+      assert {:ok, follower} = CommonAPI.unfollow(followed, follower)
       assert User.get_follow_state(follower, followed) == nil
 
       assert %{id: ^activity_id, data: %{"state" => "cancelled"}} =
@@ -1481,7 +1481,7 @@ defmodule Pleroma.Web.CommonAPITest do
                CommonAPI.follow(followed, follower)
 
       assert User.get_follow_state(follower, followed) == :follow_pending
-      assert {:ok, follower} = CommonAPI.unfollow(follower, followed)
+      assert {:ok, follower} = CommonAPI.unfollow(followed, follower)
       assert User.get_follow_state(follower, followed) == nil
 
       assert %{id: ^activity_id, data: %{"state" => "cancelled"}} =

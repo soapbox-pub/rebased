@@ -353,7 +353,7 @@ defmodule Pleroma.NotificationTest do
       assert FollowingRelationship.following?(user, followed_user)
       assert [notification] = Notification.for_user(followed_user)
 
-      CommonAPI.unfollow(user, followed_user)
+      CommonAPI.unfollow(followed_user, user)
       {:ok, _, _, _activity_dupe} = CommonAPI.follow(followed_user, user)
 
       notification_id = notification.id
