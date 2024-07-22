@@ -286,8 +286,8 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       %{id: id2} = user2 = insert(:user)
       %{id: id3} = user3 = insert(:user)
 
-      CommonAPI.follow(user1, user2)
-      CommonAPI.follow(user1, user3)
+      CommonAPI.follow(user2, user1)
+      CommonAPI.follow(user3, user1)
 
       User.endorse(user1, user2)
       User.endorse(user1, user3)
@@ -324,9 +324,9 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
       user3 = insert(:user)
 
-      CommonAPI.follow(user, user1)
-      CommonAPI.follow(user, user2)
-      CommonAPI.follow(user, user3)
+      CommonAPI.follow(user1, user)
+      CommonAPI.follow(user2, user)
+      CommonAPI.follow(user3, user)
 
       [%{"id" => ^id1}] =
         conn
@@ -350,8 +350,8 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
           show_birthday: true
         })
 
-      CommonAPI.follow(user, user1)
-      CommonAPI.follow(user, user2)
+      CommonAPI.follow(user1, user)
+      CommonAPI.follow(user2, user)
 
       [%{"id" => ^id2}] =
         conn

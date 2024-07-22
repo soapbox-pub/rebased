@@ -78,7 +78,7 @@ defmodule Pleroma.Web.Push.ImplTest do
     )
 
     other_user = insert(:user)
-    {:ok, _, _, activity} = CommonAPI.follow(user, other_user)
+    {:ok, _, _, activity} = CommonAPI.follow(other_user, user)
 
     notif =
       insert(:notification,
@@ -103,7 +103,7 @@ defmodule Pleroma.Web.Push.ImplTest do
       )
 
     other_user = insert(:user)
-    {:ok, _, _, activity} = CommonAPI.follow(user, other_user)
+    {:ok, _, _, activity} = CommonAPI.follow(other_user, user)
 
     notif =
       insert(:notification,
@@ -154,7 +154,7 @@ defmodule Pleroma.Web.Push.ImplTest do
   test "renders title and body for follow activity" do
     user = insert(:user, nickname: "Bob")
     other_user = insert(:user)
-    {:ok, _, _, activity} = CommonAPI.follow(user, other_user)
+    {:ok, _, _, activity} = CommonAPI.follow(other_user, user)
     object = Object.normalize(activity, fetch: false)
 
     assert Impl.format_body(%{activity: activity, type: "follow"}, user, object) ==

@@ -199,7 +199,7 @@ defmodule Pleroma.FollowingRelationship do
     |> preload([:follower])
     |> Repo.all()
     |> Enum.map(fn following_relationship ->
-      Pleroma.Web.CommonAPI.follow(following_relationship.follower, target)
+      Pleroma.Web.CommonAPI.follow(target, following_relationship.follower)
       Pleroma.Web.CommonAPI.unfollow(following_relationship.follower, origin)
     end)
     |> case do

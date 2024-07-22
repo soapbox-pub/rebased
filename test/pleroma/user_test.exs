@@ -182,8 +182,8 @@ defmodule Pleroma.UserTest do
     locked = insert(:user, is_locked: true)
     follower = insert(:user)
 
-    CommonAPI.follow(follower, unlocked)
-    CommonAPI.follow(follower, locked)
+    CommonAPI.follow(unlocked, follower)
+    CommonAPI.follow(locked, follower)
 
     assert [] = User.get_follow_requests(unlocked)
     assert [activity] = User.get_follow_requests(locked)
@@ -196,9 +196,9 @@ defmodule Pleroma.UserTest do
     pending_follower = insert(:user)
     accepted_follower = insert(:user)
 
-    CommonAPI.follow(pending_follower, locked)
-    CommonAPI.follow(pending_follower, locked)
-    CommonAPI.follow(accepted_follower, locked)
+    CommonAPI.follow(locked, pending_follower)
+    CommonAPI.follow(locked, pending_follower)
+    CommonAPI.follow(locked, accepted_follower)
 
     Pleroma.FollowingRelationship.update(accepted_follower, locked, :follow_accept)
 
@@ -209,7 +209,7 @@ defmodule Pleroma.UserTest do
     locked = insert(:user, is_locked: true)
     pending_follower = insert(:user, %{is_active: false})
 
-    CommonAPI.follow(pending_follower, locked)
+    CommonAPI.follow(locked, pending_follower)
 
     refute pending_follower.is_active
     assert [] = User.get_follow_requests(locked)
@@ -219,7 +219,7 @@ defmodule Pleroma.UserTest do
     followed = insert(:user, is_locked: true)
     follower = insert(:user)
 
-    CommonAPI.follow(follower, followed)
+    CommonAPI.follow(followed, follower)
     assert [_activity] = User.get_follow_requests(followed)
 
     {:ok, _user_relationship} = User.block(followed, follower)

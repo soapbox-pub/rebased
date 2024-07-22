@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ActivityPub.Relay do
   def follow(target_instance) do
     with %User{} = local_user <- get_actor(),
          {:ok, %User{} = target_user} <- User.get_or_fetch_by_ap_id(target_instance),
-         {:ok, _, _, activity} <- CommonAPI.follow(local_user, target_user) do
+         {:ok, _, _, activity} <- CommonAPI.follow(target_user, local_user) do
       Logger.info("relay: followed instance: #{target_instance}; id=#{activity.data["id"]}")
       {:ok, activity}
     else

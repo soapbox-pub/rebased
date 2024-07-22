@@ -479,7 +479,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     # After following the user, the quote is rendered
     follower = insert(:user)
-    CommonAPI.follow(follower, user)
+    CommonAPI.follow(user, follower)
 
     status = StatusView.render("show.json", %{activity: quote_private, for: follower})
     assert status.pleroma.quote.id == to_string(private.id)

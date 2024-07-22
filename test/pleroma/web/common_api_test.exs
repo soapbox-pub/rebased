@@ -80,8 +80,8 @@ defmodule Pleroma.Web.CommonAPITest do
     setup do
       blocker = insert(:user)
       blocked = insert(:user, local: false)
-      CommonAPI.follow(blocker, blocked)
       CommonAPI.follow(blocked, blocker)
+      CommonAPI.follow(blocker, blocked)
       CommonAPI.accept_follow_request(blocker, blocked)
       CommonAPI.accept_follow_request(blocked, blocked)
       %{blocker: blocker, blocked: blocked}
@@ -955,7 +955,7 @@ defmodule Pleroma.Web.CommonAPITest do
     test "author can repeat own private statuses" do
       author = insert(:user)
       follower = insert(:user)
-      CommonAPI.follow(follower, author)
+      CommonAPI.follow(author, follower)
 
       {:ok, activity} = CommonAPI.post(author, %{status: "cofe", visibility: "private"})
 
@@ -1420,7 +1420,7 @@ defmodule Pleroma.Web.CommonAPITest do
   describe "follow/2" do
     test "directly follows a non-locked local user" do
       [follower, followed] = insert_pair(:user)
-      {:ok, follower, followed, _} = CommonAPI.follow(follower, followed)
+      {:ok, follower, followed, _} = CommonAPI.follow(followed, follower)
 
       assert User.following?(follower, followed)
     end
@@ -1429,7 +1429,7 @@ defmodule Pleroma.Web.CommonAPITest do
   describe "unfollow/2" do
     test "also unsubscribes a user" do
       [follower, followed] = insert_pair(:user)
-      {:ok, follower, followed, _} = CommonAPI.follow(follower, followed)
+      {:ok, follower, followed, _} = CommonAPI.follow(followed, follower)
       {:ok, _subscription} = User.subscribe(follower, followed)
 
       assert User.subscribed_to?(follower, followed)
@@ -1441,7 +1441,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
     test "also unpins a user" do
       [follower, followed] = insert_pair(:user)
-      {:ok, follower, followed, _} = CommonAPI.follow(follower, followed)
+      {:ok, follower, followed, _} = CommonAPI.follow(followed, follower)
       {:ok, _endorsement} = User.endorse(follower, followed)
 
       assert User.endorses?(follower, followed)
@@ -1456,7 +1456,7 @@ defmodule Pleroma.Web.CommonAPITest do
       followed = insert(:user, is_locked: true)
 
       assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
-               CommonAPI.follow(follower, followed)
+               CommonAPI.follow(followed, follower)
 
       assert User.get_follow_state(follower, followed) == :follow_pending
       assert {:ok, follower} = CommonAPI.unfollow(follower, followed)
@@ -1478,7 +1478,7 @@ defmodule Pleroma.Web.CommonAPITest do
       followed = insert(:user, is_locked: true, local: false)
 
       assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
-               CommonAPI.follow(follower, followed)
+               CommonAPI.follow(followed, follower)
 
       assert User.get_follow_state(follower, followed) == :follow_pending
       assert {:ok, follower} = CommonAPI.unfollow(follower, followed)
@@ -1502,9 +1502,9 @@ defmodule Pleroma.Web.CommonAPITest do
       follower = insert(:user)
       follower_two = insert(:user)
 
-      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
-      {:ok, _, _, follow_activity_two} = CommonAPI.follow(follower, user)
-      {:ok, _, _, follow_activity_three} = CommonAPI.follow(follower_two, user)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(user, follower)
+      {:ok, _, _, follow_activity_two} = CommonAPI.follow(user, follower)
+      {:ok, _, _, follow_activity_three} = CommonAPI.follow(user, follower_two)
 
       assert follow_activity.data["state"] == "pending"
       assert follow_activity_two.data["state"] == "pending"
@@ -1522,9 +1522,9 @@ defmodule Pleroma.Web.CommonAPITest do
       follower = insert(:user)
       follower_two = insert(:user)
 
-      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
-      {:ok, _, _, follow_activity_two} = CommonAPI.follow(follower, user)
-      {:ok, _, _, follow_activity_three} = CommonAPI.follow(follower_two, user)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(user, follower)
+      {:ok, _, _, follow_activity_two} = CommonAPI.follow(user, follower)
+      {:ok, _, _, follow_activity_three} = CommonAPI.follow(user, follower_two)
 
       assert follow_activity.data["state"] == "pending"
       assert follow_activity_two.data["state"] == "pending"

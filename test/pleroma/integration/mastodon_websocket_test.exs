@@ -404,7 +404,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
     test "receives private statuses", %{user: reading_user, token: token} do
       user = insert(:user)
-      CommonAPI.follow(reading_user, user)
+      CommonAPI.follow(user, reading_user)
 
       {:ok, _} = start_socket("?stream=user&access_token=#{token.token}")
 
@@ -431,7 +431,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
     test "receives edits", %{user: reading_user, token: token} do
       user = insert(:user)
-      CommonAPI.follow(reading_user, user)
+      CommonAPI.follow(user, reading_user)
 
       {:ok, _} = start_socket("?stream=user&access_token=#{token.token}")
 
@@ -459,7 +459,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
     test "receives notifications", %{user: reading_user, token: token} do
       user = insert(:user)
-      CommonAPI.follow(reading_user, user)
+      CommonAPI.follow(user, reading_user)
 
       {:ok, _} = start_socket("?stream=user:notification&access_token=#{token.token}")
 

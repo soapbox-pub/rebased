@@ -121,7 +121,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   @spec follow(User.t(), User.t()) ::
           {:ok, User.t(), User.t(), Activity.t() | Object.t()} | {:error, :rejected}
-  def follow(follower, followed) do
+  def follow(followed, follower) do
     timeout = Pleroma.Config.get([:activitypub, :follow_handshake_timeout])
 
     with {:ok, follow_data, _} <- Builder.follow(follower, followed),

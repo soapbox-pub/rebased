@@ -16,7 +16,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   def follow(follower, followed, params \\ %{}) do
     result =
       if not User.following?(follower, followed) do
-        CommonAPI.follow(follower, followed)
+        CommonAPI.follow(followed, follower)
       else
         {:ok, follower, followed, nil}
       end

@@ -46,7 +46,7 @@ defmodule Pleroma.User.Import do
       fn identifier ->
         with {:ok, %User{} = followed} <- User.get_or_fetch(identifier),
              {:ok, follower, followed} <- User.maybe_direct_follow(follower, followed),
-             {:ok, _, _, _} <- CommonAPI.follow(follower, followed) do
+             {:ok, _, _, _} <- CommonAPI.follow(followed, follower) do
           followed
         else
           error -> handle_error(:follow_import, identifier, error)

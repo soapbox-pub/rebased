@@ -1038,7 +1038,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     refute activity in activities
 
     followed_user = insert(:user)
-    CommonAPI.follow(user, followed_user)
+    CommonAPI.follow(followed_user, user)
     {:ok, repeat_activity} = CommonAPI.repeat(activity.id, followed_user)
 
     activities = ActivityPub.fetch_activities([], %{blocking_user: user, skip_preload: true})
@@ -1452,7 +1452,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       follower = insert(:user)
       followed = insert(:user)
 
-      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(followed, follower)
 
       with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
         assert {:error, :reverted} = ActivityPub.unfollow(follower, followed)
@@ -1469,7 +1469,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       follower = insert(:user)
       followed = insert(:user)
 
-      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(followed, follower)
       {:ok, activity} = ActivityPub.unfollow(follower, followed)
 
       assert activity.data["type"] == "Undo"
@@ -1486,7 +1486,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       follower = insert(:user)
       followed = insert(:user, %{is_locked: true})
 
-      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(followed, follower)
       {:ok, activity} = ActivityPub.unfollow(follower, followed)
 
       assert activity.data["type"] == "Undo"

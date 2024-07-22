@@ -834,7 +834,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       user = insert(:user)
       followed = insert(:user)
 
-      {:ok, _, _, follow_activity} = CommonAPI.follow(user, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(followed, user)
 
       {:ok, reject_data, []} = Builder.reject(followed, follow_activity)
       {:ok, reject, _meta} = ActivityPub.persist(reject_data, local: true)

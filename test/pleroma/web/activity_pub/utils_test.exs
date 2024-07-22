@@ -231,8 +231,8 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       user = insert(:user, is_locked: true)
       follower = insert(:user)
 
-      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
-      {:ok, _, _, follow_activity_two} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(user, follower)
+      {:ok, _, _, follow_activity_two} = CommonAPI.follow(user, follower)
 
       data =
         follow_activity_two.data
@@ -253,8 +253,8 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       user = insert(:user)
       follower = insert(:user)
 
-      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
-      {:ok, _, _, follow_activity_two} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(user, follower)
+      {:ok, _, _, follow_activity_two} = CommonAPI.follow(user, follower)
 
       {:ok, follow_activity_two} =
         Utils.update_follow_state_for_all(follow_activity_two, "reject")
@@ -269,8 +269,8 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       user = insert(:user, is_locked: true)
       follower = insert(:user)
 
-      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
-      {:ok, _, _, follow_activity_two} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(user, follower)
+      {:ok, _, _, follow_activity_two} = CommonAPI.follow(user, follower)
 
       data =
         follow_activity_two.data

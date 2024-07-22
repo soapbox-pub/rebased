@@ -183,7 +183,7 @@ defmodule Pleroma.User.BackupTest do
     Bookmark.create(user.id, status2.id)
     Bookmark.create(user.id, status3.id)
 
-    CommonAPI.follow(user, other_user)
+    CommonAPI.follow(other_user, user)
 
     assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
     assert {:ok, path} = Backup.export(backup, self())
