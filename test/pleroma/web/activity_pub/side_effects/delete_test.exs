@@ -50,7 +50,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects.DeleteTest do
 
       {:ok, op} = CommonAPI.post(other_user, %{status: "big oof"})
       {:ok, post} = CommonAPI.post(user, %{status: "hey", in_reply_to_id: op})
-      {:ok, favorite} = CommonAPI.favorite(user, post.id)
+      {:ok, favorite} = CommonAPI.favorite(post.id, user)
       object = Object.normalize(post, fetch: false)
       {:ok, delete_data, _meta} = Builder.delete(user, object.data["id"])
       {:ok, delete, _meta} = ActivityPub.persist(delete_data, local: true)

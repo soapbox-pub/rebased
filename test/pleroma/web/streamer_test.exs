@@ -418,7 +418,7 @@ defmodule Pleroma.Web.StreamerTest do
       Streamer.get_topic_and_add_socket("user:notification", user, oauth_token)
 
       {:ok, activity} = CommonAPI.post(user, %{status: ":("})
-      {:ok, _} = CommonAPI.favorite(blocked, activity.id)
+      {:ok, _} = CommonAPI.favorite(activity.id, blocked)
 
       refute_receive _
     end
@@ -434,7 +434,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       Streamer.get_topic_and_add_socket("user:notification", user, oauth_token)
 
-      {:ok, favorite_activity} = CommonAPI.favorite(user2, activity.id)
+      {:ok, favorite_activity} = CommonAPI.favorite(activity.id, user2)
 
       refute_receive _
       assert Streamer.filtered_by_user?(user, favorite_activity)
@@ -448,7 +448,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       {:ok, activity} = CommonAPI.post(user, %{status: "super hot take"})
       Streamer.get_topic_and_add_socket("user:notification", user, oauth_token)
-      {:ok, favorite_activity} = CommonAPI.favorite(user2, activity.id)
+      {:ok, favorite_activity} = CommonAPI.favorite(activity.id, user2)
 
       assert_receive {:render_with_user, _, "notification.json", notif, _}
       assert notif.activity.id == favorite_activity.id
@@ -464,7 +464,7 @@ defmodule Pleroma.Web.StreamerTest do
       {:ok, user} = User.block_domain(user, "hecking-lewd-place.com")
       {:ok, activity} = CommonAPI.post(user, %{status: "super hot take"})
       Streamer.get_topic_and_add_socket("user:notification", user, oauth_token)
-      {:ok, favorite_activity} = CommonAPI.favorite(user2, activity.id)
+      {:ok, favorite_activity} = CommonAPI.favorite(activity.id, user2)
 
       refute_receive _
       assert Streamer.filtered_by_user?(user, favorite_activity)
@@ -863,7 +863,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       {:ok, create_activity} = CommonAPI.post(user1, %{status: "I'm kawen"})
       Streamer.get_topic_and_add_socket("user", user1, user1_token)
-      {:ok, _favorite_activity} = CommonAPI.favorite(user2, create_activity.id)
+      {:ok, _favorite_activity} = CommonAPI.favorite(create_activity.id, user2)
 
       assert_receive {:render_with_user, _, "notification.json", notif, _}
       refute Streamer.filtered_by_user?(user1, notif)

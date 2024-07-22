@@ -516,7 +516,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       poster = insert(:user)
       user = insert(:user)
       {:ok, post} = CommonAPI.post(poster, %{status: "hey"})
-      {:ok, like} = CommonAPI.favorite(user, post.id)
+      {:ok, like} = CommonAPI.favorite(post.id, user)
       {:ok, reaction} = CommonAPI.react_with_emoji(post.id, user, "👍")
       {:ok, announce} = CommonAPI.repeat(post.id, user)
       {:ok, block} = CommonAPI.block(user, poster)

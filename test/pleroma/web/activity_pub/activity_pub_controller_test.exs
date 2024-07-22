@@ -1224,7 +1224,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       note = insert(:note_activity, user: reported_user)
 
-      Pleroma.Web.CommonAPI.favorite(another, note.id)
+      Pleroma.Web.CommonAPI.favorite(note.id, another)
 
       mock_json_body =
         "test/fixtures/mastodon/application_actor.json"

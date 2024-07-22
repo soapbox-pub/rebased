@@ -357,7 +357,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
           conn,
         _
       ) do
-    with {:ok, _fav} <- CommonAPI.favorite(user, activity_id),
+    with {:ok, _fav} <- CommonAPI.favorite(activity_id, user),
          %Activity{} = activity <- Activity.get_by_id(activity_id) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
     end

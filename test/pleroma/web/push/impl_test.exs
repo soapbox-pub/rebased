@@ -192,7 +192,7 @@ defmodule Pleroma.Web.Push.ImplTest do
           "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
       })
 
-    {:ok, activity} = CommonAPI.favorite(user, activity.id)
+    {:ok, activity} = CommonAPI.favorite(activity.id, user)
     object = Object.normalize(activity, fetch: false)
 
     assert Impl.format_body(%{activity: activity, type: "favourite"}, user, object) ==
@@ -351,7 +351,7 @@ defmodule Pleroma.Web.Push.ImplTest do
                body: "New Mention"
              }
 
-      {:ok, activity} = CommonAPI.favorite(user, activity.id)
+      {:ok, activity} = CommonAPI.favorite(activity.id, user)
 
       notif = insert(:notification, user: user2, activity: activity, type: "favourite")
 
@@ -408,7 +408,7 @@ defmodule Pleroma.Web.Push.ImplTest do
                title: "New Mention"
              }
 
-      {:ok, activity} = CommonAPI.favorite(user, activity.id)
+      {:ok, activity} = CommonAPI.favorite(activity.id, user)
 
       notif = insert(:notification, user: user2, activity: activity, type: "favourite")
 

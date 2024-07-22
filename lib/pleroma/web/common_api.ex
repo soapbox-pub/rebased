@@ -247,8 +247,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec favorite(User.t(), String.t()) :: {:ok, Activity.t()} | {:error, any()}
-  def favorite(%User{} = user, id) do
+  @spec favorite(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, any()}
+  def favorite(id, %User{} = user) do
     case favorite_helper(user, id) do
       {:ok, _} = res ->
         res

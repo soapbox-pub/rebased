@@ -220,7 +220,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
       object = Object.normalize(activity, fetch: false)
       {:ok, [vote], object} = CommonAPI.vote(other_user, object, [0])
-      {:ok, _activity} = CommonAPI.favorite(user, activity.id)
+      {:ok, _activity} = CommonAPI.favorite(activity.id, user)
       [fetched_vote] = Utils.get_existing_votes(other_user.ap_id, object)
       assert fetched_vote.id == vote.id
     end
@@ -355,7 +355,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
       user = insert(:user)
       refute Utils.get_existing_like(user.ap_id, object)
-      {:ok, like_activity} = CommonAPI.favorite(user, note_activity.id)
+      {:ok, like_activity} = CommonAPI.favorite(note_activity.id, user)
 
       assert ^like_activity = Utils.get_existing_like(user.ap_id, object)
     end
@@ -546,7 +546,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       target_account = insert(:user)
 
       {:ok, activity} = CommonAPI.post(posting_account, %{status: "foobar"})
-      {:ok, like} = CommonAPI.favorite(target_account, activity.id)
+      {:ok, like} = CommonAPI.favorite(activity.id, target_account)
       context = Utils.generate_context_id()
       content = "foobar"
 

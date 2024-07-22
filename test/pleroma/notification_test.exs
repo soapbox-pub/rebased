@@ -295,7 +295,7 @@ defmodule Pleroma.NotificationTest do
       insert(:filter, user: user, phrase: "tesla", hide: true)
 
       {:ok, activity_one} = CommonAPI.post(user, %{status: "wow tesla"})
-      {:ok, activity_two} = CommonAPI.favorite(other_user, activity_one.id)
+      {:ok, activity_two} = CommonAPI.favorite(activity_one.id, other_user)
 
       {:ok, [notification]} = Notification.create_notifications(activity_two)
 
@@ -617,7 +617,7 @@ defmodule Pleroma.NotificationTest do
           status: "hey @#{other_user.nickname}!"
         })
 
-      {:ok, activity_two} = CommonAPI.favorite(third_user, activity_one.id)
+      {:ok, activity_two} = CommonAPI.favorite(activity_one.id, third_user)
 
       enabled_receivers = Notification.get_notified_from_activity(activity_two)
 
@@ -768,7 +768,7 @@ defmodule Pleroma.NotificationTest do
 
       assert Enum.empty?(Notification.for_user(user))
 
-      {:ok, _} = CommonAPI.favorite(other_user, activity.id)
+      {:ok, _} = CommonAPI.favorite(activity.id, other_user)
 
       assert length(Notification.for_user(user)) == 1
 
@@ -785,7 +785,7 @@ defmodule Pleroma.NotificationTest do
 
       assert Enum.empty?(Notification.for_user(user))
 
-      {:ok, _} = CommonAPI.favorite(other_user, activity.id)
+      {:ok, _} = CommonAPI.favorite(activity.id, other_user)
 
       assert length(Notification.for_user(user)) == 1
 
@@ -840,7 +840,7 @@ defmodule Pleroma.NotificationTest do
 
       assert Enum.empty?(Notification.for_user(user))
 
-      {:error, :not_found} = CommonAPI.favorite(other_user, activity.id)
+      {:error, :not_found} = CommonAPI.favorite(activity.id, other_user)
 
       assert Enum.empty?(Notification.for_user(user))
     end
@@ -1090,7 +1090,7 @@ defmodule Pleroma.NotificationTest do
       another_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "Give me my cofe!"})
-      {:ok, _} = CommonAPI.favorite(another_user, activity.id)
+      {:ok, _} = CommonAPI.favorite(activity.id, another_user)
 
       assert length(Notification.for_user(user)) == 1
     end

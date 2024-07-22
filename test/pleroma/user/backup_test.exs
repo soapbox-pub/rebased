@@ -177,8 +177,8 @@ defmodule Pleroma.User.BackupTest do
     {:ok, %{object: %{data: %{"id" => id3}}} = status3} =
       CommonAPI.post(user, %{status: "status3"})
 
-    CommonAPI.favorite(user, status1.id)
-    CommonAPI.favorite(user, status2.id)
+    CommonAPI.favorite(status1.id, user)
+    CommonAPI.favorite(status2.id, user)
 
     Bookmark.create(user.id, status2.id)
     Bookmark.create(user.id, status3.id)
@@ -283,7 +283,7 @@ defmodule Pleroma.User.BackupTest do
 
     Enum.map(1..120, fn i ->
       {:ok, status} = CommonAPI.post(user, %{status: "status #{i}"})
-      CommonAPI.favorite(user, status.id)
+      CommonAPI.favorite(status.id, user)
       Bookmark.create(user.id, status.id)
     end)
 
@@ -337,8 +337,8 @@ defmodule Pleroma.User.BackupTest do
       {:ok, status1} = CommonAPI.post(user, %{status: "status1"})
       {:ok, status2} = CommonAPI.post(user, %{status: "status2"})
       {:ok, status3} = CommonAPI.post(user, %{status: "status3"})
-      CommonAPI.favorite(user, status1.id)
-      CommonAPI.favorite(user, status2.id)
+      CommonAPI.favorite(status1.id, user)
+      CommonAPI.favorite(status2.id, user)
       Bookmark.create(user.id, status2.id)
       Bookmark.create(user.id, status3.id)
 

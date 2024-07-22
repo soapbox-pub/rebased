@@ -454,7 +454,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
     users_serial
     |> Enum.map(fn user ->
-      CommonAPI.favorite(user, activity.id)
+      CommonAPI.favorite(activity.id, user)
     end)
 
     object = Object.get_by_ap_id(activity.data["object"])
@@ -463,7 +463,7 @@ defmodule Pleroma.Web.CommonAPITest do
     users
     |> Enum.map(fn user ->
       Task.async(fn ->
-        CommonAPI.favorite(user, activity.id)
+        CommonAPI.favorite(activity.id, user)
       end)
     end)
     |> Enum.map(&Task.await/1)
@@ -974,7 +974,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       {:ok, post_activity} = CommonAPI.post(other_user, %{status: "cofe"})
 
-      {:ok, %Activity{data: data}} = CommonAPI.favorite(user, post_activity.id)
+      {:ok, %Activity{data: data}} = CommonAPI.favorite(post_activity.id, user)
       assert data["type"] == "Like"
       assert data["actor"] == user.ap_id
       assert data["object"] == post_activity.data["object"]
@@ -994,8 +994,8 @@ defmodule Pleroma.Web.CommonAPITest do
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe"})
-      {:ok, %Activity{}} = CommonAPI.favorite(user, activity.id)
-      assert {:ok, :already_liked} = CommonAPI.favorite(user, activity.id)
+      {:ok, %Activity{}} = CommonAPI.favorite(activity.id, user)
+      assert {:ok, :already_liked} = CommonAPI.favorite(activity.id, user)
     end
   end
 
@@ -1149,7 +1149,7 @@ defmodule Pleroma.Web.CommonAPITest do
           }
         )
 
-      {:ok, favorite_activity} = CommonAPI.favorite(friend2, activity.id)
+      {:ok, favorite_activity} = CommonAPI.favorite(activity.id, friend2)
       {:ok, repeat_activity} = CommonAPI.repeat(activity.id, friend1)
 
       assert Repo.aggregate(
@@ -1695,7 +1695,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       with_mock Pleroma.Web.Federator, publish: fn _ -> :ok end do
         assert {:ok, %Activity{data: %{"type" => "Like"}} = activity} =
-                 CommonAPI.favorite(user, activity.id)
+                 CommonAPI.favorite(activity.id, user)
 
         assert Visibility.local_public?(activity)
         refute called(Pleroma.Web.Federator.publish(activity))
@@ -1708,7 +1708,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe", visibility: "local"})
 
-      {:ok, %Activity{}} = CommonAPI.favorite(user, activity.id)
+      {:ok, %Activity{}} = CommonAPI.favorite(activity.id, user)
 
       with_mock Pleroma.Web.Federator, publish: fn _ -> :ok end do
         assert {:ok, activity} = CommonAPI.unfavorite(activity.id, user)
@@ -2002,7 +2002,7 @@ defmodule Pleroma.Web.CommonAPITest do
         CommonAPI.post(remote_user, %{status: "I like turtles!"})
 
       {:ok, %{data: %{"id" => ap_id}} = _favorite} =
-        CommonAPI.favorite(local_user, activity.id)
+        CommonAPI.favorite(activity.id, local_user)
 
       # Generate the publish_one jobs
       ObanHelpers.perform_all()

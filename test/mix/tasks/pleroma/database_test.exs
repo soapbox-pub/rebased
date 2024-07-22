@@ -251,7 +251,7 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
       |> Repo.update!()
 
       {:ok, old_favourite_activity} =
-        CommonAPI.favorite(remote_user2, old_remote_post_activity.id)
+        CommonAPI.favorite(old_remote_post_activity.id, remote_user2)
 
       old_favourite_activity
       |> Ecto.Changeset.change(%{local: false, updated_at: old_insert_date})
@@ -302,7 +302,7 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
       |> Ecto.Changeset.change(%{local: false, updated_at: old_insert_date})
       |> Repo.update!()
 
-      {:ok, old_favourite_activity} = CommonAPI.favorite(local_user, old_remote_post3_activity.id)
+      {:ok, old_favourite_activity} = CommonAPI.favorite(old_remote_post3_activity.id, local_user)
 
       old_favourite_activity
       |> Ecto.Changeset.change(%{local: true, updated_at: old_insert_date})
@@ -586,7 +586,7 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
       {:ok, %{id: id, object: object}} = CommonAPI.post(user, %{status: "test"})
       {:ok, %{object: object2}} = CommonAPI.post(user, %{status: "test test"})
 
-      CommonAPI.favorite(user2, id)
+      CommonAPI.favorite(id, user2)
 
       likes = %{
         "first" =>

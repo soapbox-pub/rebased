@@ -186,7 +186,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
       user = insert(:user)
 
-      {:ok, like_activity} = CommonAPI.favorite(user, note_activity.id)
+      {:ok, like_activity} = CommonAPI.favorite(note_activity.id, user)
 
       assert like_activity.data["type"] == "Like"
 

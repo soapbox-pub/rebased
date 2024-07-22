@@ -18,7 +18,7 @@ defmodule Pleroma.ResilienceTest do
     other_user = insert(:user)
 
     {:ok, post_one} = CommonAPI.post(user, %{status: "Here is a post"})
-    {:ok, like} = CommonAPI.favorite(other_user, post_one.id)
+    {:ok, like} = CommonAPI.favorite(post_one.id, other_user)
 
     %{
       user: user,
@@ -90,7 +90,7 @@ defmodule Pleroma.ResilienceTest do
              |> json_response(200)
 
     # Favoriting again doesn't hurt
-    {:ok, _like_two} = CommonAPI.favorite(other_user, post.id)
+    {:ok, _like_two} = CommonAPI.favorite(post.id, other_user)
 
     post = Repo.get(Activity, post.id)
 
