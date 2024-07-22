@@ -1219,13 +1219,13 @@ defmodule Pleroma.Web.CommonAPITest do
 
     test "remove mute", %{user: user, activity: activity} do
       CommonAPI.add_mute(user, activity)
-      {:ok, _} = CommonAPI.remove_mute(user, activity)
+      {:ok, _} = CommonAPI.remove_mute(activity, user)
       refute CommonAPI.thread_muted?(user, activity)
     end
 
     test "remove mute by ids", %{user: user, activity: activity} do
       CommonAPI.add_mute(user, activity)
-      {:ok, _} = CommonAPI.remove_mute(user.id, activity.id)
+      {:ok, _} = CommonAPI.remove_mute(activity.id, user.id)
       refute CommonAPI.thread_muted?(user, activity)
     end
 

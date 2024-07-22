@@ -572,16 +572,17 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec remove_mute(User.t(), Activity.t()) :: {:ok, Activity.t()} | {:error, any()}
-  def remove_mute(%User{} = user, %Activity{} = activity) do
+  @spec remove_mute(Activity.t(), User.t()) :: {:ok, Activity.t()} | {:error, any()}
+  def remove_mute(%Activity{} = activity, %User{} = user) do
     ThreadMute.remove_mute(user.id, activity.data["context"])
     {:ok, activity}
   end
 
-  def remove_mute(user_id, activity_id) do
+  @spec remove_mute(String.t(), String.t()) :: {:ok, Activity.t()} | {:error, any()}
+  def remove_mute(activity_id, user_id) do
     with {:user, %User{} = user} <- {:user, User.get_by_id(user_id)},
          {:activity, %Activity{} = activity} <- {:activity, Activity.get_by_id(activity_id)} do
-      remove_mute(user, activity)
+      remove_mute(activity, user)
     else
       {what, result} = error ->
         Logger.warning(

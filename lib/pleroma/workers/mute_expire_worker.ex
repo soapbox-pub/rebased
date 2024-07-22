@@ -14,7 +14,7 @@ defmodule Pleroma.Workers.MuteExpireWorker do
   def perform(%Job{
         args: %{"op" => "unmute_conversation", "user_id" => user_id, "activity_id" => activity_id}
       }) do
-    Pleroma.Web.CommonAPI.remove_mute(user_id, activity_id)
+    Pleroma.Web.CommonAPI.remove_mute(activity_id, user_id)
     :ok
   end
 
