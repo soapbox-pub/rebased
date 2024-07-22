@@ -95,7 +95,7 @@ defmodule Pleroma.Web.CommonAPITest do
         assert User.get_follow_state(blocker, blocked) == :follow_accept
         refute is_nil(Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(blocker, blocked))
 
-        assert {:ok, block} = CommonAPI.block(blocker, blocked)
+        assert {:ok, block} = CommonAPI.block(blocked, blocker)
 
         assert block.local
         assert User.blocks?(blocker, blocked)
@@ -120,7 +120,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       with_mock Pleroma.Web.Federator,
         publish: fn _ -> nil end do
-        assert {:ok, block} = CommonAPI.block(blocker, blocked)
+        assert {:ok, block} = CommonAPI.block(blocked, blocker)
 
         assert block.local
         assert User.blocks?(blocker, blocked)
@@ -1914,7 +1914,7 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "it does not boost if group is blocking poster", %{poster: poster, group: group} do
-      {:ok, _} = CommonAPI.block(group, poster)
+      {:ok, _} = CommonAPI.block(poster, group)
       {:ok, post} = CommonAPI.post(poster, %{status: "hey @#{group.nickname}"})
 
       announces = get_announces_of_object(post.object)

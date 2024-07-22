@@ -382,9 +382,9 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       user1 = insert(:user)
       user2 = insert(:user)
 
-      assert {:ok, %Activity{} = _} = CommonAPI.block(user1, user2)
-      assert {:ok, %Activity{} = _} = CommonAPI.block(user1, user2)
-      assert {:ok, %Activity{} = activity} = CommonAPI.block(user1, user2)
+      assert {:ok, %Activity{} = _} = CommonAPI.block(user2, user1)
+      assert {:ok, %Activity{} = _} = CommonAPI.block(user2, user1)
+      assert {:ok, %Activity{} = activity} = CommonAPI.block(user2, user1)
 
       assert Utils.fetch_latest_block(user1, user2) == activity
     end

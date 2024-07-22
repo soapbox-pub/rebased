@@ -148,7 +148,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     %{user: user, conn: conn} = oauth_access(["read:notifications"])
     blocker = insert(:user)
 
-    {:ok, _} = CommonAPI.block(blocker, user)
+    {:ok, _} = CommonAPI.block(user, blocker)
     {:ok, activity} = CommonAPI.post(blocker, %{status: "hi @#{user.nickname}"})
 
     {:ok, [_notification]} = Notification.create_notifications(activity)

@@ -31,7 +31,7 @@ defmodule Pleroma.User.Import do
       identifiers,
       fn identifier ->
         with {:ok, %User{} = blocked} <- User.get_or_fetch(identifier),
-             {:ok, _block} <- CommonAPI.block(blocker, blocked) do
+             {:ok, _block} <- CommonAPI.block(blocked, blocker) do
           blocked
         else
           error -> handle_error(:blocks_import, identifier, error)

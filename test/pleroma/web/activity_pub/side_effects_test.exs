@@ -519,7 +519,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, like} = CommonAPI.favorite(post.id, user)
       {:ok, reaction} = CommonAPI.react_with_emoji(post.id, user, "👍")
       {:ok, announce} = CommonAPI.repeat(post.id, user)
-      {:ok, block} = CommonAPI.block(user, poster)
+      {:ok, block} = CommonAPI.block(poster, user)
 
       {:ok, undo_data, _meta} = Builder.undo(user, like)
       {:ok, like_undo, _meta} = ActivityPub.persist(undo_data, local: true)
@@ -965,7 +965,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       group: group,
       poster: poster
     } do
-      {:ok, _} = CommonAPI.block(group, poster)
+      {:ok, _} = CommonAPI.block(poster, group)
       create_activity_data = make_create.([group])
       {:ok, create_activity, _meta} = ActivityPub.persist(create_activity_data, local: false)
 
