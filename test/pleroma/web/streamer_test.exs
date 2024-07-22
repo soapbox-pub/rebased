@@ -827,7 +827,7 @@ defmodule Pleroma.Web.StreamerTest do
       user2 = insert(:user)
       user3 = insert(:user)
       CommonAPI.follow(user2, user1)
-      CommonAPI.hide_reblogs(user1, user2)
+      CommonAPI.hide_reblogs(user2, user1)
 
       {:ok, create_activity} = CommonAPI.post(user3, %{status: "I'm kawen"})
 
@@ -843,7 +843,7 @@ defmodule Pleroma.Web.StreamerTest do
     } do
       user2 = insert(:user)
       CommonAPI.follow(user2, user1)
-      CommonAPI.hide_reblogs(user1, user2)
+      CommonAPI.hide_reblogs(user2, user1)
 
       {:ok, create_activity} = CommonAPI.post(user1, %{status: "I'm kawen"})
       Streamer.get_topic_and_add_socket("user", user1, user1_token)
@@ -859,7 +859,7 @@ defmodule Pleroma.Web.StreamerTest do
     } do
       user2 = insert(:user)
       CommonAPI.follow(user2, user1)
-      CommonAPI.hide_reblogs(user1, user2)
+      CommonAPI.hide_reblogs(user2, user1)
 
       {:ok, create_activity} = CommonAPI.post(user1, %{status: "I'm kawen"})
       Streamer.get_topic_and_add_socket("user", user1, user1_token)

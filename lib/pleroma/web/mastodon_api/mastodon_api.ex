@@ -30,7 +30,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   end
 
   defp set_reblogs_visibility(false, {:ok, follower, followed, _}) do
-    CommonAPI.hide_reblogs(follower, followed)
+    CommonAPI.hide_reblogs(followed, follower)
   end
 
   defp set_reblogs_visibility(_, {:ok, follower, followed, _}) do

@@ -1358,7 +1358,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activity = insert(:note_activity)
       user = insert(:user)
       booster = insert(:user)
-      {:ok, _reblog_mute} = CommonAPI.hide_reblogs(user, booster)
+      {:ok, _reblog_mute} = CommonAPI.hide_reblogs(booster, user)
 
       {:ok, activity} = CommonAPI.repeat(activity.id, booster)
 
@@ -1371,7 +1371,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activity = insert(:note_activity)
       user = insert(:user)
       booster = insert(:user)
-      {:ok, _reblog_mute} = CommonAPI.hide_reblogs(user, booster)
+      {:ok, _reblog_mute} = CommonAPI.hide_reblogs(booster, user)
       {:ok, _reblog_mute} = CommonAPI.show_reblogs(user, booster)
 
       {:ok, activity} = CommonAPI.repeat(activity.id, booster)

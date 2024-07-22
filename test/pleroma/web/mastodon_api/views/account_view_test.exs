@@ -436,7 +436,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       {:ok, other_user, user} = User.follow(other_user, user)
       {:ok, _subscription} = User.subscribe(user, other_user)
       {:ok, _user_relationships} = User.mute(user, other_user, %{notifications: true})
-      {:ok, _reblog_mute} = CommonAPI.hide_reblogs(user, other_user)
+      {:ok, _reblog_mute} = CommonAPI.hide_reblogs(other_user, user)
 
       expected =
         Map.merge(

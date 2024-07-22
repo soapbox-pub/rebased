@@ -687,7 +687,7 @@ defmodule Pleroma.Web.CommonAPI do
   defp set_visibility(activity, _), do: {:ok, activity}
 
   @spec hide_reblogs(User.t(), User.t()) :: {:ok, any()} | {:error, any()}
-  def hide_reblogs(%User{} = user, %User{} = target) do
+  def hide_reblogs(%User{} = target, %User{} = user) do
     UserRelationship.create_reblog_mute(user, target)
   end
 
