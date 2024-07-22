@@ -388,7 +388,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     assert status.pleroma.thread_muted == false
 
-    {:ok, activity} = CommonAPI.add_mute(user, activity)
+    {:ok, activity} = CommonAPI.add_mute(activity, user)
 
     status = StatusView.render("show.json", %{activity: activity, for: user})
 
@@ -479,7 +479,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     # After following the user, the quote is rendered
     follower = insert(:user)
-    CommonAPI.follow(follower, user)
+    CommonAPI.follow(user, follower)
 
     status = StatusView.render("show.json", %{activity: quote_private, for: follower})
     assert status.pleroma.quote.id == to_string(private.id)
@@ -938,7 +938,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("show.json", activity: post)
     refute status.edited_at
 
-    {:ok, _} = CommonAPI.update(poster, post, %{status: "mew mew"})
+    {:ok, _} = CommonAPI.update(post, poster, %{status: "mew mew"})
     edited = Pleroma.Activity.normalize(post)
 
     status = StatusView.render("show.json", activity: edited)

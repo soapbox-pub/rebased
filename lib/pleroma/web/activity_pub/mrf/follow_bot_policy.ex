@@ -49,7 +49,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicy do
           "#{__MODULE__}: Follow request from #{follower.nickname} to #{user.nickname}"
         )
 
-        CommonAPI.follow(follower, user)
+        CommonAPI.follow(user, follower)
       end
     end)
 

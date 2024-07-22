@@ -734,7 +734,7 @@ defmodule Pleroma.Notification do
 
   def mark_as_read?(activity, target_user) do
     user = Activity.user_actor(activity)
-    User.mutes_user?(target_user, user) || CommonAPI.thread_muted?(target_user, activity)
+    User.mutes_user?(target_user, user) || CommonAPI.thread_muted?(activity, target_user)
   end
 
   def for_user_and_activity(user, activity) do

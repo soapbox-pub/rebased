@@ -12,6 +12,8 @@ defmodule Pleroma.Conversation.Participation do
   import Ecto.Changeset
   import Ecto.Query
 
+  @type t :: %__MODULE__{}
+
   schema "conversation_participations" do
     belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     belongs_to(:conversation, Conversation)

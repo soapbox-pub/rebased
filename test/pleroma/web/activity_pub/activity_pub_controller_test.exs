@@ -1224,7 +1224,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       note = insert(:note_activity, user: reported_user)
 
-      Pleroma.Web.CommonAPI.favorite(another, note.id)
+      Pleroma.Web.CommonAPI.favorite(note.id, another)
 
       mock_json_body =
         "test/fixtures/mastodon/application_actor.json"
@@ -1402,7 +1402,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert question = Object.normalize(activity, fetch: false)
 
-      {:ok, [activity], _object} = CommonAPI.vote(voter, question, [1])
+      {:ok, [activity], _object} = CommonAPI.vote(question, voter, [1])
 
       assert outbox_get =
                conn
@@ -1747,7 +1747,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
          %{conn: conn} do
       user = insert(:user, hide_followers: true)
       other_user = insert(:user)
-      {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, _other_user, user, _activity} = CommonAPI.follow(user, other_user)
 
       result =
         conn
@@ -1843,7 +1843,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
          %{conn: conn} do
       user = insert(:user, hide_follows: true)
       other_user = insert(:user)
-      {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
+      {:ok, user, _other_user, _activity} = CommonAPI.follow(other_user, user)
 
       result =
         conn

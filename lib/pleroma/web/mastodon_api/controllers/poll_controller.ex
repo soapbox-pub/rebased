@@ -51,7 +51,7 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
     with %Object{data: %{"type" => "Question"}} = object <- Object.get_by_id(id),
          %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
          true <- Visibility.visible_for_user?(activity, user),
-         {:ok, _activities, object} <- get_cached_vote_or_vote(user, object, choices) do
+         {:ok, _activities, object} <- get_cached_vote_or_vote(object, user, choices) do
       try_render(conn, "show.json", %{object: object, for: user})
     else
       nil -> render_error(conn, :not_found, "Record not found")
@@ -60,11 +60,11 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
     end
   end
 
-  defp get_cached_vote_or_vote(user, object, choices) do
+  defp get_cached_vote_or_vote(object, user, choices) do
     idempotency_key = "polls:#{user.id}:#{object.data["id"]}"
 
     @cachex.fetch!(:idempotency_cache, idempotency_key, fn _ ->
-      case CommonAPI.vote(user, object, choices) do
+      case CommonAPI.vote(object, user, choices) do
         {:error, _message} = res -> {:ignore, res}
         res -> {:commit, res}
       end

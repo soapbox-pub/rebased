@@ -353,7 +353,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "everybody do the dinosaur :dinosaur:"})
-      {:ok, update} = CommonAPI.update(user, activity, %{status: "mew mew :blank:"})
+      {:ok, update} = CommonAPI.update(activity, user, %{status: "mew mew :blank:"})
 
       {:ok, prepared} = Transmogrifier.prepare_outgoing(update.data)
 
