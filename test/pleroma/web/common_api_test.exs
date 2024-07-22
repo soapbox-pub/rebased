@@ -324,7 +324,7 @@ defmodule Pleroma.Web.CommonAPITest do
       User.block(blocker, blocked)
 
       assert User.blocks?(blocker, blocked)
-      assert {:ok, :no_activity} == CommonAPI.unblock(blocker, blocked)
+      assert {:ok, :no_activity} == CommonAPI.unblock(blocked, blocker)
       refute User.blocks?(blocker, blocked)
     end
   end
