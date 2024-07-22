@@ -1402,7 +1402,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert question = Object.normalize(activity, fetch: false)
 
-      {:ok, [activity], _object} = CommonAPI.vote(voter, question, [1])
+      {:ok, [activity], _object} = CommonAPI.vote(question, voter, [1])
 
       assert outbox_get =
                conn

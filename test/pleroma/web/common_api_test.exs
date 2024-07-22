@@ -1559,9 +1559,9 @@ defmodule Pleroma.Web.CommonAPITest do
 
       object = Object.normalize(activity, fetch: false)
 
-      {:ok, _, object} = CommonAPI.vote(other_user, object, [0])
+      {:ok, _, object} = CommonAPI.vote(object, other_user, [0])
 
-      assert {:error, "Already voted"} == CommonAPI.vote(other_user, object, [1])
+      assert {:error, "Already voted"} == CommonAPI.vote(object, other_user, [1])
     end
   end
 

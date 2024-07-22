@@ -180,8 +180,8 @@ defmodule Pleroma.NotificationTest do
     question = insert(:question, user: user1)
     activity = insert(:question_activity, question: question)
 
-    {:ok, _, _} = CommonAPI.vote(user2, question, [0])
-    {:ok, _, _} = CommonAPI.vote(user3, question, [1])
+    {:ok, _, _} = CommonAPI.vote(question, user2, [0])
+    {:ok, _, _} = CommonAPI.vote(question, user3, [1])
 
     {:ok, notifications} = Notification.create_poll_notifications(activity)
 

@@ -201,7 +201,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
         })
 
       object = Object.normalize(activity, fetch: false)
-      {:ok, votes, object} = CommonAPI.vote(other_user, object, [0, 1])
+      {:ok, votes, object} = CommonAPI.vote(object, other_user, [0, 1])
       assert Enum.sort(Utils.get_existing_votes(other_user.ap_id, object)) == Enum.sort(votes)
     end
 
@@ -219,7 +219,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
         })
 
       object = Object.normalize(activity, fetch: false)
-      {:ok, [vote], object} = CommonAPI.vote(other_user, object, [0])
+      {:ok, [vote], object} = CommonAPI.vote(object, other_user, [0])
       {:ok, _activity} = CommonAPI.favorite(activity.id, user)
       [fetched_vote] = Utils.get_existing_votes(other_user.ap_id, object)
       assert fetched_vote.id == vote.id

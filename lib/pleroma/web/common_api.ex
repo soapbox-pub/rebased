@@ -329,8 +329,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec vote(User.t(), Object.t(), list()) :: {:ok, list(), Object.t()} | {:error, any()}
-  def vote(user, %{data: %{"type" => "Question"}} = object, choices) do
+  @spec vote(Object.t(), User.t(), list()) :: {:ok, list(), Object.t()} | {:error, any()}
+  def vote(%Object{data: %{"type" => "Question"}} = object, %User{} = user, choices) do
     with :ok <- validate_not_author(object, user),
          :ok <- validate_existing_votes(user, object),
          {:ok, options, choices} <- normalize_and_validate_choices(choices, object) do
