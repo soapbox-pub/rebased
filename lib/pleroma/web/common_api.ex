@@ -593,8 +593,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec thread_muted?(User.t(), Activity.t()) :: boolean()
-  def thread_muted?(%User{id: user_id}, %{data: %{"context" => context}})
+  @spec thread_muted?(Activity.t(), User.t()) :: boolean()
+  def thread_muted?(%{data: %{"context" => context}}, %User{id: user_id})
       when is_binary(context) do
     ThreadMute.exists?(user_id, context)
   end

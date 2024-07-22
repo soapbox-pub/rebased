@@ -1173,7 +1173,7 @@ defmodule Pleroma.Web.CommonAPITest do
              end)
 
       {:ok, _} = CommonAPI.add_mute(activity, author)
-      assert CommonAPI.thread_muted?(author, activity)
+      assert CommonAPI.thread_muted?(activity, author)
 
       assert Repo.aggregate(
                from(n in Notification, where: n.seen == false and n.user_id == ^friend1.id),
@@ -1198,12 +1198,12 @@ defmodule Pleroma.Web.CommonAPITest do
 
     test "add mute", %{user: user, activity: activity} do
       {:ok, _} = CommonAPI.add_mute(activity, user)
-      assert CommonAPI.thread_muted?(user, activity)
+      assert CommonAPI.thread_muted?(activity, user)
     end
 
     test "add expiring mute", %{user: user, activity: activity} do
       {:ok, _} = CommonAPI.add_mute(activity, user, %{expires_in: 60})
-      assert CommonAPI.thread_muted?(user, activity)
+      assert CommonAPI.thread_muted?(activity, user)
 
       worker = Pleroma.Workers.MuteExpireWorker
       args = %{"op" => "unmute_conversation", "user_id" => user.id, "activity_id" => activity.id}
@@ -1214,19 +1214,19 @@ defmodule Pleroma.Web.CommonAPITest do
       )
 
       assert :ok = perform_job(worker, args)
-      refute CommonAPI.thread_muted?(user, activity)
+      refute CommonAPI.thread_muted?(activity, user)
     end
 
     test "remove mute", %{user: user, activity: activity} do
       CommonAPI.add_mute(activity, user)
       {:ok, _} = CommonAPI.remove_mute(activity, user)
-      refute CommonAPI.thread_muted?(user, activity)
+      refute CommonAPI.thread_muted?(activity, user)
     end
 
     test "remove mute by ids", %{user: user, activity: activity} do
       CommonAPI.add_mute(activity, user)
       {:ok, _} = CommonAPI.remove_mute(activity.id, user.id)
-      refute CommonAPI.thread_muted?(user, activity)
+      refute CommonAPI.thread_muted?(activity, user)
     end
 
     test "check that mutes can't be duplicate", %{user: user, activity: activity} do
