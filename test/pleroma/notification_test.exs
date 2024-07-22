@@ -165,7 +165,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, _activity_two} = CommonAPI.repeat(activity_one.id, repeated_user)
 
       {:ok, _edit_activity} =
-        CommonAPI.update(user, activity_one, %{
+        CommonAPI.update(activity_one, user, %{
           status: "hey @#{other_user.nickname}! mew mew"
         })
 
@@ -748,7 +748,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, _activity_two} = CommonAPI.repeat(activity_one.id, repeated_user)
 
       {:ok, edit_activity} =
-        CommonAPI.update(user, activity_one, %{
+        CommonAPI.update(activity_one, user, %{
           status: "hey @#{other_user.nickname}! mew mew"
         })
 

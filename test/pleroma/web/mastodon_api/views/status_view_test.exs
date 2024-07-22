@@ -938,7 +938,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("show.json", activity: post)
     refute status.edited_at
 
-    {:ok, _} = CommonAPI.update(poster, post, %{status: "mew mew"})
+    {:ok, _} = CommonAPI.update(post, poster, %{status: "mew mew"})
     edited = Pleroma.Activity.normalize(post)
 
     status = StatusView.render("show.json", activity: edited)

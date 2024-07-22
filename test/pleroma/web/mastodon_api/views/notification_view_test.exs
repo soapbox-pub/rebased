@@ -290,7 +290,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
 
     {:ok, activity} = CommonAPI.post(user, %{status: "mew"})
     {:ok, _} = CommonAPI.repeat(activity.id, repeat_user)
-    {:ok, update} = CommonAPI.update(user, activity, %{status: "mew mew"})
+    {:ok, update} = CommonAPI.update(activity, user, %{status: "mew mew"})
 
     user = Pleroma.User.get_by_ap_id(user.ap_id)
     activity = Pleroma.Activity.normalize(activity)

@@ -461,8 +461,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec update(User.t(), Activity.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
-  def update(user, orig_activity, changes) do
+  @spec update(Activity.t(), User.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
+  def update(orig_activity, %User{} = user, changes) do
     with orig_object <- Object.normalize(orig_activity),
          {:ok, new_object} <- make_update_data(user, orig_object, changes),
          {:ok, update_data, _} <- Builder.update(user, new_object),

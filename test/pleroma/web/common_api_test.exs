@@ -1753,7 +1753,7 @@ defmodule Pleroma.Web.CommonAPITest do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{status: "foo1", spoiler_text: "title 1"})
 
-      {:ok, updated} = CommonAPI.update(user, activity, %{status: "updated 2"})
+      {:ok, updated} = CommonAPI.update(activity, user, %{status: "updated 2"})
 
       updated_object = Object.normalize(updated)
       assert updated_object.data["content"] == "updated 2"
@@ -1767,7 +1767,7 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, activity} =
         CommonAPI.post(user, %{status: "foo1", spoiler_text: "title 1", visibility: "private"})
 
-      {:ok, updated} = CommonAPI.update(user, activity, %{status: "updated 2"})
+      {:ok, updated} = CommonAPI.update(activity, user, %{status: "updated 2"})
 
       updated_object = Object.normalize(updated)
       assert updated_object.data["content"] == "updated 2"
@@ -1784,7 +1784,7 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, activity} =
         CommonAPI.post(user, %{status: "foo1", spoiler_text: "title 1 :#{emoji1}:"})
 
-      {:ok, updated} = CommonAPI.update(user, activity, %{status: "updated 2 :#{emoji2}:"})
+      {:ok, updated} = CommonAPI.update(activity, user, %{status: "updated 2 :#{emoji2}:"})
 
       updated_object = Object.normalize(updated)
       assert updated_object.data["content"] == "updated 2 :#{emoji2}:"
@@ -1803,7 +1803,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       with_mock Pleroma.Web.Federator,
         publish: fn _p -> nil end do
-        {:ok, updated} = CommonAPI.update(user, activity, %{status: "updated 2 :#{emoji2}:"})
+        {:ok, updated} = CommonAPI.update(activity, user, %{status: "updated 2 :#{emoji2}:"})
 
         assert updated.data["object"]["content"] == "updated 2 :#{emoji2}:"
         assert %{^emoji2 => _} = updated.data["object"]["emoji"]
@@ -1847,7 +1847,7 @@ defmodule Pleroma.Web.CommonAPITest do
       assert reply.object.data["emoji"]["remoteemoji"] == remote_emoji_uri
 
       {:ok, edit} =
-        CommonAPI.update(user, reply, %{status: "reply mew mew", spoiler_text: ":remoteemoji:"})
+        CommonAPI.update(reply, user, %{status: "reply mew mew", spoiler_text: ":remoteemoji:"})
 
       edited_note = Pleroma.Object.normalize(edit)
 
@@ -1863,7 +1863,7 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, activity} = CommonAPI.post(user, %{status: "foo1", spoiler_text: "updated 1"})
       assert Object.normalize(activity).data["summary"] == "mewmew 1"
 
-      {:ok, updated} = CommonAPI.update(user, activity, %{status: "updated 2"})
+      {:ok, updated} = CommonAPI.update(activity, user, %{status: "updated 2"})
 
       updated_object = Object.normalize(updated)
       assert updated_object.data["content"] == "mewmew 2"

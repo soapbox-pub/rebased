@@ -276,7 +276,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
          actor <- Activity.user_actor(activity),
          {_, true} <- {:own_status, actor.id == user.id},
          changes <- body_params |> put_application(conn),
-         {_, {:ok, _update_activity}} <- {:pipeline, CommonAPI.update(user, activity, changes)},
+         {_, {:ok, _update_activity}} <- {:pipeline, CommonAPI.update(activity, user, changes)},
          {_, %Activity{}} = {_, activity} <- {:refetched, Activity.get_by_id_with_object(id)} do
       try_render(conn, "show.json",
         activity: activity,

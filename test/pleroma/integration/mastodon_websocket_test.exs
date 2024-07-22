@@ -440,7 +440,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
       assert_receive {:text, _raw_json}, 1_000
 
-      {:ok, _} = CommonAPI.update(user, activity, %{status: "mew mew", visibility: "private"})
+      {:ok, _} = CommonAPI.update(activity, user, %{status: "mew mew", visibility: "private"})
 
       assert_receive {:text, raw_json}, 1_000
 

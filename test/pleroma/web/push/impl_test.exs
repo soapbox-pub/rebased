@@ -225,7 +225,7 @@ defmodule Pleroma.Web.Push.ImplTest do
 
     {:ok, activity} = CommonAPI.post(user, %{status: "lorem ipsum"})
 
-    {:ok, activity} = CommonAPI.update(user, activity, %{status: "edited status"})
+    {:ok, activity} = CommonAPI.update(activity, user, %{status: "edited status"})
     object = Object.normalize(activity, fetch: false)
 
     assert Impl.format_body(%{activity: activity, type: "update"}, user, object) ==
