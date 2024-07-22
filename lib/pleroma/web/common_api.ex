@@ -692,7 +692,7 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   @spec show_reblogs(User.t(), User.t()) :: {:ok, any()} | {:error, any()}
-  def show_reblogs(%User{} = user, %User{} = target) do
+  def show_reblogs(%User{} = target, %User{} = user) do
     UserRelationship.delete_reblog_mute(user, target)
   end
 

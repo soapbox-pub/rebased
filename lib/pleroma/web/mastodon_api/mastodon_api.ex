@@ -34,7 +34,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   end
 
   defp set_reblogs_visibility(_, {:ok, follower, followed, _}) do
-    CommonAPI.show_reblogs(follower, followed)
+    CommonAPI.show_reblogs(followed, follower)
   end
 
   defp set_subscription(true, {:ok, follower, followed, _}) do
