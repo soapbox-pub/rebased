@@ -6,6 +6,7 @@ defmodule Pleroma.Workers.BackupWorker do
   use Oban.Worker, queue: :slow, max_attempts: 1
 
   alias Oban.Job
+  alias Pleroma.Config.Getting, as: Config
   alias Pleroma.User.Backup
 
   @impl Oban.Worker
@@ -32,7 +33,7 @@ defmodule Pleroma.Workers.BackupWorker do
   end
 
   @impl Oban.Worker
-  def timeout(_job), do: :timer.minutes(30)
+  def timeout(_job), do: Config.get([Backup, :timeout], :timer.minutes(30))
 
   defp has_email?(user) do
     not is_nil(user.email) and user.email != ""

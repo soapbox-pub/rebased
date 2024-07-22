@@ -908,8 +908,8 @@ config :pleroma, Pleroma.User.Backup,
   purge_after_days: 30,
   limit_days: 7,
   dir: nil,
-  process_wait_time: 30_000,
-  process_chunk_size: 100
+  process_chunk_size: 100,
+  timeout: :timer.minutes(30)
 
 config :pleroma, ConcurrentLimiter, [
   {Pleroma.Search, [max_running: 30, max_waiting: 50]}
