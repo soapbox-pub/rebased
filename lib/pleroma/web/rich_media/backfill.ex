@@ -64,5 +64,5 @@ defmodule Pleroma.Web.RichMedia.Backfill do
   defp warm_cache(key, val), do: @cachex.put(:rich_media_cache, key, val)
 
   defp negative_cache(key, ttl \\ :timer.minutes(15)),
-    do: @cachex.put(:rich_media_cache, key, nil, ttl: ttl)
+    do: @cachex.put(:rich_media_cache, key, :error, ttl: ttl)
 end
