@@ -580,6 +580,8 @@ config :pleroma, Pleroma.User,
   ],
   email_blacklist: []
 
+# The Pruner :max_age must be longer than Worker :unique
+# value or it cannot enforce uniqueness.
 config :pleroma, Oban,
   repo: Pleroma.Repo,
   log: false,
@@ -593,7 +595,7 @@ config :pleroma, Oban,
     search_indexing: [limit: 10, paused: true],
     slow: 5
   ],
-  plugins: [Oban.Plugins.Pruner],
+  plugins: [{Oban.Plugins.Pruner, max_age: 900}],
   crontab: [
     {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
     {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
