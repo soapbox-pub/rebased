@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.RichMediaWorker do
+  alias Pleroma.Config
   alias Pleroma.Web.RichMedia.Backfill
   alias Pleroma.Web.RichMedia.Card
 
@@ -31,6 +32,13 @@ defmodule Pleroma.Workers.RichMediaWorker do
     end
   end
 
+  # There is timeout value enforced by Tesla.Middleware.Timeout
+  # which can be found in the RichMedia.Helpers module to allow us to detect
+  # a slow/infinite data stream and insert a negative cache entry for the URL
+  # We pad it by 2 seconds to be certain a slow connection is detected and we
+  # can inject a negative cache entry for the URL
   @impl Oban.Worker
-  def timeout(_job), do: :timer.seconds(5)
+  def timeout(_job) do
+    Config.get!([:rich_media, :timeout]) + :timer.seconds(2)
+  end
 end
