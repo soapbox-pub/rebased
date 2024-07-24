@@ -81,6 +81,8 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
 
       upload_limit = Config.get([:instance, :upload_limit]) * 8 + 8
 
+      File.mkdir_p!(Path.absname("test/tmp"))
+
       assert :ok ==
                File.write(Path.absname("test/tmp/large_binary.data"), <<0::size(upload_limit)>>)
 

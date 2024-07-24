@@ -206,7 +206,7 @@ defmodule Pleroma.Mixfile do
       {:websock_adapter, "~> 0.5.6"},
       {:oban_live_dashboard, "~> 0.1.1"},
       {:icalendar, "~> 1.1"},
-      {:geospatial, "~> 0.3.0"},
+      {:geospatial, "~> 0.3.1"},
 
       ## dev & test
       {:phoenix_live_reload, "~> 1.3.3", only: :dev},

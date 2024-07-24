@@ -307,6 +307,8 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
     test "updates the user's avatar, upload_limit, returns a HTTP 413", %{conn: conn, user: user} do
       upload_limit = Config.get([:instance, :upload_limit]) * 8 + 8
 
+      File.mkdir_p!(Path.absname("test/tmp"))
+
       assert :ok ==
                File.write(Path.absname("test/tmp/large_binary.data"), <<0::size(upload_limit)>>)
 
@@ -353,6 +355,8 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
 
     test "updates the user's banner, upload_limit, returns a HTTP 413", %{conn: conn, user: user} do
       upload_limit = Config.get([:instance, :upload_limit]) * 8 + 8
+
+      File.mkdir_p!(Path.absname("test/tmp"))
 
       assert :ok ==
                File.write(Path.absname("test/tmp/large_binary.data"), <<0::size(upload_limit)>>)
@@ -405,6 +409,8 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       user: user
     } do
       upload_limit = Config.get([:instance, :upload_limit]) * 8 + 8
+
+      File.mkdir_p!(Path.absname("test/tmp"))
 
       assert :ok ==
                File.write(Path.absname("test/tmp/large_binary.data"), <<0::size(upload_limit)>>)
