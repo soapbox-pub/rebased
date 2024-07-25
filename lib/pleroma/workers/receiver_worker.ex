@@ -25,7 +25,7 @@ defmodule Pleroma.Workers.ReceiverWorker do
     # Revert it for the signature validation.
     req_headers = Enum.into(req_headers, [], &List.to_tuple(&1))
 
-    conn_data = %{
+    conn_data = %Plug.Conn{
       method: method,
       params: params,
       req_headers: req_headers,

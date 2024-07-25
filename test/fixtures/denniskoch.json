@@ -1,0 +1,112 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    {
+      "Curve25519Key": "toot:Curve25519Key",
+      "Device": "toot:Device",
+      "Ed25519Key": "toot:Ed25519Key",
+      "Ed25519Signature": "toot:Ed25519Signature",
+      "EncryptedMessage": "toot:EncryptedMessage",
+      "PropertyValue": "schema:PropertyValue",
+      "alsoKnownAs": {
+        "@id": "as:alsoKnownAs",
+        "@type": "@id"
+      },
+      "cipherText": "toot:cipherText",
+      "claim": {
+        "@id": "toot:claim",
+        "@type": "@id"
+      },
+      "deviceId": "toot:deviceId",
+      "devices": {
+        "@id": "toot:devices",
+        "@type": "@id"
+      },
+      "discoverable": "toot:discoverable",
+      "featured": {
+        "@id": "toot:featured",
+        "@type": "@id"
+      },
+      "featuredTags": {
+        "@id": "toot:featuredTags",
+        "@type": "@id"
+      },
+      "fingerprintKey": {
+        "@id": "toot:fingerprintKey",
+        "@type": "@id"
+      },
+      "focalPoint": {
+        "@container": "@list",
+        "@id": "toot:focalPoint"
+      },
+      "identityKey": {
+        "@id": "toot:identityKey",
+        "@type": "@id"
+      },
+      "indexable": "toot:indexable",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "memorial": "toot:memorial",
+      "messageFranking": "toot:messageFranking",
+      "messageType": "toot:messageType",
+      "movedTo": {
+        "@id": "as:movedTo",
+        "@type": "@id"
+      },
+      "publicKeyBase64": "toot:publicKeyBase64",
+      "schema": "http://schema.org#",
+      "suspended": "toot:suspended",
+      "toot": "http://joinmastodon.org/ns#",
+      "value": "schema:value"
+    }
+  ],
+  "attachment": [
+    {
+      "name": "GitHub",
+      "type": "PropertyValue",
+      "value": "<a href=\"https://github.com/pxlrbt/\" target=\"_blank\" rel=\"nofollow noopener noreferrer me\" translate=\"no\"><span class=\"invisible\">https://</span><span class=\"\">github.com/pxlrbt/</span><span class=\"invisible\"></span></a>"
+    },
+    {
+      "name": "Discord",
+      "type": "PropertyValue",
+      "value": "pxlrbt#6029"
+    }
+  ],
+  "devices": "https://phpc.social/users/denniskoch/collections/devices",
+  "discoverable": true,
+  "endpoints": {
+    "sharedInbox": "https://phpc.social/inbox"
+  },
+  "featured": "https://phpc.social/users/denniskoch/collections/featured",
+  "featuredTags": "https://phpc.social/users/denniskoch/collections/tags",
+  "followers": "https://phpc.social/users/denniskoch/followers",
+  "following": "https://phpc.social/users/denniskoch/following",
+  "icon": {
+    "mediaType": "image/jpeg",
+    "type": "Image",
+    "url": "https://media.phpc.social/accounts/avatars/109/364/097/179/042/485/original/6e770c7b3f5ef72d.jpg"
+  },
+  "id": "https://phpc.social/users/denniskoch",
+  "image": {
+    "mediaType": "image/jpeg",
+    "type": "Image",
+    "url": "https://media.phpc.social/accounts/headers/109/364/097/179/042/485/original/709da24705260c04.jpg"
+  },
+  "inbox": "https://phpc.social/users/denniskoch/inbox",
+  "indexable": true,
+  "manuallyApprovesFollowers": false,
+  "memorial": false,
+  "name": "Dennis Koch",
+  "outbox": "https://phpc.social/users/denniskoch/outbox",
+  "preferredUsername": "denniskoch",
+  "publicKey": {
+    "id": "https://phpc.social/users/denniskoch#main-key",
+    "owner": "https://phpc.social/users/denniskoch",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4dmcSlqLj18gPvuslkmt\nQTniZ8ybO4pgvMvPLYtBuTBUjo49vJ/8Sw6jB5zcKb1haqIdny7Rv/vY3kCdCXcP\nloh1I+jthEgqLT8JpZWGwLGwg9piFhrMGADmt3N8du7HfglzuZ8LlVpnZ8feCw7I\nS2ua/ZCxE47mI45Z3ed2kkFYKWopWWqFn2lan/1OyHrcFKtCvaVjRdvo0UUt2tgl\nvyJI4+zN8FnrCbsMtcbI5nSzfJIrOc4LeaGmLJh+0o2rwoOQZc2487XWbeyfhjsq\nPRBpYN7pfHWQDvzQIN075LHTf9zDFsm6+HqY7Zs5rYxr72rvcX7d9JcP6CasIosY\nqwIDAQAB\n-----END PUBLIC KEY-----\n"
+  },
+  "published": "2022-11-18T00:00:00Z",
+  "summary": "<p>🧑‍💻 Full Stack Developer<br />🚀 Laravel, Filament, Livewire, Vue, Inertia<br />🌍 Germany</p>",
+  "tag": [],
+  "type": "Person",
+  "url": "https://phpc.social/@denniskoch"
+}
