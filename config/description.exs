@@ -2147,11 +2147,11 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        key: :failure_backoff,
+        key: :timeout,
         type: :integer,
         description:
-          "Amount of milliseconds after request failure, during which the request will not be retried.",
-        suggestions: [60_000]
+          "Amount of milliseconds after which the HTTP request is forcibly terminated.",
+        suggestions: [5_000]
       }
     ]
   },

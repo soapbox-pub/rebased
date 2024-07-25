@@ -70,7 +70,7 @@ defmodule Pleroma.Web.RichMedia.CardTest do
              Card.get_by_activity(activity)
            )
 
-    {:ok, _} = CommonAPI.update(user, activity, %{status: "I like this site #{updated_url}"})
+    {:ok, _} = CommonAPI.update(activity, user, %{status: "I like this site #{updated_url}"})
 
     activity = Pleroma.Activity.get_by_id(activity.id)
 

@@ -15,7 +15,6 @@ defmodule Pleroma.Application do
   @compat_name Mix.Project.config()[:compat_name]
   @version Mix.Project.config()[:version]
   @repository Mix.Project.config()[:source_url]
-  @compile_env Mix.env()
 
   def name, do: @name
   def compat_name, do: @compat_name
@@ -56,7 +55,7 @@ defmodule Pleroma.Application do
     Pleroma.Config.Oban.warn()
     Config.DeprecationWarnings.warn()
 
-    if @compile_env != :test do
+    if Config.get([Pleroma.Web.Plugs.HTTPSecurityPlug, :enable], true) do
       Pleroma.Web.Plugs.HTTPSecurityPlug.warn_if_disabled()
     end
 

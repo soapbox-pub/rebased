@@ -47,7 +47,7 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionControllerTest do
 
   test "returns v2 suggestions excluding blocked accounts", %{conn: conn, user: blocker} do
     blocked = insert(:user, is_suggested: true)
-    {:ok, _} = CommonAPI.block(blocker, blocked)
+    {:ok, _} = CommonAPI.block(blocked, blocker)
 
     res =
       conn
@@ -59,7 +59,7 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionControllerTest do
 
   test "returns v2 suggestions excluding followed accounts", %{conn: conn, user: follower} do
     followed = insert(:user, is_suggested: true)
-    {:ok, _, _, _} = CommonAPI.follow(follower, followed)
+    {:ok, _, _, _} = CommonAPI.follow(followed, follower)
 
     res =
       conn

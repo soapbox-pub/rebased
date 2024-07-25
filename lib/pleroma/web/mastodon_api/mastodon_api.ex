@@ -16,7 +16,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   def follow(follower, followed, params \\ %{}) do
     result =
       if not User.following?(follower, followed) do
-        CommonAPI.follow(follower, followed)
+        CommonAPI.follow(followed, follower)
       else
         {:ok, follower, followed, nil}
       end
@@ -30,11 +30,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   end
 
   defp set_reblogs_visibility(false, {:ok, follower, followed, _}) do
-    CommonAPI.hide_reblogs(follower, followed)
+    CommonAPI.hide_reblogs(followed, follower)
   end
 
   defp set_reblogs_visibility(_, {:ok, follower, followed, _}) do
-    CommonAPI.show_reblogs(follower, followed)
+    CommonAPI.show_reblogs(followed, follower)
   end
 
   defp set_subscription(true, {:ok, follower, followed, _}) do

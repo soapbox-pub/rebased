@@ -59,7 +59,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
     object = Object.normalize(note, fetch: false)
     user = insert(:user)
 
-    {:ok, like_activity} = CommonAPI.favorite(user, note.id)
+    {:ok, like_activity} = CommonAPI.favorite(note.id, user)
 
     result = ObjectView.render("object.json", %{object: like_activity})
 

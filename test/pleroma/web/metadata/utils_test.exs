@@ -81,7 +81,7 @@ defmodule Pleroma.Web.Metadata.UtilsTest do
       object = Pleroma.Object.normalize(activity)
       assert Utils.scrub_html_and_truncate(object) == "mew mew #def"
 
-      {:ok, update} = Pleroma.Web.CommonAPI.update(user, activity, %{status: "mew mew #abc"})
+      {:ok, update} = Pleroma.Web.CommonAPI.update(activity, user, %{status: "mew mew #abc"})
       update = Pleroma.Activity.normalize(update)
       object = Pleroma.Object.normalize(update)
       assert Utils.scrub_html_and_truncate(object) == "mew mew #abc"
