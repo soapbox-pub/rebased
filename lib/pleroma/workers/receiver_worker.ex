@@ -35,7 +35,7 @@ defmodule Pleroma.Workers.ReceiverWorker do
 
     with {:ok, %User{} = _actor} <- User.get_or_fetch_by_ap_id(conn_data.params["actor"]),
          {:ok, _public_key} <- Signature.refetch_public_key(conn_data),
-         {:signature, true} <- {:signature, HTTPSignatures.validate_conn(conn_data)},
+         {:signature, true} <- {:signature, Signature.validate_signature(conn_data)},
          {:ok, res} <- Federator.perform(:incoming_ap_doc, params) do
       {:ok, res}
     else
