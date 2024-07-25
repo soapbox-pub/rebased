@@ -94,8 +94,8 @@ defmodule Pleroma.Signature do
     Timex.format!(date, "{WDshort}, {0D} {Mshort} {YYYY} {h24}:{m}:{s} GMT")
   end
 
-  @spec validate_signature(map(), String.t()) :: boolean()
-  def validate_signature(conn, request_target) do
+  @spec validate_signature(Plug.Conn.t(), String.t()) :: boolean()
+  def validate_signature(%Plug.Conn{} = conn, request_target) do
     # Newer drafts for HTTP signatures now use @request-target instead of the
     # old (request-target). We'll now support both for incoming signatures.
     conn =
@@ -106,8 +106,8 @@ defmodule Pleroma.Signature do
     @http_signatures_impl.validate_conn(conn)
   end
 
-  @spec validate_signature(map()) :: boolean()
-  def validate_signature(conn) do
+  @spec validate_signature(Plug.Conn.t()) :: boolean()
+  def validate_signature(%Plug.Conn{} = conn) do
     # This (request-target) is non-standard, but many implementations do it
     # this way due to a misinterpretation of
     # https://datatracker.ietf.org/doc/html/draft-cavage-http-signatures-06
