@@ -12,17 +12,30 @@ defmodule Pleroma.Workers.ReceiverWorker do
   @impl Oban.Worker
 
   def perform(%Job{
-        args: %{"op" => "incoming_ap_doc", "req_headers" => req_headers, "params" => params}
+        args: %{
+          "op" => "incoming_ap_doc",
+          "method" => method,
+          "params" => params,
+          "req_headers" => req_headers,
+          "request_path" => request_path,
+          "query_string" => query_string
+        }
       }) do
     # Oban's serialization converts our tuple headers to lists.
     # Revert it for the signature validation.
     req_headers = Enum.into(req_headers, [], &List.to_tuple(&1))
 
-    conn_data = %{params: params, req_headers: req_headers}
+    conn_data = %Plug.Conn{
+      method: method,
+      params: params,
+      req_headers: req_headers,
+      request_path: request_path,
+      query_string: query_string
+    }
 
     with {:ok, %User{} = _actor} <- User.get_or_fetch_by_ap_id(conn_data.params["actor"]),
          {:ok, _public_key} <- Signature.refetch_public_key(conn_data),
-         {:signature, true} <- {:signature, HTTPSignatures.validate_conn(conn_data)},
+         {:signature, true} <- {:signature, Signature.validate_signature(conn_data)},
          {:ok, res} <- Federator.perform(:incoming_ap_doc, params) do
       {:ok, res}
     else

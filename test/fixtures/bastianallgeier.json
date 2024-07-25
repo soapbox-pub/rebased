@@ -1,0 +1,117 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    {
+      "Curve25519Key": "toot:Curve25519Key",
+      "Device": "toot:Device",
+      "Ed25519Key": "toot:Ed25519Key",
+      "Ed25519Signature": "toot:Ed25519Signature",
+      "EncryptedMessage": "toot:EncryptedMessage",
+      "PropertyValue": "schema:PropertyValue",
+      "alsoKnownAs": {
+        "@id": "as:alsoKnownAs",
+        "@type": "@id"
+      },
+      "cipherText": "toot:cipherText",
+      "claim": {
+        "@id": "toot:claim",
+        "@type": "@id"
+      },
+      "deviceId": "toot:deviceId",
+      "devices": {
+        "@id": "toot:devices",
+        "@type": "@id"
+      },
+      "discoverable": "toot:discoverable",
+      "featured": {
+        "@id": "toot:featured",
+        "@type": "@id"
+      },
+      "featuredTags": {
+        "@id": "toot:featuredTags",
+        "@type": "@id"
+      },
+      "fingerprintKey": {
+        "@id": "toot:fingerprintKey",
+        "@type": "@id"
+      },
+      "focalPoint": {
+        "@container": "@list",
+        "@id": "toot:focalPoint"
+      },
+      "identityKey": {
+        "@id": "toot:identityKey",
+        "@type": "@id"
+      },
+      "indexable": "toot:indexable",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "memorial": "toot:memorial",
+      "messageFranking": "toot:messageFranking",
+      "messageType": "toot:messageType",
+      "movedTo": {
+        "@id": "as:movedTo",
+        "@type": "@id"
+      },
+      "publicKeyBase64": "toot:publicKeyBase64",
+      "schema": "http://schema.org#",
+      "suspended": "toot:suspended",
+      "toot": "http://joinmastodon.org/ns#",
+      "value": "schema:value"
+    }
+  ],
+  "attachment": [
+    {
+      "name": "Website",
+      "type": "PropertyValue",
+      "value": "<a href=\"https://bastianallgeier.com\" target=\"_blank\" rel=\"nofollow noopener noreferrer me\" translate=\"no\"><span class=\"invisible\">https://</span><span class=\"\">bastianallgeier.com</span><span class=\"invisible\"></span></a>"
+    },
+    {
+      "name": "Project",
+      "type": "PropertyValue",
+      "value": "<a href=\"https://getkirby.com\" target=\"_blank\" rel=\"nofollow noopener noreferrer me\" translate=\"no\"><span class=\"invisible\">https://</span><span class=\"\">getkirby.com</span><span class=\"invisible\"></span></a>"
+    },
+    {
+      "name": "Github",
+      "type": "PropertyValue",
+      "value": "<a href=\"https://github.com/bastianallgeier\" target=\"_blank\" rel=\"nofollow noopener noreferrer me\" translate=\"no\"><span class=\"invisible\">https://</span><span class=\"\">github.com/bastianallgeier</span><span class=\"invisible\"></span></a>"
+    }
+  ],
+  "devices": "https://mastodon.social/users/bastianallgeier/collections/devices",
+  "discoverable": true,
+  "endpoints": {
+    "sharedInbox": "https://mastodon.social/inbox"
+  },
+  "featured": "https://mastodon.social/users/bastianallgeier/collections/featured",
+  "featuredTags": "https://mastodon.social/users/bastianallgeier/collections/tags",
+  "followers": "https://mastodon.social/users/bastianallgeier/followers",
+  "following": "https://mastodon.social/users/bastianallgeier/following",
+  "icon": {
+    "mediaType": "image/jpeg",
+    "type": "Image",
+    "url": "https://files.mastodon.social/accounts/avatars/000/007/393/original/0180a20079617c71.jpg"
+  },
+  "id": "https://mastodon.social/users/bastianallgeier",
+  "image": {
+    "mediaType": "image/jpeg",
+    "type": "Image",
+    "url": "https://files.mastodon.social/accounts/headers/000/007/393/original/13d644ab46d50478.jpeg"
+  },
+  "inbox": "https://mastodon.social/users/bastianallgeier/inbox",
+  "indexable": false,
+  "manuallyApprovesFollowers": false,
+  "memorial": false,
+  "name": "Bastian Allgeier",
+  "outbox": "https://mastodon.social/users/bastianallgeier/outbox",
+  "preferredUsername": "bastianallgeier",
+  "publicKey": {
+    "id": "https://mastodon.social/users/bastianallgeier#main-key",
+    "owner": "https://mastodon.social/users/bastianallgeier",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3fz+hpgVztO9z6HUhyzv\nwP++ERBBoIwSLKf1TyIM8bvzGFm2YXaO5uxu1HvumYFTYc3ACr3q4j8VUb7NMxkQ\nlzu4QwPjOFJ43O+fY+HSPORXEDW5fXDGC5DGpox4+i08LxRmx7L6YPRUSUuPN8nI\nWyq1Qsq1zOQrNY/rohMXkBdSXxqC3yIRqvtLt4otCgay/5tMogJWkkS6ZKyFhb9z\nwVVy1fsbV10c9C+SHy4NH26CKaTtpTYLRBMjhTCS8bX8iDSjGIf2aZgYs1ir7gEz\n9wf5CvLiENmVWGwm64t6KSEAkA4NJ1hzgHUZPCjPHZE2SmhO/oHaxokTzqtbbENJ\n1QIDAQAB\n-----END PUBLIC KEY-----\n"
+  },
+  "published": "2016-11-01T00:00:00Z",
+  "summary": "<p>Designer &amp; developer. Creator of Kirby CMS</p>",
+  "tag": [],
+  "type": "Person",
+  "url": "https://mastodon.social/@bastianallgeier"
+}
