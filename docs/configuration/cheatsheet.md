@@ -436,7 +436,7 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
 * `ignore_hosts`: list of hosts which will be ignored by the metadata parser. For example `["accounts.google.com", "xss.website"]`, defaults to `[]`.
 * `ignore_tld`: list TLDs (top-level domains) which will ignore for parse metadata. default is ["local", "localdomain", "lan"].
 * `parsers`: list of Rich Media parsers.
-* `failure_backoff`: Amount of milliseconds after request failure, during which the request will not be retried.
+* `timeout`: Amount of milliseconds after which the HTTP request is forcibly terminated.
 
 ## HTTP server
 

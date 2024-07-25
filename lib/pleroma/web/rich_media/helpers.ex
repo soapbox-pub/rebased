@@ -69,9 +69,12 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   end
 
   defp http_options do
+    timeout = Config.get!([:rich_media, :timeout])
+
     [
       pool: :rich_media,
-      max_body: Config.get([:rich_media, :max_body], 5_000_000)
+      max_body: Config.get([:rich_media, :max_body], 5_000_000),
+      tesla_middleware: [{Tesla.Middleware.Timeout, timeout: timeout}]
     ]
   end
 end

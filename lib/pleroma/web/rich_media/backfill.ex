@@ -36,12 +36,8 @@ defmodule Pleroma.Web.RichMedia.Backfill do
         :ok
 
       {:error, type} = error
-      when type in [:invalid_metadata, :body_too_large, :content_type, :validate] ->
+      when type in [:invalid_metadata, :body_too_large, :content_type, :validate, :get, :head] ->
         negative_cache(url_hash)
-        error
-
-      {:error, type} = error
-      when type in [:get, :head] ->
         error
     end
   end
@@ -68,5 +64,5 @@ defmodule Pleroma.Web.RichMedia.Backfill do
   defp warm_cache(key, val), do: @cachex.put(:rich_media_cache, key, val)
 
   defp negative_cache(key, ttl \\ :timer.minutes(15)),
-    do: @cachex.put(:rich_media_cache, key, nil, ttl: ttl)
+    do: @cachex.put(:rich_media_cache, key, :error, ttl: ttl)
 end
