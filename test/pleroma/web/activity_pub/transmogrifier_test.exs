@@ -349,6 +349,28 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert url == "http://localhost:4001/emoji/dino%20walking.gif"
     end
 
+    test "Updates of Notes are handled" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "everybody do the dinosaur :dinosaur:"})
+      {:ok, update} = CommonAPI.update(activity, user, %{status: "mew mew :blank:"})
+
+      {:ok, prepared} = Transmogrifier.prepare_outgoing(update.data)
+
+      assert %{
+               "content" => "mew mew :blank:",
+               "tag" => [%{"name" => ":blank:", "type" => "Emoji"}],
+               "formerRepresentations" => %{
+                 "orderedItems" => [
+                   %{
+                     "content" => "everybody do the dinosaur :dinosaur:",
+                     "tag" => [%{"name" => ":dinosaur:", "type" => "Emoji"}]
+                   }
+                 ]
+               }
+             } = prepared["object"]
+    end
+
     test "it prepares a quote post" do
       user = insert(:user)
 

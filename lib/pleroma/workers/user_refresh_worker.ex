@@ -13,5 +13,5 @@ defmodule Pleroma.Workers.UserRefreshWorker do
   end
 
   @impl Oban.Worker
-  def timeout(_job), do: :timer.seconds(5)
+  def timeout(_job), do: :timer.seconds(15)
 end

@@ -17,6 +17,9 @@ defmodule Pleroma.Workers.PollWorker do
     with %Activity{} = activity <- find_poll_activity(activity_id),
          {:ok, notifications} <- Notification.create_poll_notifications(activity) do
       Notification.stream(notifications)
+    else
+      {:error, :poll_activity_not_found} = e -> {:cancel, e}
+      e -> {:error, e}
     end
   end
 

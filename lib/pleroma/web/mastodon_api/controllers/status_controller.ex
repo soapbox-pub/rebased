@@ -280,7 +280,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
          {_, true} <- {:own_status, actor.id == user.id},
          {_, true} <- {:not_event, activity.object.data["type"] != "Event"},
          changes <- body_params |> Map.put(:generator, conn.assigns.application),
-         {_, {:ok, _update_activity}} <- {:pipeline, CommonAPI.update(user, activity, changes)},
+         {_, {:ok, _update_activity}} <- {:pipeline, CommonAPI.update(activity, user, changes)},
          {_, %Activity{}} = {_, activity} <- {:refetched, Activity.get_by_id_with_object(id)} do
       try_render(conn, "show.json",
         activity: activity,
@@ -362,7 +362,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
           conn,
         _
       ) do
-    with {:ok, _fav} <- CommonAPI.favorite(user, activity_id),
+    with {:ok, _fav} <- CommonAPI.favorite(activity_id, user),
          %Activity{} = activity <- Activity.get_by_id(activity_id) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
     end
@@ -458,7 +458,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
         _
       ) do
     with %Activity{} = activity <- Activity.get_by_id(id),
-         {:ok, activity} <- CommonAPI.add_mute(user, activity, params) do
+         {:ok, activity} <- CommonAPI.add_mute(activity, user, params) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
     end
   end
@@ -472,7 +472,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
         _
       ) do
     with %Activity{} = activity <- Activity.get_by_id(id),
-         {:ok, activity} <- CommonAPI.remove_mute(user, activity) do
+         {:ok, activity} <- CommonAPI.remove_mute(activity, user) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
     end
   end

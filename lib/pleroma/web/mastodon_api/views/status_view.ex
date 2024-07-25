@@ -293,7 +293,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       cond do
         is_nil(opts[:for]) -> false
         is_boolean(activity.thread_muted?) -> activity.thread_muted?
-        true -> CommonAPI.thread_muted?(opts[:for], activity)
+        true -> CommonAPI.thread_muted?(activity, opts[:for])
       end
 
     attachment_data = object.data["attachment"] || []

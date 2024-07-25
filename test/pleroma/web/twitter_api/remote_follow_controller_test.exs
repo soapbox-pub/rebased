@@ -216,7 +216,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
     test "returns success result when user already in followers", %{conn: conn} do
       user = insert(:user)
       user2 = insert(:user)
-      {:ok, _, _, _} = CommonAPI.follow(user, user2)
+      {:ok, _, _, _} = CommonAPI.follow(user2, user)
 
       conn =
         conn

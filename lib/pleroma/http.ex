@@ -68,7 +68,9 @@ defmodule Pleroma.HTTP do
 
     adapter = Application.get_env(:tesla, :adapter)
 
-    client = Tesla.client(adapter_middlewares(adapter), adapter)
+    extra_middleware = options[:tesla_middleware] || []
+
+    client = Tesla.client(adapter_middlewares(adapter, extra_middleware), adapter)
 
     maybe_limit(
       fn ->
@@ -102,20 +104,21 @@ defmodule Pleroma.HTTP do
     fun.()
   end
 
-  defp adapter_middlewares(Tesla.Adapter.Gun) do
-    [Tesla.Middleware.FollowRedirects, Pleroma.Tesla.Middleware.ConnectionPool]
+  defp adapter_middlewares(Tesla.Adapter.Gun, extra_middleware) do
+    [Tesla.Middleware.FollowRedirects, Pleroma.Tesla.Middleware.ConnectionPool] ++
+      extra_middleware
   end
 
-  defp adapter_middlewares({Tesla.Adapter.Finch, _}) do
-    [Tesla.Middleware.FollowRedirects]
+  defp adapter_middlewares({Tesla.Adapter.Finch, _}, extra_middleware) do
+    [Tesla.Middleware.FollowRedirects] ++ extra_middleware
   end
 
-  defp adapter_middlewares(_) do
+  defp adapter_middlewares(_, extra_middleware) do
     if Pleroma.Config.get(:env) == :test do
       # Emulate redirects in test env, which are handled by adapters in other environments
       [Tesla.Middleware.FollowRedirects]
     else
-      []
+      extra_middleware
     end
   end
 end

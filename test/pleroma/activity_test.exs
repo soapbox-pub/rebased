@@ -249,7 +249,7 @@ defmodule Pleroma.ActivityTest do
     {:ok, %{id: id, object: %{data: %{"id" => obj_id}}}} =
       Pleroma.Web.CommonAPI.post(user, %{status: "cofe"})
 
-    Pleroma.Web.CommonAPI.favorite(another, id)
+    Pleroma.Web.CommonAPI.favorite(id, another)
 
     assert obj_id
            |> Pleroma.Activity.Queries.by_object_id()

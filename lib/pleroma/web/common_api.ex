@@ -26,13 +26,16 @@ defmodule Pleroma.Web.CommonAPI do
   require Pleroma.Constants
   require Logger
 
-  def block(blocker, blocked) do
+  @spec block(User.t(), User.t()) :: {:ok, Activity.t()} | {:error, any()}
+  def block(blocked, blocker) do
     with {:ok, block_data, _} <- Builder.block(blocker, blocked),
          {:ok, block, _} <- Pipeline.common_pipeline(block_data, local: true) do
       {:ok, block}
     end
   end
 
+  @spec post_chat_message(User.t(), User.t(), String.t(), list()) ::
+          {:ok, Activity.t()} | {:error, any()}
   def post_chat_message(%User{} = user, %User{} = recipient, content, opts \\ []) do
     with maybe_attachment <- opts[:media_id] && Object.get_by_id(opts[:media_id]),
          :ok <- validate_chat_attachment_attribution(maybe_attachment, user),
@@ -96,7 +99,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def unblock(blocker, blocked) do
+  @spec unblock(User.t(), User.t()) :: {:ok, Activity.t()} | {:error, any()}
+  def unblock(blocked, blocker) do
     with {_, %Activity{} = block} <- {:fetch_block, Utils.fetch_latest_block(blocker, blocked)},
          {:ok, unblock_data, _} <- Builder.undo(blocker, block),
          {:ok, unblock, _} <- Pipeline.common_pipeline(unblock_data, local: true) do
@@ -115,7 +119,9 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def follow(follower, followed) do
+  @spec follow(User.t(), User.t()) ::
+          {:ok, User.t(), User.t(), Activity.t() | Object.t()} | {:error, :rejected}
+  def follow(followed, follower) do
     timeout = Pleroma.Config.get([:activitypub, :follow_handshake_timeout])
 
     with {:ok, follow_data, _} <- Builder.follow(follower, followed),
@@ -129,7 +135,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def unfollow(follower, unfollowed) do
+  @spec unfollow(User.t(), User.t()) :: {:ok, User.t()} | {:error, any()}
+  def unfollow(unfollowed, follower) do
     with {:ok, follower, _follow_activity} <- User.unfollow(follower, unfollowed),
          {:ok, _activity} <- ActivityPub.unfollow(follower, unfollowed),
          {:ok, _subscription} <- User.unsubscribe(follower, unfollowed),
@@ -138,6 +145,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  @spec accept_follow_request(User.t(), User.t()) :: {:ok, User.t()} | {:error, any()}
   def accept_follow_request(follower, followed) do
     with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
          {:ok, accept_data, _} <- Builder.accept(followed, follow_activity),
@@ -146,6 +154,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  @spec reject_follow_request(User.t(), User.t()) :: {:ok, User.t()} | {:error, any()} | nil
   def reject_follow_request(follower, followed) do
     with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
          {:ok, reject_data, _} <- Builder.reject(followed, follow_activity),
@@ -154,6 +163,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  @spec delete(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, any()}
   def delete(activity_id, user) do
     with {_, %Activity{data: %{"object" => _, "type" => "Create"}} = activity} <-
            {:find_activity, Activity.get_by_id(activity_id, filter: [])},
@@ -203,6 +213,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  @spec repeat(String.t(), User.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
   def repeat(id, user, params \\ %{}) do
     with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id),
          object = %Object{} <- Object.normalize(activity, fetch: false),
@@ -220,6 +231,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  @spec unrepeat(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, any()}
   def unrepeat(id, user) do
     with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
            {:find_activity, Activity.get_by_id(id)},
@@ -235,8 +247,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec favorite(User.t(), binary()) :: {:ok, Activity.t() | :already_liked} | {:error, any()}
-  def favorite(%User{} = user, id) do
+  @spec favorite(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, any()}
+  def favorite(id, %User{} = user) do
     case favorite_helper(user, id) do
       {:ok, _} = res ->
         res
@@ -250,7 +262,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def favorite_helper(user, id) do
+  defp favorite_helper(user, id) do
     with {_, %Activity{object: object}} <- {:find_object, Activity.get_by_id_with_object(id)},
          {_, {:ok, like_object, meta}} <- {:build_object, Builder.like(user, object)},
          {_, {:ok, %Activity{} = activity, _meta}} <-
@@ -273,6 +285,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  @spec unfavorite(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, any()}
   def unfavorite(id, user) do
     with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
            {:find_activity, Activity.get_by_id(id)},
@@ -288,6 +301,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  @spec react_with_emoji(String.t(), User.t(), String.t()) ::
+          {:ok, Activity.t()} | {:error, any()}
   def react_with_emoji(id, user, emoji) do
     with %Activity{} = activity <- Activity.get_by_id(id),
          object <- Object.normalize(activity, fetch: false),
@@ -300,6 +315,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  @spec unreact_with_emoji(String.t(), User.t(), String.t()) ::
+          {:ok, Activity.t()} | {:error, any()}
   def unreact_with_emoji(id, user, emoji) do
     with %Activity{} = reaction_activity <- Utils.get_latest_reaction(id, user, emoji),
          {_, {:ok, _}} <- {:cancel_jobs, maybe_cancel_jobs(reaction_activity)},
@@ -312,7 +329,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def vote(user, %{data: %{"type" => "Question"}} = object, choices) do
+  @spec vote(Object.t(), User.t(), list()) :: {:ok, list(), Object.t()} | {:error, any()}
+  def vote(%Object{data: %{"type" => "Question"}} = object, %User{} = user, choices) do
     with :ok <- validate_not_author(object, user),
          :ok <- validate_existing_votes(user, object),
          {:ok, options, choices} <- normalize_and_validate_choices(choices, object) do
@@ -452,14 +470,16 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def public_announce?(_, %{visibility: visibility})
-      when visibility in ~w{public unlisted private direct},
-      do: visibility in ~w(public unlisted)
+  defp public_announce?(_, %{visibility: visibility})
+       when visibility in ~w{public unlisted private direct},
+       do: visibility in ~w(public unlisted)
 
-  def public_announce?(object, _) do
+  defp public_announce?(object, _) do
     Visibility.public?(object)
   end
 
+  @spec get_visibility(map(), map() | nil, Participation.t() | nil) ::
+          {String.t() | nil, String.t() | nil}
   def get_visibility(_, _, %Participation{}), do: {"direct", "direct"}
 
   def get_visibility(%{visibility: visibility}, in_reply_to, _)
@@ -478,6 +498,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def get_visibility(_, in_reply_to, _), do: {"public", get_replied_to_visibility(in_reply_to)}
 
+  @spec get_replied_to_visibility(Activity.t() | nil) :: String.t() | nil
   def get_replied_to_visibility(nil), do: nil
 
   def get_replied_to_visibility(activity) do
@@ -486,6 +507,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  @spec check_expiry_date({:ok, nil | integer()} | String.t()) ::
+          {:ok, boolean() | nil} | {:error, String.t()}
   def check_expiry_date({:ok, nil} = res), do: res
 
   def check_expiry_date({:ok, in_seconds}) do
@@ -503,19 +526,22 @@ defmodule Pleroma.Web.CommonAPI do
     |> check_expiry_date()
   end
 
+  @spec listen(User.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
   def listen(user, data) do
     with {:ok, draft} <- ActivityDraft.listen(user, data) do
       ActivityPub.listen(draft.changes)
     end
   end
 
+  @spec post(User.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
   def post(user, %{status: _} = data) do
     with {:ok, draft} <- ActivityDraft.create(user, data) do
       ActivityPub.create(draft.changes, draft.preview?)
     end
   end
 
-  def update(user, orig_activity, changes) do
+  @spec update(Activity.t(), User.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
+  def update(orig_activity, %User{} = user, changes) do
     with orig_object <- Object.normalize(orig_activity),
          {:ok, new_object} <- make_update_data(user, orig_object, changes),
          {:ok, update_data, _} <- Builder.update(user, new_object),
@@ -605,7 +631,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def add_mute(user, activity, params \\ %{}) do
+  @spec add_mute(Activity.t(), User.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
+  def add_mute(activity, user, params \\ %{}) do
     expires_in = Map.get(params, :expires_in, 0)
 
     with {:ok, _} <- ThreadMute.add_mute(user.id, activity.data["context"]),
@@ -624,15 +651,17 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def remove_mute(%User{} = user, %Activity{} = activity) do
+  @spec remove_mute(Activity.t(), User.t()) :: {:ok, Activity.t()} | {:error, any()}
+  def remove_mute(%Activity{} = activity, %User{} = user) do
     ThreadMute.remove_mute(user.id, activity.data["context"])
     {:ok, activity}
   end
 
-  def remove_mute(user_id, activity_id) do
+  @spec remove_mute(String.t(), String.t()) :: {:ok, Activity.t()} | {:error, any()}
+  def remove_mute(activity_id, user_id) do
     with {:user, %User{} = user} <- {:user, User.get_by_id(user_id)},
          {:activity, %Activity{} = activity} <- {:activity, Activity.get_by_id(activity_id)} do
-      remove_mute(user, activity)
+      remove_mute(activity, user)
     else
       {what, result} = error ->
         Logger.warning(
@@ -643,13 +672,15 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def thread_muted?(%User{id: user_id}, %{data: %{"context" => context}})
+  @spec thread_muted?(Activity.t(), User.t()) :: boolean()
+  def thread_muted?(%{data: %{"context" => context}}, %User{id: user_id})
       when is_binary(context) do
     ThreadMute.exists?(user_id, context)
   end
 
   def thread_muted?(_, _), do: false
 
+  @spec report(User.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
   def report(user, data) do
     with {:ok, account} <- get_reported_account(data.account_id),
          {:ok, {content_html, _, _}} <- make_report_content_html(data[:comment]),
@@ -683,6 +714,8 @@ defmodule Pleroma.Web.CommonAPI do
     |> Enum.filter(&Rule.exists?/1)
   end
 
+  @spec update_report_state(String.t() | [String.t()], String.t()) ::
+          {:ok, any()} | {:error, any()}
   def update_report_state(activity_ids, state) when is_list(activity_ids) do
     case Utils.update_report_state(activity_ids, state) do
       :ok -> {:ok, activity_ids}
@@ -714,6 +747,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  @spec update_activity_scope(String.t(), map()) :: {:ok, any()} | {:error, any()}
   def update_activity_scope(activity_id, opts \\ %{}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
          {:ok, activity} <- toggle_sensitive(activity, opts) do
@@ -747,14 +781,17 @@ defmodule Pleroma.Web.CommonAPI do
 
   defp set_visibility(activity, _), do: {:ok, activity}
 
-  def hide_reblogs(%User{} = user, %User{} = target) do
+  @spec hide_reblogs(User.t(), User.t()) :: {:ok, any()} | {:error, any()}
+  def hide_reblogs(%User{} = target, %User{} = user) do
     UserRelationship.create_reblog_mute(user, target)
   end
 
-  def show_reblogs(%User{} = user, %User{} = target) do
+  @spec show_reblogs(User.t(), User.t()) :: {:ok, any()} | {:error, any()}
+  def show_reblogs(%User{} = target, %User{} = user) do
     UserRelationship.delete_reblog_mute(user, target)
   end
 
+  @spec get_user(String.t(), boolean()) :: User.t() | nil
   def get_user(ap_id, fake_record_fallback \\ true) do
     cond do
       user = User.get_cached_by_ap_id(ap_id) ->
