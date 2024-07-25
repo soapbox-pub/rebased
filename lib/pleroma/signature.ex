@@ -115,13 +115,13 @@ defmodule Pleroma.Signature do
     # show that it must be the absolute path + query. This behavior is kept to
     # make sure most software (Pleroma itself, Mastodon, and probably others)
     # do not break.
-    request_target = String.downcase("#{conn.method}") <> " #{conn.request_path}"
+    request_target = Enum.join([String.downcase(conn.method), conn.request_path], " ")
 
     # This is the proper way to build the @request-target, as expected by
     # many HTTP signature libraries, clarified in the following draft:
     # https://www.ietf.org/archive/id/draft-ietf-httpbis-message-signatures-11.html#section-2.2.6
     # It is the same as before, but containing the query part as well.
-    proper_target = request_target <> "?#{conn.query_string}"
+    proper_target = Enum.join([request_target, "?", conn.query_string], "")
 
     cond do
       # Normal, non-standard behavior but expected by Pleroma and more.
