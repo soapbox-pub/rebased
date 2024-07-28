@@ -1,0 +1,1 @@
+Changed some jobs to return :cancel on unrecoverable errors that should not be retried

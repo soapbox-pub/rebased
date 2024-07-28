@@ -30,7 +30,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   # pagination is restricted to 40 activities at a time
   defp fetch_rich_media_for_activities(activities) do
     Enum.each(activities, fn activity ->
-      spawn(fn -> Card.get_by_activity(activity) end)
+      Card.get_by_activity(activity)
     end)
   end
 
@@ -293,7 +293,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       cond do
         is_nil(opts[:for]) -> false
         is_boolean(activity.thread_muted?) -> activity.thread_muted?
-        true -> CommonAPI.thread_muted?(opts[:for], activity)
+        true -> CommonAPI.thread_muted?(activity, opts[:for])
       end
 
     attachment_data = object.data["attachment"] || []
@@ -624,6 +624,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
           to_string(attachment["id"] || hash_id)
       end
 
+    description =
+      if attachment["summary"] do
+        HTML.strip_tags(attachment["summary"])
+      else
+        attachment["name"]
+      end
+
+    name = if attachment["summary"], do: attachment["name"]
+
+    pleroma =
+      %{mime_type: media_type}
+      |> Maps.put_if_present(:name, name)
+
     %{
       id: attachment_id,
       url: href,
@@ -631,8 +644,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       preview_url: href_preview,
       text_url: href,
       type: type,
-      description: attachment["name"],
-      pleroma: %{mime_type: media_type},
+      description: description,
+      pleroma: pleroma,
       blurhash: attachment["blurhash"]
     }
     |> Maps.put_if_present(:meta, meta)

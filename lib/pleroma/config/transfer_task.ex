@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2023 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config.TransferTask do
@@ -44,14 +44,9 @@ defmodule Pleroma.Config.TransferTask do
     with {_, true} <- {:configurable, Config.get(:configurable_from_database)} do
       # We need to restart applications for loaded settings take effect
 
-      {logger, other} =
+      settings =
         (Repo.all(ConfigDB) ++ deleted_settings)
         |> Enum.map(&merge_with_default/1)
-        |> Enum.split_with(fn {group, _, _, _} -> group in [:logger] end)
-
-      logger
-      |> Enum.sort()
-      |> Enum.each(&configure/1)
 
       started_applications = Application.started_applications()
 
@@ -64,7 +59,7 @@ defmodule Pleroma.Config.TransferTask do
           [:pleroma | reject]
         end
 
-      other
+      settings
       |> Enum.map(&update/1)
       |> Enum.uniq()
       |> Enum.reject(&(&1 in reject))
@@ -100,38 +95,6 @@ defmodule Pleroma.Config.TransferTask do
       end
 
     {group, key, value, merged}
-  end
-
-  # change logger configuration in runtime, without restart
-  defp configure({_, :backends, _, merged}) do
-    # removing current backends
-    Enum.each(Application.get_env(:logger, :backends), &Logger.remove_backend/1)
-
-    Enum.each(merged, &Logger.add_backend/1)
-
-    :ok = update_env(:logger, :backends, merged)
-  end
-
-  defp configure({_, key, _, merged}) when key in [:console, :ex_syslogger] do
-    merged =
-      if key == :console do
-        put_in(merged[:format], merged[:format] <> "\n")
-      else
-        merged
-      end
-
-    backend =
-      if key == :ex_syslogger,
-        do: {ExSyslogger, :ex_syslogger},
-        else: key
-
-    Logger.configure_backend(backend, merged)
-    :ok = update_env(:logger, key, merged)
-  end
-
-  defp configure({_, key, _, merged}) do
-    Logger.configure([{key, merged}])
-    :ok = update_env(:logger, key, merged)
   end
 
   defp update({group, key, value, merged}) do

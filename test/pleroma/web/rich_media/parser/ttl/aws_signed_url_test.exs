@@ -4,12 +4,14 @@
 
 defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrlTest do
   use Pleroma.DataCase, async: false
-  use Oban.Testing, repo: Pleroma.Repo
+  use Oban.Testing, repo: Pleroma.Repo, testing: :inline
 
   import Mox
 
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.RichMedia.Card
+  alias Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl
 
   setup do
     ConfigMock
@@ -73,13 +75,29 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrlTest do
 
     Card.get_or_backfill_by_url(url)
 
-    assert_enqueued(worker: Pleroma.Workers.RichMediaExpirationWorker, args: %{"url" => url})
+    # Find the backfill job
+    expected_job =
+      [
+        worker: "Pleroma.Workers.RichMediaWorker",
+        args: %{"op" => "backfill", "url" => url}
+      ]
 
-    [%Oban.Job{scheduled_at: scheduled_at}] = all_enqueued()
+    assert_enqueued(expected_job)
+
+    # Run it manually
+    ObanHelpers.perform_all()
+
+    [%Oban.Job{scheduled_at: scheduled_at} | _] = all_enqueued()
 
     timestamp_dt = Timex.parse!(timestamp, "{ISO:Basic:Z}")
 
     assert DateTime.diff(scheduled_at, timestamp_dt) == valid_till
+  end
+
+  test "AWS URL for an image without expiration works" do
+    og_data = %{"image" => "https://amazonaws.com/image.png"}
+
+    assert is_nil(AwsSignedUrl.ttl(og_data, ""))
   end
 
   defp construct_s3_url(timestamp, valid_till) do

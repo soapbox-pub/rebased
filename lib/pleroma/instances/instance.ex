@@ -10,7 +10,7 @@ defmodule Pleroma.Instances.Instance do
   alias Pleroma.Maps
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Workers.BackgroundWorker
+  alias Pleroma.Workers.DeleteWorker
 
   use Ecto.Schema
 
@@ -297,7 +297,7 @@ defmodule Pleroma.Instances.Instance do
   all of those users' activities and notifications.
   """
   def delete_users_and_activities(host) when is_binary(host) do
-    BackgroundWorker.enqueue("delete_instance", %{"host" => host})
+    DeleteWorker.enqueue("delete_instance", %{"host" => host})
   end
 
   def perform(:delete_instance, host) when is_binary(host) do

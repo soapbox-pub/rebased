@@ -453,7 +453,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
        ) do
     orig_object_ap_id = updated_object["id"]
     orig_object = Object.get_by_ap_id(orig_object_ap_id)
-    orig_object_data = orig_object.data
+    orig_object_data = Map.get(orig_object, :data)
 
     updated_object =
       if meta[:local] do
@@ -592,9 +592,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     with {:ok, _} <- Repo.delete(object), do: :ok
   end
 
-  defp send_notifications(meta) do
+  defp stream_notifications(meta) do
     Keyword.get(meta, :notifications, [])
-    |> Notification.send()
+    |> Notification.stream()
 
     meta
   end
@@ -625,7 +625,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   @impl true
   def handle_after_transaction(meta) do
     meta
-    |> send_notifications()
+    |> stream_notifications()
     |> send_streamables()
   end
 end

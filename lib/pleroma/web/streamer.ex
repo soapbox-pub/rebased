@@ -172,7 +172,13 @@ defmodule Pleroma.Web.Streamer do
   def stream(topics, items) do
     if should_env_send?() do
       for topic <- List.wrap(topics), item <- List.wrap(items) do
-        spawn(fn -> do_stream(topic, item) end)
+        fun = fn -> do_stream(topic, item) end
+
+        if Config.get([__MODULE__, :sync_streaming], false) do
+          fun.()
+        else
+          spawn(fun)
+        end
       end
     end
   end
@@ -200,7 +206,7 @@ defmodule Pleroma.Web.Streamer do
          false <- Pleroma.Web.ActivityPub.MRF.subdomain_match?(domain_blocks, item_host),
          false <- Pleroma.Web.ActivityPub.MRF.subdomain_match?(domain_blocks, parent_host),
          true <- thread_containment(item, user),
-         false <- CommonAPI.thread_muted?(user, parent) do
+         false <- CommonAPI.thread_muted?(parent, user) do
       false
     else
       _ -> true

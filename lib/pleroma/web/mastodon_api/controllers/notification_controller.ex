@@ -34,6 +34,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
       pleroma:emoji_reaction
       poll
       update
+      status
     }
 
   # GET /api/v1/notifications

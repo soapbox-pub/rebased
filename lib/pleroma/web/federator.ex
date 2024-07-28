@@ -35,16 +35,18 @@ defmodule Pleroma.Web.Federator do
   end
 
   # Client API
-  def incoming_ap_doc(%{params: params, req_headers: req_headers}) do
+  def incoming_ap_doc(%{params: _params, req_headers: _req_headers} = args) do
+    job_args = Enum.into(args, %{}, fn {k, v} -> {Atom.to_string(k), v} end)
+
     ReceiverWorker.enqueue(
       "incoming_ap_doc",
-      %{"req_headers" => req_headers, "params" => params, "timeout" => :timer.seconds(20)},
+      Map.put(job_args, "timeout", :timer.seconds(20)),
       priority: 2
     )
   end
 
   def incoming_ap_doc(%{"type" => "Delete"} = params) do
-    ReceiverWorker.enqueue("incoming_ap_doc", %{"params" => params}, priority: 3)
+    ReceiverWorker.enqueue("incoming_ap_doc", %{"params" => params}, priority: 3, queue: :slow)
   end
 
   def incoming_ap_doc(params) do

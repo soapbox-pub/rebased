@@ -28,13 +28,13 @@ defmodule Pleroma.JobQueueMonitorTest do
               queue: "background",
               stack: [
                 {Pleroma.Workers.BackgroundWorker, :perform, 2,
-                 [file: 'lib/pleroma/workers/background_worker.ex', line: 31]},
+                 [file: ~c"lib/pleroma/workers/background_worker.ex", line: 31]},
                 {Oban.Queue.Executor, :safe_call, 1,
-                 [file: 'lib/oban/queue/executor.ex', line: 42]},
-                {:timer, :tc, 3, [file: 'timer.erl', line: 197]},
-                {Oban.Queue.Executor, :call, 2, [file: 'lib/oban/queue/executor.ex', line: 23]},
-                {Task.Supervised, :invoke_mfa, 2, [file: 'lib/task/supervised.ex', line: 90]},
-                {:proc_lib, :init_p_do_apply, 3, [file: 'proc_lib.erl', line: 249]}
+                 [file: ~c"lib/oban/queue/executor.ex", line: 42]},
+                {:timer, :tc, 3, [file: ~c"timer.erl", line: 197]},
+                {Oban.Queue.Executor, :call, 2, [file: ~c"lib/oban/queue/executor.ex", line: 23]},
+                {Task.Supervised, :invoke_mfa, 2, [file: ~c"lib/task/supervised.ex", line: 90]},
+                {:proc_lib, :init_p_do_apply, 3, [file: ~c"proc_lib.erl", line: 249]}
               ],
               worker: "Pleroma.Workers.BackgroundWorker"
             }}

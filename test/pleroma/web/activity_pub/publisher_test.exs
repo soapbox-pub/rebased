@@ -216,7 +216,6 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       refute called(Instances.set_reachable(inbox))
     end
 
-    @tag capture_log: true
     test_with_mock "calls `Instances.set_unreachable` on target inbox on non-2xx HTTP response code",
                    Instances,
                    [:passthrough],
@@ -224,7 +223,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       actor = insert(:user)
       inbox = "http://404.site/users/nick1/inbox"
 
-      assert {:discard, _} =
+      assert {:cancel, _} =
                Publisher.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
 
       assert called(Instances.set_unreachable(inbox))

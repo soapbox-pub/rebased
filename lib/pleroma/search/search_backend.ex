@@ -21,4 +21,22 @@ defmodule Pleroma.Search.SearchBackend do
   from index.
   """
   @callback remove_from_index(object :: Pleroma.Object.t()) :: :ok | {:error, any()}
+
+  @doc """
+  Create the index
+  """
+  @callback create_index() :: :ok | {:error, any()}
+
+  @doc """
+  Drop the index
+  """
+  @callback drop_index() :: :ok | {:error, any()}
+
+  @doc """
+  Healthcheck endpoints of search backend infrastructure to monitor for controlling
+  processing of jobs in the Oban queue.
+
+  It is expected a 200 response is healthy and other responses are unhealthy.
+  """
+  @callback healthcheck_endpoints :: list() | nil
 end

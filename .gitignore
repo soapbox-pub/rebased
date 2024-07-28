@@ -6,7 +6,7 @@
 /test/instance
 /test/uploads
 /.elixir_ls
-/test/fixtures/DSCN0010_tmp.jpg
+/test/fixtures/DSCN0010_tmp*
 /test/fixtures/test_tmp.txt
 /test/fixtures/image_tmp.jpg
 /test/tmp/
@@ -60,3 +60,6 @@ pleroma.iml
 *~
 *#
 *.swp
+
+archive-*
+.gitlab-ci-local

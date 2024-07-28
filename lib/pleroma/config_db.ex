@@ -165,8 +165,7 @@ defmodule Pleroma.ConfigDB do
       {:pleroma, :ecto_repos},
       {:mime, :types},
       {:cors_plug, [:max_age, :methods, :expose, :headers]},
-      {:swarm, :node_blacklist},
-      {:logger, :backends}
+      {:swarm, :node_blacklist}
     ]
 
     Enum.any?(full_key_update, fn
@@ -385,7 +384,12 @@ defmodule Pleroma.ConfigDB do
 
   @spec module_name?(String.t()) :: boolean()
   def module_name?(string) do
-    Regex.match?(~r/^(Pleroma|Phoenix|Tesla|Ueberauth|Swoosh)\./, string) or
-      string in ["Oban", "Ueberauth", "ExSyslogger", "ConcurrentLimiter"]
+    if String.contains?(string, ".") do
+      [name | _] = String.split(string, ".", parts: 2)
+
+      name in ~w[Pleroma Phoenix Tesla Ueberauth Swoosh Logger LoggerBackends]
+    else
+      string in ~w[Oban Ueberauth ExSyslogger ConcurrentLimiter]
+    end
   end
 end

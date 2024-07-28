@@ -62,7 +62,7 @@ defmodule Pleroma.Web.OAuth.App do
     |> Repo.insert()
   end
 
-  @spec update(pos_integer(), map()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
+  @spec update(pos_integer(), map()) :: {:ok, t()} | {:error, Ecto.Changeset.t()} | nil
   def update(id, params) do
     with %__MODULE__{} = app <- Repo.get(__MODULE__, id) do
       app

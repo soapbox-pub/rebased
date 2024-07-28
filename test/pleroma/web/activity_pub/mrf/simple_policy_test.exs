@@ -318,7 +318,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       following_user = insert(:user)
       non_following_user = insert(:user)
 
-      {:ok, _, _, _} = CommonAPI.follow(following_user, actor)
+      {:ok, _, _, _} = CommonAPI.follow(actor, following_user)
 
       activity = %{
         "actor" => actor.ap_id,

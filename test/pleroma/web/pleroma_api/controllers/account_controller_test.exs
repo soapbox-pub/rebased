@@ -78,7 +78,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       user: user
     } do
       [activity | _] = insert_pair(:note_activity)
-      CommonAPI.favorite(user, activity.id)
+      CommonAPI.favorite(activity.id, user)
 
       response =
         conn
@@ -95,7 +95,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       user: user
     } do
       activity = insert(:note_activity)
-      CommonAPI.favorite(user, activity.id)
+      CommonAPI.favorite(activity.id, user)
 
       response =
         build_conn()
@@ -115,7 +115,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
           visibility: "direct"
         })
 
-      CommonAPI.favorite(user, direct.id)
+      CommonAPI.favorite(direct.id, user)
 
       for u <- [user, current_user] do
         response =
@@ -148,7 +148,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
           visibility: "direct"
         })
 
-      CommonAPI.favorite(user, direct.id)
+      CommonAPI.favorite(direct.id, user)
 
       response =
         conn
@@ -165,7 +165,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       activities = insert_list(10, :note_activity)
 
       Enum.each(activities, fn activity ->
-        CommonAPI.favorite(user, activity.id)
+        CommonAPI.favorite(activity.id, user)
       end)
 
       third_activity = Enum.at(activities, 2)
@@ -190,7 +190,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       7
       |> insert_list(:note_activity)
       |> Enum.each(fn activity ->
-        CommonAPI.favorite(user, activity.id)
+        CommonAPI.favorite(activity.id, user)
       end)
 
       response =
@@ -222,7 +222,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
     test "returns 403 error when user has hidden own favorites", %{conn: conn} do
       user = insert(:user, hide_favorites: true)
       activity = insert(:note_activity)
-      CommonAPI.favorite(user, activity.id)
+      CommonAPI.favorite(activity.id, user)
 
       conn = get(conn, "/api/v1/pleroma/accounts/#{user.id}/favourites")
 
@@ -232,7 +232,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
     test "hides favorites for new users by default", %{conn: conn} do
       user = insert(:user)
       activity = insert(:note_activity)
-      CommonAPI.favorite(user, activity.id)
+      CommonAPI.favorite(activity.id, user)
 
       assert user.hide_favorites
       conn = get(conn, "/api/v1/pleroma/accounts/#{user.id}/favourites")
@@ -286,8 +286,8 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       %{id: id2} = user2 = insert(:user)
       %{id: id3} = user3 = insert(:user)
 
-      CommonAPI.follow(user1, user2)
-      CommonAPI.follow(user1, user3)
+      CommonAPI.follow(user2, user1)
+      CommonAPI.follow(user3, user1)
 
       User.endorse(user1, user2)
       User.endorse(user1, user3)
@@ -324,9 +324,9 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
       user3 = insert(:user)
 
-      CommonAPI.follow(user, user1)
-      CommonAPI.follow(user, user2)
-      CommonAPI.follow(user, user3)
+      CommonAPI.follow(user1, user)
+      CommonAPI.follow(user2, user)
+      CommonAPI.follow(user3, user)
 
       [%{"id" => ^id1}] =
         conn
@@ -350,8 +350,8 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
           show_birthday: true
         })
 
-      CommonAPI.follow(user, user1)
-      CommonAPI.follow(user, user2)
+      CommonAPI.follow(user1, user)
+      CommonAPI.follow(user2, user)
 
       [%{"id" => ^id2}] =
         conn

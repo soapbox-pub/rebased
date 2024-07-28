@@ -67,6 +67,14 @@ defmodule Pleroma.SignatureTest do
     end
   end
 
+  describe "get_actor_id/1" do
+    test "it returns actor id" do
+      ap_id = "https://mastodon.social/users/lambadalambda"
+
+      assert Signature.get_actor_id(make_fake_conn(ap_id)) == {:ok, ap_id}
+    end
+  end
+
   describe "sign/2" do
     test "it returns signature headers" do
       user =

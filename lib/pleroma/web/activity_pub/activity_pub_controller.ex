@@ -52,6 +52,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     when action in [:activity, :object]
   )
 
+  plug(:log_inbox_metadata when action in [:inbox])
   plug(:set_requester_reachable when action in [:inbox])
   plug(:relay_active? when action in [:relay])
 
@@ -292,8 +293,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     json(conn, "ok")
   end
 
-  def inbox(%{assigns: %{valid_signature: false}, req_headers: req_headers} = conn, params) do
-    Federator.incoming_ap_doc(%{req_headers: req_headers, params: params})
+  def inbox(%{assigns: %{valid_signature: false}} = conn, params) do
+    Federator.incoming_ap_doc(%{
+      method: conn.method,
+      req_headers: conn.req_headers,
+      request_path: conn.request_path,
+      params: params,
+      query_string: conn.query_string
+    })
+
     json(conn, "ok")
   end
 
@@ -520,6 +528,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
     conn
   end
+
+  defp log_inbox_metadata(%{params: %{"actor" => actor, "type" => type}} = conn, _) do
+    Logger.metadata(actor: actor, type: type)
+    conn
+  end
+
+  defp log_inbox_metadata(conn, _), do: conn
 
   def upload_media(%{assigns: %{user: %User{} = user}} = conn, %{"file" => file} = data) do
     with {:ok, object} <-

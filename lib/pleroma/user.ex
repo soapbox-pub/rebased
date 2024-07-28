@@ -38,6 +38,8 @@ defmodule Pleroma.User do
   alias Pleroma.Web.OAuth
   alias Pleroma.Web.RelMe
   alias Pleroma.Workers.BackgroundWorker
+  alias Pleroma.Workers.DeleteWorker
+  alias Pleroma.Workers.UserRefreshWorker
 
   require Logger
   require Pleroma.Constants
@@ -1404,6 +1406,40 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
+  @spec get_familiar_followers_query(User.t(), User.t(), pos_integer() | nil) :: Ecto.Query.t()
+  def get_familiar_followers_query(%User{} = user, %User{} = current_user, nil) do
+    friends =
+      get_friends_query(current_user)
+      |> where([u], not u.hide_follows)
+      |> select([u], u.id)
+
+    User.Query.build(%{is_active: true})
+    |> where([u], u.id not in ^[user.id, current_user.id])
+    |> join(:inner, [u], r in FollowingRelationship,
+      as: :followers_relationships,
+      on: r.following_id == ^user.id and r.follower_id == u.id
+    )
+    |> where([followers_relationships: r], r.state == ^:follow_accept)
+    |> where([followers_relationships: r], r.follower_id in subquery(friends))
+  end
+
+  def get_familiar_followers_query(%User{} = user, %User{} = current_user, page) do
+    user
+    |> get_familiar_followers_query(current_user, nil)
+    |> User.Query.paginate(page, 20)
+  end
+
+  @spec get_familiar_followers_query(User.t(), User.t()) :: Ecto.Query.t()
+  def get_familiar_followers_query(%User{} = user, %User{} = current_user),
+    do: get_familiar_followers_query(user, current_user, nil)
+
+  @spec get_familiar_followers(User.t(), User.t(), pos_integer() | nil) :: {:ok, list(User.t())}
+  def get_familiar_followers(%User{} = user, %User{} = current_user, page \\ nil) do
+    user
+    |> get_familiar_followers_query(current_user, page)
+    |> Repo.all()
+  end
+
   def increase_note_count(%User{} = user) do
     User
     |> where(id: ^user.id)
@@ -1947,7 +1983,7 @@ defmodule Pleroma.User do
   def delete(%User{} = user) do
     # Purge the user immediately
     purge(user)
-    BackgroundWorker.enqueue("delete_user", %{"user_id" => user.id})
+    DeleteWorker.enqueue("delete_user", %{"user_id" => user.id})
   end
 
   # *Actually* delete the user from the DB
@@ -2019,7 +2055,8 @@ defmodule Pleroma.User do
            %{scheme: scheme, userinfo: nil, host: host}
            when not_empty_string(host) and scheme in ["http", "https"] <-
              URI.parse(value),
-           {:not_idn, true} <- {:not_idn, to_string(:idna.encode(host)) == host},
+           {:not_idn, true} <-
+             {:not_idn, match?(^host, to_string(:idna.encode(to_charlist(host))))},
            "me" <- Pleroma.Web.RelMe.maybe_put_rel_me(value, profile_urls) do
         CommonUtils.to_masto_date(NaiveDateTime.utc_now())
       else
@@ -2119,20 +2156,20 @@ defmodule Pleroma.User do
 
   def fetch_by_ap_id(ap_id), do: ActivityPub.make_user_from_ap_id(ap_id)
 
+  @spec get_or_fetch_by_ap_id(String.t()) :: {:ok, User.t()} | {:error, any()}
   def get_or_fetch_by_ap_id(ap_id) do
-    cached_user = get_cached_by_ap_id(ap_id)
+    with cached_user = %User{} <- get_cached_by_ap_id(ap_id),
+         _ <- maybe_refresh(cached_user) do
+      {:ok, cached_user}
+    else
+      _ -> fetch_by_ap_id(ap_id)
+    end
+  end
 
-    maybe_fetched_user = needs_update?(cached_user) && fetch_by_ap_id(ap_id)
-
-    case {cached_user, maybe_fetched_user} do
-      {_, {:ok, %User{} = user}} ->
-        {:ok, user}
-
-      {%User{} = user, _} ->
-        {:ok, user}
-
-      _ ->
-        {:error, :not_found}
+  defp maybe_refresh(user) do
+    if needs_update?(user) do
+      UserRefreshWorker.new(%{"ap_id" => user.ap_id})
+      |> Oban.insert()
     end
   end
 
@@ -2693,7 +2730,7 @@ defmodule Pleroma.User do
     end
   end
 
-  @spec add_to_block(User.t(), User.t()) ::
+  @spec remove_from_block(User.t(), User.t()) ::
           {:ok, UserRelationship.t()} | {:ok, nil} | {:error, Ecto.Changeset.t()}
   defp remove_from_block(%User{} = user, %User{} = blocked) do
     with {:ok, relationship} <- UserRelationship.delete_block(user, blocked) do

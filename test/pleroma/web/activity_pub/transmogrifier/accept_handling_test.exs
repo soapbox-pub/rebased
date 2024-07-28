@@ -18,7 +18,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AcceptHandlingTest do
     {:ok, follower, followed} = User.follow(follower, followed)
     assert User.following?(follower, followed) == true
 
-    {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
+    {:ok, _, _, follow_activity} = CommonAPI.follow(followed, follower)
 
     accept_data =
       File.read!("test/fixtures/mastodon-accept-activity.json")
@@ -48,7 +48,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AcceptHandlingTest do
     follower = insert(:user)
     followed = insert(:user, is_locked: true)
 
-    {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
+    {:ok, _, _, follow_activity} = CommonAPI.follow(followed, follower)
 
     accept_data =
       File.read!("test/fixtures/mastodon-accept-activity.json")

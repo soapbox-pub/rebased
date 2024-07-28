@@ -182,8 +182,8 @@ defmodule Pleroma.UserTest do
     locked = insert(:user, is_locked: true)
     follower = insert(:user)
 
-    CommonAPI.follow(follower, unlocked)
-    CommonAPI.follow(follower, locked)
+    CommonAPI.follow(unlocked, follower)
+    CommonAPI.follow(locked, follower)
 
     assert [] = User.get_follow_requests(unlocked)
     assert [activity] = User.get_follow_requests(locked)
@@ -196,9 +196,9 @@ defmodule Pleroma.UserTest do
     pending_follower = insert(:user)
     accepted_follower = insert(:user)
 
-    CommonAPI.follow(pending_follower, locked)
-    CommonAPI.follow(pending_follower, locked)
-    CommonAPI.follow(accepted_follower, locked)
+    CommonAPI.follow(locked, pending_follower)
+    CommonAPI.follow(locked, pending_follower)
+    CommonAPI.follow(locked, accepted_follower)
 
     Pleroma.FollowingRelationship.update(accepted_follower, locked, :follow_accept)
 
@@ -209,7 +209,7 @@ defmodule Pleroma.UserTest do
     locked = insert(:user, is_locked: true)
     pending_follower = insert(:user, %{is_active: false})
 
-    CommonAPI.follow(pending_follower, locked)
+    CommonAPI.follow(locked, pending_follower)
 
     refute pending_follower.is_active
     assert [] = User.get_follow_requests(locked)
@@ -219,7 +219,7 @@ defmodule Pleroma.UserTest do
     followed = insert(:user, is_locked: true)
     follower = insert(:user)
 
-    CommonAPI.follow(follower, followed)
+    CommonAPI.follow(followed, follower)
     assert [_activity] = User.get_follow_requests(followed)
 
     {:ok, _user_relationship} = User.block(followed, follower)
@@ -877,109 +877,19 @@ defmodule Pleroma.UserTest do
     setup do: clear_config([Pleroma.Web.WebFinger, :update_nickname_on_user_fetch], true)
 
     test "for mastodon" do
-      Tesla.Mock.mock(fn
-        %{url: "https://example.com/.well-known/host-meta"} ->
-          %Tesla.Env{
-            status: 302,
-            headers: [{"location", "https://sub.example.com/.well-known/host-meta"}]
-          }
-
-        %{url: "https://sub.example.com/.well-known/host-meta"} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              "test/fixtures/webfinger/masto-host-meta.xml"
-              |> File.read!()
-              |> String.replace("{{domain}}", "sub.example.com")
-          }
-
-        %{url: "https://sub.example.com/.well-known/webfinger?resource=acct:a@example.com"} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              "test/fixtures/webfinger/masto-webfinger.json"
-              |> File.read!()
-              |> String.replace("{{nickname}}", "a")
-              |> String.replace("{{domain}}", "example.com")
-              |> String.replace("{{subdomain}}", "sub.example.com"),
-            headers: [{"content-type", "application/jrd+json"}]
-          }
-
-        %{url: "https://sub.example.com/users/a"} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              "test/fixtures/webfinger/masto-user.json"
-              |> File.read!()
-              |> String.replace("{{nickname}}", "a")
-              |> String.replace("{{domain}}", "sub.example.com"),
-            headers: [{"content-type", "application/activity+json"}]
-          }
-
-        %{url: "https://sub.example.com/users/a/collections/featured"} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              File.read!("test/fixtures/users_mock/masto_featured.json")
-              |> String.replace("{{domain}}", "sub.example.com")
-              |> String.replace("{{nickname}}", "a"),
-            headers: [{"content-type", "application/activity+json"}]
-          }
-      end)
-
-      ap_id = "a@example.com"
+      ap_id = "a@mastodon.example"
       {:ok, fetched_user} = User.get_or_fetch(ap_id)
 
-      assert fetched_user.ap_id == "https://sub.example.com/users/a"
-      assert fetched_user.nickname == "a@example.com"
+      assert fetched_user.ap_id == "https://sub.mastodon.example/users/a"
+      assert fetched_user.nickname == "a@mastodon.example"
     end
 
     test "for pleroma" do
-      Tesla.Mock.mock(fn
-        %{url: "https://example.com/.well-known/host-meta"} ->
-          %Tesla.Env{
-            status: 302,
-            headers: [{"location", "https://sub.example.com/.well-known/host-meta"}]
-          }
-
-        %{url: "https://sub.example.com/.well-known/host-meta"} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              "test/fixtures/webfinger/pleroma-host-meta.xml"
-              |> File.read!()
-              |> String.replace("{{domain}}", "sub.example.com")
-          }
-
-        %{url: "https://sub.example.com/.well-known/webfinger?resource=acct:a@example.com"} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              "test/fixtures/webfinger/pleroma-webfinger.json"
-              |> File.read!()
-              |> String.replace("{{nickname}}", "a")
-              |> String.replace("{{domain}}", "example.com")
-              |> String.replace("{{subdomain}}", "sub.example.com"),
-            headers: [{"content-type", "application/jrd+json"}]
-          }
-
-        %{url: "https://sub.example.com/users/a"} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              "test/fixtures/webfinger/pleroma-user.json"
-              |> File.read!()
-              |> String.replace("{{nickname}}", "a")
-              |> String.replace("{{domain}}", "sub.example.com"),
-            headers: [{"content-type", "application/activity+json"}]
-          }
-      end)
-
-      ap_id = "a@example.com"
+      ap_id = "a@pleroma.example"
       {:ok, fetched_user} = User.get_or_fetch(ap_id)
 
-      assert fetched_user.ap_id == "https://sub.example.com/users/a"
-      assert fetched_user.nickname == "a@example.com"
+      assert fetched_user.ap_id == "https://sub.pleroma.example/users/a"
+      assert fetched_user.nickname == "a@pleroma.example"
     end
   end
 
@@ -1016,7 +926,6 @@ defmodule Pleroma.UserTest do
       assert user == fetched_user
     end
 
-    @tag capture_log: true
     test "returns nil if no user could be fetched" do
       {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistent@social.heldscal.la")
       assert fetched_user == "not found nonexistent@social.heldscal.la"
@@ -1043,9 +952,16 @@ defmodule Pleroma.UserTest do
 
       {:ok, user} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
 
-      assert user.inbox
+      # Oban job was generated to refresh the stale user
+      assert_enqueued(worker: "Pleroma.Workers.UserRefreshWorker", args: %{"ap_id" => user.ap_id})
 
-      refute user.last_refreshed_at == orig_user.last_refreshed_at
+      # Run job to refresh the user; just capture its output instead of fetching it again
+      assert {:ok, updated_user} =
+               perform_job(Pleroma.Workers.UserRefreshWorker, %{"ap_id" => user.ap_id})
+
+      assert updated_user.inbox
+
+      refute updated_user.last_refreshed_at == orig_user.last_refreshed_at
     end
 
     test "if nicknames clash, the old user gets a prefix with the old id to the nickname" do
@@ -1073,7 +989,6 @@ defmodule Pleroma.UserTest do
       assert orig_user.nickname == "#{orig_user.id}.admin@mastodon.example.org"
     end
 
-    @tag capture_log: true
     test "it returns the old user if stale, but unfetchable" do
       a_week_ago = NaiveDateTime.add(NaiveDateTime.utc_now(), -604_800)
 
@@ -1611,7 +1526,7 @@ defmodule Pleroma.UserTest do
 
       assert [activity] == ActivityPub.fetch_public_activities(%{}) |> Repo.preload(:bookmark)
 
-      assert [%{activity | thread_muted?: CommonAPI.thread_muted?(user2, activity)}] ==
+      assert [%{activity | thread_muted?: CommonAPI.thread_muted?(activity, user2)}] ==
                ActivityPub.fetch_activities([user2.ap_id | User.following(user2)], %{
                  user: user2
                })
@@ -1776,8 +1691,8 @@ defmodule Pleroma.UserTest do
       object_two = insert(:note, user: follower)
       activity_two = insert(:note_activity, user: follower, note: object_two)
 
-      {:ok, like} = CommonAPI.favorite(user, activity_two.id)
-      {:ok, like_two} = CommonAPI.favorite(follower, activity.id)
+      {:ok, like} = CommonAPI.favorite(activity_two.id, user)
+      {:ok, like_two} = CommonAPI.favorite(activity.id, follower)
       {:ok, repeat} = CommonAPI.repeat(activity_two.id, user)
 
       {:ok, job} = User.delete(user)
@@ -2891,6 +2806,20 @@ defmodule Pleroma.UserTest do
 
       assert user3_updated.also_known_as |> length() == 1
       assert user.ap_id in user3_updated.also_known_as
+    end
+  end
+
+  describe "get_familiar_followers/3" do
+    test "returns familiar followers for a pair of users" do
+      user1 = insert(:user)
+      %{id: id2} = user2 = insert(:user)
+      user3 = insert(:user)
+      _user4 = insert(:user)
+
+      User.follow(user1, user2)
+      User.follow(user2, user3)
+
+      assert [%{id: ^id2}] = User.get_familiar_followers(user3, user1)
     end
   end
 

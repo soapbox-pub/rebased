@@ -534,6 +534,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         else
           _ -> e
         end
+
+      e ->
+        {:error, e}
     end
   end
 
@@ -912,9 +915,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def add_emoji_tags(object), do: object
 
-  defp build_emoji_tag({name, url}) do
+  def build_emoji_tag({name, url}) do
+    url = URI.encode(url)
+
     %{
-      "icon" => %{"url" => "#{URI.encode(url)}", "type" => "Image"},
+      "icon" => %{"url" => "#{url}", "type" => "Image"},
       "name" => ":" <> name <> ":",
       "type" => "Emoji",
       "updated" => "1970-01-01T00:00:00Z",

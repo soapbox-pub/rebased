@@ -74,7 +74,7 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
 
     object = Object.normalize(activity, fetch: false)
 
-    {:ok, _votes, object} = CommonAPI.vote(voter, object, [0, 1])
+    {:ok, _votes, object} = CommonAPI.vote(object, voter, [0, 1])
 
     assert match?(
              %{
@@ -119,7 +119,7 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
 
     object = Object.normalize(activity, fetch: false)
 
-    {:ok, _, object} = CommonAPI.vote(other_user, object, [1, 2])
+    {:ok, _, object} = CommonAPI.vote(object, other_user, [1, 2])
 
     result = PollView.render("show.json", %{object: object, for: other_user})
 

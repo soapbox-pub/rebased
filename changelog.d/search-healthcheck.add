@@ -1,0 +1,1 @@
+Monitoring of search backend health to control the processing of jobs in the search indexing Oban queue

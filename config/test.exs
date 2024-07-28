@@ -49,7 +49,8 @@ config :pleroma, Pleroma.Repo,
   hostname: System.get_env("DB_HOST") || "localhost",
   port: System.get_env("DB_PORT") || "5432",
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: System.schedulers_online() * 2
+  pool_size: System.schedulers_online() * 2,
+  log: false
 
 config :pleroma, :dangerzone, override_repo_pool_size: true
 
@@ -153,6 +154,11 @@ config :pleroma, Pleroma.Uploaders.S3, config_impl: Pleroma.UnstubbedConfigMock
 config :pleroma, Pleroma.Upload, config_impl: Pleroma.UnstubbedConfigMock
 config :pleroma, Pleroma.ScheduledActivity, config_impl: Pleroma.UnstubbedConfigMock
 config :pleroma, Pleroma.Web.RichMedia.Helpers, config_impl: Pleroma.StaticStubbedConfigMock
+config :pleroma, Pleroma.Uploaders.IPFS, config_impl: Pleroma.UnstubbedConfigMock
+config :pleroma, Pleroma.Web.Plugs.HTTPSecurityPlug, config_impl: Pleroma.StaticStubbedConfigMock
+config :pleroma, Pleroma.Web.Plugs.HTTPSignaturePlug, config_impl: Pleroma.StaticStubbedConfigMock
+
+config :pleroma, Pleroma.Signature, http_signatures_impl: Pleroma.StubbedHTTPSignaturesMock
 
 peer_module =
   if String.to_integer(System.otp_release()) >= 25 do
@@ -171,11 +177,16 @@ config :pleroma, Pleroma.Application,
   streamer_registry: false,
   test_http_pools: true
 
+config :pleroma, Pleroma.Web.Streaming, sync_streaming: true
+
 config :pleroma, Pleroma.Uploaders.Uploader, timeout: 1_000
 
 config :pleroma, Pleroma.Emoji.Loader, test_emoji: true
 
-config :pleroma, Pleroma.Web.RichMedia.Backfill, provider: Pleroma.Web.RichMedia.Backfill
+config :pleroma, Pleroma.Web.RichMedia.Backfill,
+  stream_out: Pleroma.Web.ActivityPub.ActivityPubMock
+
+config :pleroma, Pleroma.Web.Plugs.HTTPSecurityPlug, enable: false
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

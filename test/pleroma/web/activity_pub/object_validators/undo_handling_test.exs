@@ -15,7 +15,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UndoHandlingTest do
     setup do
       user = insert(:user)
       {:ok, post_activity} = CommonAPI.post(user, %{status: "uguu"})
-      {:ok, like} = CommonAPI.favorite(user, post_activity.id)
+      {:ok, like} = CommonAPI.favorite(post_activity.id, user)
       {:ok, valid_like_undo, []} = Builder.undo(user, like)
 
       %{user: user, like: like, valid_like_undo: valid_like_undo}

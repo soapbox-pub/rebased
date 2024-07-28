@@ -7,8 +7,8 @@ defmodule Pleroma.Web.RichMedia.Card do
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Repo
-  alias Pleroma.Web.RichMedia.Backfill
   alias Pleroma.Web.RichMedia.Parser
+  alias Pleroma.Workers.RichMediaWorker
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
   @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
@@ -75,21 +75,26 @@ defmodule Pleroma.Web.RichMedia.Card do
 
   def get_by_url(nil), do: nil
 
-  @spec get_or_backfill_by_url(String.t(), map()) :: t() | nil
-  def get_or_backfill_by_url(url, backfill_opts \\ %{}) do
-    case get_by_url(url) do
-      %__MODULE__{} = card ->
-        card
+  @spec get_or_backfill_by_url(String.t(), keyword()) :: t() | nil
+  def get_or_backfill_by_url(url, opts \\ []) do
+    if @config_impl.get([:rich_media, :enabled]) do
+      case get_by_url(url) do
+        %__MODULE__{} = card ->
+          card
 
-      nil ->
-        backfill_opts = Map.put(backfill_opts, :url, url)
+        nil ->
+          activity_id = Keyword.get(opts, :activity_id, nil)
 
-        Backfill.start(backfill_opts)
+          RichMediaWorker.new(%{"op" => "backfill", "url" => url, "activity_id" => activity_id})
+          |> Oban.insert()
 
-        nil
+          nil
 
-      :error ->
-        nil
+        :error ->
+          nil
+      end
+    else
+      nil
     end
   end
 
@@ -104,7 +109,8 @@ defmodule Pleroma.Web.RichMedia.Card do
   @spec get_by_activity(Activity.t()) :: t() | nil | :error
   # Fake/Draft activity
   def get_by_activity(%Activity{id: "pleroma:fakeid"} = activity) do
-    with %Object{} = object <- Object.normalize(activity, fetch: false),
+    with {_, true} <- {:config, @config_impl.get([:rich_media, :enabled])},
+         %Object{} = object <- Object.normalize(activity, fetch: false),
          url when not is_nil(url) <- HTML.extract_first_external_url_from_object(object) do
       case get_by_url(url) do
         # Cache hit
@@ -132,7 +138,7 @@ defmodule Pleroma.Web.RichMedia.Card do
       nil
     else
       {:cached, url} ->
-        get_or_backfill_by_url(url, %{activity_id: activity.id})
+        get_or_backfill_by_url(url, activity_id: activity.id)
 
       _ ->
         :error

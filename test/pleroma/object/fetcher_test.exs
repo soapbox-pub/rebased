@@ -84,7 +84,6 @@ defmodule Pleroma.Object.FetcherTest do
       :ok
     end
 
-    @tag capture_log: true
     test "it works when fetching the OP actor errors out" do
       # Here we simulate a case where the author of the OP can't be read
       assert {:ok, _} =

@@ -1,0 +1,1 @@
+Gun Connection Pool was not retrying to acquire a connection if the pool was full and stale connections were reclaimed

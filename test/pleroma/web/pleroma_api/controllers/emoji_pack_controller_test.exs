@@ -159,8 +159,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
       {:ok, arch} = :zip.unzip(resp, [:memory])
 
-      assert Enum.find(arch, fn {n, _} -> n == 'pack.json' end)
-      assert Enum.find(arch, fn {n, _} -> n == 'blank.png' end)
+      assert Enum.find(arch, fn {n, _} -> n == ~c"pack.json" end)
+      assert Enum.find(arch, fn {n, _} -> n == ~c"blank.png" end)
     end
 
     test "non existing pack", %{conn: conn} do
@@ -454,7 +454,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
           method: :get,
           url: "https://nonshared-pack"
         } ->
-          {:ok, {'empty.zip', empty_arch}} = :zip.zip('empty.zip', [], [:memory])
+          {:ok, {~c"empty.zip", empty_arch}} = :zip.zip(~c"empty.zip", [], [:memory])
           text(empty_arch)
       end)
 

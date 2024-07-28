@@ -241,10 +241,9 @@ defmodule Pleroma.ApplicationRequirements do
 
     missing_mrfs =
       Enum.reduce(mrfs, [], fn x, acc ->
-        if Code.ensure_compiled(x) do
-          acc
-        else
-          acc ++ [x]
+        case Code.ensure_compiled(x) do
+          {:module, _} -> acc
+          {:error, _} -> acc ++ [x]
         end
       end)
 

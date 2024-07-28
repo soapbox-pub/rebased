@@ -9,6 +9,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
   alias Pleroma.Object
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
@@ -69,6 +70,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
       CommonAPI.post_chat_message(recipient, user, "gkgkgk https://example.com/ogp",
         media_id: upload.id
       )
+
+    ObanHelpers.perform_all()
 
     object = Object.normalize(activity, fetch: false)
 

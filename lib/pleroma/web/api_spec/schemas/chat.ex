@@ -68,7 +68,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Chat do
       },
       "id" => "1",
       "unread" => 2,
-      "last_message" => ChatMessage.schema().example(),
+      "last_message" => ChatMessage.schema().example,
       "updated_at" => "2020-04-21T15:06:45.000Z"
     }
   })

@@ -14,7 +14,8 @@ defmodule Mix.Pleroma do
     :swoosh,
     :timex,
     :fast_html,
-    :oban
+    :oban,
+    :logger_backends
   ]
   @cachex_children ["object", "user", "scrubber", "web_resp"]
   @doc "Common functions to be reused in mix tasks"

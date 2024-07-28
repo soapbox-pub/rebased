@@ -43,10 +43,6 @@ defmodule Pleroma.Frontend do
       {:download_or_unzip, _} ->
         Logger.info("Could not download or unzip the frontend")
         {:error, "Could not download or unzip the frontend"}
-
-      _e ->
-        Logger.info("Could not install the frontend")
-        {:error, "Could not install the frontend"}
     end
   end
 

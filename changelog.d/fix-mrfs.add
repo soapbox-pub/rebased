@@ -1,0 +1,1 @@
+Added a Mix task "pleroma.config fix_mrf_policies" which will remove erroneous MRF policies from ConfigDB.

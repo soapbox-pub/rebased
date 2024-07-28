@@ -93,7 +93,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     user = insert(:user)
     another_user = insert(:user)
     {:ok, create_activity} = CommonAPI.post(user, %{status: "hey"})
-    {:ok, favorite_activity} = CommonAPI.favorite(another_user, create_activity.id)
+    {:ok, favorite_activity} = CommonAPI.favorite(create_activity.id, another_user)
     {:ok, [notification]} = Notification.create_notifications(favorite_activity)
     create_activity = Activity.get_by_id(create_activity.id)
 
@@ -132,7 +132,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
   test "Follow notification" do
     follower = insert(:user)
     followed = insert(:user)
-    {:ok, follower, followed, _activity} = CommonAPI.follow(follower, followed)
+    {:ok, follower, followed, _activity} = CommonAPI.follow(followed, follower)
     notification = Notification |> Repo.one() |> Repo.preload(:activity)
 
     expected = %{
@@ -290,7 +290,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
 
     {:ok, activity} = CommonAPI.post(user, %{status: "mew"})
     {:ok, _} = CommonAPI.repeat(activity.id, repeat_user)
-    {:ok, update} = CommonAPI.update(user, activity, %{status: "mew mew"})
+    {:ok, update} = CommonAPI.update(activity, user, %{status: "mew mew"})
 
     user = Pleroma.User.get_by_ap_id(user.ap_id)
     activity = Pleroma.Activity.normalize(activity)
@@ -316,7 +316,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
 
     {:ok, _} = Pleroma.UserRelationship.create_mute(user, another_user)
     {:ok, create_activity} = CommonAPI.post(user, %{status: "hey"})
-    {:ok, favorite_activity} = CommonAPI.favorite(another_user, create_activity.id)
+    {:ok, favorite_activity} = CommonAPI.favorite(create_activity.id, another_user)
     {:ok, [notification]} = Notification.create_notifications(favorite_activity)
     create_activity = Activity.get_by_id(create_activity.id)
 
@@ -330,5 +330,32 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     }
 
     test_notifications_rendering([notification], user, [expected])
+  end
+
+  test "Subscribed status notification" do
+    user = insert(:user)
+    subscriber = insert(:user)
+
+    User.subscribe(subscriber, user)
+
+    {:ok, activity} = CommonAPI.post(user, %{status: "hi"})
+    {:ok, [notification]} = Notification.create_notifications(activity)
+
+    user = User.get_cached_by_id(user.id)
+
+    expected = %{
+      id: to_string(notification.id),
+      pleroma: %{is_seen: false, is_muted: false},
+      type: "status",
+      account:
+        AccountView.render("show.json", %{
+          user: user,
+          for: subscriber
+        }),
+      status: StatusView.render("show.json", %{activity: activity, for: subscriber}),
+      created_at: Utils.to_masto_date(notification.inserted_at)
+    }
+
+    test_notifications_rendering([notification], subscriber, [expected])
   end
 end

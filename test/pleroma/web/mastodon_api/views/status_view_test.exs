@@ -201,7 +201,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert_schema(status, "Status", Pleroma.Web.ApiSpec.spec())
   end
 
-  @tag capture_log: true
   test "returns a temporary ap_id based user for activities missing db users" do
     user = insert(:user)
 
@@ -389,7 +388,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     assert status.pleroma.thread_muted == false
 
-    {:ok, activity} = CommonAPI.add_mute(user, activity)
+    {:ok, activity} = CommonAPI.add_mute(activity, user)
 
     status = StatusView.render("show.json", %{activity: activity, for: user})
 
@@ -467,7 +466,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     # Create a public post quoting the private post
     quote_private =
-      insert(:note_activity, note: insert(:note, data: %{"quoteUrl" => private_object.data["id"]}))
+      insert(:note_activity,
+        note: insert(:note, data: %{"quoteUrl" => private_object.data["id"]})
+      )
 
     status = StatusView.render("show.json", %{activity: quote_private})
 
@@ -478,7 +479,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     # After following the user, the quote is rendered
     follower = insert(:user)
-    CommonAPI.follow(follower, user)
+    CommonAPI.follow(user, follower)
 
     status = StatusView.render("show.json", %{activity: quote_private, for: follower})
     assert status.pleroma.quote.id == to_string(private.id)
@@ -591,45 +592,78 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert mention.url == recipient.ap_id
   end
 
-  test "attachments" do
-    object = %{
-      "type" => "Image",
-      "url" => [
-        %{
-          "mediaType" => "image/png",
-          "href" => "someurl",
-          "width" => 200,
-          "height" => 100
-        }
-      ],
-      "blurhash" => "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn",
-      "uuid" => 6
-    }
+  describe "attachments" do
+    test "Complete Mastodon style" do
+      object = %{
+        "type" => "Image",
+        "url" => [
+          %{
+            "mediaType" => "image/png",
+            "href" => "someurl",
+            "width" => 200,
+            "height" => 100
+          }
+        ],
+        "blurhash" => "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn",
+        "uuid" => 6
+      }
 
-    expected = %{
-      id: "1638338801",
-      type: "image",
-      url: "someurl",
-      remote_url: "someurl",
-      preview_url: "someurl",
-      text_url: "someurl",
-      description: nil,
-      pleroma: %{mime_type: "image/png"},
-      meta: %{original: %{width: 200, height: 100, aspect: 2}},
-      blurhash: "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn"
-    }
+      expected = %{
+        id: "1638338801",
+        type: "image",
+        url: "someurl",
+        remote_url: "someurl",
+        preview_url: "someurl",
+        text_url: "someurl",
+        description: nil,
+        pleroma: %{mime_type: "image/png"},
+        meta: %{original: %{width: 200, height: 100, aspect: 2}},
+        blurhash: "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn"
+      }
 
-    api_spec = Pleroma.Web.ApiSpec.spec()
+      api_spec = Pleroma.Web.ApiSpec.spec()
 
-    assert expected == StatusView.render("attachment.json", %{attachment: object})
-    assert_schema(expected, "Attachment", api_spec)
+      assert expected == StatusView.render("attachment.json", %{attachment: object})
+      assert_schema(expected, "Attachment", api_spec)
 
-    # If theres a "id", use that instead of the generated one
-    object = Map.put(object, "id", 2)
-    result = StatusView.render("attachment.json", %{attachment: object})
+      # If theres a "id", use that instead of the generated one
+      object = Map.put(object, "id", 2)
+      result = StatusView.render("attachment.json", %{attachment: object})
 
-    assert %{id: "2"} = result
-    assert_schema(result, "Attachment", api_spec)
+      assert %{id: "2"} = result
+      assert_schema(result, "Attachment", api_spec)
+    end
+
+    test "Honkerific" do
+      object = %{
+        "type" => "Image",
+        "url" => [
+          %{
+            "mediaType" => "image/png",
+            "href" => "someurl"
+          }
+        ],
+        "name" => "fool.jpeg",
+        "summary" => "they have played us for absolute fools."
+      }
+
+      expected = %{
+        blurhash: nil,
+        description: "they have played us for absolute fools.",
+        id: "1638338801",
+        pleroma: %{mime_type: "image/png", name: "fool.jpeg"},
+        preview_url: "someurl",
+        remote_url: "someurl",
+        text_url: "someurl",
+        type: "image",
+        url: "someurl"
+      }
+
+      api_spec = Pleroma.Web.ApiSpec.spec()
+
+      assert expected == StatusView.render("attachment.json", %{attachment: object})
+      assert_schema(expected, "Attachment", api_spec)
+    end
   end
 
   test "put the url advertised in the Activity in to the url attribute" do
@@ -904,7 +938,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("show.json", activity: post)
     refute status.edited_at
 
-    {:ok, _} = CommonAPI.update(poster, post, %{status: "mew mew"})
+    {:ok, _} = CommonAPI.update(post, poster, %{status: "mew mew"})
     edited = Pleroma.Activity.normalize(post)
 
     status = StatusView.render("show.json", activity: edited)

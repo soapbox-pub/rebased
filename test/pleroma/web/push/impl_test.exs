@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.Push.ImplTest do
   use Pleroma.DataCase, async: true
 
+  import ExUnit.CaptureLog
   import Mox
   import Pleroma.Factory
 
@@ -32,17 +33,6 @@ defmodule Pleroma.Web.Push.ImplTest do
     :ok
   end
 
-  @sub %{
-    endpoint: "https://example.com/example/1234",
-    keys: %{
-      auth: "8eDyX_uCN0XRhSbY5hs7Hg==",
-      p256dh:
-        "BCIWgsnyXDv1VkhqL2P7YRBvdeuDnlwAPT2guNhdIoW3IP7GmHh1SMKPLxRf7x8vJy6ZFK3ol2ohgn_-0yP7QQA="
-    }
-  }
-  @api_key "BASgACIHpN1GYgzSRp"
-  @message "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini..."
-
   test "performs sending notifications" do
     user = insert(:user)
     user2 = insert(:user)
@@ -68,39 +58,65 @@ defmodule Pleroma.Web.Push.ImplTest do
         type: "mention"
       )
 
-    assert Impl.perform(notif) == {:ok, [:ok, :ok]}
+    Impl.build(notif)
+    |> Enum.each(fn push -> assert match?(:ok, Impl.deliver(push)) end)
   end
 
-  @tag capture_log: true
-  test "returns error if notif does not match " do
-    assert Impl.perform(%{}) == {:error, :unknown_type}
+  test "returns error if notification activity type does not match" do
+    assert capture_log(fn ->
+             assert Impl.build(%{}) == []
+           end) =~ "WebPush: unknown activity type"
   end
 
-  test "successful message sending" do
-    assert Impl.push_message(@message, @sub, @api_key, %Subscription{}) == :ok
-  end
-
-  @tag capture_log: true
   test "fail message sending" do
-    assert Impl.push_message(
-             @message,
-             Map.merge(@sub, %{endpoint: "https://example.com/example/bad"}),
-             @api_key,
-             %Subscription{}
-           ) == :error
+    user = insert(:user)
+
+    insert(:push_subscription,
+      user: user,
+      endpoint: "https://example.com/example/bad",
+      data: %{alerts: %{"follow" => true}}
+    )
+
+    other_user = insert(:user)
+    {:ok, _, _, activity} = CommonAPI.follow(other_user, user)
+
+    notif =
+      insert(:notification,
+        user: user,
+        activity: activity,
+        type: "follow"
+      )
+
+    [push] = Impl.build(notif)
+
+    assert Impl.deliver(push) == :error
   end
 
   test "delete subscription if result send message between 400..500" do
-    subscription = insert(:push_subscription)
+    user = insert(:user)
 
-    assert Impl.push_message(
-             @message,
-             Map.merge(@sub, %{endpoint: "https://example.com/example/not_found"}),
-             @api_key,
-             subscription
-           ) == :ok
+    bad_subscription =
+      insert(:push_subscription,
+        user: user,
+        endpoint: "https://example.com/example/not_found",
+        data: %{alerts: %{"follow" => true}}
+      )
 
-    refute Pleroma.Repo.get(Subscription, subscription.id)
+    other_user = insert(:user)
+    {:ok, _, _, activity} = CommonAPI.follow(other_user, user)
+
+    notif =
+      insert(:notification,
+        user: user,
+        activity: activity,
+        type: "follow"
+      )
+
+    [push] = Impl.build(notif)
+
+    assert Impl.deliver(push) == :ok
+
+    refute Pleroma.Repo.get(Subscription, bad_subscription.id)
   end
 
   test "deletes subscription when token has been deleted" do
@@ -129,7 +145,7 @@ defmodule Pleroma.Web.Push.ImplTest do
              user,
              object
            ) ==
-             "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini..."
+             "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis finibus turpis."
 
     assert Impl.format_title(%{activity: activity, type: "mention"}) ==
              "New Mention"
@@ -138,7 +154,7 @@ defmodule Pleroma.Web.Push.ImplTest do
   test "renders title and body for follow activity" do
     user = insert(:user, nickname: "Bob")
     other_user = insert(:user)
-    {:ok, _, _, activity} = CommonAPI.follow(user, other_user)
+    {:ok, _, _, activity} = CommonAPI.follow(other_user, user)
     object = Object.normalize(activity, fetch: false)
 
     assert Impl.format_body(%{activity: activity, type: "follow"}, user, object) ==
@@ -161,7 +177,7 @@ defmodule Pleroma.Web.Push.ImplTest do
     object = Object.normalize(activity, fetch: false)
 
     assert Impl.format_body(%{activity: announce_activity}, user, object) ==
-             "@#{user.nickname} repeated: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini..."
+             "@#{user.nickname} repeated: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis finibus turpis."
 
     assert Impl.format_title(%{activity: announce_activity, type: "reblog"}) ==
              "New Repeat"
@@ -176,7 +192,7 @@ defmodule Pleroma.Web.Push.ImplTest do
           "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
       })
 
-    {:ok, activity} = CommonAPI.favorite(user, activity.id)
+    {:ok, activity} = CommonAPI.favorite(activity.id, user)
     object = Object.normalize(activity, fetch: false)
 
     assert Impl.format_body(%{activity: activity, type: "favourite"}, user, object) ==
@@ -209,7 +225,7 @@ defmodule Pleroma.Web.Push.ImplTest do
 
     {:ok, activity} = CommonAPI.post(user, %{status: "lorem ipsum"})
 
-    {:ok, activity} = CommonAPI.update(user, activity, %{status: "edited status"})
+    {:ok, activity} = CommonAPI.update(activity, user, %{status: "edited status"})
     object = Object.normalize(activity, fetch: false)
 
     assert Impl.format_body(%{activity: activity, type: "update"}, user, object) ==
@@ -230,6 +246,29 @@ defmodule Pleroma.Web.Push.ImplTest do
 
     assert Impl.format_title(%{activity: activity}) ==
              "New Direct Message"
+  end
+
+  test "renders poll notification" do
+    user = insert(:user)
+    question = insert(:question, user: user)
+    activity = insert(:question_activity, question: question)
+
+    {:ok, [notification]} = Notification.create_poll_notifications(activity)
+
+    expected_title = "Poll Results"
+
+    expected_body =
+      """
+      Which flavor of ice cream do you prefer?
+
+      ○ chocolate
+      ○ vanilla
+      """
+      |> String.trim_trailing("\n")
+
+    content = Impl.build_content(notification, user, question)
+
+    assert match?(%{title: ^expected_title, body: ^expected_body}, content)
   end
 
   describe "build_content/3" do
@@ -312,7 +351,7 @@ defmodule Pleroma.Web.Push.ImplTest do
                body: "New Mention"
              }
 
-      {:ok, activity} = CommonAPI.favorite(user, activity.id)
+      {:ok, activity} = CommonAPI.favorite(activity.id, user)
 
       notif = insert(:notification, user: user2, activity: activity, type: "favourite")
 
@@ -328,7 +367,10 @@ defmodule Pleroma.Web.Push.ImplTest do
       user = insert(:user, nickname: "Bob")
 
       user2 =
-        insert(:user, nickname: "Rob", notification_settings: %{hide_notification_contents: false})
+        insert(:user,
+          nickname: "Rob",
+          notification_settings: %{hide_notification_contents: false}
+        )
 
       {:ok, activity} =
         CommonAPI.post(user, %{
@@ -344,7 +386,7 @@ defmodule Pleroma.Web.Push.ImplTest do
 
       assert Impl.build_content(notif, actor, object) == %{
                body:
-                 "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini...",
+                 "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis finibus turpis.",
                title: "New Direct Message"
              }
 
@@ -362,11 +404,11 @@ defmodule Pleroma.Web.Push.ImplTest do
 
       assert Impl.build_content(notif, actor, object) == %{
                body:
-                 "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini...",
+                 "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis finibus turpis.",
                title: "New Mention"
              }
 
-      {:ok, activity} = CommonAPI.favorite(user, activity.id)
+      {:ok, activity} = CommonAPI.favorite(activity.id, user)
 
       notif = insert(:notification, user: user2, activity: activity, type: "favourite")
 
@@ -378,5 +420,24 @@ defmodule Pleroma.Web.Push.ImplTest do
                title: "New Favorite"
              }
     end
+  end
+
+  test "build/1 notification payload body starts with nickname of actor the notification originated from" do
+    user = insert(:user, nickname: "Bob")
+    user2 = insert(:user, nickname: "Tom")
+    insert(:push_subscription, user: user2, data: %{alerts: %{"mention" => true}})
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        status: "@Tom Hey are you okay?"
+      })
+
+    {:ok, [notification]} = Notification.create_notifications(activity)
+
+    [push] = Impl.build(notification)
+
+    {:ok, payload} = Jason.decode(push.payload)
+
+    assert String.starts_with?(payload["body"], "@Bob:")
   end
 end

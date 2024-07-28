@@ -23,7 +23,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
   defp config, do: Config.get([:pipeline, :config], Config)
 
   @spec common_pipeline(map(), keyword()) ::
-          {:ok, Activity.t() | Object.t(), keyword()} | {:error, any()}
+          {:ok, Activity.t() | Object.t(), keyword()} | {:error | :reject, any()}
   def common_pipeline(object, meta) do
     case Repo.transaction(fn -> do_common_pipeline(object, meta) end, Utils.query_timeout()) do
       {:ok, {:ok, activity, meta}} ->

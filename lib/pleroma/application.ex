@@ -51,7 +51,11 @@ defmodule Pleroma.Application do
     Pleroma.HTML.compile_scrubbers()
     Pleroma.Config.Oban.warn()
     Config.DeprecationWarnings.warn()
-    Pleroma.Web.Plugs.HTTPSecurityPlug.warn_if_disabled()
+
+    if Config.get([Pleroma.Web.Plugs.HTTPSecurityPlug, :enable], true) do
+      Pleroma.Web.Plugs.HTTPSecurityPlug.warn_if_disabled()
+    end
+
     Pleroma.ApplicationRequirements.verify!()
     load_custom_modules()
     Pleroma.Docs.JSON.compile()
@@ -109,7 +113,8 @@ defmodule Pleroma.Application do
         streamer_registry() ++
         background_migrators() ++
         shout_child(shout_enabled?()) ++
-        [Pleroma.Gopher.Server]
+        [Pleroma.Gopher.Server] ++
+        [Pleroma.Search.Healthcheck]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
@@ -162,7 +167,8 @@ defmodule Pleroma.Application do
         expiration: chat_message_id_idempotency_key_expiration(),
         limit: 500_000
       ),
-      build_cachex("rel_me", limit: 2500)
+      build_cachex("rel_me", limit: 2500),
+      build_cachex("host_meta", default_ttl: :timer.minutes(120), limit: 5000)
     ]
   end
 
@@ -285,8 +291,6 @@ defmodule Pleroma.Application do
     config = Config.get(ConcurrentLimiter, [])
 
     [
-      Pleroma.Web.RichMedia.Helpers,
-      Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy,
       Pleroma.Search
     ]
     |> Enum.each(fn module ->

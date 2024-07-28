@@ -99,21 +99,24 @@ defmodule Pleroma.Object do
   def get_by_id(nil), do: nil
   def get_by_id(id), do: Repo.get(Object, id)
 
+  @spec get_by_id_and_maybe_refetch(integer(), list()) :: Object.t() | nil
   def get_by_id_and_maybe_refetch(id, opts \\ []) do
-    %{updated_at: updated_at} = object = get_by_id(id)
+    with %Object{updated_at: updated_at} = object <- get_by_id(id) do
+      if opts[:interval] &&
+           NaiveDateTime.diff(NaiveDateTime.utc_now(), updated_at) > opts[:interval] do
+        case Fetcher.refetch_object(object) do
+          {:ok, %Object{} = object} ->
+            object
 
-    if opts[:interval] &&
-         NaiveDateTime.diff(NaiveDateTime.utc_now(), updated_at) > opts[:interval] do
-      case Fetcher.refetch_object(object) do
-        {:ok, %Object{} = object} ->
-          object
-
-        e ->
-          Logger.error("Couldn't refresh #{object.data["id"]}:\n#{inspect(e)}")
-          object
+          e ->
+            Logger.error("Couldn't refresh #{object.data["id"]}:\n#{inspect(e)}")
+            object
+        end
+      else
+        object
       end
     else
-      object
+      nil -> nil
     end
   end
 

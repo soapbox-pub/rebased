@@ -21,7 +21,7 @@ defmodule Pleroma.MigrationHelper.NotificationBackfillTest do
       {:ok, post} = CommonAPI.post(user, %{status: "yeah, @#{other_user.nickname}"})
       {:ok, chat} = CommonAPI.post_chat_message(user, other_user, "yo")
       {:ok, react} = CommonAPI.react_with_emoji(post.id, other_user, "☕")
-      {:ok, like} = CommonAPI.favorite(other_user, post.id)
+      {:ok, like} = CommonAPI.favorite(post.id, other_user)
       {:ok, react_2} = CommonAPI.react_with_emoji(post.id, other_user, "☕")
 
       data =

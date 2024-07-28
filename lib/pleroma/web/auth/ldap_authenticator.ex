@@ -91,7 +91,8 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
         end
 
       error ->
-        error
+        Logger.error("Could not bind LDAP user #{name}: #{inspect(error)}")
+        {:error, {:ldap_bind_error, error}}
     end
   end
 
@@ -102,28 +103,38 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
            {:scope, :eldap.wholeSubtree()},
            {:timeout, @search_timeout}
          ]) do
-      {:ok, {:eldap_search_result, [{:eldap_entry, _, attributes}], _}} ->
-        params = %{
-          name: name,
-          nickname: name,
-          password: nil
-        }
+      # The :eldap_search_result record structure changed in OTP 24.3 and added a controls field
+      # https://github.com/erlang/otp/pull/5538
+      {:ok, {:eldap_search_result, [{:eldap_entry, _object, attributes}], _referrals}} ->
+        try_register(name, attributes)
 
-        params =
-          case List.keyfind(attributes, 'mail', 0) do
-            {_, [mail]} -> Map.put_new(params, :email, :erlang.list_to_binary(mail))
-            _ -> params
-          end
-
-        changeset = User.register_changeset_ldap(%User{}, params)
-
-        case User.register(changeset) do
-          {:ok, user} -> user
-          error -> error
-        end
+      {:ok, {:eldap_search_result, [{:eldap_entry, _object, attributes}], _referrals, _controls}} ->
+        try_register(name, attributes)
 
       error ->
-        error
+        Logger.error("Couldn't register user because LDAP search failed: #{inspect(error)}")
+        {:error, {:ldap_search_error, error}}
+    end
+  end
+
+  defp try_register(name, attributes) do
+    params = %{
+      name: name,
+      nickname: name,
+      password: nil
+    }
+
+    params =
+      case List.keyfind(attributes, ~c"mail", 0) do
+        {_, [mail]} -> Map.put_new(params, :email, :erlang.list_to_binary(mail))
+        _ -> params
+      end
+
+    changeset = User.register_changeset_ldap(%User{}, params)
+
+    case User.register(changeset) do
+      {:ok, user} -> user
+      error -> error
     end
   end
 end

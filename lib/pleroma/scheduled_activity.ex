@@ -204,7 +204,7 @@ defmodule Pleroma.ScheduledActivity do
 
   def job_query(scheduled_activity_id) do
     from(j in Oban.Job,
-      where: j.queue == "scheduled_activities",
+      where: j.queue == "federator_outgoing",
       where: fragment("args ->> 'activity_id' = ?::text", ^to_string(scheduled_activity_id))
     )
   end

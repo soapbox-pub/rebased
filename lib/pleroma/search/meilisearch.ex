@@ -10,6 +10,12 @@ defmodule Pleroma.Search.Meilisearch do
 
   @behaviour Pleroma.Search.SearchBackend
 
+  @impl true
+  def create_index, do: :ok
+
+  @impl true
+  def drop_index, do: :ok
+
   defp meili_headers do
     private_key = Config.get([Pleroma.Search.Meilisearch, :private_key])
 
@@ -177,5 +183,16 @@ defmodule Pleroma.Search.Meilisearch do
   @impl true
   def remove_from_index(object) do
     meili_delete("/indexes/objects/documents/#{object.id}")
+  end
+
+  @impl true
+  def healthcheck_endpoints do
+    endpoint =
+      Config.get([Pleroma.Search.Meilisearch, :url])
+      |> URI.parse()
+      |> Map.put(:path, "/health")
+      |> URI.to_string()
+
+    [endpoint]
   end
 end

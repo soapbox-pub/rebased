@@ -39,7 +39,7 @@ defmodule Pleroma.Telemetry.Logger do
         _,
         _
       ) do
-    Logger.error(fn ->
+    Logger.debug(fn ->
       "Connection pool failed to reclaim any connections due to all of them being in use. It will have to drop requests for opening connections to new hosts"
     end)
   end
@@ -70,7 +70,7 @@ defmodule Pleroma.Telemetry.Logger do
         %{key: key},
         _
       ) do
-    Logger.warning(fn ->
+    Logger.debug(fn ->
       "Pool worker for #{key}: Client #{inspect(client_pid)} died before releasing the connection with #{inspect(reason)}"
     end)
   end
