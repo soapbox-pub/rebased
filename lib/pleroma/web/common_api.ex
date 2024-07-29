@@ -714,11 +714,11 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  defp maybe_cancel_jobs(%Activity{data: %{"id" => ap_id}}) do
+  defp maybe_cancel_jobs(%Activity{id: activity_id}) do
     Oban.Job
     |> where([j], j.worker == "Pleroma.Workers.PublisherWorker")
     |> where([j], j.args["op"] == "publish_one")
-    |> where([j], j.args["params"]["id"] == ^ap_id)
+    |> where([j], j.args["params"]["activity_id"] == ^activity_id)
     |> Oban.cancel_all_jobs()
   end
 
