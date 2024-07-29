@@ -80,12 +80,12 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   parameters set:
 
   * `inbox`: the inbox to publish to
-  * `actor`: the actor which is signing the message
   * `activity_id`: the internal activity id
   * `cc`: the cc recipients relevant to this inbox (optional)
   """
-  def publish_one(%{inbox: inbox, actor: %User{} = actor, activity_id: activity_id} = params) do
-    activity = Activity.get_by_id(activity_id)
+  def publish_one(%{inbox: inbox, activity_id: activity_id} = params) do
+    activity = Activity.get_by_id_with_user_actor(activity_id)
+    actor = activity.user_actor
 
     ap_id = activity.data["id"]
     Logger.debug("Federating #{ap_id} to #{inbox}")
@@ -153,15 +153,6 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         Logger.error("Publisher failed to inbox #{inbox} #{inspect(e)}")
         {:error, e}
     end
-  end
-
-  def publish_one(%{actor_id: actor_id} = params) do
-    actor = User.get_cached_by_id(actor_id)
-
-    params
-    |> Map.delete(:actor_id)
-    |> Map.put(:actor, actor)
-    |> publish_one()
   end
 
   defp signature_host(%URI{port: port, scheme: scheme, host: host}) do
@@ -291,7 +282,6 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
           __MODULE__.enqueue_one(%{
             inbox: inbox,
             cc: cc,
-            actor_id: actor.id,
             activity_id: activity.id,
             unreachable_since: unreachable_since
           })
@@ -330,7 +320,6 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         __MODULE__.enqueue_one(
           %{
             inbox: inbox,
-            actor_id: actor.id,
             activity_id: activity.id,
             unreachable_since: unreachable_since
           },

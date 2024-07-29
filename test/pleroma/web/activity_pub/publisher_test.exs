@@ -147,12 +147,11 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
           {:ok, %Tesla.Env{status: 200, body: "port 80"}}
       end)
 
-      actor = insert(:user)
+      _actor = insert(:user)
 
       assert {:ok, %{body: "port 42"}} =
                Publisher.publish_one(%{
                  inbox: inbox42,
-                 actor: actor,
                  activity_id: activity.id,
                  unreachable_since: true
                })
@@ -160,7 +159,6 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       assert {:ok, %{body: "port 80"}} =
                Publisher.publish_one(%{
                  inbox: inbox80,
-                 actor: actor,
                  activity_id: activity.id,
                  unreachable_since: true
                })
@@ -170,12 +168,12 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                    Instances,
                    [:passthrough],
                    [] do
-      actor = insert(:user)
+      _actor = insert(:user)
       inbox = "http://200.site/users/nick1/inbox"
       activity = insert(:note_activity)
 
       assert {:ok, _} =
-               Publisher.publish_one(%{inbox: inbox, actor: actor, activity_id: activity.id})
+               Publisher.publish_one(%{inbox: inbox, activity_id: activity.id})
 
       assert called(Instances.set_reachable(inbox))
     end
@@ -184,14 +182,13 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                    Instances,
                    [:passthrough],
                    [] do
-      actor = insert(:user)
+      _actor = insert(:user)
       inbox = "http://200.site/users/nick1/inbox"
       activity = insert(:note_activity)
 
       assert {:ok, _} =
                Publisher.publish_one(%{
                  inbox: inbox,
-                 actor: actor,
                  activity_id: activity.id,
                  unreachable_since: NaiveDateTime.utc_now()
                })
@@ -203,14 +200,13 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                    Instances,
                    [:passthrough],
                    [] do
-      actor = insert(:user)
+      _actor = insert(:user)
       inbox = "http://200.site/users/nick1/inbox"
       activity = insert(:note_activity)
 
       assert {:ok, _} =
                Publisher.publish_one(%{
                  inbox: inbox,
-                 actor: actor,
                  activity_id: activity.id,
                  unreachable_since: nil
                })
@@ -222,12 +218,12 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                    Instances,
                    [:passthrough],
                    [] do
-      actor = insert(:user)
+      _actor = insert(:user)
       inbox = "http://404.site/users/nick1/inbox"
       activity = insert(:note_activity)
 
       assert {:cancel, _} =
-               Publisher.publish_one(%{inbox: inbox, actor: actor, activity_id: activity.id})
+               Publisher.publish_one(%{inbox: inbox, activity_id: activity.id})
 
       assert called(Instances.set_unreachable(inbox))
     end
@@ -236,7 +232,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                    Instances,
                    [:passthrough],
                    [] do
-      actor = insert(:user)
+      _actor = insert(:user)
       inbox = "http://connrefused.site/users/nick1/inbox"
       activity = insert(:note_activity)
 
@@ -244,7 +240,6 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                assert {:error, _} =
                         Publisher.publish_one(%{
                           inbox: inbox,
-                          actor: actor,
                           activity_id: activity.id
                         })
              end) =~ "connrefused"
@@ -256,12 +251,12 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                    Instances,
                    [:passthrough],
                    [] do
-      actor = insert(:user)
+      _actor = insert(:user)
       inbox = "http://200.site/users/nick1/inbox"
       activity = insert(:note_activity)
 
       assert {:ok, _} =
-               Publisher.publish_one(%{inbox: inbox, actor: actor, activity_id: activity.id})
+               Publisher.publish_one(%{inbox: inbox, activity_id: activity.id})
 
       refute called(Instances.set_unreachable(inbox))
     end
@@ -270,7 +265,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                    Instances,
                    [:passthrough],
                    [] do
-      actor = insert(:user)
+      _actor = insert(:user)
       inbox = "http://connrefused.site/users/nick1/inbox"
       activity = insert(:note_activity)
 
@@ -278,7 +273,6 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                assert {:error, _} =
                         Publisher.publish_one(%{
                           inbox: inbox,
-                          actor: actor,
                           activity_id: activity.id,
                           unreachable_since: NaiveDateTime.utc_now()
                         })
@@ -319,8 +313,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       assert not called(
                Publisher.enqueue_one(%{
                  inbox: "https://domain.com/users/nick1/inbox",
-                 actor_id: actor.id,
-                 id: note_activity.data["id"]
+                 activity_id: note_activity.id
                })
              )
     end
@@ -356,8 +349,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                Publisher.enqueue_one(
                  %{
                    inbox: "https://domain.com/users/nick1/inbox",
-                   actor_id: actor.id,
-                   id: note_activity.data["id"]
+                   activity_id: note_activity.id
                  },
                  priority: 1
                )
@@ -380,8 +372,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                Publisher.enqueue_one(
                  %{
                    inbox: :_,
-                   actor_id: actor.id,
-                   id: note_activity.data["id"]
+                   activity_id: note_activity.id
                  },
                  priority: 0
                )
@@ -415,7 +406,6 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       assert called(
                Publisher.enqueue_one(%{
                  inbox: "https://domain.com/users/nick1/inbox",
-                 actor_id: actor.id,
                  activity_id: note_activity.id
                })
              )
@@ -466,8 +456,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                Publisher.enqueue_one(
                  %{
                    inbox: "https://domain.com/users/nick1/inbox",
-                   actor_id: actor.id,
-                   id: delete.data["id"]
+                   activity_id: delete.id
                  },
                  priority: 1
                )
@@ -477,8 +466,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                Publisher.enqueue_one(
                  %{
                    inbox: "https://domain2.com/users/nick1/inbox",
-                   actor_id: actor.id,
-                   id: delete.data["id"]
+                   activity_id: delete.id
                  },
                  priority: 1
                )
