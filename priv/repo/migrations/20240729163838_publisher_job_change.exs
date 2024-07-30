@@ -2,6 +2,7 @@ defmodule Pleroma.Repo.Migrations.PublisherJobChange do
   use Ecto.Migration
 
   alias Pleroma.Activity
+  alias Pleroma.Repo
   import Ecto.Query
 
   def up do
@@ -11,8 +12,7 @@ defmodule Pleroma.Repo.Migrations.PublisherJobChange do
         where: j.state in ["available", "retryable"]
       )
 
-    jobs =
-      Oban |> Oban.config() |> Oban.Repo.all(query)
+    jobs = Repo.all(query)
 
     Enum.each(jobs, fn job ->
       args = job.args
