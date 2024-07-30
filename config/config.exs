@@ -588,7 +588,7 @@ config :pleroma, Oban,
   queues: [
     activity_expiration: 10,
     federator_incoming: 5,
-    federator_outgoing: 5,
+    federator_outgoing: 25,
     web_push: 50,
     background: 20,
     search_indexing: [limit: 10, paused: true],
