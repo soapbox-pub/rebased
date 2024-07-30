@@ -16,12 +16,17 @@ defmodule Pleroma.Repo.Migrations.PublisherJobChange do
 
     Enum.each(jobs, fn job ->
       args = job.args
-      activity = Activity.get_by_ap_id(args["id"])
 
-      updated_args = Map.put(args, "activity_id", activity.id)
+      case Activity.get_by_ap_id(args["id"]) do
+        nil ->
+          :ok
 
-      Pleroma.Workers.PublisherWorker.new(updated_args)
-      |> Oban.insert()
+        %Activity{id: activity_id} ->
+          updated_args = Map.put(args, "activity_id", activity_id)
+
+          Pleroma.Workers.PublisherWorker.new(updated_args)
+          |> Oban.insert()
+      end
     end)
   end
 end
