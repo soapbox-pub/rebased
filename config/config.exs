@@ -858,19 +858,19 @@ config :pleroma, :pools,
 config :pleroma, :hackney_pools,
   federation: [
     max_connections: 50,
-    timeout: 150_000
+    timeout: 10_000
   ],
   media: [
     max_connections: 50,
-    timeout: 150_000
+    timeout: 15_000
   ],
   rich_media: [
     max_connections: 50,
-    timeout: 150_000
+    timeout: 15_000
   ],
   upload: [
     max_connections: 25,
-    timeout: 300_000
+    timeout: 15_000
   ]
 
 config :pleroma, :majic_pool, size: 2
