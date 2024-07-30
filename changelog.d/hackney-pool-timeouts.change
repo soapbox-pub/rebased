@@ -1,0 +1,1 @@
+Change Hackney connection pool timeouts to align with the values Gun uses
