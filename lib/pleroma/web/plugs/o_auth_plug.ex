@@ -52,7 +52,7 @@ defmodule Pleroma.Web.Plugs.OAuthPlug do
         where: t.token == ^token
       )
 
-    with %Token{user_id: user_id} = token_record <- Repo.one(token_query),
+    with %Token{user_id: user_id} = token_record <- Repo.one(token_query) |> Repo.preload(:user),
          false <- is_nil(user_id),
          %User{} = user <- User.get_cached_by_id(user_id) do
       {:ok, user, token_record}
