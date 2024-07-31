@@ -177,6 +177,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       if Pleroma.Language.Translation.configured?() do
         "translation"
       end,
+      if Pleroma.Language.LanguageDetector.configured?() do
+        "language_detection"
+      end,
       "events",
       "multitenancy"
     ]

@@ -5,6 +5,12 @@
 defmodule Pleroma.Language.LanguageDetector do
   @words_threshold 4
 
+  def configured? do
+    provider = get_provider()
+
+    !!provider and provider.configured?
+  end
+
   def missing_dependencies do
     provider = get_provider()
 
