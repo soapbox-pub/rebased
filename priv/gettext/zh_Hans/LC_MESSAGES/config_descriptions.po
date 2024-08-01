@@ -3,9 +3,9 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-07-21 04:21+0300\n"
-"PO-Revision-Date: 2022-07-24 10:04+0000\n"
-"Last-Translator: Yating Zhan <thestrandedvalley@protonmail.com>\n"
-"Language-Team: Chinese (Simplified) <http://weblate.pleroma-dev.ebin.club/"
+"PO-Revision-Date: 2024-08-01 08:17+0000\n"
+"Last-Translator: Eric Zhang <ericzhang456@disroot.org>\n"
+"Language-Team: Chinese (Simplified) <https://translate.pleroma.social/"
 "projects/pleroma/pleroma-backend-domain-config_descriptions/zh_Hans/>\n"
 "Language: zh_Hans\n"
 "MIME-Version: 1.0\n"
@@ -49,6 +49,8 @@ msgstr "Mime 类型设置"
 msgctxt "config description at :pleroma"
 msgid "Allows setting a token that can be used to authenticate requests with admin privileges without a normal user account token. Append the `admin_token` parameter to requests to utilize it. (Please reconsider using HTTP Basic Auth or OAuth-based authentication if possible)"
 msgstr ""
+"允许设置令牌以不使用普通用户令牌来授权管理员权限。在参数后加上 `admin_token` "
+"来启用该功能。（可用时可以考虑使用 HTTP Basic Auth 或 基于 OAuth 的鉴定方式）"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -126,7 +128,7 @@ msgstr "ActivityPub 相关设置"
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:assets"
 msgid "This section configures assets to be used with various frontends. Currently the only option relates to mascots on the mastodon frontend"
-msgstr ""
+msgstr "该部分配置不同前端使用的资源。目前该选项只对 Mastodon 前端的吉祥物有效"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -226,7 +228,7 @@ msgid "Majic/libmagic configuration"
 msgstr "Majic/libmagic 配置"
 
 #: lib/pleroma/docs/translator.ex:5
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:manifest"
 msgid "This section describe PWA manifest instance-specific values. Currently this option relate only for MastoFE."
 msgstr "此处提供针对特定实例的 PWA manifest 数值。目前相关设定尚只支持 MastoFE。"
@@ -244,10 +246,10 @@ msgid "Media proxy"
 msgstr "媒体代理"
 
 #: lib/pleroma/docs/translator.ex:5
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:modules"
 msgid "Custom Runtime Modules"
-msgstr "自定义 Runtime 模块"
+msgstr "自定义运行库模块"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -299,7 +301,7 @@ msgstr "拒绝提及特定用户的讯息"
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:mrf_normalize_markup"
 msgid "MRF NormalizeMarkup settings. Scrub configured hypertext markup."
-msgstr ""
+msgstr "MRF NomalizeMarkup 设置。清楚超文本标记。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -317,7 +319,7 @@ msgstr "RejectNonPublic 丢弃有非公开的可见性设置的文章。"
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:mrf_simple"
 msgid "Simple ingress policies"
-msgstr ""
+msgstr "简单入口流量控制"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -608,13 +610,13 @@ msgstr "邮件通知"
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:emoji"
 msgid "Emoji"
-msgstr "Emoji"
+msgstr "表情符号"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:features"
 msgid "Features"
-msgstr "特性"
+msgstr "功能"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -3607,7 +3609,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:assets > :mascots"
 msgid "Mascots"
-msgstr ""
+msgstr "吉祥物"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
