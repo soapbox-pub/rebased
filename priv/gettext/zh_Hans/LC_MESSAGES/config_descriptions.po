@@ -3,8 +3,8 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-07-21 04:21+0300\n"
-"PO-Revision-Date: 2024-08-01 08:17+0000\n"
-"Last-Translator: Yating Zhan <thestrandedvalley@protonmail.com>\n"
+"PO-Revision-Date: 2024-08-01 08:19+0000\n"
+"Last-Translator: Eric Zhang <ericzhang456@disroot.org>\n"
 "Language-Team: Chinese (Simplified) <https://translate.pleroma.social/"
 "projects/pleroma/pleroma-backend-domain-config_descriptions/zh_Hans/>\n"
 "Language: zh_Hans\n"
@@ -331,7 +331,8 @@ msgstr "从选择的实例偷取看到的 emoji。"
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:mrf_subchain"
 msgid "This policy processes messages through an alternate pipeline when a given message matches certain criteria. All criteria are configured as a map of regular expressions to lists of policy modules."
-msgstr "此策略将会把满足特定条件的信息通过另一管线处理。"
+msgstr "此策略将会把满足特定条件的信息通过另一管线处理。所有条件都以正则表达式来对应"
+"列出的策略模块配置。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
