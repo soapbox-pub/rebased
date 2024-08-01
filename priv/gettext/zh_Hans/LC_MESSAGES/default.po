@@ -8,7 +8,7 @@
 ## to merge POT files into PO files.
 msgid ""
 msgstr ""
-"PO-Revision-Date: 2024-08-01 08:19+0000\n"
+"PO-Revision-Date: 2024-08-02 09:02+0000\n"
 "Last-Translator: Eric Zhang <ericzhang456@disroot.org>\n"
 "Language-Team: Chinese (Simplified) <https://translate.pleroma.social/"
 "projects/pleroma/pleroma-backend-domain-default/zh_Hans/>\n"
@@ -146,7 +146,7 @@ msgstr "对象属性数 %{property_count} 大于 maxProperties: %{max_properties
 #: lib/pleroma/web/api_spec/render_error.ex:224
 #, elixir-format
 msgid "Object property count %{property_count} is less than minProperties: %{min_properties}"
-msgstr "对象属性数 %{property_count} 小于 minProperties: %{min_properties}。"
+msgstr "对象属性数 %{property_count} 小于 minProperties: %{min_properties}"
 
 #: lib/pleroma/web/templates/static_fe/static_fe/error.html.eex:2
 #, elixir-format
