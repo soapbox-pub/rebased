@@ -74,27 +74,38 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp check_remote_limit(_), do: true
 
   def increase_note_count_if_public(actor, object) do
-    if is_public?(object), do: User.increase_note_count(actor), else: {:ok, actor}
+    if public?(object), do: User.increase_note_count(actor), else: {:ok, actor}
   end
 
   def decrease_note_count_if_public(actor, object) do
-    if is_public?(object), do: User.decrease_note_count(actor), else: {:ok, actor}
+    if public?(object), do: User.decrease_note_count(actor), else: {:ok, actor}
   end
 
   def update_last_status_at_if_public(actor, object) do
-    if is_public?(object), do: User.update_last_status_at(actor), else: {:ok, actor}
+    if public?(object), do: User.update_last_status_at(actor), else: {:ok, actor}
   end
 
   defp increase_replies_count_if_reply(%{
          "object" => %{"inReplyTo" => reply_ap_id} = object,
          "type" => "Create"
        }) do
-    if is_public?(object) do
+    if public?(object) do
       Object.increase_replies_count(reply_ap_id)
     end
   end
 
   defp increase_replies_count_if_reply(_create_data), do: :noop
+
+  defp increase_quotes_count_if_quote(%{
+         "object" => %{"quoteUrl" => quote_ap_id} = object,
+         "type" => "Create"
+       }) do
+    if public?(object) do
+      Object.increase_quotes_count(quote_ap_id)
+    end
+  end
+
+  defp increase_quotes_count_if_quote(_create_data), do: :noop
 
   @object_types ~w[ChatMessage Question Answer Audio Video Image Event Article Note Page]
   @impl true
@@ -136,9 +147,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       # Splice in the child object if we have one.
       activity = Maps.put_if_present(activity, :object, object)
 
-      ConcurrentLimiter.limit(Pleroma.Web.RichMedia.Helpers, fn ->
-        Task.start(fn -> Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) end)
-      end)
+      Pleroma.Web.RichMedia.Card.get_by_activity(activity)
+
+      # Add local posts to search index
+      if local, do: Pleroma.Search.add_to_index(activity)
 
       {:ok, activity}
     else
@@ -163,7 +175,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           id: "pleroma:fakeid"
         }
 
-        Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+        Pleroma.Web.RichMedia.Card.get_by_activity(activity)
         {:ok, activity}
 
       {:remote_limit_pass, _} ->
@@ -188,7 +200,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def notify_and_stream(activity) do
-    Notification.create_notifications(activity)
+    {:ok, notifications} = Notification.create_notifications(activity)
+    Notification.stream(notifications)
 
     original_activity =
       case activity do
@@ -299,11 +312,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with {:ok, activity} <- insert(create_data, local, fake),
          {:fake, false, activity} <- {:fake, fake, activity},
          _ <- increase_replies_count_if_reply(create_data),
+         _ <- increase_quotes_count_if_quote(create_data),
          {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          {:ok, _actor} <- update_last_status_at_if_public(actor, activity),
          _ <- notify_and_stream(activity),
          :ok <- maybe_schedule_poll_notifications(activity),
+         :ok <- maybe_handle_group_posts(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
@@ -483,7 +498,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   @spec fetch_latest_direct_activity_id_for_context(String.t(), keyword() | map()) ::
-          FlakeId.Ecto.CompatType.t() | nil
+          Ecto.UUID.t() | nil
   def fetch_latest_direct_activity_id_for_context(context, opts \\ %{}) do
     context
     |> fetch_activities_for_context_query(Map.merge(%{skip_preload: true}, opts))
@@ -964,8 +979,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_replies(query, %{exclude_replies: true}) do
     from(
-      [_activity, object] in query,
-      where: fragment("?->>'inReplyTo' is null", object.data)
+      [activity, object] in query,
+      where:
+        fragment("?->>'inReplyTo' is null or ?->>'type' = 'Announce'", object.data, activity.data)
     )
   end
 
@@ -1237,6 +1253,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_unauthenticated(query, _), do: query
 
+  defp restrict_quote_url(query, %{quote_url: quote_url}) do
+    from([_activity, object] in query,
+      where: fragment("(?)->'quoteUrl' = ?", object.data, ^quote_url)
+    )
+  end
+
+  defp restrict_quote_url(query, _), do: query
+
+  defp restrict_rule(query, %{rule_id: rule_id}) do
+    from(
+      activity in query,
+      where: fragment("(?)->'rules' \\? (?)", activity.data, ^rule_id)
+    )
+  end
+
+  defp restrict_rule(query, _), do: query
+
   defp exclude_poll_votes(query, %{include_poll_votes: true}), do: query
 
   defp exclude_poll_votes(query, _) do
@@ -1399,6 +1432,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_instance(opts)
       |> restrict_announce_object_actor(opts)
       |> restrict_filtered(opts)
+      |> restrict_rule(opts)
+      |> restrict_quote_url(opts)
       |> maybe_restrict_deactivated_users(opts)
       |> exclude_poll_votes(opts)
       |> exclude_chat_messages(opts)
@@ -1626,7 +1661,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
        }}
     else
       {:error, _} = e -> e
-      e -> {:error, e}
     end
   end
 
@@ -1673,9 +1707,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            Fetcher.fetch_and_contain_remote_object_from_id(first) do
       {:ok, false}
     else
-      {:error, {:ok, %{status: code}}} when code in [401, 403] -> {:ok, true}
-      {:error, _} = e -> e
-      e -> {:error, e}
+      {:error, _} -> {:ok, true}
     end
   end
 
@@ -1761,24 +1793,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def pinned_fetch_task(nil), do: nil
-
-  def pinned_fetch_task(%{pinned_objects: pins}) do
-    if Enum.all?(pins, fn {ap_id, _} ->
-         Object.get_cached_by_ap_id(ap_id) ||
-           match?({:ok, _object}, Fetcher.fetch_object_from_id(ap_id))
-       end) do
-      :ok
-    else
-      :error
-    end
+  def enqueue_pin_fetches(%{pinned_objects: pins}) do
+    # enqueue a task to fetch all pinned objects
+    Enum.each(pins, fn {ap_id, _} ->
+      if is_nil(Object.get_cached_by_ap_id(ap_id)) do
+        Pleroma.Workers.RemoteFetcherWorker.enqueue("fetch_remote", %{
+          "id" => ap_id,
+          "depth" => 1
+        })
+      end
+    end)
   end
+
+  def enqueue_pin_fetches(_), do: nil
 
   def make_user_from_ap_id(ap_id, additional \\ []) do
     user = User.get_cached_by_ap_id(ap_id)
 
     with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id, additional) do
-      {:ok, _pid} = Task.start(fn -> pinned_fetch_task(data) end)
+      enqueue_pin_fetches(data)
 
       if user do
         user

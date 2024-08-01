@@ -1,15 +1,16 @@
 ARG ELIXIR_IMG=hexpm/elixir
-ARG ELIXIR_VER=1.11.4
-ARG ERLANG_VER=24.2.1
-ARG ALPINE_VER=3.17.0
+ARG ELIXIR_VER=1.13.4
+ARG ERLANG_VER=24.3.4.15
+ARG ALPINE_VER=3.17.5
 
 FROM ${ELIXIR_IMG}:${ELIXIR_VER}-erlang-${ERLANG_VER}-alpine-${ALPINE_VER} as build
 
 COPY . .
 
 ENV MIX_ENV=prod
+ENV VIX_COMPILATION_MODE=PLATFORM_PROVIDED_LIBVIPS
 
-RUN apk add git gcc g++ musl-dev make cmake file-dev &&\
+RUN apk add git gcc g++ musl-dev make cmake file-dev vips-dev &&\
 	echo "import Config" > config/prod.secret.exs &&\
 	mix local.hex --force &&\
 	mix local.rebar --force &&\
@@ -37,7 +38,7 @@ ARG HOME=/opt/pleroma
 ARG DATA=/var/lib/pleroma
 
 RUN apk update &&\
-	apk add exiftool ffmpeg imagemagick libmagic ncurses postgresql-client &&\
+	apk add exiftool ffmpeg vips libmagic ncurses postgresql-client &&\
 	adduser --system --shell /bin/false --home ${HOME} pleroma &&\
 	mkdir -p ${DATA}/uploads &&\
 	mkdir -p ${DATA}/static &&\

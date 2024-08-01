@@ -15,6 +15,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
@@ -1077,6 +1078,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "/api/pleroma/backups" do
     test "it creates a backup", %{conn: conn} do
+      ConfigMock
+      |> Mox.stub_with(Pleroma.Config)
+
       admin = %{id: admin_id, nickname: admin_nickname} = insert(:user, is_admin: true)
       token = insert(:oauth_admin_token, user: admin)
       user = %{id: user_id, nickname: user_nickname} = insert(:user)
@@ -1092,9 +1096,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       ObanHelpers.perform_all()
 
-      email = Pleroma.Emails.UserEmail.backup_is_ready_email(backup, admin.id)
+      email = Pleroma.Emails.UserEmail.backup_is_ready_email(backup)
 
-      assert String.contains?(email.html_body, "Admin @#{admin.nickname} requested a full backup")
+      assert String.contains?(
+               email.html_body,
+               "A full backup of your Pleroma account was requested"
+             )
+
       assert_email_sent(to: {user.name, user.email}, html_body: email.html_body)
 
       log_message = "@#{admin_nickname} requested account backup for @#{user_nickname}"

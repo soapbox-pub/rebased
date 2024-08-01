@@ -212,7 +212,7 @@ defmodule Pleroma.Factory do
   end
 
   def direct_note_factory do
-    user2 = insert(:user)
+    user2 = insert(:user, local: false, inbox: "http://example.com/inbox")
 
     %Pleroma.Object{data: data} = note_factory()
     %Pleroma.Object{data: Map.merge(data, %{"to" => [user2.ap_id]})}
@@ -249,6 +249,7 @@ defmodule Pleroma.Factory do
       "cc" => [user.follower_address],
       "context" => Pleroma.Web.ActivityPub.Utils.generate_context_id(),
       "closed" => DateTime.utc_now() |> DateTime.add(86_400) |> DateTime.to_iso8601(),
+      "content" => "Which flavor of ice cream do you prefer?",
       "oneOf" => [
         %{
           "type" => "Note",

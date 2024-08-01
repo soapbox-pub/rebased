@@ -23,7 +23,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
   defp config, do: Config.get([:pipeline, :config], Config)
 
   @spec common_pipeline(map(), keyword()) ::
-          {:ok, Activity.t() | Object.t(), keyword()} | {:error, any()}
+          {:ok, Activity.t() | Object.t(), keyword()} | {:error | :reject, any()}
   def common_pipeline(object, meta) do
     case Repo.transaction(fn -> do_common_pipeline(object, meta) end, Utils.query_timeout()) do
       {:ok, {:ok, activity, meta}} ->
@@ -62,7 +62,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
     with {:ok, local} <- Keyword.fetch(meta, :local) do
       do_not_federate = meta[:do_not_federate] || !config().get([:instance, :federating])
 
-      if !do_not_federate and local and not Visibility.is_local_public?(activity) do
+      if !do_not_federate and local and not Visibility.local_public?(activity) do
         activity =
           if object = Keyword.get(meta, :object_data) do
             %{activity | data: Map.put(activity.data, "object", object)}

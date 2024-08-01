@@ -81,16 +81,16 @@ defmodule Pleroma.ReverseProxy do
   import Plug.Conn
 
   @type option() ::
-          {:max_read_duration, :timer.time() | :infinity}
+          {:max_read_duration, non_neg_integer() | :infinity}
           | {:max_body_length, non_neg_integer() | :infinity}
-          | {:failed_request_ttl, :timer.time() | :infinity}
-          | {:http, []}
+          | {:failed_request_ttl, non_neg_integer() | :infinity}
+          | {:http, keyword()}
           | {:req_headers, [{String.t(), String.t()}]}
           | {:resp_headers, [{String.t(), String.t()}]}
-          | {:inline_content_types, boolean() | [String.t()]}
+          | {:inline_content_types, boolean() | list(String.t())}
           | {:redirect_on_failure, boolean()}
 
-  @spec call(Plug.Conn.t(), url :: String.t(), [option()]) :: Plug.Conn.t()
+  @spec call(Plug.Conn.t(), String.t(), list(option())) :: Plug.Conn.t()
   def call(_conn, _url, _opts \\ [])
 
   def call(conn = %{method: method}, url, opts) when method in @methods do
@@ -180,6 +180,7 @@ defmodule Pleroma.ReverseProxy do
     result =
       conn
       |> put_resp_headers(build_resp_headers(headers, opts))
+      |> streaming_compat
       |> send_chunked(status)
       |> chunk_reply(client, opts)
 
@@ -192,7 +193,7 @@ defmodule Pleroma.ReverseProxy do
         halt(conn)
 
       {:error, error, conn} ->
-        Logger.warn(
+        Logger.warning(
           "#{__MODULE__} request to #{url} failed while reading/chunking: #{inspect(error)}"
         )
 
@@ -388,8 +389,6 @@ defmodule Pleroma.ReverseProxy do
 
   defp body_size_constraint(_, _), do: :ok
 
-  defp check_read_duration(nil = _duration, max), do: check_read_duration(@max_read_duration, max)
-
   defp check_read_duration(duration, max)
        when is_integer(duration) and is_integer(max) and max > 0 do
     if duration > max do
@@ -407,10 +406,6 @@ defmodule Pleroma.ReverseProxy do
     {:ok, previous_duration + duration}
   end
 
-  defp increase_read_duration(_) do
-    {:ok, :no_duration_limit, :no_duration_limit}
-  end
-
   defp client, do: Pleroma.ReverseProxy.Client.Wrapper
 
   defp track_failed_url(url, error, opts) do
@@ -422,5 +417,18 @@ defmodule Pleroma.ReverseProxy do
       end
 
     @cachex.put(:failed_proxy_url_cache, url, true, ttl: ttl)
+  end
+
+  # When Cowboy handles a chunked response with a content-length header it streams
+  # over HTTP 1.1 instead of chunking. Bandit cannot stream over HTTP 1.1 so the header
+  # must be stripped or it breaks RFC compliance for Transfer Encoding: Chunked. RFC9112§6.2
+  #
+  # HTTP2 is always streamed for all adapters.
+  defp streaming_compat(conn) do
+    with Phoenix.Endpoint.Cowboy2Adapter <- Pleroma.Web.Endpoint.config(:adapter) do
+      conn
+    else
+      _ -> delete_resp_header(conn, "content-length")
+    end
   end
 end

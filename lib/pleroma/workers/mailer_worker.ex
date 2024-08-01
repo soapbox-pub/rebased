@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.MailerWorker do
-  use Pleroma.Workers.WorkerHelper, queue: "mailer"
+  use Pleroma.Workers.WorkerHelper, queue: "background"
 
   @impl Oban.Worker
   def perform(%Job{args: %{"op" => "email", "encoded_email" => encoded_email, "config" => config}}) do

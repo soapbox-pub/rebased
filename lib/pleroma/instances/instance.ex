@@ -10,7 +10,7 @@ defmodule Pleroma.Instances.Instance do
   alias Pleroma.Maps
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Workers.BackgroundWorker
+  alias Pleroma.Workers.DeleteWorker
 
   use Ecto.Schema
 
@@ -97,13 +97,9 @@ defmodule Pleroma.Instances.Instance do
   def reachable?(url_or_host) when is_binary(url_or_host), do: true
 
   def set_reachable(url_or_host) when is_binary(url_or_host) do
-    with host <- host(url_or_host),
-         %Instance{} = existing_record <- Repo.get_by(Instance, %{host: host}) do
-      {:ok, _instance} =
-        existing_record
-        |> changeset(%{unreachable_since: nil})
-        |> Repo.update()
-    end
+    %Instance{host: host(url_or_host)}
+    |> changeset(%{unreachable_since: nil})
+    |> Repo.insert(on_conflict: {:replace, [:unreachable_since]}, conflict_target: :host)
   end
 
   def set_reachable(_), do: {:error, nil}
@@ -177,7 +173,7 @@ defmodule Pleroma.Instances.Instance do
     end
   rescue
     e ->
-      Logger.warn("Instance.get_or_update_favicon(\"#{host}\") error: #{inspect(e)}")
+      Logger.warning("Instance.get_or_update_favicon(\"#{host}\") error: #{inspect(e)}")
       nil
   end
 
@@ -205,7 +201,7 @@ defmodule Pleroma.Instances.Instance do
       end
     rescue
       e ->
-        Logger.warn(
+        Logger.warning(
           "Instance.scrape_favicon(\"#{to_string(instance_uri)}\") error: #{inspect(e)}"
         )
 
@@ -288,7 +284,7 @@ defmodule Pleroma.Instances.Instance do
       end
     rescue
       e ->
-        Logger.warn(
+        Logger.warning(
           "Instance.scrape_metadata(\"#{to_string(instance_uri)}\") error: #{inspect(e)}"
         )
 
@@ -301,7 +297,7 @@ defmodule Pleroma.Instances.Instance do
   all of those users' activities and notifications.
   """
   def delete_users_and_activities(host) when is_binary(host) do
-    BackgroundWorker.enqueue("delete_instance", %{"host" => host})
+    DeleteWorker.enqueue("delete_instance", %{"host" => host})
   end
 
   def perform(:delete_instance, host) when is_binary(host) do

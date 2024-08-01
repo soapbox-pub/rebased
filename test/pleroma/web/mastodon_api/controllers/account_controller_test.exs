@@ -18,6 +18,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
   import Pleroma.Factory
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   describe "account fetching" do
     test "works by id" do
       %User{id: user_id} = insert(:user)
@@ -1115,7 +1120,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
              |> json_response_and_validate_schema(200)
 
     # Follow the user, then the pinned status can be seen
-    CommonAPI.follow(reader, user)
+    CommonAPI.follow(user, reader)
     ObanHelpers.perform_all()
 
     assert [%{"id" => ^activity_id, "pinned" => true}] =
@@ -1355,7 +1360,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert user.registration_reason == "I'm a cool dude, bro"
     end
 
-    test "returns error when user already registred", %{conn: conn, valid_params: valid_params} do
+    test "returns error when user already registered", %{conn: conn, valid_params: valid_params} do
       _user = insert(:user, email: "lain@example.org")
       app_token = insert(:oauth_token, user: nil)
 
@@ -1490,7 +1495,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         |> Plug.Conn.put_req_header("authorization", "Bearer " <> token)
         |> put_req_header("content-type", "multipart/form-data")
         |> post("/api/v1/accounts", %{
-          nickname: "nickanme",
+          nickname: "nickname",
           agreement: true,
           email: "email@example.com",
           fullname: "Lain",
@@ -1776,7 +1781,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert %{language: "ru_RU"} = Pleroma.User.get_by_nickname("foo")
     end
 
-    test "createing an account without language parameter should fallback to cookie/header language",
+    test "creating an account without language parameter should fallback to cookie/header language",
          %{conn: conn} do
       params = %{
         username: "foo2",
@@ -2113,7 +2118,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "pin account", %{user: user, conn: conn} do
       %{id: id1} = other_user1 = insert(:user)
 
-      CommonAPI.follow(user, other_user1)
+      CommonAPI.follow(other_user1, user)
 
       assert %{"id" => ^id1, "endorsed" => true} =
                conn
@@ -2131,7 +2136,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "unpin account", %{user: user, conn: conn} do
       %{id: id1} = other_user1 = insert(:user)
 
-      CommonAPI.follow(user, other_user1)
+      CommonAPI.follow(other_user1, user)
       User.endorse(user, other_user1)
 
       assert %{"id" => ^id1, "endorsed" => false} =
@@ -2151,8 +2156,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       %{id: id1} = other_user1 = insert(:user)
       %{id: id2} = other_user2 = insert(:user)
 
-      CommonAPI.follow(user, other_user1)
-      CommonAPI.follow(user, other_user2)
+      CommonAPI.follow(other_user1, user)
+      CommonAPI.follow(other_user2, user)
 
       conn
       |> put_req_header("content-type", "application/json")
@@ -2167,13 +2172,62 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
   end
 
+  describe "familiar followers" do
+    setup do: oauth_access(["read:follows"])
+
+    test "fetch user familiar followers", %{user: user, conn: conn} do
+      %{id: id1} = other_user1 = insert(:user)
+      %{id: id2} = other_user2 = insert(:user)
+      _ = insert(:user)
+
+      User.follow(user, other_user1)
+      User.follow(other_user1, other_user2)
+
+      assert [%{"accounts" => [%{"id" => ^id1}], "id" => ^id2}] =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> get("/api/v1/accounts/familiar_followers?id[]=#{id2}")
+               |> json_response_and_validate_schema(200)
+    end
+
+    test "returns empty array if followers are hidden", %{user: user, conn: conn} do
+      other_user1 = insert(:user, hide_follows: true)
+      %{id: id2} = other_user2 = insert(:user)
+      _ = insert(:user)
+
+      User.follow(user, other_user1)
+      User.follow(other_user1, other_user2)
+
+      assert [%{"accounts" => [], "id" => ^id2}] =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> get("/api/v1/accounts/familiar_followers?id[]=#{id2}")
+               |> json_response_and_validate_schema(200)
+    end
+
+    test "it respects hide_followers", %{user: user, conn: conn} do
+      other_user1 = insert(:user)
+      %{id: id2} = other_user2 = insert(:user, hide_followers: true)
+      _ = insert(:user)
+
+      User.follow(user, other_user1)
+      User.follow(other_user1, other_user2)
+
+      assert [%{"accounts" => [], "id" => ^id2}] =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> get("/api/v1/accounts/familiar_followers?id[]=#{id2}")
+               |> json_response_and_validate_schema(200)
+    end
+  end
+
   describe "remove from followers" do
     setup do: oauth_access(["follow"])
 
     test "removing user from followers", %{conn: conn, user: user} do
       %{id: other_user_id} = other_user = insert(:user)
 
-      CommonAPI.follow(other_user, user)
+      CommonAPI.follow(user, other_user)
 
       assert %{"id" => ^other_user_id, "followed_by" => false} =
                conn
@@ -2186,7 +2240,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "removing remote user from followers", %{conn: conn, user: user} do
       %{id: other_user_id} = other_user = insert(:user, local: false)
 
-      CommonAPI.follow(other_user, user)
+      CommonAPI.follow(user, other_user)
 
       assert User.following?(other_user, user)
 

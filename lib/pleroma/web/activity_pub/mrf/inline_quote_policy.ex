@@ -62,7 +62,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy do
       key: :mrf_inline_quote,
       related_policy: "Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy",
       label: "MRF Inline Quote Policy",
-      type: :group,
       description: "Force quote url to appear in post content.",
       children: [
         %{

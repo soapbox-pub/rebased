@@ -31,7 +31,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicy do
       {:reject, _} = e -> e
       {:accepted, _} -> {:reject, "[VocabularyPolicy] #{message_type} not in accept list"}
       {:rejected, _} -> {:reject, "[VocabularyPolicy] #{message_type} in reject list"}
-      _ -> {:reject, "[VocabularyPolicy]"}
     end
   end
 

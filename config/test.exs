@@ -16,7 +16,7 @@ config :pleroma, Pleroma.Captcha,
 
 # Print only warnings and errors during test
 config :logger, :console,
-  level: :warn,
+  level: :warning,
   format: "\n[$level] $message\n"
 
 config :pleroma, :auth, oauth_consumer_strategies: []
@@ -49,7 +49,8 @@ config :pleroma, Pleroma.Repo,
   hostname: System.get_env("DB_HOST") || "localhost",
   port: System.get_env("DB_PORT") || "5432",
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: 50
+  pool_size: System.schedulers_online() * 2,
+  log: false
 
 config :pleroma, :dangerzone, override_repo_pool_size: true
 
@@ -61,7 +62,8 @@ config :tesla, adapter: Tesla.Mock
 config :pleroma, :rich_media,
   enabled: false,
   ignore_hosts: [],
-  ignore_tld: ["local", "localdomain", "lan"]
+  ignore_tld: ["local", "localdomain", "lan"],
+  max_body: 2_000_000
 
 config :pleroma, :instance,
   multi_factor_authentication: [
@@ -133,9 +135,60 @@ config :pleroma, :side_effects,
   ap_streamer: Pleroma.Web.ActivityPub.ActivityPubMock,
   logger: Pleroma.LoggerMock
 
+config :pleroma, Pleroma.Search, module: Pleroma.Search.DatabaseSearch
+
+config :pleroma, Pleroma.Search.Meilisearch, url: "http://127.0.0.1:7700/", private_key: nil
+
 # Reduce recompilation time
 # https://dashbit.co/blog/speeding-up-re-compilation-of-elixir-projects
 config :phoenix, :plug_init_mode, :runtime
+
+config :pleroma, :config_impl, Pleroma.UnstubbedConfigMock
+
+config :pleroma, Pleroma.PromEx, disabled: true
+
+# Mox definitions. Only read during compile time.
+config :pleroma, Pleroma.User.Backup, config_impl: Pleroma.UnstubbedConfigMock
+config :pleroma, Pleroma.Uploaders.S3, ex_aws_impl: Pleroma.Uploaders.S3.ExAwsMock
+config :pleroma, Pleroma.Uploaders.S3, config_impl: Pleroma.UnstubbedConfigMock
+config :pleroma, Pleroma.Upload, config_impl: Pleroma.UnstubbedConfigMock
+config :pleroma, Pleroma.ScheduledActivity, config_impl: Pleroma.UnstubbedConfigMock
+config :pleroma, Pleroma.Web.RichMedia.Helpers, config_impl: Pleroma.StaticStubbedConfigMock
+config :pleroma, Pleroma.Uploaders.IPFS, config_impl: Pleroma.UnstubbedConfigMock
+config :pleroma, Pleroma.Web.Plugs.HTTPSecurityPlug, config_impl: Pleroma.StaticStubbedConfigMock
+config :pleroma, Pleroma.Web.Plugs.HTTPSignaturePlug, config_impl: Pleroma.StaticStubbedConfigMock
+
+config :pleroma, Pleroma.Signature, http_signatures_impl: Pleroma.StubbedHTTPSignaturesMock
+
+peer_module =
+  if String.to_integer(System.otp_release()) >= 25 do
+    :peer
+  else
+    :slave
+  end
+
+config :pleroma, Pleroma.Cluster, peer_module: peer_module
+
+config :pleroma, Pleroma.Application,
+  background_migrators: false,
+  internal_fetch: false,
+  load_custom_modules: false,
+  max_restarts: 100,
+  streamer_registry: false,
+  test_http_pools: true
+
+config :pleroma, Pleroma.Web.Streaming, sync_streaming: true
+
+config :pleroma, Pleroma.Uploaders.Uploader, timeout: 1_000
+
+config :pleroma, Pleroma.Emoji.Loader, test_emoji: true
+
+config :pleroma, Pleroma.Web.RichMedia.Backfill,
+  stream_out: Pleroma.Web.ActivityPub.ActivityPubMock
+
+config :pleroma, Pleroma.Web.Plugs.HTTPSecurityPlug, enable: false
+
+config :pleroma, Pleroma.User.Backup, tempdir: "test/tmp"
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

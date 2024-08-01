@@ -14,7 +14,7 @@ config :pleroma, Pleroma.Captcha,
   method: Pleroma.Captcha.Mock
 
 # Print only warnings and errors during test
-config :logger, level: :warn
+config :logger, level: :warning
 
 config :pleroma, :auth, oauth_consumer_strategies: []
 
@@ -78,6 +78,10 @@ config :pleroma, :database, rum_enabled: rum_enabled
 IO.puts("RUM enabled: #{rum_enabled}")
 
 config :pleroma, Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.ClientMock
+
+config :pleroma, Pleroma.Application,
+  background_migrators: false,
+  streamer_registry: false
 
 if File.exists?("./config/benchmark.secret.exs") do
   import_config "benchmark.secret.exs"

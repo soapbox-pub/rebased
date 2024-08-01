@@ -7,7 +7,7 @@ defmodule Pleroma.Workers.PurgeExpiredToken do
   Worker which purges expired OAuth tokens
   """
 
-  use Oban.Worker, queue: :token_expiration, max_attempts: 1
+  use Oban.Worker, queue: :background, max_attempts: 1
 
   @spec enqueue(%{token_id: integer(), valid_until: DateTime.t(), mod: module()}) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}

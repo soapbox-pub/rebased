@@ -25,6 +25,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
   require Pleroma.Constants
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
@@ -216,7 +221,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user)
       {:ok, post} = CommonAPI.post(user, %{status: "test", visibility: "local"})
 
-      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+      assert Pleroma.Web.ActivityPub.Visibility.local_public?(post)
 
       object = Object.normalize(post, fetch: false)
       uuid = String.split(object.data["id"], "/") |> List.last()
@@ -233,7 +238,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user)
       {:ok, post} = CommonAPI.post(user, %{status: "test", visibility: "local"})
 
-      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+      assert Pleroma.Web.ActivityPub.Visibility.local_public?(post)
 
       object = Object.normalize(post, fetch: false)
       uuid = String.split(object.data["id"], "/") |> List.last()
@@ -254,7 +259,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       {:ok, post} =
         CommonAPI.post(user, %{status: "test @#{reader.nickname}", visibility: "local"})
 
-      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+      assert Pleroma.Web.ActivityPub.Visibility.local_public?(post)
 
       object = Object.normalize(post, fetch: false)
       uuid = String.split(object.data["id"], "/") |> List.last()
@@ -431,7 +436,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user)
       {:ok, post} = CommonAPI.post(user, %{status: "test", visibility: "local"})
 
-      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+      assert Pleroma.Web.ActivityPub.Visibility.local_public?(post)
 
       uuid = String.split(post.data["id"], "/") |> List.last()
 
@@ -447,7 +452,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user)
       {:ok, post} = CommonAPI.post(user, %{status: "test", visibility: "local"})
 
-      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+      assert Pleroma.Web.ActivityPub.Visibility.local_public?(post)
 
       uuid = String.split(post.data["id"], "/") |> List.last()
 
@@ -568,7 +573,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert Activity.get_by_ap_id(data["id"])
     end
 
-    @tag capture_log: true
     test "it inserts an incoming activity into the database" <>
            "even if we can't fetch the user but have it in our db",
          %{conn: conn} do
@@ -652,7 +656,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert_receive {:mix_shell, :info, ["https://relay.mastodon.host/actor"]}
     end
 
-    @tag capture_log: true
     test "without valid signature, " <>
            "it only accepts Create activities and requires enabled federation",
          %{conn: conn} do
@@ -890,6 +893,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert Activity.get_by_ap_id(data["id"])
     end
 
+    test "it rejects an invalid incoming activity", %{conn: conn, data: data} do
+      user = insert(:user, is_active: false)
+
+      data =
+        data
+        |> Map.put("bcc", [user.ap_id])
+        |> Kernel.put_in(["object", "bcc"], [user.ap_id])
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/inbox", data)
+
+      assert "Invalid request." == json_response(conn, 400)
+    end
+
     test "it accepts messages with to as string instead of array", %{conn: conn, data: data} do
       user = insert(:user)
 
@@ -1058,7 +1078,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert Instances.reachable?(sender_host)
     end
 
-    @tag capture_log: true
     test "it removes all follower collections but actor's", %{conn: conn} do
       [actor, recipient] = insert_pair(:user)
 
@@ -1121,7 +1140,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert json_response(ret_conn, 200)
     end
 
-    @tag capture_log: true
     test "forwarded report", %{conn: conn} do
       admin = insert(:user, is_admin: true)
       actor = insert(:user, local: false)
@@ -1197,7 +1215,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       )
     end
 
-    @tag capture_log: true
     test "forwarded report from mastodon", %{conn: conn} do
       admin = insert(:user, is_admin: true)
       actor = insert(:user, local: false)
@@ -1207,7 +1224,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       note = insert(:note_activity, user: reported_user)
 
-      Pleroma.Web.CommonAPI.favorite(another, note.id)
+      Pleroma.Web.CommonAPI.favorite(note.id, another)
 
       mock_json_body =
         "test/fixtures/mastodon/application_actor.json"
@@ -1385,7 +1402,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert question = Object.normalize(activity, fetch: false)
 
-      {:ok, [activity], _object} = CommonAPI.vote(voter, question, [1])
+      {:ok, [activity], _object} = CommonAPI.vote(question, voter, [1])
 
       assert outbox_get =
                conn
@@ -1730,7 +1747,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
          %{conn: conn} do
       user = insert(:user, hide_followers: true)
       other_user = insert(:user)
-      {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, _other_user, user, _activity} = CommonAPI.follow(user, other_user)
 
       result =
         conn
@@ -1826,7 +1843,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
          %{conn: conn} do
       user = insert(:user, hide_follows: true)
       other_user = insert(:user)
-      {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
+      {:ok, user, _other_user, _activity} = CommonAPI.follow(other_user, user)
 
       result =
         conn

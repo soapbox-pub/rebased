@@ -19,6 +19,11 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
 
@@ -64,8 +69,8 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       # Create some activities to check they got deleted later
       follower = insert(:user)
       {:ok, _} = CommonAPI.post(user, %{status: "test"})
-      {:ok, _, _, _} = CommonAPI.follow(user, follower)
       {:ok, _, _, _} = CommonAPI.follow(follower, user)
+      {:ok, _, _, _} = CommonAPI.follow(user, follower)
       user = Repo.get(User, user.id)
       assert user.note_count == 1
       assert user.follower_count == 1

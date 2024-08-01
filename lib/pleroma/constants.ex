@@ -19,7 +19,8 @@ defmodule Pleroma.Constants do
       "context_id",
       "deleted_activity_id",
       "pleroma_internal",
-      "generator"
+      "generator",
+      "rules"
     ]
   )
 
@@ -73,6 +74,14 @@ defmodule Pleroma.Constants do
       "Organization",
       "Person",
       "Service"
+    ]
+  )
+
+  const(allowed_user_actor_types,
+    do: [
+      "Person",
+      "Service",
+      "Group"
     ]
   )
 

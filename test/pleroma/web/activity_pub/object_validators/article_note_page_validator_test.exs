@@ -43,7 +43,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
     setup do
       user = insert(:user)
       {:ok, activity} = Pleroma.Web.CommonAPI.post(user, %{status: "mew mew :dinosaur:"})
-      {:ok, edit} = Pleroma.Web.CommonAPI.update(user, activity, %{status: "edited :blank:"})
+      {:ok, edit} = Pleroma.Web.CommonAPI.update(activity, user, %{status: "edited :blank:"})
 
       {:ok, %{"object" => external_rep}} =
         Pleroma.Web.ActivityPub.Transmogrifier.prepare_outgoing(edit.data)
@@ -87,6 +87,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
 
     %{"object" => note} =
       "test/fixtures/roadhouse-create-activity.json"
+      |> File.read!()
+      |> Jason.decode!()
+
+    %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
+  end
+
+  test "a Note from Convergence AP Bridge validates" do
+    insert(:user, ap_id: "https://cc.mkdir.uk/ap/acct/hiira")
+
+    note =
+      "test/fixtures/ccworld-ap-bridge_note.json"
       |> File.read!()
       |> Jason.decode!()
 

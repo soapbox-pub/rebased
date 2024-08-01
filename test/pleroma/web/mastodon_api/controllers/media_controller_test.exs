@@ -6,8 +6,10 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
   use Pleroma.Web.ConnCase
 
   import ExUnit.CaptureLog
+  import Mox
 
   alias Pleroma.Object
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
@@ -15,6 +17,9 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
     setup do: oauth_access(["write:media"])
 
     setup do
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
+
       image = %Plug.Upload{
         content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
@@ -71,6 +76,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
     end
 
     test "/api/v2/media, upload_limit", %{conn: conn, user: user} do
+      clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
       desc = "Description of the binary"
 
       upload_limit = Config.get([:instance, :upload_limit]) * 8 + 8
@@ -145,6 +151,9 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
     setup do: oauth_access(["write:media"])
 
     setup %{user: actor} do
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
+
       file = %Plug.Upload{
         content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
@@ -177,6 +186,9 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
     setup do: oauth_access(["read:media"])
 
     setup %{user: actor} do
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
+
       file = %Plug.Upload{
         content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),

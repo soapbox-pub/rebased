@@ -139,7 +139,7 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
   end
 
   defp get_schema(%Schema{} = schema), do: schema
-  defp get_schema(schema), do: schema.schema
+  defp get_schema(schema), do: schema.schema()
 
   defp server_sent_event_helper(name, description, type, payload, opts \\ []) do
     payload_type = Keyword.get(opts, :payload_type, :json)

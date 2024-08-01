@@ -9,7 +9,7 @@ defmodule Pleroma.Web.Push do
 
   def init do
     unless enabled() do
-      Logger.warn("""
+      Logger.warning("""
       VAPID key pair is not found. If you wish to enabled web push, please run
 
           mix web_push.gen.keypair
@@ -20,17 +20,13 @@ defmodule Pleroma.Web.Push do
   end
 
   def vapid_config do
-    Application.get_env(:web_push_encryption, :vapid_details, [])
+    Application.get_env(:web_push_encryption, :vapid_details, nil)
   end
 
-  def enabled do
-    case vapid_config() do
-      [] -> false
-      list when is_list(list) -> true
-      _ -> false
-    end
-  end
+  def enabled, do: match?([subject: _, public_key: _, private_key: _], vapid_config())
 
+  @spec send(Pleroma.Notification.t()) ::
+          {:ok, Oban.Job.t()} | {:error, Oban.Job.changeset() | term()}
   def send(notification) do
     WebPusherWorker.enqueue("web_push", %{"notification_id" => notification.id})
   end

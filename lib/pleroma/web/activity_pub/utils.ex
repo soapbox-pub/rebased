@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Ecto.UUID
   alias Pleroma.Activity
   alias Pleroma.Config
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators.ObjectID
   alias Pleroma.Maps
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -166,7 +167,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
     with true <- Config.get!([:instance, :federating]),
          true <- type != "Block" || outgoing_blocks,
-         false <- Visibility.is_local_public?(activity) do
+         false <- Visibility.local_public?(activity) do
       Pleroma.Web.Federator.publish(activity)
     end
 
@@ -276,7 +277,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     object_actor = User.get_cached_by_ap_id(object_actor_id)
 
     to =
-      if Visibility.is_public?(object) do
+      if Visibility.public?(object) do
         [actor.follower_address, object.data["actor"]]
       else
         [object.data["actor"]]
@@ -720,14 +721,18 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   #### Flag-related helpers
   @spec make_flag_data(map(), map()) :: map()
-  def make_flag_data(%{actor: actor, context: context, content: content} = params, additional) do
+  def make_flag_data(
+        %{actor: actor, context: context, content: content} = params,
+        additional
+      ) do
     %{
       "type" => "Flag",
       "actor" => actor.ap_id,
       "content" => content,
       "object" => build_flag_object(params),
       "context" => context,
-      "state" => "open"
+      "state" => "open",
+      "rules" => Map.get(params, :rules, nil)
     }
     |> Map.merge(additional)
   end
@@ -775,10 +780,9 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         build_flag_object(object)
 
       nil ->
-        if %Object{} = object = Object.get_by_ap_id(id) do
-          build_flag_object(object)
-        else
-          %{"id" => id, "deleted" => true}
+        case Object.get_by_ap_id(id) do
+          %Object{} = object -> build_flag_object(object)
+          _ -> %{"id" => id, "deleted" => true}
         end
     end
   end
@@ -852,9 +856,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     [actor | reported_activities] = activity.data["object"]
 
     stripped_activities =
-      Enum.map(reported_activities, fn
-        act when is_map(act) -> act["id"]
-        act when is_binary(act) -> act
+      Enum.reduce(reported_activities, [], fn act, acc ->
+        case ObjectID.cast(act) do
+          {:ok, act} -> [act | acc]
+          _ -> acc
+        end
       end)
 
     new_data = put_in(activity.data, ["object"], [actor | stripped_activities])
@@ -931,5 +937,16 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> where([a, object: o], fragment("(?)->>'inReplyTo' = ?", o.data, ^to_string(id)))
     |> where([a, object: o], fragment("(?)->>'type' = 'Answer'", o.data))
     |> Repo.all()
+  end
+
+  @spec maybe_handle_group_posts(Activity.t()) :: :ok
+  @doc "Automatically repeats posts for local group actor recipients"
+  def maybe_handle_group_posts(activity) do
+    poster = User.get_cached_by_ap_id(activity.actor)
+
+    User.get_recipients_from_activity(activity)
+    |> Enum.filter(&match?("Group", &1.actor_type))
+    |> Enum.reject(&User.blocks?(&1, poster))
+    |> Enum.each(&Pleroma.Web.CommonAPI.repeat(activity.id, &1))
   end
 end

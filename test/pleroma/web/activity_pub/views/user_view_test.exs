@@ -76,10 +76,26 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     assert %{"invisible" => true} = UserView.render("service.json", %{user: user})
   end
 
+  test "service has a few essential fields" do
+    user = insert(:user)
+    result = UserView.render("service.json", %{user: user})
+    assert result["id"]
+    assert result["type"] == "Application"
+    assert result["inbox"]
+    assert result["outbox"]
+  end
+
   test "renders AKAs" do
     akas = ["https://i.tusooa.xyz/users/test-pleroma"]
     user = insert(:user, also_known_as: akas)
     assert %{"alsoKnownAs" => ^akas} = UserView.render("user.json", %{user: user})
+  end
+
+  test "renders full nickname" do
+    clear_config([Pleroma.Web.WebFinger, :domain], "plemora.dev")
+
+    user = insert(:user, nickname: "user")
+    assert %{"webfinger" => "acct:user@plemora.dev"} = UserView.render("user.json", %{user: user})
   end
 
   describe "endpoints" do
@@ -122,7 +138,7 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     test "sets totalItems to zero when followers are hidden" do
       user = insert(:user)
       other_user = insert(:user)
-      {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, _other_user, user, _activity} = CommonAPI.follow(user, other_user)
       assert %{"totalItems" => 1} = UserView.render("followers.json", %{user: user})
       user = Map.merge(user, %{hide_followers_count: true, hide_followers: true})
       refute UserView.render("followers.json", %{user: user}) |> Map.has_key?("totalItems")
@@ -131,7 +147,7 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     test "sets correct totalItems when followers are hidden but the follower counter is not" do
       user = insert(:user)
       other_user = insert(:user)
-      {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, _other_user, user, _activity} = CommonAPI.follow(user, other_user)
       assert %{"totalItems" => 1} = UserView.render("followers.json", %{user: user})
       user = Map.merge(user, %{hide_followers_count: false, hide_followers: true})
       assert %{"totalItems" => 1} = UserView.render("followers.json", %{user: user})
@@ -142,7 +158,7 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     test "sets totalItems to zero when follows are hidden" do
       user = insert(:user)
       other_user = insert(:user)
-      {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
+      {:ok, user, _other_user, _activity} = CommonAPI.follow(other_user, user)
       assert %{"totalItems" => 1} = UserView.render("following.json", %{user: user})
       user = Map.merge(user, %{hide_follows_count: true, hide_follows: true})
       assert %{"totalItems" => 0} = UserView.render("following.json", %{user: user})
@@ -151,7 +167,7 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     test "sets correct totalItems when follows are hidden but the follow counter is not" do
       user = insert(:user)
       other_user = insert(:user)
-      {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
+      {:ok, user, _other_user, _activity} = CommonAPI.follow(other_user, user)
       assert %{"totalItems" => 1} = UserView.render("following.json", %{user: user})
       user = Map.merge(user, %{hide_follows_count: false, hide_follows: true})
       assert %{"totalItems" => 1} = UserView.render("following.json", %{user: user})

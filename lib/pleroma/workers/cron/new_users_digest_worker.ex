@@ -9,7 +9,7 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorker do
 
   import Ecto.Query
 
-  use Pleroma.Workers.WorkerHelper, queue: "new_users_digest"
+  use Pleroma.Workers.WorkerHelper, queue: "background"
 
   @impl Oban.Worker
   def perform(_job) do
@@ -60,4 +60,7 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorker do
 
     :ok
   end
+
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
 end

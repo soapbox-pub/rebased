@@ -56,7 +56,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       assert activity == returned_activity
     end
 
-    @tag capture_log: true
     test "it fetches reply-to activities if we don't have them" do
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
@@ -104,7 +103,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       end
     end
 
-    @tag capture_log: true
     test "it does not crash if the object in inReplyTo can't be fetched" do
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
@@ -213,6 +211,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
     test "it works for incoming notices with contentMap" do
       data = File.read!("test/fixtures/mastodon-post-activity-contentmap.json") |> Jason.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+      object = Object.normalize(data["object"], fetch: false)
+
+      assert object.data["content"] ==
+               "<p><span class=\"h-card\"><a href=\"http://localtesting.pleroma.lol/users/lain\" class=\"u-url mention\">@<span>lain</span></a></span></p>"
+    end
+
+    test "it works for incoming notices with a nil contentMap (firefish)" do
+      data =
+        File.read!("test/fixtures/mastodon-post-activity-contentmap.json")
+        |> Jason.decode!()
+        |> Map.put("contentMap", nil)
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
       object = Object.normalize(data["object"], fetch: false)
@@ -508,7 +519,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       [data: data]
     end
 
-    test "returns not modified object when hasn't containts inReplyTo field", %{data: data} do
+    test "returns not modified object when has no inReplyTo field", %{data: data} do
       assert Transmogrifier.fix_in_reply_to(data) == data
     end
 
@@ -538,7 +549,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       assert modified_object["inReplyTo"] == []
     end
 
-    @tag capture_log: true
     test "returns modified object when allowed incoming reply", %{data: data} do
       object_with_reply =
         Map.put(
@@ -724,7 +734,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     assert modified.data["context"] == object.data["id"]
   end
 
-  @tag capture_log: true
   test "the reply note uses its parent's ID when context is missing and reply is unreachable" do
     insert(:user, ap_id: "https://mk.absturztau.be/users/8ozbzjs3o8")
 

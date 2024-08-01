@@ -7,7 +7,7 @@ defmodule Pleroma.Workers.ScheduledActivityWorker do
   The worker to post scheduled activity.
   """
 
-  use Pleroma.Workers.WorkerHelper, queue: "scheduled_activities"
+  use Pleroma.Workers.WorkerHelper, queue: "federator_outgoing"
 
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity

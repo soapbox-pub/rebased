@@ -14,6 +14,8 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   import Pleroma.Web.Gettext
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
+  @type t :: %__MODULE__{}
+
   defstruct valid?: true,
             errors: [],
             user: nil,
@@ -83,7 +85,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defp listen_object(draft) do
     object =
       draft.params
-      |> Map.take([:album, :artist, :title, :length])
+      |> Map.take([:album, :artist, :title, :length, :externalLink])
       |> Map.new(fn {key, value} -> {to_string(key), value} end)
       |> Map.put("type", "Audio")
       |> Map.put("to", draft.to)
@@ -127,8 +129,22 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
 
   defp in_reply_to(%{params: %{in_reply_to_status_id: ""}} = draft), do: draft
 
-  defp in_reply_to(%{params: %{in_reply_to_status_id: id}} = draft) when is_binary(id) do
-    %__MODULE__{draft | in_reply_to: Activity.get_by_id(id)}
+  defp in_reply_to(%{params: %{in_reply_to_status_id: :deleted}} = draft) do
+    add_error(draft, dgettext("errors", "Cannot reply to a deleted status"))
+  end
+
+  defp in_reply_to(%{params: %{in_reply_to_status_id: id} = params} = draft) when is_binary(id) do
+    activity = Activity.get_by_id(id)
+
+    params =
+      if is_nil(activity) do
+        # Deleted activities are returned as nil
+        Map.put(params, :in_reply_to_status_id, :deleted)
+      else
+        Map.put(params, :in_reply_to_status_id, activity)
+      end
+
+    in_reply_to(%{draft | params: params})
   end
 
   defp in_reply_to(%{params: %{in_reply_to_status_id: %Activity{} = in_reply_to}} = draft) do

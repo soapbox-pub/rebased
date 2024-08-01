@@ -6,9 +6,9 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Activity
   alias Pleroma.Object.Containment
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Publisher
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Workers.PublisherWorker
   alias Pleroma.Workers.ReceiverWorker
 
@@ -35,6 +35,19 @@ defmodule Pleroma.Web.Federator do
   end
 
   # Client API
+  def incoming_ap_doc(%{params: _params, req_headers: _req_headers} = args) do
+    job_args = Enum.into(args, %{}, fn {k, v} -> {Atom.to_string(k), v} end)
+
+    ReceiverWorker.enqueue(
+      "incoming_ap_doc",
+      Map.put(job_args, "timeout", :timer.seconds(20)),
+      priority: 2
+    )
+  end
+
+  def incoming_ap_doc(%{"type" => "Delete"} = params) do
+    ReceiverWorker.enqueue("incoming_ap_doc", %{"params" => params}, priority: 3, queue: :slow)
+  end
 
   def incoming_ap_doc(params) do
     ReceiverWorker.enqueue("incoming_ap_doc", %{"params" => params})
@@ -57,10 +70,8 @@ defmodule Pleroma.Web.Federator do
 
   # Job Worker Callbacks
 
-  @spec perform(atom(), module(), any()) :: {:ok, any()} | {:error, any()}
-  def perform(:publish_one, module, params) do
-    apply(module, :publish_one, [params])
-  end
+  @spec perform(atom(), any()) :: {:ok, any()} | {:error, any()}
+  def perform(:publish_one, params), do: Publisher.publish_one(params)
 
   def perform(:publish, activity) do
     Logger.debug(fn -> "Running publish for #{activity.data["id"]}" end)

@@ -8,7 +8,7 @@ defmodule Pleroma.Web.Metadata.UtilsTest do
   alias Pleroma.Web.Metadata.Utils
 
   describe "scrub_html_and_truncate/1" do
-    test "it returns content text without encode HTML if summary is nil" do
+    test "it returns content text without HTML if summary is nil" do
       user = insert(:user)
 
       note =
@@ -17,14 +17,14 @@ defmodule Pleroma.Web.Metadata.UtilsTest do
             "actor" => user.ap_id,
             "id" => "https://pleroma.gov/objects/whatever",
             "summary" => nil,
-            "content" => "Pleroma's really cool!"
+            "content" => "Pleroma's really cool!<br>"
           }
         })
 
       assert Utils.scrub_html_and_truncate(note) == "Pleroma's really cool!"
     end
 
-    test "it returns context text without encode HTML if summary is empty" do
+    test "it returns content text without HTML if summary is empty" do
       user = insert(:user)
 
       note =
@@ -33,14 +33,14 @@ defmodule Pleroma.Web.Metadata.UtilsTest do
             "actor" => user.ap_id,
             "id" => "https://pleroma.gov/objects/whatever",
             "summary" => "",
-            "content" => "Pleroma's really cool!"
+            "content" => "Pleroma's really cool!<br>"
           }
         })
 
       assert Utils.scrub_html_and_truncate(note) == "Pleroma's really cool!"
     end
 
-    test "it returns summary text without encode HTML if summary is filled" do
+    test "it returns summary text without HTML if summary is filled" do
       user = insert(:user)
 
       note =
@@ -48,13 +48,29 @@ defmodule Pleroma.Web.Metadata.UtilsTest do
           data: %{
             "actor" => user.ap_id,
             "id" => "https://pleroma.gov/objects/whatever",
-            "summary" => "Public service announcement on caffeine consumption",
+            "summary" => "Public service announcement on caffeine consumption<br>",
             "content" => "cofe"
           }
         })
 
       assert Utils.scrub_html_and_truncate(note) ==
                "Public service announcement on caffeine consumption"
+    end
+
+    test "it returns empty string if summary and content are absent" do
+      user = insert(:user)
+
+      note =
+        insert(:note, %{
+          data: %{
+            "actor" => user.ap_id,
+            "id" => "https://pleroma.gov/objects/whatever",
+            "content" => nil,
+            "summary" => nil
+          }
+        })
+
+      assert Utils.scrub_html_and_truncate(note) == ""
     end
 
     test "it does not return old content after editing" do
@@ -65,7 +81,7 @@ defmodule Pleroma.Web.Metadata.UtilsTest do
       object = Pleroma.Object.normalize(activity)
       assert Utils.scrub_html_and_truncate(object) == "mew mew #def"
 
-      {:ok, update} = Pleroma.Web.CommonAPI.update(user, activity, %{status: "mew mew #abc"})
+      {:ok, update} = Pleroma.Web.CommonAPI.update(activity, user, %{status: "mew mew #abc"})
       update = Pleroma.Activity.normalize(update)
       object = Pleroma.Object.normalize(update)
       assert Utils.scrub_html_and_truncate(object) == "mew mew #abc"

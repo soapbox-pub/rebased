@@ -9,7 +9,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.HashtagPolicy do
   alias Pleroma.Object
 
   @moduledoc """
-  Reject, TWKN-remove or Set-Sensitive messsages with specific hashtags (without the leading #)
+  Reject, TWKN-remove or Set-Sensitive messages with specific hashtags (without the leading #)
 
   Note: This MRF Policy is always enabled, if you want to disable it you have to set empty lists.
   """
@@ -84,7 +84,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.HashtagPolicy do
     if hashtags != [] do
       with {:ok, message} <- check_reject(message, hashtags),
            {:ok, message} <-
-             (if "type" == "Create" do
+             (if type == "Create" do
                 check_ftl_removal(message, hashtags)
               else
                 {:ok, message}

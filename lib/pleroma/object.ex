@@ -99,21 +99,24 @@ defmodule Pleroma.Object do
   def get_by_id(nil), do: nil
   def get_by_id(id), do: Repo.get(Object, id)
 
+  @spec get_by_id_and_maybe_refetch(integer(), list()) :: Object.t() | nil
   def get_by_id_and_maybe_refetch(id, opts \\ []) do
-    %{updated_at: updated_at} = object = get_by_id(id)
+    with %Object{updated_at: updated_at} = object <- get_by_id(id) do
+      if opts[:interval] &&
+           NaiveDateTime.diff(NaiveDateTime.utc_now(), updated_at) > opts[:interval] do
+        case Fetcher.refetch_object(object) do
+          {:ok, %Object{} = object} ->
+            object
 
-    if opts[:interval] &&
-         NaiveDateTime.diff(NaiveDateTime.utc_now(), updated_at) > opts[:interval] do
-      case Fetcher.refetch_object(object) do
-        {:ok, %Object{} = object} ->
-          object
-
-        e ->
-          Logger.error("Couldn't refresh #{object.data["id"]}:\n#{inspect(e)}")
-          object
+          e ->
+            Logger.error("Couldn't refresh #{object.data["id"]}:\n#{inspect(e)}")
+            object
+        end
+      else
+        object
       end
     else
-      object
+      nil -> nil
     end
   end
 
@@ -177,7 +180,10 @@ defmodule Pleroma.Object do
         ap_id
 
       Keyword.get(options, :fetch) ->
-        Fetcher.fetch_object_from_id!(ap_id, options)
+        case Fetcher.fetch_object_from_id(ap_id, options) do
+          {:ok, object} -> object
+          _ -> nil
+        end
 
       true ->
         get_cached_by_ap_id(ap_id)
@@ -239,17 +245,17 @@ defmodule Pleroma.Object do
          {:ok, _} <- invalid_object_cache(object) do
       cleanup_attachments(
         Config.get([:instance, :cleanup_attachments]),
-        %{"object" => object}
+        object
       )
 
       {:ok, object, deleted_activity}
     end
   end
 
-  @spec cleanup_attachments(boolean(), %{required(:object) => map()}) ::
+  @spec cleanup_attachments(boolean(), Object.t()) ::
           {:ok, Oban.Job.t() | nil}
-  def cleanup_attachments(true, %{"object" => _} = params) do
-    AttachmentsCleanupWorker.enqueue("cleanup_attachments", params)
+  def cleanup_attachments(true, %Object{} = object) do
+    AttachmentsCleanupWorker.enqueue("cleanup_attachments", %{"object" => object})
   end
 
   def cleanup_attachments(_, _), do: {:ok, nil}
@@ -315,6 +321,52 @@ defmodule Pleroma.Object do
             """
             safe_jsonb_set(?, '{repliesCount}',
               (greatest(0, (?->>'repliesCount')::int - 1))::varchar::jsonb, true)
+            """,
+            o.data,
+            o.data
+          )
+      ]
+    )
+    |> Repo.update_all([])
+    |> case do
+      {1, [object]} -> set_cache(object)
+      _ -> {:error, "Not found"}
+    end
+  end
+
+  def increase_quotes_count(ap_id) do
+    Object
+    |> where([o], fragment("?->>'id' = ?::text", o.data, ^to_string(ap_id)))
+    |> update([o],
+      set: [
+        data:
+          fragment(
+            """
+            safe_jsonb_set(?, '{quotesCount}',
+              (coalesce((?->>'quotesCount')::int, 0) + 1)::varchar::jsonb, true)
+            """,
+            o.data,
+            o.data
+          )
+      ]
+    )
+    |> Repo.update_all([])
+    |> case do
+      {1, [object]} -> set_cache(object)
+      _ -> {:error, "Not found"}
+    end
+  end
+
+  def decrease_quotes_count(ap_id) do
+    Object
+    |> where([o], fragment("?->>'id' = ?::text", o.data, ^to_string(ap_id)))
+    |> update([o],
+      set: [
+        data:
+          fragment(
+            """
+            safe_jsonb_set(?, '{quotesCount}',
+              (greatest(0, (?->>'quotesCount')::int - 1))::varchar::jsonb, true)
             """,
             o.data,
             o.data

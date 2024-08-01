@@ -128,10 +128,11 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       message = File.read!("test/fixtures/fep-e232.json") |> Jason.decode!()
 
-      assert {:ok, activity} = Transmogrifier.handle_incoming(message)
-
-      object = Object.normalize(activity)
-      assert [%{"type" => "Mention"}, %{"type" => "Link"}] = object.data["tag"]
+      assert capture_log(fn ->
+               assert {:ok, activity} = Transmogrifier.handle_incoming(message)
+               object = Object.normalize(activity)
+               assert [%{"type" => "Mention"}, %{"type" => "Link"}] = object.data["tag"]
+             end) =~ "Object rejected while fetching"
     end
 
     test "it accepts quote posts" do
@@ -352,7 +353,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "everybody do the dinosaur :dinosaur:"})
-      {:ok, update} = CommonAPI.update(user, activity, %{status: "mew mew :blank:"})
+      {:ok, update} = CommonAPI.update(activity, user, %{status: "mew mew :blank:"})
 
       {:ok, prepared} = Transmogrifier.prepare_outgoing(update.data)
 
@@ -409,7 +410,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert capture_log(fn ->
                {:error, _} = Transmogrifier.handle_incoming(data)
-             end) =~ "Object containment failed"
+             end) =~ "Object rejected while fetching"
     end
 
     test "it rejects activities which reference objects that have an incorrect attribution (variant 1)" do
@@ -424,7 +425,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert capture_log(fn ->
                {:error, _} = Transmogrifier.handle_incoming(data)
-             end) =~ "Object containment failed"
+             end) =~ "Object rejected while fetching"
     end
 
     test "it rejects activities which reference objects that have an incorrect attribution (variant 2)" do
@@ -439,7 +440,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert capture_log(fn ->
                {:error, _} = Transmogrifier.handle_incoming(data)
-             end) =~ "Object containment failed"
+             end) =~ "Object rejected while fetching"
     end
   end
 
@@ -535,7 +536,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
              end) =~ "Unsupported URI scheme"
     end
 
-    @tag capture_log: true
     test "returns {:ok, %Object{}} for success case" do
       assert {:ok, %Object{}} =
                Transmogrifier.get_obj_helper(

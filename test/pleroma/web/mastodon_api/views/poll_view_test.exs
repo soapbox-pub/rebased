@@ -43,7 +43,8 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
         %{title: "why are you even asking?", votes_count: 0}
       ],
       votes_count: 0,
-      voters_count: 0
+      voters_count: 0,
+      pleroma: %{non_anonymous: false}
     }
 
     result = PollView.render("show.json", %{object: object})
@@ -73,7 +74,7 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
 
     object = Object.normalize(activity, fetch: false)
 
-    {:ok, _votes, object} = CommonAPI.vote(voter, object, [0, 1])
+    {:ok, _votes, object} = CommonAPI.vote(object, voter, [0, 1])
 
     assert match?(
              %{
@@ -118,7 +119,7 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
 
     object = Object.normalize(activity, fetch: false)
 
-    {:ok, _, object} = CommonAPI.vote(other_user, object, [1, 2])
+    {:ok, _, object} = CommonAPI.vote(object, other_user, [1, 2])
 
     result = PollView.render("show.json", %{object: object, for: other_user})
 
@@ -164,5 +165,12 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
                %{title: "<input type=\"date\"></input>", votes_count: 0}
              ]
            } = PollView.render("show.json", %{object: object})
+  end
+
+  test "that poll is non anonymous" do
+    object = Object.normalize("https://friends.grishka.me/posts/54642", fetch: true)
+    result = PollView.render("show.json", %{object: object})
+
+    assert result[:pleroma][:non_anonymous] == true
   end
 end

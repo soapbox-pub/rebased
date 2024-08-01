@@ -1,11 +1,13 @@
-image: git.pleroma.social:5050/pleroma/pleroma/ci-base
+image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.13.4-otp-25
 
 variables: &global_variables
+  # Only used for the release
+  ELIXIR_VER: 1.13.4
   POSTGRES_DB: pleroma_test
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
   DB_HOST: postgres
-  DB_PORT: 5432
+  DB_PORT: "5432"
   MIX_ENV: test
 
 workflow:
@@ -16,17 +18,16 @@ workflow:
     - if: $CI_COMMIT_BRANCH
 
 cache: &global_cache_policy
-  key:
-    files:
-      - mix.lock
+  key: $CI_JOB_IMAGE-$CI_COMMIT_SHORT_SHA
   paths:
     - deps
     - _build
 
 stages:
-  - check-changelog
   - build
+  - lint
   - test
+  - check-changelog
   - benchmark
   - deploy
   - release
@@ -69,7 +70,7 @@ check-changelog:
   tags:
     - amd64
 
-build:
+build-1.13.4-otp-25:
   extends:
   - .build_changes_policy
   - .using-ci-base
@@ -77,10 +78,19 @@ build:
   script:
   - mix compile --force
 
+build-1.17.1-otp-26:
+  extends:
+  - .build_changes_policy
+  - .using-ci-base
+  stage: build
+  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.17.1-otp-26
+  script:
+  - mix compile --force
+
 spec-build:
   extends:
   - .using-ci-base
-  stage: test
+  stage: build
   rules:
     - changes:
         - ".gitlab-ci.yml"
@@ -100,7 +110,7 @@ benchmark:
   variables:
     MIX_ENV: benchmark
   services:
-  - name: postgres:9.6-alpine
+  - name: postgres:11.22-alpine
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
@@ -108,7 +118,7 @@ benchmark:
     - mix ecto.migrate
     - mix pleroma.load_testing
 
-unit-testing:
+unit-testing-1.13.4-otp-25:
   extends:
   - .build_changes_policy
   - .using-ci-base
@@ -116,15 +126,14 @@ unit-testing:
   cache: &testing_cache_policy
     <<: *global_cache_policy
     policy: pull
-
-  services:
+  services: &testing_services
   - name: postgres:13-alpine
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-  script:
+  script: &testing_script
     - mix ecto.create
     - mix ecto.migrate
-    - mix test --cover --preload-modules
+    - mix pleroma.test_runner --cover --preload-modules
   coverage: '/^Line total: ([^ ]*%)$/'
   artifacts:
     reports:
@@ -132,65 +141,20 @@ unit-testing:
         coverage_format: cobertura
         path: coverage.xml
 
-unit-testing-erratic:
+unit-testing-1.17.1-otp-26:
   extends:
   - .build_changes_policy
   - .using-ci-base
   stage: test
-  retry: 2
-  allow_failure: true
-  cache: &testing_cache_policy
-    <<: *global_cache_policy
-    policy: pull
-
-  services:
-  - name: postgres:13-alpine
-    alias: postgres
-    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-  script:
-    - mix ecto.create
-    - mix ecto.migrate
-    - mix test --only=erratic
-
-# Removed to fix CI issue. In this early state it wasn't adding much value anyway.
-# TODO Fix and reinstate federated testing
-# federated-testing:
-#   stage: test
-#   cache: *testing_cache_policy
-#   services:
-#   - name: minibikini/postgres-with-rum:12
-#     alias: postgres
-#     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-#   script:
-#     - mix deps.get
-#     - mix ecto.create
-#     - mix ecto.migrate
-#     - epmd -daemon
-#     - mix test --trace --only federated
-
-unit-testing-rum:
-  extends:
-  - .build_changes_policy
-  - .using-ci-base
-  stage: test
+  image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.17.1-otp-26
   cache: *testing_cache_policy
-  services:
-  - name: minibikini/postgres-with-rum:12
-    alias: postgres
-    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-  variables:
-    <<: *global_variables
-    RUM_ENABLED: "true"
-  script:
-    - mix ecto.create
-    - mix ecto.migrate
-    - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
-    - mix test --preload-modules
+  services: *testing_services
+  script: *testing_script
 
-lint:
+formatting-1.15:
   extends: .build_changes_policy
-  image: &current_elixir elixir:1.12-alpine
-  stage: test
+  image: &formatting_elixir elixir:1.15-alpine
+  stage: lint
   cache: *testing_cache_policy
   before_script: &current_bfr_script
     - apk update
@@ -201,24 +165,37 @@ lint:
   script:
     - mix format --check-formatted
 
-analysis:
-  extends:
-  - .build_changes_policy
-  - .using-ci-base
-  stage: test
-  cache: *testing_cache_policy
-  script:
-    - mix credo --strict --only=warnings,todo,fixme,consistency,readability
-
-cycles:
+cycles-1.15:
   extends: .build_changes_policy
-  image: *current_elixir
-  stage: test
+  image: *formatting_elixir
+  stage: lint
   cache: {}
   before_script: *current_bfr_script
   script:
     - mix compile
     - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
+
+analysis:
+  extends:
+  - .build_changes_policy
+  - .using-ci-base
+  stage: lint
+  cache: *testing_cache_policy
+  script:
+    - mix credo --strict --only=warnings,todo,fixme,consistency,readability
+
+dialyzer:
+  extends:
+  - .build_changes_policy
+  - .using-ci-base
+  stage: lint
+  allow_failure: true
+  when: manual 
+  cache: *testing_cache_policy
+  tags:
+    - feld
+  script:
+    - mix dialyzer
 
 docs-deploy:
   stage: deploy
@@ -294,7 +271,7 @@ stop_review_app:
 
 amd64:
   stage: release
-  image: elixir:1.11.4
+  image: elixir:$ELIXIR_VER
   only: &release-only
   - stable@pleroma/pleroma
   - develop@pleroma/pleroma
@@ -318,8 +295,9 @@ amd64:
           - deps
   variables: &release-variables
     MIX_ENV: prod
+    VIX_COMPILATION_MODE: PLATFORM_PROVIDED_LIBVIPS
   before_script: &before-release
-  - apt-get update && apt-get install -y cmake libmagic-dev
+  - apt-get update && apt-get install -y cmake libmagic-dev libvips-dev erlang-dev
   - echo "import Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
@@ -334,13 +312,13 @@ amd64-musl:
   stage: release
   artifacts: *release-artifacts
   only: *release-only
-  image: elixir:1.11.4-alpine
+  image: elixir:$ELIXIR_VER-alpine
   tags:
     - amd64
   cache: *release-cache
   variables: *release-variables
   before_script: &before-release-musl
-  - apk add git build-base cmake file-dev openssl
+  - apk add git build-base cmake file-dev openssl vips-dev
   - echo "import Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
@@ -352,7 +330,7 @@ arm:
   only: *release-only
   tags:
     - arm32-specified
-  image: arm32v7/elixir:1.11.4
+  image: arm32v7/elixir:$ELIXIR_VER
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
@@ -364,7 +342,7 @@ arm-musl:
   only: *release-only
   tags:
     - arm32-specified
-  image: arm32v7/elixir:1.11.4-alpine
+  image: arm32v7/elixir:$ELIXIR_VER-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release-musl
@@ -376,7 +354,7 @@ arm64:
   only: *release-only
   tags:
     - arm
-  image: arm64v8/elixir:1.11.4
+  image: arm64v8/elixir:$ELIXIR_VER
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
@@ -388,7 +366,7 @@ arm64-musl:
   only: *release-only
   tags:
     - arm
-  image: arm64v8/elixir:1.11.4-alpine
+  image: arm64v8/elixir:$ELIXIR_VER-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release-musl

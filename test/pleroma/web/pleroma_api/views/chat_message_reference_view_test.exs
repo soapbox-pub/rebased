@@ -3,20 +3,29 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
-  use Pleroma.DataCase
+  alias Pleroma.NullCache
+  use Pleroma.DataCase, async: true
 
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
   alias Pleroma.Object
+  alias Pleroma.Tests.ObanHelpers
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
 
+  import Mox
   import Pleroma.Factory
+
+  setup do: clear_config([:rich_media, :enabled], true)
 
   test "it displays a chat message" do
     user = insert(:user)
     recipient = insert(:user)
+
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
 
     file = %Plug.Upload{
       content_type: "image/jpeg",
@@ -35,6 +44,15 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
 
     cm_ref = MessageReference.for_chat_and_object(chat, object)
 
+    id = cm_ref.id
+
+    Pleroma.CachexMock
+    |> stub(:get, fn
+      :chat_message_id_idempotency_key_cache, ^id -> {:ok, "123"}
+      cache, key -> NullCache.get(cache, key)
+    end)
+    |> stub(:fetch, fn :rich_media_cache, _, _ -> {:ok, {:ok, %{}}} end)
+
     chat_message = MessageReferenceView.render("show.json", chat_message_reference: cm_ref)
 
     assert chat_message[:id] == cm_ref.id
@@ -46,17 +64,14 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
     assert match?([%{shortcode: "firefox"}], chat_message[:emojis])
     assert chat_message[:idempotency_key] == "123"
 
-    clear_config([:rich_media, :enabled], true)
-
-    Tesla.Mock.mock_global(fn
-      %{url: "https://example.com/ogp"} ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}
-    end)
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
 
     {:ok, activity} =
       CommonAPI.post_chat_message(recipient, user, "gkgkgk https://example.com/ogp",
         media_id: upload.id
       )
+
+    ObanHelpers.perform_all()
 
     object = Object.normalize(activity, fetch: false)
 

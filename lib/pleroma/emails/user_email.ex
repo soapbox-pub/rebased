@@ -345,37 +345,22 @@ defmodule Pleroma.Emails.UserEmail do
     Router.Helpers.subscription_url(Endpoint, :unsubscribe, token)
   end
 
-  def backup_is_ready_email(backup, admin_user_id \\ nil) do
+  def backup_is_ready_email(backup) do
     %{user: user} = Pleroma.Repo.preload(backup, :user)
 
     Gettext.with_locale_or_default user.language do
       download_url = Pleroma.Web.PleromaAPI.BackupView.download_url(backup)
 
       html_body =
-        if is_nil(admin_user_id) do
-          Gettext.dpgettext(
-            "static_pages",
-            "account archive email body - self-requested",
-            """
-            <p>You requested a full backup of your Pleroma account. It's ready for download:</p>
-            <p><a href="%{download_url}">%{download_url}</a></p>
-            """,
-            download_url: download_url
-          )
-        else
-          admin = Pleroma.Repo.get(User, admin_user_id)
-
-          Gettext.dpgettext(
-            "static_pages",
-            "account archive email body - admin requested",
-            """
-            <p>Admin @%{admin_nickname} requested a full backup of your Pleroma account. It's ready for download:</p>
-            <p><a href="%{download_url}">%{download_url}</a></p>
-            """,
-            admin_nickname: admin.nickname,
-            download_url: download_url
-          )
-        end
+        Gettext.dpgettext(
+          "static_pages",
+          "account archive email body",
+          """
+          <p>A full backup of your Pleroma account was requested. It's ready for download:</p>
+          <p><a href="%{download_url}">%{download_url}</a></p>
+          """,
+          download_url: download_url
+        )
 
       new()
       |> to(recipient(user))

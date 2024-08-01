@@ -7,6 +7,7 @@ defmodule Pleroma.ObjectTest do
   use Oban.Testing, repo: Pleroma.Repo
 
   import ExUnit.CaptureLog
+  import Mox
   import Pleroma.Factory
   import Tesla.Mock
 
@@ -15,10 +16,12 @@ defmodule Pleroma.ObjectTest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.CommonAPI
 
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    ConfigMock |> stub_with(Pleroma.Test.StaticConfig)
     :ok
   end
 
@@ -400,7 +403,7 @@ defmodule Pleroma.ObjectTest do
 
       user = insert(:user)
       activity = Activity.get_create_by_object_ap_id(object.data["id"])
-      {:ok, activity} = CommonAPI.favorite(user, activity.id)
+      {:ok, activity} = CommonAPI.favorite(activity.id, user)
       object = Object.get_by_ap_id(activity.data["object"])
 
       assert object.data["like_count"] == 1

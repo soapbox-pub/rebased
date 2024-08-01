@@ -5,6 +5,9 @@
 defmodule Pleroma.Gun.ConnectionPool.WorkerSupervisor do
   @moduledoc "Supervisor for pool workers. Does not do anything except enforce max connection limit"
 
+  alias Pleroma.Config
+  alias Pleroma.Gun.ConnectionPool.Worker
+
   use DynamicSupervisor
 
   def start_link(opts) do
@@ -14,19 +17,28 @@ defmodule Pleroma.Gun.ConnectionPool.WorkerSupervisor do
   def init(_opts) do
     DynamicSupervisor.init(
       strategy: :one_for_one,
-      max_children: Pleroma.Config.get([:connections_pool, :max_connections])
+      max_children: Config.get([:connections_pool, :max_connections])
     )
   end
 
-  def start_worker(opts, retry \\ false) do
-    case DynamicSupervisor.start_child(__MODULE__, {Pleroma.Gun.ConnectionPool.Worker, opts}) do
+  def start_worker(opts, last_attempt \\ false)
+
+  def start_worker(opts, true) do
+    case DynamicSupervisor.start_child(__MODULE__, {Worker, opts}) do
       {:error, :max_children} ->
-        if retry or free_pool() == :error do
-          :telemetry.execute([:pleroma, :connection_pool, :provision_failure], %{opts: opts})
-          {:error, :pool_full}
-        else
-          start_worker(opts, true)
-        end
+        :telemetry.execute([:pleroma, :connection_pool, :provision_failure], %{opts: opts})
+        {:error, :pool_full}
+
+      res ->
+        res
+    end
+  end
+
+  def start_worker(opts, false) do
+    case DynamicSupervisor.start_child(__MODULE__, {Worker, opts}) do
+      {:error, :max_children} ->
+        free_pool()
+        start_worker(opts, true)
 
       res ->
         res

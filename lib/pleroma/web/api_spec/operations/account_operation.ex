@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias Pleroma.Web.ApiSpec.Schemas.ActorType
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
+  alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.List
   alias Pleroma.Web.ApiSpec.Schemas.Status
   alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
@@ -122,22 +123,27 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       parameters:
         [
           %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
-          Operation.parameter(:pinned, :query, BooleanLike, "Include only pinned statuses"),
+          Operation.parameter(
+            :pinned,
+            :query,
+            BooleanLike.schema(),
+            "Include only pinned statuses"
+          ),
           Operation.parameter(:tagged, :query, :string, "With tag"),
           Operation.parameter(
             :only_media,
             :query,
-            BooleanLike,
+            BooleanLike.schema(),
             "Include only statuses with media attached"
           ),
           Operation.parameter(
             :with_muted,
             :query,
-            BooleanLike,
+            BooleanLike.schema(),
             "Include statuses from muted accounts."
           ),
-          Operation.parameter(:exclude_reblogs, :query, BooleanLike, "Exclude reblogs"),
-          Operation.parameter(:exclude_replies, :query, BooleanLike, "Exclude replies"),
+          Operation.parameter(:exclude_reblogs, :query, BooleanLike.schema(), "Exclude reblogs"),
+          Operation.parameter(:exclude_replies, :query, BooleanLike.schema(), "Exclude replies"),
           Operation.parameter(
             :exclude_visibilities,
             :query,
@@ -147,7 +153,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           Operation.parameter(
             :with_muted,
             :query,
-            BooleanLike,
+            BooleanLike.schema(),
             "Include reactions from muted accounts."
           )
         ] ++ pagination_params(),
@@ -347,7 +353,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       summary: "Endorse",
       operationId: "AccountController.endorse",
       security: [%{"oAuth" => ["follow", "write:accounts"]}],
-      description: "Addds the given account to endorsed accounts list.",
+      description: "Adds the given account to endorsed accounts list.",
       parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
       responses: %{
         200 => Operation.response("Relationship", "application/json", AccountRelationship),
@@ -504,6 +510,48 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       description: "Not implemented",
       responses: %{
         200 => empty_array_response()
+      }
+    }
+  end
+
+  def familiar_followers_operation do
+    %Operation{
+      tags: ["Retrieve account information"],
+      summary: "Followers that you follow",
+      operationId: "AccountController.familiar_followers",
+      description:
+        "Obtain a list of all accounts that follow a given account, filtered for accounts you follow.",
+      security: [%{"oAuth" => ["read:follows"]}],
+      parameters: [
+        Operation.parameter(
+          :id,
+          :query,
+          %Schema{
+            oneOf: [%Schema{type: :array, items: %Schema{type: :string}}, %Schema{type: :string}]
+          },
+          "Account IDs",
+          example: "123"
+        )
+      ],
+      responses: %{
+        200 =>
+          Operation.response("Accounts", "application/json", %Schema{
+            title: "ArrayOfAccounts",
+            type: :array,
+            items: %Schema{
+              title: "Account",
+              type: :object,
+              properties: %{
+                id: FlakeID,
+                accounts: %Schema{
+                  title: "ArrayOfAccounts",
+                  type: :array,
+                  items: Account,
+                  example: [Account.schema().example]
+                }
+              }
+            }
+          })
       }
     }
   end

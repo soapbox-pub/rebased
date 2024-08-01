@@ -21,7 +21,7 @@ defmodule HttpRequestMock do
     else
       error ->
         with {:error, message} <- error do
-          Logger.warn(to_string(message))
+          Logger.warning(to_string(message))
         end
 
         {_, _r} = error
@@ -178,7 +178,7 @@ defmodule HttpRequestMock do
   end
 
   def get(
-        "https://social.heldscal.la/.well-known/webfinger?resource=nonexistant@social.heldscal.la",
+        "https://social.heldscal.la/.well-known/webfinger?resource=nonexistent@social.heldscal.la",
         _,
         _,
         [{"accept", "application/xrd+xml,application/jrd+json"}]
@@ -186,7 +186,7 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!("test/fixtures/tesla_mock/nonexistant@social.heldscal.la.xml")
+       body: File.read!("test/fixtures/tesla_mock/nonexistent@social.heldscal.la.xml")
      }}
   end
 
@@ -1059,7 +1059,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://example.com/malformed", _, _, _) do
+  def get("https://example.com/malformed", _, _, _) do
     {:ok,
      %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/malformed-data.html")}}
   end
@@ -1708,12 +1708,39 @@ defmodule HttpRequestMock do
 
   # Most of the rich media mocks are missing HEAD requests, so we just return 404.
   @rich_media_mocks [
+    "https://example.com/empty",
+    "https://example.com/error",
+    "https://example.com/malformed",
+    "https://example.com/non-ogp",
+    "https://example.com/oembed",
+    "https://example.com/oembed.json",
     "https://example.com/ogp",
     "https://example.com/ogp-missing-data",
-    "https://example.com/twitter-card"
+    "https://example.com/ogp-missing-title",
+    "https://example.com/twitter-card",
+    "https://google.com/",
+    "https://pleroma.local/notice/9kCP7V",
+    "https://yahoo.com/"
   ]
+
   def head(url, _query, _body, _headers) when url in @rich_media_mocks do
-    {:ok, %Tesla.Env{status: 404, body: ""}}
+    {:ok, %Tesla.Env{status: 200, body: ""}}
+  end
+
+  def head("https://example.com/pdf-file", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       headers: [{"content-length", "1000000"}, {"content-type", "application/pdf"}]
+     }}
+  end
+
+  def head("https://example.com/huge-page", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       headers: [{"content-length", "2000001"}, {"content-type", "text/html"}]
+     }}
   end
 
   def head(url, query, body, headers) do

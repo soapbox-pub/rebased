@@ -86,7 +86,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
     assert match?({:error, _}, Transmogrifier.handle_incoming(data))
   end
 
-  @tag capture_log: true
   test "it works for incoming user deletes" do
     %{ap_id: ap_id} = insert(:user, ap_id: "http://mastodon.example.org/users/admin")
 

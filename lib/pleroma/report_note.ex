@@ -23,8 +23,8 @@ defmodule Pleroma.ReportNote do
     timestamps()
   end
 
-  @spec create(FlakeId.Ecto.CompatType.t(), FlakeId.Ecto.CompatType.t(), String.t()) ::
-          {:ok, ReportNote.t()} | {:error, Changeset.t()}
+  @spec create(Ecto.UUID.t(), Ecto.UUID.t(), String.t()) ::
+          {:ok, ReportNote.t()} | {:error, Ecto.Changeset.t()}
   def create(user_id, activity_id, content) do
     attrs = %{
       user_id: user_id,
@@ -38,8 +38,8 @@ defmodule Pleroma.ReportNote do
     |> Repo.insert()
   end
 
-  @spec destroy(FlakeId.Ecto.CompatType.t()) ::
-          {:ok, ReportNote.t()} | {:error, Changeset.t()}
+  @spec destroy(Ecto.UUID.t()) ::
+          {:ok, ReportNote.t()} | {:error, Ecto.Changeset.t()}
   def destroy(id) do
     from(r in ReportNote, where: r.id == ^id)
     |> Repo.one()

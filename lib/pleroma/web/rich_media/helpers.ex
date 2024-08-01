@@ -3,101 +3,40 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Helpers do
-  alias Pleroma.Activity
   alias Pleroma.Config
-  alias Pleroma.HTML
-  alias Pleroma.Object
-  alias Pleroma.Web.RichMedia.Parser
 
-  @options [
-    pool: :media,
-    max_body: 2_000_000,
-    recv_timeout: 2_000
-  ]
+  require Logger
 
-  @spec validate_page_url(URI.t() | binary()) :: :ok | :error
-  defp validate_page_url(page_url) when is_binary(page_url) do
-    validate_tld = Config.get([Pleroma.Formatter, :validate_tld])
+  @type get_errors :: {:error, :body_too_large | :content_type | :head | :get}
 
-    page_url
-    |> Linkify.Parser.url?(validate_tld: validate_tld)
-    |> parse_uri(page_url)
-  end
-
-  defp validate_page_url(%URI{host: host, scheme: "https", authority: authority})
-       when is_binary(authority) do
-    cond do
-      host in Config.get([:rich_media, :ignore_hosts], []) ->
-        :error
-
-      get_tld(host) in Config.get([:rich_media, :ignore_tld], []) ->
-        :error
-
-      true ->
-        :ok
-    end
-  end
-
-  defp validate_page_url(_), do: :error
-
-  defp parse_uri(true, url) do
-    url
-    |> URI.parse()
-    |> validate_page_url
-  end
-
-  defp parse_uri(_, _), do: :error
-
-  defp get_tld(host) do
-    host
-    |> String.split(".")
-    |> Enum.reverse()
-    |> hd
-  end
-
-  def fetch_data_for_object(object) do
-    with true <- Config.get([:rich_media, :enabled]),
-         {:ok, page_url} <-
-           HTML.extract_first_external_url_from_object(object),
-         :ok <- validate_page_url(page_url),
-         {:ok, rich_media} <- Parser.parse(page_url) do
-      %{page_url: page_url, rich_media: rich_media}
-    else
-      _ -> %{}
-    end
-  end
-
-  def fetch_data_for_activity(%Activity{data: %{"type" => "Create"}} = activity) do
-    with true <- Config.get([:rich_media, :enabled]),
-         %Object{} = object <- Object.normalize(activity, fetch: false) do
-      fetch_data_for_object(object)
-    else
-      _ -> %{}
-    end
-  end
-
-  def fetch_data_for_activity(_), do: %{}
-
+  @spec rich_media_get(String.t()) :: {:ok, String.t()} | get_errors()
   def rich_media_get(url) do
     headers = [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
 
-    head_check =
-      case Pleroma.HTTP.head(url, headers, @options) do
-        # If the HEAD request didn't reach the server for whatever reason,
-        # we assume the GET that comes right after won't either
-        {:error, _} = e ->
-          e
+    with {_, {:ok, %Tesla.Env{status: 200, headers: headers}}} <-
+           {:head, Pleroma.HTTP.head(url, headers, http_options())},
+         {_, :ok} <- {:content_type, check_content_type(headers)},
+         {_, :ok} <- {:content_length, check_content_length(headers)},
+         {_, {:ok, %Tesla.Env{status: 200, body: body}}} <-
+           {:get, Pleroma.HTTP.get(url, headers, http_options())} do
+      {:ok, body}
+    else
+      {:head, _} ->
+        Logger.debug("Rich media error for #{url}: HTTP HEAD failed")
+        {:error, :head}
 
-        {:ok, %Tesla.Env{status: 200, headers: headers}} ->
-          with :ok <- check_content_type(headers),
-               :ok <- check_content_length(headers),
-               do: :ok
+      {:content_type, {_, type}} ->
+        Logger.debug("Rich media error for #{url}: content-type is #{type}")
+        {:error, :content_type}
 
-        _ ->
-          :ok
-      end
+      {:content_length, {_, length}} ->
+        Logger.debug("Rich media error for #{url}: content-length is #{length}")
+        {:error, :body_too_large}
 
-    with :ok <- head_check, do: Pleroma.HTTP.get(url, headers, @options)
+      {:get, _} ->
+        Logger.debug("Rich media error for #{url}: HTTP GET failed")
+        {:error, :get}
+    end
   end
 
   defp check_content_type(headers) do
@@ -105,7 +44,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
       {_, content_type} ->
         case Plug.Conn.Utils.media_type(content_type) do
           {:ok, "text", "html", _} -> :ok
-          _ -> {:error, {:content_type, content_type}}
+          _ -> {:error, content_type}
         end
 
       _ ->
@@ -113,18 +52,29 @@ defmodule Pleroma.Web.RichMedia.Helpers do
     end
   end
 
-  @max_body @options[:max_body]
   defp check_content_length(headers) do
+    max_body = Keyword.get(http_options(), :max_body)
+
     case List.keyfind(headers, "content-length", 0) do
       {_, maybe_content_length} ->
         case Integer.parse(maybe_content_length) do
-          {content_length, ""} when content_length <= @max_body -> :ok
-          {_, ""} -> {:error, :body_too_large}
+          {content_length, ""} when content_length <= max_body -> :ok
+          {_, ""} -> {:error, maybe_content_length}
           _ -> :ok
         end
 
       _ ->
         :ok
     end
+  end
+
+  defp http_options do
+    timeout = Config.get!([:rich_media, :timeout])
+
+    [
+      pool: :rich_media,
+      max_body: Config.get([:rich_media, :max_body], 5_000_000),
+      tesla_middleware: [{Tesla.Middleware.Timeout, timeout: timeout}]
+    ]
   end
 end

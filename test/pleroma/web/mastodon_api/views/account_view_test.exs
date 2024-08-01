@@ -5,11 +5,13 @@
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase, async: false
 
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
 
+  import Mox
   import Pleroma.Factory
   import Tesla.Mock
 
@@ -35,7 +37,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         inserted_at: ~N[2017-08-15 15:47:06.597036],
         emoji: %{"karjalanpiirakka" => "/file.png"},
         raw_bio: "valid html. a\nb\nc\nd\nf '&<>\"",
-        also_known_as: ["https://shitposter.zone/users/shp"]
+        also_known_as: ["https://shitposter.zone/users/shp"],
+        last_status_at: NaiveDateTime.utc_now()
       })
 
     expected = %{
@@ -74,7 +77,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         fields: []
       },
       fqn: "shp@shitposter.club",
-      last_status_at: nil,
+      last_status_at: user.last_status_at |> NaiveDateTime.to_date() |> Date.to_iso8601(),
       pleroma: %{
         ap_id: user.ap_id,
         also_known_as: ["https://shitposter.zone/users/shp"],
@@ -433,7 +436,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       {:ok, other_user, user} = User.follow(other_user, user)
       {:ok, _subscription} = User.subscribe(user, other_user)
       {:ok, _user_relationships} = User.mute(user, other_user, %{notifications: true})
-      {:ok, _reblog_mute} = CommonAPI.hide_reblogs(user, other_user)
+      {:ok, _reblog_mute} = CommonAPI.hide_reblogs(other_user, user)
 
       expected =
         Map.merge(
@@ -490,7 +493,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       user = insert(:user)
       other_user = insert(:user, is_locked: true)
 
-      {:ok, user, other_user, _} = CommonAPI.follow(user, other_user)
+      {:ok, user, other_user, _} = CommonAPI.follow(other_user, user)
       user = User.get_cached_by_id(user.id)
       other_user = User.get_cached_by_id(other_user.id)
 
@@ -544,8 +547,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         })
 
       other_user = insert(:user)
-      {:ok, user, other_user, _activity} = CommonAPI.follow(user, other_user)
-      {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, user, other_user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, _other_user, user, _activity} = CommonAPI.follow(user, other_user)
 
       assert %{
                followers_count: 0,
@@ -557,8 +560,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     test "shows when follows/followers are hidden" do
       user = insert(:user, hide_followers: true, hide_follows: true)
       other_user = insert(:user)
-      {:ok, user, other_user, _activity} = CommonAPI.follow(user, other_user)
-      {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, user, other_user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, _other_user, user, _activity} = CommonAPI.follow(user, other_user)
 
       assert %{
                followers_count: 1,
@@ -570,11 +573,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     test "shows actual follower/following count to the account owner" do
       user = insert(:user, hide_followers: true, hide_follows: true)
       other_user = insert(:user)
-      {:ok, user, other_user, _activity} = CommonAPI.follow(user, other_user)
+      {:ok, user, other_user, _activity} = CommonAPI.follow(other_user, user)
 
       assert User.following?(user, other_user)
       assert Pleroma.FollowingRelationship.follower_count(other_user) == 1
-      {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, _other_user, user, _activity} = CommonAPI.follow(user, other_user)
 
       assert %{
                followers_count: 1,
@@ -681,7 +684,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
                AccountView.render("show.json", %{user: user, for: user})
 
       other_user = insert(:user)
-      {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, _other_user, user, _activity} = CommonAPI.follow(user, other_user)
 
       assert %{follow_requests_count: 0} =
                AccountView.render("show.json", %{user: user, for: user})
@@ -693,7 +696,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
       other_user = insert(:user)
-      {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, _other_user, user, _activity} = CommonAPI.follow(user, other_user)
 
       assert %{locked: true, follow_requests_count: 1} =
                AccountView.render("show.json", %{user: user, for: user})
@@ -705,7 +708,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
       other_user = insert(:user)
-      {:ok, other_user, user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, other_user, user, _activity} = CommonAPI.follow(user, other_user)
 
       assert %{locked: true, follow_requests_count: 1} =
                AccountView.render("show.json", %{user: user, for: user})
@@ -722,7 +725,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
       other_user = insert(:user)
-      {:ok, other_user, user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, other_user, user, _activity} = CommonAPI.follow(user, other_user)
 
       assert %{locked: true, follow_requests_count: 1} =
                AccountView.render("show.json", %{user: user, for: user})
@@ -739,7 +742,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
       other_user = insert(:user)
-      {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, _other_user, user, _activity} = CommonAPI.follow(user, other_user)
 
       {:ok, user} = User.update_and_set_cache(user, %{is_locked: false})
 
@@ -752,6 +755,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     clear_config([:media_proxy, :enabled], true)
     clear_config([:media_preview_proxy, :enabled])
 
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
     user =
       insert(:user,
         avatar: %{"url" => [%{"href" => "https://evil.website/avatar.png"}]},
@@ -759,7 +765,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         emoji: %{"joker_smile" => "https://evil.website/society.png"}
       )
 
-    with media_preview_enabled <- [false, true] do
+    Enum.each([true, false], fn media_preview_enabled ->
       clear_config([:media_preview_proxy, :enabled], media_preview_enabled)
 
       AccountView.render("show.json", %{user: user, skip_visibility_check: true})
@@ -777,7 +783,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
           true
       end)
       |> assert()
-    end
+    end)
   end
 
   test "renders mute expiration date" do

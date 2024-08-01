@@ -15,7 +15,7 @@ defmodule Pleroma.Web.MastodonAPI.DirectoryController do
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
-  plug(:skip_auth when action == "index")
+  plug(:skip_auth when action == :index)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.DirectoryOperation
 

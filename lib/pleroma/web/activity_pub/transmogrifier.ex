@@ -23,7 +23,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   import Ecto.Query
 
-  require Logger
   require Pleroma.Constants
 
   @doc """
@@ -155,8 +154,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         |> Map.put("context", replied_object.data["context"] || object["conversation"])
         |> Map.drop(["conversation", "inReplyToAtomUri"])
       else
-        e ->
-          Logger.warn("Couldn't fetch #{inspect(in_reply_to_id)}, error: #{inspect(e)}")
+        _ ->
           object
       end
     else
@@ -181,8 +179,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       {:quoting?, _} ->
         object
 
-      e ->
-        Logger.warn("Couldn't fetch #{inspect(quote_url)}, error: #{inspect(e)}")
+      _ ->
         object
     end
   end
@@ -533,6 +530,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         else
           _ -> e
         end
+
+      e ->
+        {:error, e}
     end
   end
 
@@ -782,7 +782,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       |> Object.normalize(fetch: false)
 
     data =
-      if Visibility.is_private?(object) && object.data["actor"] == ap_id do
+      if Visibility.private?(object) && object.data["actor"] == ap_id do
         data |> Map.put("object", object |> Map.get(:data) |> prepare_object)
       else
         data |> maybe_fix_object_url
@@ -852,8 +852,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            relative_object do
       Map.put(data, "object", external_url)
     else
-      {:fetch, e} ->
-        Logger.error("Couldn't fetch #{object} #{inspect(e)}")
+      {:fetch, _} ->
         data
 
       _ ->
@@ -917,9 +916,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def add_emoji_tags(object), do: object
 
-  defp build_emoji_tag({name, url}) do
+  def build_emoji_tag({name, url}) do
+    url = URI.encode(url)
+
     %{
-      "icon" => %{"url" => "#{URI.encode(url)}", "type" => "Image"},
+      "icon" => %{"url" => "#{url}", "type" => "Image"},
       "name" => ":" <> name <> ":",
       "type" => "Emoji",
       "updated" => "1970-01-01T00:00:00Z",

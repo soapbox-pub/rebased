@@ -138,6 +138,31 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: Pleroma.Uploaders.IPFS,
+    type: :group,
+    description: "IPFS uploader-related settings",
+    children: [
+      %{
+        key: :get_gateway_url,
+        type: :string,
+        description: "GET Gateway URL",
+        suggestions: [
+          "https://ipfs.mydomain.com/{CID}",
+          "https://{CID}.ipfs.mydomain.com/"
+        ]
+      },
+      %{
+        key: :post_gateway_url,
+        type: :string,
+        description: "POST Gateway URL",
+        suggestions: [
+          "http://localhost:5001/"
+        ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: Pleroma.Uploaders.S3,
     type: :group,
     description: "S3 uploader-related settings",
@@ -567,6 +592,20 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :status_page,
+        type: :string,
+        description: "A page where people can see the status of the server during an outage",
+        suggestions: [
+          "https://status.pleroma.example.org"
+        ]
+      },
+      %{
+        key: :contact_username,
+        type: :string,
+        description: "Instance owner username",
+        suggestions: ["admin"]
+      },
+      %{
         key: :limit,
         type: :integer,
         description: "Posts character limit (CW/Subject included in the counter)",
@@ -733,6 +772,18 @@ config :pleroma, :config_description, [
         suggestions: [
           {"quarantined.com", "Reason"},
           {"*.quarantined.com", "Reason"}
+        ]
+      },
+      %{
+        key: :rejected_instances,
+        type: {:list, :tuple},
+        key_placeholder: "instance",
+        value_placeholder: "reason",
+        description:
+          "List of ActivityPub instances to reject requests from if authorized_fetch_mode is enabled",
+        suggestions: [
+          {"rejected.com", "Reason"},
+          {"*.rejected.com", "Reason"}
         ]
       },
       %{
@@ -988,6 +1039,12 @@ config :pleroma, :config_description, [
         suggestions: ["/instance/thumbnail.jpeg"]
       },
       %{
+        key: :favicon,
+        type: {:string, :image},
+        description: "Favicon of the instance",
+        suggestions: ["/favicon.png"]
+      },
+      %{
         key: :show_reactions,
         type: :boolean,
         description: "Let favourites and emoji reactions be viewed through the API."
@@ -1168,79 +1225,6 @@ config :pleroma, :config_description, [
             suggestions: ["Hello <%= user.name%>. \n Welcome to <%= instance_name%>\n"]
           }
         ]
-      }
-    ]
-  },
-  %{
-    group: :logger,
-    type: :group,
-    description: "Logger-related settings",
-    children: [
-      %{
-        key: :backends,
-        type: [:atom, :tuple, :module],
-        description:
-          "Where logs will be sent, :console - send logs to stdout, { ExSyslogger, :ex_syslogger } - to syslog, Quack.Logger - to Slack.",
-        suggestions: [:console, {ExSyslogger, :ex_syslogger}, Quack.Logger]
-      }
-    ]
-  },
-  %{
-    group: :logger,
-    type: :group,
-    key: :ex_syslogger,
-    label: "ExSyslogger",
-    description: "ExSyslogger-related settings",
-    children: [
-      %{
-        key: :level,
-        type: {:dropdown, :atom},
-        description: "Log level",
-        suggestions: [:debug, :info, :warn, :error]
-      },
-      %{
-        key: :ident,
-        type: :string,
-        description:
-          "A string that's prepended to every message, and is typically set to the app name",
-        suggestions: ["pleroma"]
-      },
-      %{
-        key: :format,
-        type: :string,
-        description: "Default: \"$date $time [$level] $levelpad$node $metadata $message\"",
-        suggestions: ["$metadata[$level] $message"]
-      },
-      %{
-        key: :metadata,
-        type: {:list, :atom},
-        suggestions: [:request_id]
-      }
-    ]
-  },
-  %{
-    group: :logger,
-    type: :group,
-    key: :console,
-    label: "Console Logger",
-    description: "Console logger settings",
-    children: [
-      %{
-        key: :level,
-        type: {:dropdown, :atom},
-        description: "Log level",
-        suggestions: [:debug, :info, :warn, :error]
-      },
-      %{
-        key: :format,
-        type: :string,
-        description: "Default: \"$date $time [$level] $levelpad$node $metadata $message\"",
-        suggestions: ["$metadata[$level] $message"]
-      },
-      %{
-        key: :metadata,
-        type: {:list, :atom},
-        suggestions: [:request_id]
       }
     ]
   },
@@ -1438,7 +1422,7 @@ config :pleroma, :config_description, [
             label: "Subject line behavior",
             type: :string,
             description: "Allows changing the default behaviour of subject lines in replies.
-          `email`: copy and preprend re:, as in email,
+          `email`: copy and prepend re:, as in email,
           `masto`: copy verbatim, as in Mastodon,
           `noop`: don't copy the subject.",
             suggestions: ["email", "masto", "noop"]
@@ -1772,6 +1756,12 @@ config :pleroma, :config_description, [
         description: "Require HTTP signatures for AP fetches"
       },
       %{
+        key: :authorized_fetch_mode_exceptions,
+        type: {:list, :string},
+        description:
+          "List of IPs (CIDR format accepted) to exempt from HTTP Signatures requirement (for example to allow debugging, you shouldn't otherwise need this)"
+      },
+      %{
         key: :note_replies_output_limit,
         type: :integer,
         description:
@@ -1931,7 +1921,7 @@ config :pleroma, :config_description, [
         key: :log,
         type: {:dropdown, :atom},
         description: "Logs verbose mode",
-        suggestions: [false, :error, :warn, :info, :debug]
+        suggestions: [false, :error, :warning, :info, :debug]
       },
       %{
         key: :queues,
@@ -2111,11 +2101,11 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        key: :failure_backoff,
+        key: :timeout,
         type: :integer,
         description:
-          "Amount of milliseconds after request failure, during which the request will not be retried.",
-        suggestions: [60_000]
+          "Amount of milliseconds after which the HTTP request is forcibly terminated.",
+        suggestions: [5_000]
       }
     ]
   },
@@ -3090,7 +3080,7 @@ config :pleroma, :config_description, [
               key: :max_waiting,
               type: :integer,
               description:
-                "Maximum number of requests waiting for other requests to finish. After this number is reached, the pool will start returning errrors when a new request is made",
+                "Maximum number of requests waiting for other requests to finish. After this number is reached, the pool will start returning errors when a new request is made",
               suggestions: [10]
             },
             %{
@@ -3356,7 +3346,7 @@ config :pleroma, :config_description, [
       %{
         key: :purge_after_days,
         type: :integer,
-        description: "Remove backup achives after N days",
+        description: "Remove backup archives after N days",
         suggestions: [30]
       },
       %{
@@ -3366,19 +3356,18 @@ config :pleroma, :config_description, [
         suggestions: [7]
       },
       %{
-        key: :process_wait_time,
-        type: :integer,
-        label: "Process Wait Time",
-        description:
-          "The amount of time to wait for backup to report progress, in milliseconds. If no progress is received from the backup job for that much time, terminate it and deem it failed.",
-        suggestions: [30_000]
-      },
-      %{
         key: :process_chunk_size,
         type: :integer,
         label: "Process Chunk Size",
         description: "The number of activities to fetch in the backup job for each chunk.",
         suggestions: [100]
+      },
+      %{
+        key: :timeout,
+        type: :integer,
+        label: "Timeout",
+        description: "The amount of time to wait for backup to complete in seconds.",
+        suggestions: [1_800]
       }
     ]
   },
@@ -3464,6 +3453,49 @@ config :pleroma, :config_description, [
             suggestion: [5]
           }
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Search,
+    type: :group,
+    description: "General search settings.",
+    children: [
+      %{
+        key: :module,
+        type: :keyword,
+        description: "Selected search module.",
+        suggestion: [Pleroma.Search.DatabaseSearch, Pleroma.Search.Meilisearch]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Search.Meilisearch,
+    type: :group,
+    description: "Meilisearch settings.",
+    children: [
+      %{
+        key: :url,
+        type: :string,
+        description: "Meilisearch URL.",
+        suggestion: ["http://127.0.0.1:7700/"]
+      },
+      %{
+        key: :private_key,
+        type: :string,
+        description:
+          "Private key for meilisearch authentication, or `nil` to disable private key authentication.",
+        suggestion: [nil]
+      },
+      %{
+        key: :initial_indexing_chunk_size,
+        type: :integer,
+        description:
+          "Amount of posts in a batch when running the initial indexing operation. Should probably not be more than 100000" <>
+            " since there's a limit on maximum insert size",
+        suggestion: [100_000]
       }
     ]
   }

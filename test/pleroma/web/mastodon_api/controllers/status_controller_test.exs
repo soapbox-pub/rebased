@@ -12,6 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
+  alias Pleroma.Tests.Helpers
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -19,25 +20,38 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Workers.ScheduledActivityWorker
 
+  import Mox
   import Pleroma.Factory
 
   setup do: clear_config([:instance, :federating])
   setup do: clear_config([:instance, :allow_relay])
-  setup do: clear_config([:rich_media, :enabled])
   setup do: clear_config([:mrf, :policies])
   setup do: clear_config([:mrf_keyword, :reject])
+
+  setup do
+    Pleroma.UnstubbedConfigMock
+    |> stub_with(Pleroma.Config)
+
+    Pleroma.StaticStubbedConfigMock
+    |> stub(:get, fn
+      [:rich_media, :enabled] -> false
+      path -> Pleroma.Test.StaticConfig.get(path)
+    end)
+
+    :ok
+  end
 
   describe "posting statuses" do
     setup do: oauth_access(["write:statuses"])
 
     test "posting a status does not increment reblog_count when relaying", %{conn: conn} do
       clear_config([:instance, :federating], true)
-      Config.get([:instance, :allow_relay], true)
+      clear_config([:instance, :allow_relay], true)
 
       response =
         conn
         |> put_req_header("content-type", "application/json")
-        |> post("api/v1/statuses", %{
+        |> post("/api/v1/statuses", %{
           "content_type" => "text/plain",
           "source" => "Pleroma FE",
           "status" => "Hello world",
@@ -50,7 +64,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       response =
         conn
-        |> get("api/v1/statuses/#{response["id"]}", %{})
+        |> get("/api/v1/statuses/#{response["id"]}", %{})
         |> json_response_and_validate_schema(200)
 
       assert response["reblogs_count"] == 0
@@ -109,7 +123,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       conn_four =
         conn
         |> put_req_header("content-type", "application/json")
-        |> post("api/v1/statuses", %{
+        |> post("/api/v1/statuses", %{
           "status" => "oolong",
           "expires_in" => expires_in
         })
@@ -156,7 +170,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert %{"error" => "Expiry date is too soon"} =
                conn
                |> put_req_header("content-type", "application/json")
-               |> post("api/v1/statuses", %{
+               |> post("/api/v1/statuses", %{
                  "status" => "oolong",
                  "expires_in" => expires_in
                })
@@ -168,7 +182,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert %{"error" => "Expiry date is too soon"} =
                conn
                |> put_req_header("content-type", "application/json")
-               |> post("api/v1/statuses", %{
+               |> post("/api/v1/statuses", %{
                  "status" => "oolong",
                  "expires_in" => expires_in
                })
@@ -182,7 +196,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert %{"error" => "[KeywordPolicy] Matches with rejected keyword"} =
                conn
                |> put_req_header("content-type", "application/json")
-               |> post("api/v1/statuses", %{"status" => "GNO/Linux"})
+               |> post("/api/v1/statuses", %{"status" => "GNO/Linux"})
                |> json_response_and_validate_schema(422)
     end
 
@@ -219,6 +233,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       assert activity.data["context"] == replied_to.data["context"]
       assert Activity.get_in_reply_to_activity(activity).id == replied_to.id
+    end
+
+    test "replying to a deleted status", %{user: user, conn: conn} do
+      {:ok, status} = CommonAPI.post(user, %{status: "cofe"})
+      {:ok, _deleted_status} = CommonAPI.delete(status.id, user)
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/statuses", %{"status" => "xD", "in_reply_to_id" => status.id})
+      |> json_response_and_validate_schema(422)
     end
 
     test "replying to a direct message with visibility other than direct", %{
@@ -315,59 +339,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert real_status == fake_status
     end
 
-    test "fake statuses' preview card is not cached", %{conn: conn} do
-      clear_config([:rich_media, :enabled], true)
-
-      Tesla.Mock.mock(fn
-        %{
-          method: :get,
-          url: "https://example.com/twitter-card"
-        } ->
-          %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/twitter_card.html")}
-
-        env ->
-          apply(HttpRequestMock, :request, [env])
-      end)
-
-      conn1 =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/statuses", %{
-          "status" => "https://example.com/ogp",
-          "preview" => true
-        })
-
-      conn2 =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/statuses", %{
-          "status" => "https://example.com/twitter-card",
-          "preview" => true
-        })
-
-      assert %{"card" => %{"title" => "The Rock"}} = json_response_and_validate_schema(conn1, 200)
-
-      assert %{"card" => %{"title" => "Small Island Developing States Photo Submission"}} =
-               json_response_and_validate_schema(conn2, 200)
-    end
-
-    test "posting a status with OGP link preview", %{conn: conn} do
-      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-      clear_config([:rich_media, :enabled], true)
-
-      conn =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/statuses", %{
-          "status" => "https://example.com/ogp"
-        })
-
-      assert %{"id" => id, "card" => %{"title" => "The Rock"}} =
-               json_response_and_validate_schema(conn, 200)
-
-      assert Activity.get_by_id(id)
-    end
-
     test "posting a direct status", %{conn: conn} do
       user2 = insert(:user)
       content = "direct cofe @#{user2.nickname}"
@@ -375,7 +346,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       conn =
         conn
         |> put_req_header("content-type", "application/json")
-        |> post("api/v1/statuses", %{"status" => content, "visibility" => "direct"})
+        |> post("/api/v1/statuses", %{"status" => content, "visibility" => "direct"})
 
       assert %{"id" => id} = response = json_response_and_validate_schema(conn, 200)
       assert response["visibility"] == "direct"
@@ -412,7 +383,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       result =
         conn
-        |> get("api/v1/statuses/#{activity}")
+        |> get("/api/v1/statuses/#{activity}")
 
       assert %{
                "content" => "cofe is my copilot",
@@ -441,7 +412,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       result =
         conn
-        |> get("api/v1/statuses/#{activity}")
+        |> get("/api/v1/statuses/#{activity}")
 
       assert %{
                "content" => "club mate is my wingman",
@@ -1385,7 +1356,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       user1 = insert(:user)
       user2 = insert(:user)
       user3 = insert(:user)
-      {:ok, _} = CommonAPI.favorite(user2, activity.id)
+      {:ok, _} = CommonAPI.favorite(activity.id, user2)
       {:ok, _bookmark} = Pleroma.Bookmark.create(user2.id, activity.id)
       {:ok, reblog_activity1} = CommonAPI.repeat(activity.id, user1)
       {:ok, _} = CommonAPI.repeat(activity.id, user2)
@@ -1512,7 +1483,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     test "unfavorites a status and returns it", %{user: user, conn: conn} do
       activity = insert(:note_activity)
 
-      {:ok, _} = CommonAPI.favorite(user, activity.id)
+      {:ok, _} = CommonAPI.favorite(activity.id, user)
 
       conn =
         conn
@@ -1644,7 +1615,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert %{"id" => id} =
                conn
                |> put_req_header("content-type", "application/json")
-               |> post("api/v1/statuses", %{
+               |> post("/api/v1/statuses", %{
                  "status" => "oolong",
                  "expires_in" => expires_in
                })
@@ -1679,87 +1650,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         args: %{activity_id: id},
         scheduled_at: expires_at
       )
-    end
-  end
-
-  describe "cards" do
-    setup do
-      clear_config([:rich_media, :enabled], true)
-
-      oauth_access(["read:statuses"])
-    end
-
-    test "returns rich-media card", %{conn: conn, user: user} do
-      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-
-      {:ok, activity} = CommonAPI.post(user, %{status: "https://example.com/ogp"})
-
-      card_data = %{
-        "image" => "http://ia.media-imdb.com/images/rock.jpg",
-        "provider_name" => "example.com",
-        "provider_url" => "https://example.com",
-        "title" => "The Rock",
-        "type" => "link",
-        "url" => "https://example.com/ogp",
-        "description" =>
-          "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
-        "pleroma" => %{
-          "opengraph" => %{
-            "image" => "http://ia.media-imdb.com/images/rock.jpg",
-            "title" => "The Rock",
-            "type" => "video.movie",
-            "url" => "https://example.com/ogp",
-            "description" =>
-              "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer."
-          }
-        }
-      }
-
-      response =
-        conn
-        |> get("/api/v1/statuses/#{activity.id}/card")
-        |> json_response_and_validate_schema(200)
-
-      assert response == card_data
-
-      # works with private posts
-      {:ok, activity} =
-        CommonAPI.post(user, %{status: "https://example.com/ogp", visibility: "direct"})
-
-      response_two =
-        conn
-        |> get("/api/v1/statuses/#{activity.id}/card")
-        |> json_response_and_validate_schema(200)
-
-      assert response_two == card_data
-    end
-
-    test "replaces missing description with an empty string", %{conn: conn, user: user} do
-      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-
-      {:ok, activity} = CommonAPI.post(user, %{status: "https://example.com/ogp-missing-data"})
-
-      response =
-        conn
-        |> get("/api/v1/statuses/#{activity.id}/card")
-        |> json_response_and_validate_schema(:ok)
-
-      assert response == %{
-               "type" => "link",
-               "title" => "Pleroma",
-               "description" => "",
-               "image" => nil,
-               "provider_name" => "example.com",
-               "provider_url" => "https://example.com",
-               "url" => "https://example.com/ogp-missing-data",
-               "pleroma" => %{
-                 "opengraph" => %{
-                   "title" => "Pleroma",
-                   "type" => "website",
-                   "url" => "https://example.com/ogp-missing-data"
-                 }
-               }
-             }
     end
   end
 
@@ -1807,6 +1697,60 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
              json_response_and_validate_schema(bookmarks, 200)
   end
 
+  test "bookmark folders" do
+    %{conn: conn, user: user} = oauth_access(["write:bookmarks", "read:bookmarks"])
+
+    {:ok, folder} = Pleroma.BookmarkFolder.create(user.id, "folder")
+    author = insert(:user)
+
+    folder_bookmarks_uri = "/api/v1/bookmarks?folder_id=#{folder.id}"
+
+    {:ok, activity1} = CommonAPI.post(author, %{status: "heweoo?"})
+    {:ok, activity2} = CommonAPI.post(author, %{status: "heweoo!"})
+
+    # Add bookmark with a folder
+    response =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/statuses/#{activity1.id}/bookmark", %{folder_id: folder.id})
+
+    assert json_response_and_validate_schema(response, 200)["bookmarked"] == true
+
+    assert json_response_and_validate_schema(response, 200)["pleroma"]["bookmark_folder"] ==
+             folder.id
+
+    response =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/statuses/#{activity2.id}/bookmark")
+
+    assert json_response_and_validate_schema(response, 200)["bookmarked"] == true
+    assert json_response_and_validate_schema(response, 200)["pleroma"]["bookmark_folder"] == nil
+
+    bookmarks =
+      get(conn, folder_bookmarks_uri)
+      |> json_response_and_validate_schema(200)
+
+    assert length(bookmarks) == 1
+
+    # Update folder for existing bookmark
+    response =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/statuses/#{activity2.id}/bookmark", %{folder_id: folder.id})
+
+    assert json_response_and_validate_schema(response, 200)["bookmarked"] == true
+
+    assert json_response_and_validate_schema(response, 200)["pleroma"]["bookmark_folder"] ==
+             folder.id
+
+    bookmarks =
+      get(conn, folder_bookmarks_uri)
+      |> json_response_and_validate_schema(200)
+
+    assert length(bookmarks) == 2
+  end
+
   describe "conversation muting" do
     setup do: oauth_access(["write:mutes"])
 
@@ -1827,7 +1771,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "cannot mute already muted conversation", %{conn: conn, user: user, activity: activity} do
-      {:ok, _} = CommonAPI.add_mute(user, activity)
+      {:ok, _} = CommonAPI.add_mute(activity, user)
 
       conn =
         conn
@@ -1840,7 +1784,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "unmute conversation", %{conn: conn, user: user, activity: activity} do
-      {:ok, _} = CommonAPI.add_mute(user, activity)
+      {:ok, _} = CommonAPI.add_mute(activity, user)
 
       id_str = to_string(activity.id)
 
@@ -1894,7 +1838,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       conn
       |> assign(:user, user3)
       |> assign(:token, insert(:oauth_token, user: user3, scopes: ["read:statuses"]))
-      |> get("api/v1/timelines/home")
+      |> get("/api/v1/timelines/home")
 
     [reblogged_activity] = json_response_and_validate_schema(conn3, 200)
 
@@ -1915,7 +1859,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     test "returns users who have favorited the status", %{conn: conn, activity: activity} do
       other_user = insert(:user)
-      {:ok, _} = CommonAPI.favorite(other_user, activity.id)
+      {:ok, _} = CommonAPI.favorite(activity.id, other_user)
 
       response =
         conn
@@ -1946,7 +1890,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       other_user = insert(:user)
       {:ok, _user_relationship} = User.block(user, other_user)
 
-      {:ok, _} = CommonAPI.favorite(other_user, activity.id)
+      {:ok, _} = CommonAPI.favorite(activity.id, other_user)
 
       response =
         conn
@@ -1958,7 +1902,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     test "does not fail on an unauthenticated request", %{activity: activity} do
       other_user = insert(:user)
-      {:ok, _} = CommonAPI.favorite(other_user, activity.id)
+      {:ok, _} = CommonAPI.favorite(activity.id, other_user)
 
       response =
         build_conn()
@@ -1978,7 +1922,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
           visibility: "direct"
         })
 
-      {:ok, _} = CommonAPI.favorite(other_user, activity.id)
+      {:ok, _} = CommonAPI.favorite(activity.id, other_user)
 
       favourited_by_url = "/api/v1/statuses/#{activity.id}/favourited_by"
 
@@ -2009,7 +1953,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       clear_config([:instance, :show_reactions], false)
 
       other_user = insert(:user)
-      {:ok, _} = CommonAPI.favorite(other_user, activity.id)
+      {:ok, _} = CommonAPI.favorite(activity.id, other_user)
 
       response =
         conn
@@ -2152,9 +2096,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     {:ok, second_post} = CommonAPI.post(other_user, %{status: "bla"})
     {:ok, third_post} = CommonAPI.post(other_user, %{status: "bla"})
 
-    {:ok, _first_favorite} = CommonAPI.favorite(user, third_post.id)
-    {:ok, _second_favorite} = CommonAPI.favorite(user, first_post.id)
-    {:ok, third_favorite} = CommonAPI.favorite(user, second_post.id)
+    {:ok, _first_favorite} = CommonAPI.favorite(third_post.id, user)
+    {:ok, _second_favorite} = CommonAPI.favorite(first_post.id, user)
+    {:ok, third_favorite} = CommonAPI.favorite(second_post.id, user)
 
     result =
       conn
@@ -2165,7 +2109,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     # Using the header for pagination works correctly
     [next, _] = get_resp_header(result, "link") |> hd() |> String.split(", ")
-    [_, max_id] = Regex.run(~r/max_id=([^&]+)/, next)
+    [next_url, _next_rel] = String.split(next, ";")
+    next_url = String.trim_trailing(next_url, ">") |> String.trim_leading("<")
+
+    max_id = Helpers.get_query_parameter(next_url, "max_id")
 
     assert max_id == third_favorite.id
 
@@ -2187,7 +2134,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     {:ok, _} = CommonAPI.post(other_user, %{status: "bla"})
     {:ok, activity} = CommonAPI.post(other_user, %{status: "trees are happy"})
 
-    {:ok, last_like} = CommonAPI.favorite(user, activity.id)
+    {:ok, last_like} = CommonAPI.favorite(activity.id, user)
 
     first_conn = get(conn, "/api/v1/favourites")
 
@@ -2203,7 +2150,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         status: "Trees Are Never Sad Look At Them Every Once In Awhile They're Quite Beautiful."
       })
 
-    {:ok, _} = CommonAPI.favorite(user, second_activity.id)
+    {:ok, _} = CommonAPI.favorite(second_activity.id, user)
 
     second_conn = get(conn, "/api/v1/favourites?since_id=#{last_like.id}")
 

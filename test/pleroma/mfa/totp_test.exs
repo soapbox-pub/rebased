@@ -7,6 +7,8 @@ defmodule Pleroma.MFA.TOTPTest do
 
   alias Pleroma.MFA.TOTP
 
+  import Pleroma.Tests.Helpers, only: [uri_equal?: 2]
+
   test "create provisioning_uri to generate qrcode" do
     uri =
       TOTP.provisioning_uri("test-secrcet", "test@example.com",
@@ -15,7 +17,9 @@ defmodule Pleroma.MFA.TOTPTest do
         period: 60
       )
 
-    assert uri ==
+    assert uri_equal?(
+             uri,
              "otpauth://totp/test@example.com?digits=8&issuer=Plerome-42&period=60&secret=test-secrcet"
+           )
   end
 end

@@ -7,7 +7,10 @@ defmodule Pleroma.ApplicationRequirements do
   The module represents the collection of validations to runs before start server.
   """
 
-  defmodule VerifyError, do: defexception([:message])
+  defmodule VerifyError do
+    defexception([:message])
+    @type t :: %__MODULE__{}
+  end
 
   alias Pleroma.Config
   alias Pleroma.Helpers.MediaHelper
@@ -25,6 +28,7 @@ defmodule Pleroma.ApplicationRequirements do
     |> check_welcome_message_config!()
     |> check_rum!()
     |> check_repo_pool_size!()
+    |> check_mrfs()
     |> handle_result()
   end
 
@@ -34,7 +38,7 @@ defmodule Pleroma.ApplicationRequirements do
   defp check_welcome_message_config!(:ok) do
     if Pleroma.Config.get([:welcome, :email, :enabled], false) and
          not Pleroma.Emails.Mailer.enabled?() do
-      Logger.warn("""
+      Logger.warning("""
       To send welcome emails, you need to enable the mailer.
       Welcome emails will NOT be sent with the current config.
 
@@ -53,7 +57,7 @@ defmodule Pleroma.ApplicationRequirements do
   def check_confirmation_accounts!(:ok) do
     if Pleroma.Config.get([:instance, :account_activation_required]) &&
          not Pleroma.Emails.Mailer.enabled?() do
-      Logger.warn("""
+      Logger.warning("""
       Account activation is required, but the mailer is disabled.
       Users will NOT be able to confirm their accounts with this config.
       Either disable account activation or enable the mailer.
@@ -168,8 +172,6 @@ defmodule Pleroma.ApplicationRequirements do
       check_filter(Pleroma.Upload.Filter.Exiftool.ReadDescription, "exiftool"),
       check_filter(Pleroma.Upload.Filter.Mogrify, "mogrify"),
       check_filter(Pleroma.Upload.Filter.Mogrifun, "mogrify"),
-      check_filter(Pleroma.Upload.Filter.AnalyzeMetadata, "mogrify"),
-      check_filter(Pleroma.Upload.Filter.AnalyzeMetadata, "convert"),
       check_filter(Pleroma.Upload.Filter.AnalyzeMetadata, "ffprobe")
     ]
 
@@ -194,8 +196,6 @@ defmodule Pleroma.ApplicationRequirements do
        "System commands missing. Check logs and see `docs/installation` for more details."}
     end
   end
-
-  defp check_system_commands!(result), do: result
 
   defp check_repo_pool_size!(:ok) do
     if Pleroma.Config.get([Pleroma.Repo, :pool_size], 10) != 10 and
@@ -235,4 +235,24 @@ defmodule Pleroma.ApplicationRequirements do
       true
     end
   end
+
+  defp check_mrfs(:ok) do
+    mrfs = Config.get!([:mrf, :policies])
+
+    missing_mrfs =
+      Enum.reduce(mrfs, [], fn x, acc ->
+        case Code.ensure_compiled(x) do
+          {:module, _} -> acc
+          {:error, _} -> acc ++ [x]
+        end
+      end)
+
+    if Enum.empty?(missing_mrfs) do
+      :ok
+    else
+      {:error, "The following MRF modules are configured but missing: #{inspect(missing_mrfs)}"}
+    end
+  end
+
+  defp check_mrfs(result), do: result
 end

@@ -53,7 +53,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
     test "returns activity" do
       user = insert(:user)
       service_actor = Relay.get_actor()
-      CommonAPI.follow(service_actor, user)
+      CommonAPI.follow(user, service_actor)
       assert "#{user.ap_id}/followers" in User.following(service_actor)
       assert {:ok, %Activity{} = activity} = Relay.unfollow(user.ap_id)
       assert activity.actor == "#{Pleroma.Web.Endpoint.url()}/relay"
@@ -74,7 +74,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
       end)
 
       service_actor = Relay.get_actor()
-      CommonAPI.follow(service_actor, user)
+      CommonAPI.follow(user, service_actor)
       assert "#{user.ap_id}/followers" in User.following(service_actor)
 
       assert Pleroma.Repo.get_by(
@@ -113,7 +113,6 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
       assert Relay.publish(activity) == {:error, "Not implemented"}
     end
 
-    @tag capture_log: true
     test "returns error when activity not public" do
       activity = insert(:direct_note_activity)
       assert Relay.publish(activity) == {:error, false}

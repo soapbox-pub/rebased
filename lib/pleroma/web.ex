@@ -136,7 +136,7 @@ defmodule Pleroma.Web do
         namespace: Pleroma.Web
 
       # Import convenience functions from controllers
-      import Phoenix.Controller, only: [get_csrf_token: 0, get_flash: 2, view_module: 1]
+      import Phoenix.Controller, only: [get_csrf_token: 0, view_module: 1]
 
       import Pleroma.Web.ErrorHelpers
       import Pleroma.Web.Gettext
@@ -163,7 +163,7 @@ defmodule Pleroma.Web do
       """
       def safe_render_many(collection, view, template, assigns \\ %{}) do
         Enum.map(collection, fn resource ->
-          as = Map.get(assigns, :as) || view.__resource__
+          as = Map.get(assigns, :as) || view.__resource__()
           assigns = Map.put(assigns, as, resource)
           safe_render(view, template, assigns)
         end)

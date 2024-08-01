@@ -312,7 +312,7 @@ defmodule Pleroma.ConfigDBTest do
     test "proxy tuple with domain" do
       assert ConfigDB.to_elixir_types(%{
                "tuple" => [":proxy_url", %{"tuple" => [":socks5", "domain.com", 1234]}]
-             }) == {:proxy_url, {:socks5, 'domain.com', 1234}}
+             }) == {:proxy_url, {:socks5, ~c"domain.com", 1234}}
     end
 
     test "proxy tuple with ip" do
@@ -321,7 +321,7 @@ defmodule Pleroma.ConfigDBTest do
              }) == {:proxy_url, {:socks5, {127, 0, 0, 1}, 1234}}
     end
 
-    test "tuple with n childs" do
+    test "tuple with n children" do
       assert ConfigDB.to_elixir_types(%{
                "tuple" => [
                  "v1",
@@ -399,7 +399,7 @@ defmodule Pleroma.ConfigDBTest do
       assert ConfigDB.to_elixir_types(a: 1, b: 2, c: "string") == [a: 1, b: 2, c: "string"]
     end
 
-    test "complex keyword with nested mixed childs" do
+    test "complex keyword with nested mixed children" do
       assert ConfigDB.to_elixir_types([
                %{"tuple" => [":uploader", "Pleroma.Uploaders.Local"]},
                %{"tuple" => [":filters", ["Pleroma.Upload.Filter.Dedupe"]]},
@@ -443,13 +443,13 @@ defmodule Pleroma.ConfigDBTest do
 
     test "common keyword" do
       assert ConfigDB.to_elixir_types([
-               %{"tuple" => [":level", ":warn"]},
+               %{"tuple" => [":level", ":warning"]},
                %{"tuple" => [":meta", [":all"]]},
                %{"tuple" => [":path", ""]},
                %{"tuple" => [":val", nil]},
                %{"tuple" => [":webhook_url", "https://hooks.slack.com/services/YOUR-KEY-HERE"]}
              ]) == [
-               level: :warn,
+               level: :warning,
                meta: [:all],
                path: "",
                val: nil,
