@@ -1,1 +1,0 @@
-Fix OpenGraph and Twitter metadata providers when parsing objects with no content or summary fields.

@@ -1,1 +1,0 @@
-Prevent Rich Media backfill jobs from retrying in cases where it is likely they will fail again.
