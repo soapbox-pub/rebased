@@ -143,9 +143,13 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
           _ -> {:error, e}
         end
 
+      {:error, {:already_started, _}} ->
+        Logger.debug("Publisher snoozing worker job due worker :already_started race condition")
+        connection_pool_snooze()
+
       {:error, :pool_full} ->
         Logger.debug("Publisher snoozing worker job due to full connection pool")
-        {:snooze, 30}
+        connection_pool_snooze()
 
       e ->
         unless params[:unreachable_since], do: Instances.set_unreachable(inbox)
@@ -154,6 +158,8 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         {:error, e}
     end
   end
+
+  defp connection_pool_snooze, do: {:snooze, 3}
 
   defp signature_host(%URI{port: port, scheme: scheme, host: host}) do
     if port == URI.default_port(scheme) do
