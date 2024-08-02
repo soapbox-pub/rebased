@@ -1,1 +1,0 @@
-Activity publishing failures will prevent the job from retrying if the publishing request returns a 403 or 410

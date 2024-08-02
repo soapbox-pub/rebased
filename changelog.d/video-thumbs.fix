@@ -1,1 +1,0 @@
-Video thumbnails were not being generated due to a negative cache lookup logic error

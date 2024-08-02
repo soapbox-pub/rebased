@@ -1,1 +1,0 @@
-Use proper workers for fetching pins instead of an ad-hoc task, fixing a potential fetch loop
