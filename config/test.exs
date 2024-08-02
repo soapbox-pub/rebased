@@ -170,8 +170,7 @@ config :pleroma, Pleroma.Uploaders.IPFS, config_impl: Pleroma.UnstubbedConfigMoc
 config :pleroma, Pleroma.Web.Plugs.HTTPSecurityPlug, config_impl: Pleroma.StaticStubbedConfigMock
 config :pleroma, Pleroma.Web.Plugs.HTTPSignaturePlug, config_impl: Pleroma.StaticStubbedConfigMock
 
-config :pleroma, Pleroma.Web.Plugs.HTTPSignaturePlug,
-  http_signatures_impl: Pleroma.StubbedHTTPSignaturesMock
+config :pleroma, Pleroma.Signature, http_signatures_impl: Pleroma.StubbedHTTPSignaturesMock
 
 peer_module =
   if String.to_integer(System.otp_release()) >= 25 do
@@ -200,6 +199,8 @@ config :pleroma, Pleroma.Web.RichMedia.Backfill,
   stream_out: Pleroma.Web.ActivityPub.ActivityPubMock
 
 config :pleroma, Pleroma.Web.Plugs.HTTPSecurityPlug, enable: false
+
+config :pleroma, Pleroma.User.Backup, tempdir: "test/tmp"
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

@@ -1,0 +1,62 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    {
+      "atomUri": "ostatus:atomUri",
+      "blurhash": "toot:blurhash",
+      "conversation": "ostatus:conversation",
+      "focalPoint": {
+        "@container": "@list",
+        "@id": "toot:focalPoint"
+      },
+      "inReplyToAtomUri": "ostatus:inReplyToAtomUri",
+      "ostatus": "http://ostatus.org#",
+      "sensitive": "as:sensitive",
+      "toot": "http://joinmastodon.org/ns#",
+      "votersCount": "toot:votersCount"
+    }
+  ],
+  "atomUri": "https://chaos.social/users/distantnative/statuses/109336635639931467",
+  "attachment": [
+    {
+      "blurhash": "UAK1zS00OXIUxuMxIUM{?b-:-;W:Di?b%2M{",
+      "height": 960,
+      "mediaType": "image/jpeg",
+      "name": null,
+      "type": "Document",
+      "url": "https://assets.chaos.social/media_attachments/files/109/336/634/286/114/657/original/2e6122063d8bfb26.jpeg",
+      "width": 346
+    }
+  ],
+  "attributedTo": "https://chaos.social/users/distantnative",
+  "cc": [
+    "https://chaos.social/users/distantnative/followers"
+  ],
+  "content": "<p>Favorite piece of anthropology meta discourse.</p>",
+  "contentMap": {
+    "en": "<p>Favorite piece of anthropology meta discourse.</p>"
+  },
+  "conversation": "tag:chaos.social,2022-11-13:objectId=71843781:objectType=Conversation",
+  "id": "https://chaos.social/users/distantnative/statuses/109336635639931467",
+  "inReplyTo": null,
+  "inReplyToAtomUri": null,
+  "published": "2022-11-13T13:04:20Z",
+  "replies": {
+    "first": {
+      "items": [],
+      "next": "https://chaos.social/users/distantnative/statuses/109336635639931467/replies?only_other_accounts=true&page=true",
+      "partOf": "https://chaos.social/users/distantnative/statuses/109336635639931467/replies",
+      "type": "CollectionPage"
+    },
+    "id": "https://chaos.social/users/distantnative/statuses/109336635639931467/replies",
+    "type": "Collection"
+  },
+  "sensitive": false,
+  "summary": null,
+  "tag": [],
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "type": "Note",
+  "url": "https://chaos.social/@distantnative/109336635639931467"
+}

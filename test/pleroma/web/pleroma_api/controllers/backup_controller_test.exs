@@ -20,9 +20,7 @@ defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
   end
 
   test "GET /api/v1/pleroma/backups", %{user: user, conn: conn} do
-    assert {:ok, %Oban.Job{args: %{"backup_id" => backup_id}}} = Backup.create(user)
-
-    backup = Backup.get(backup_id)
+    assert {:ok, %Backup{} = backup} = Backup.user(user)
 
     response =
       conn

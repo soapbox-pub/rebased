@@ -13,6 +13,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.ModerationLog
   alias Pleroma.Stats
   alias Pleroma.User
+  alias Pleroma.User.Backup
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.AccountView
@@ -429,7 +430,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   def create_backup(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname}) do
     with %User{} = user <- User.get_by_nickname(nickname),
-         {:ok, _} <- Pleroma.User.Backup.create(user, admin.id) do
+         %Backup{} = backup <- Backup.new(user),
+         {:ok, inserted_backup} <- Pleroma.Repo.insert(backup),
+         {:ok, %Oban.Job{}} <- Backup.schedule_backup(inserted_backup) do
       ModerationLog.insert_log(%{actor: admin, subject: user, action: "create_backup"})
 
       json(conn, "")

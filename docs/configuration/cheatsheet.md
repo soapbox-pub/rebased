@@ -1171,6 +1171,7 @@ Control favicons for instances.
     3. the directory named by the TMP environment variable
     4. C:\TMP on Windows or /tmp on Unix-like operating systems
     5. as a last resort, the current working directory
+* `:timeout` an integer representing seconds
 
 ## Frontend management
 
