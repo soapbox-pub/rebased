@@ -1,1 +1,0 @@
-Publisher jobs now store the the activity id instead of inserting duplicate JSON data in the Oban queue for each delivery.

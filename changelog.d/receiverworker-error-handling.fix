@@ -1,1 +1,0 @@
-ReceiverWorker: Make sure non-{:ok, _} is returned as {:error, …}

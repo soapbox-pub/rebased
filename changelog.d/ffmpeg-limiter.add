@@ -1,1 +1,0 @@
-Framegrabs with ffmpeg will execute with a 5 second timeout and cache the URLs of failures with a TTL of 15 minutes to prevent excessive retries.

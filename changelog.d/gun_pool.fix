@@ -1,1 +1,0 @@
-Fix logic error in Gun connection pooling which prevented retries even when the worker was launched with retry = true

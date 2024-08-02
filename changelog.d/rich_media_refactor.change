@@ -1,1 +1,0 @@
-Refactored Rich Media to cache the content in the database. Fetching operations that could block status rendering have been eliminated.

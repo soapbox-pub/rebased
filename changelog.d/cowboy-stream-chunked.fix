@@ -1,1 +1,0 @@
-Restore Cowboy's ability to stream MediaProxy responses without Chunked encoding.
