@@ -22,7 +22,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   # This only prepares the connection and is not in the process yet
   @impl Phoenix.Socket.Transport
   def connect(%{params: params} = transport_info) do
-    with access_token <- Map.get(params, "access_token"),
+    with access_token <- find_access_token(transport_info),
          {:ok, user, oauth_token} <- authenticate_request(access_token),
          {:ok, topic} <-
            Streamer.get_topic(params["stream"], user, oauth_token, params) do
@@ -244,4 +244,13 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   def handle_error(conn, _reason) do
     Plug.Conn.send_resp(conn, 404, "Not Found")
   end
+
+  defp find_access_token(%{
+         connect_info: %{sec_websocket_protocol: [token]}
+       }),
+       do: token
+
+  defp find_access_token(%{params: %{"access_token" => token}}), do: token
+
+  defp find_access_token(_), do: nil
 end
