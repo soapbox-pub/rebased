@@ -109,7 +109,11 @@ defmodule Pleroma.Web.StreamerView do
     |> Jason.encode!()
   end
 
-  def render("follow_relationships_update.json", item, topic) do
+  def render(
+        "follow_relationships_update.json",
+        %{follower: follower, following: following} = item,
+        topic
+      ) do
     %{
       stream: render("stream.json", %{topic: topic}),
       event: "pleroma:follow_relationships_update",
@@ -117,14 +121,22 @@ defmodule Pleroma.Web.StreamerView do
         %{
           state: item.state,
           follower: %{
-            id: item.follower.id,
-            follower_count: item.follower.follower_count,
-            following_count: item.follower.following_count
+            id: follower.id,
+            follower_count: follower.follower_count,
+            following_count: follower.following_count
           },
           following: %{
-            id: item.following.id,
-            follower_count: item.following.follower_count,
-            following_count: item.following.following_count
+            id: following.id,
+            follower_count:
+              if(!following.hide_followers_count or !following.hide_followers,
+                do: following.follower_count,
+                else: 0
+              ),
+            following_count:
+              if(!following.hide_follows_count or !following.hide_follows,
+                do: following.following_count,
+                else: 0
+              )
           }
         }
         |> Jason.encode!()
