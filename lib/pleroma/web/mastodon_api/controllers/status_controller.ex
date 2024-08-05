@@ -111,10 +111,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   `ids` query param is required
   """
   def index(
-        %{assigns: %{user: user}, private: %{open_api_spex: %{params: %{ids: ids} = params}}} =
+        %{assigns: %{user: user}, private: %{open_api_spex: %{params: params}}} =
           conn,
         _
       ) do
+    ids = Map.get(params, :id, Map.get(params, :ids))
     limit = 100
 
     activities =
