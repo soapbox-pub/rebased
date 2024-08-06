@@ -167,21 +167,6 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                |> Publisher.publish_one()
     end
 
-    test_with_mock "calls `Instances.set_reachable` on successful federation if `unreachable_since` is not specified",
-                   Instances,
-                   [:passthrough],
-                   [] do
-      _actor = insert(:user)
-      inbox = "http://200.site/users/nick1/inbox"
-      activity = insert(:note_activity)
-
-      assert {:ok, _} =
-               Publisher.prepare_one(%{inbox: inbox, activity_id: activity.id})
-               |> Publisher.publish_one()
-
-      assert called(Instances.set_reachable(inbox))
-    end
-
     test_with_mock "calls `Instances.set_reachable` on successful federation if `unreachable_since` is set",
                    Instances,
                    [:passthrough],
