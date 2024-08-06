@@ -151,18 +151,20 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       _actor = insert(:user)
 
       assert {:ok, %{body: "port 42"}} =
-               Publisher.publish_one(%{
+               Publisher.prepare_one(%{
                  inbox: inbox42,
                  activity_id: activity.id,
                  unreachable_since: true
                })
+               |> Publisher.publish_one()
 
       assert {:ok, %{body: "port 80"}} =
-               Publisher.publish_one(%{
+               Publisher.prepare_one(%{
                  inbox: inbox80,
                  activity_id: activity.id,
                  unreachable_since: true
                })
+               |> Publisher.publish_one()
     end
 
     test_with_mock "calls `Instances.set_reachable` on successful federation if `unreachable_since` is not specified",
@@ -174,7 +176,8 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       activity = insert(:note_activity)
 
       assert {:ok, _} =
-               Publisher.publish_one(%{inbox: inbox, activity_id: activity.id})
+               Publisher.prepare_one(%{inbox: inbox, activity_id: activity.id})
+               |> Publisher.publish_one()
 
       assert called(Instances.set_reachable(inbox))
     end
@@ -188,11 +191,12 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       activity = insert(:note_activity)
 
       assert {:ok, _} =
-               Publisher.publish_one(%{
+               Publisher.prepare_one(%{
                  inbox: inbox,
                  activity_id: activity.id,
                  unreachable_since: NaiveDateTime.utc_now()
                })
+               |> Publisher.publish_one()
 
       assert called(Instances.set_reachable(inbox))
     end
@@ -206,11 +210,12 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       activity = insert(:note_activity)
 
       assert {:ok, _} =
-               Publisher.publish_one(%{
+               Publisher.prepare_one(%{
                  inbox: inbox,
                  activity_id: activity.id,
                  unreachable_since: nil
                })
+               |> Publisher.publish_one()
 
       refute called(Instances.set_reachable(inbox))
     end
@@ -224,7 +229,8 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       activity = insert(:note_activity)
 
       assert {:cancel, _} =
-               Publisher.publish_one(%{inbox: inbox, activity_id: activity.id})
+               Publisher.prepare_one(%{inbox: inbox, activity_id: activity.id})
+               |> Publisher.publish_one()
 
       assert called(Instances.set_unreachable(inbox))
     end
@@ -239,10 +245,11 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
 
       assert capture_log(fn ->
                assert {:error, _} =
-                        Publisher.publish_one(%{
+                        Publisher.prepare_one(%{
                           inbox: inbox,
                           activity_id: activity.id
                         })
+                        |> Publisher.publish_one()
              end) =~ "connrefused"
 
       assert called(Instances.set_unreachable(inbox))
@@ -257,7 +264,8 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       activity = insert(:note_activity)
 
       assert {:ok, _} =
-               Publisher.publish_one(%{inbox: inbox, activity_id: activity.id})
+               Publisher.prepare_one(%{inbox: inbox, activity_id: activity.id})
+               |> Publisher.publish_one()
 
       refute called(Instances.set_unreachable(inbox))
     end
@@ -272,11 +280,12 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
 
       assert capture_log(fn ->
                assert {:error, _} =
-                        Publisher.publish_one(%{
+                        Publisher.prepare_one(%{
                           inbox: inbox,
                           activity_id: activity.id,
                           unreachable_since: NaiveDateTime.utc_now()
                         })
+                        |> Publisher.publish_one()
              end) =~ "connrefused"
 
       refute called(Instances.set_unreachable(inbox))

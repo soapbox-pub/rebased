@@ -76,14 +76,12 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   end
 
   @doc """
-  Publish a single message to a peer.  Takes a struct with the following
-  parameters set:
-
+  Prepare an activity for publishing from an Oban job
   * `inbox`: the inbox to publish to
   * `activity_id`: the internal activity id
   * `cc`: the cc recipients relevant to this inbox (optional)
   """
-  def publish_one(%{inbox: inbox, activity_id: activity_id} = params) do
+  def prepare_one(%{inbox: inbox, activity_id: activity_id} = params) do
     activity = Activity.get_by_id_with_user_actor(activity_id)
     actor = activity.user_actor
 
@@ -113,6 +111,38 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         date: date
       })
 
+    %{
+      activity_id: activity_id,
+      json: json,
+      date: date,
+      signature: signature,
+      digest: digest,
+      inbox: inbox,
+      unreachable_since: params[:unreachable_since]
+    }
+  end
+
+  @doc """
+  Publish a single message to a peer.  Takes a struct with the following
+  parameters set:
+  * `activity_id`: the activity id
+  * `json`: the json payload
+  * `date`: the signed date from Pleroma.Signature.signed_date()
+  * `signature`: the signature from Pleroma.Signature.sign/2
+  * `digest`: base64 encoded the hash of the json payload prefixed with "SHA-256="
+  * `inbox`: the inbox URI of this delivery
+  * `unreachable_since`: timestamp the instance was marked unreachable
+
+  """
+  def publish_one(%{
+        activity_id: activity_id,
+        json: json,
+        date: date,
+        signature: signature,
+        digest: digest,
+        inbox: inbox,
+        unreachable_since: unreachable_since
+      }) do
     with {:ok, %{status: code}} = result when code in 200..299 <-
            HTTP.post(
              inbox,
@@ -124,14 +154,12 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
                {"digest", digest}
              ]
            ) do
-      if not Map.has_key?(params, :unreachable_since) || params[:unreachable_since] do
-        Instances.set_reachable(inbox)
-      end
+      maybe_set_reachable(unreachable_since, inbox)
 
       result
     else
       {_post_result, %{status: code} = response} = e ->
-        unless params[:unreachable_since], do: Instances.set_unreachable(inbox)
+        maybe_set_unreachable(unreachable_since, inbox)
         Logger.metadata(activity: activity_id, inbox: inbox, status: code)
         Logger.error("Publisher failed to inbox #{inbox} with status #{code}")
 
@@ -152,7 +180,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         connection_pool_snooze()
 
       e ->
-        unless params[:unreachable_since], do: Instances.set_unreachable(inbox)
+        maybe_set_unreachable(unreachable_since, inbox)
         Logger.metadata(activity: activity_id, inbox: inbox)
         Logger.error("Publisher failed to inbox #{inbox} #{inspect(e)}")
         {:error, e}
@@ -160,6 +188,12 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   end
 
   defp connection_pool_snooze, do: {:snooze, 3}
+
+  defp maybe_set_reachable(%NaiveDateTime{}, inbox), do: Instances.set_reachable(inbox)
+  defp maybe_set_reachable(_, _), do: :ok
+
+  defp maybe_set_unreachable(nil, inbox), do: Instances.set_unreachable(inbox)
+  defp maybe_set_unreachable(%NaiveDateTime{}, _), do: :ok
 
   defp signature_host(%URI{port: port, scheme: scheme, host: host}) do
     if port == URI.default_port(scheme) do
