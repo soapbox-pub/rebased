@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Publisher.Prepared
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Workers.PublisherWorker
@@ -81,6 +82,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   * `activity_id`: the internal activity id
   * `cc`: the cc recipients relevant to this inbox (optional)
   """
+  @spec prepare_one(map()) :: Prepared.t()
   def prepare_one(%{inbox: inbox, activity_id: activity_id} = params) do
     activity = Activity.get_by_id_with_user_actor(activity_id)
     actor = activity.user_actor
@@ -111,7 +113,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         date: date
       })
 
-    %{
+    %Prepared{
       activity_id: activity_id,
       json: json,
       date: date,
@@ -134,34 +136,26 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   * `unreachable_since`: timestamp the instance was marked unreachable
 
   """
-  def publish_one(%{
-        activity_id: activity_id,
-        json: json,
-        date: date,
-        signature: signature,
-        digest: digest,
-        inbox: inbox,
-        unreachable_since: unreachable_since
-      }) do
+  def publish_one(p = %Prepared{}) do
     with {:ok, %{status: code}} = result when code in 200..299 <-
            HTTP.post(
-             inbox,
-             json,
+             p.inbox,
+             p.json,
              [
                {"Content-Type", "application/activity+json"},
-               {"Date", date},
-               {"signature", signature},
-               {"digest", digest}
+               {"Date", p.date},
+               {"signature", p.signature},
+               {"digest", p.digest}
              ]
            ) do
-      maybe_set_reachable(unreachable_since, inbox)
+      maybe_set_reachable(p.unreachable_since, p.inbox)
 
       result
     else
       {_post_result, %{status: code} = response} = e ->
-        maybe_set_unreachable(unreachable_since, inbox)
-        Logger.metadata(activity: activity_id, inbox: inbox, status: code)
-        Logger.error("Publisher failed to inbox #{inbox} with status #{code}")
+        maybe_set_unreachable(p.unreachable_since, p.inbox)
+        Logger.metadata(activity: p.activity_id, inbox: p.inbox, status: code)
+        Logger.error("Publisher failed to inbox #{p.inbox} with status #{code}")
 
         case response do
           %{status: 400} -> {:cancel, :bad_request}
@@ -180,9 +174,9 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         connection_pool_snooze()
 
       e ->
-        maybe_set_unreachable(unreachable_since, inbox)
-        Logger.metadata(activity: activity_id, inbox: inbox)
-        Logger.error("Publisher failed to inbox #{inbox} #{inspect(e)}")
+        maybe_set_unreachable(p.unreachable_since, p.inbox)
+        Logger.metadata(activity: p.activity_id, inbox: p.inbox)
+        Logger.error("Publisher failed to inbox #{p.inbox} #{inspect(e)}")
         {:error, e}
     end
   end
