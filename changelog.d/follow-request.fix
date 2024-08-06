@@ -1,0 +1,1 @@
+Fixed malformed follow requests that cause them to appear stuck pending due to the recipient being unable to process them.
