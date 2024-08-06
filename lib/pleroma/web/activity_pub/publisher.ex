@@ -91,7 +91,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
 
-    cc = Map.get(params, :cc)
+    cc = Map.get(params, :cc, [])
 
     json =
       data
