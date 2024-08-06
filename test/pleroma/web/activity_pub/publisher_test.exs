@@ -14,6 +14,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
   alias Pleroma.Activity
   alias Pleroma.Instances
   alias Pleroma.Object
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.Web.ActivityPub.Publisher
   alias Pleroma.Web.CommonAPI
 
@@ -476,5 +477,55 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
         priority: 1
       )
     end
+  end
+
+  test "cc in prepared json for a follow request is an empty list" do
+    user = insert(:user)
+    remote_user = insert(:user, local: false)
+
+    {:ok, _, _, activity} = CommonAPI.follow(remote_user, user)
+
+    mock(fn
+      %{method: :post, url: "http://42.site:42/users/nick1/inbox"} ->
+        {:ok, %Tesla.Env{status: 200, body: "port 42"}}
+
+      %{method: :post, url: "http://42.site/users/nick1/inbox"} ->
+        {:ok, %Tesla.Env{status: 200, body: "port 80"}}
+    end)
+
+    assert_enqueued(
+      worker: "Pleroma.Workers.PublisherWorker",
+      args: %{
+        "activity_id" => activity.id,
+        "op" => "publish"
+      }
+    )
+
+    ObanHelpers.perform_all()
+
+    expected_params =
+      %{
+        "activity_id" => activity.id,
+        "inbox" => remote_user.inbox,
+        "unreachable_since" => nil
+      }
+
+    assert_enqueued(
+      worker: "Pleroma.Workers.PublisherWorker",
+      args: %{
+        "op" => "publish_one",
+        "params" => expected_params
+      }
+    )
+
+    # params need to be atom keys for Publisher.prepare_one.
+    # this is done in the Oban job.
+    expected_params = Map.new(expected_params, fn {k, v} -> {String.to_atom(k), v} end)
+
+    %{json: json} = Publisher.prepare_one(expected_params)
+
+    {:ok, decoded} = Jason.decode(json)
+
+    assert decoded["cc"] == []
   end
 end
