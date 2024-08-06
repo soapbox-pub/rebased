@@ -485,14 +485,6 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
 
     {:ok, _, _, activity} = CommonAPI.follow(remote_user, user)
 
-    mock(fn
-      %{method: :post, url: "http://42.site:42/users/nick1/inbox"} ->
-        {:ok, %Tesla.Env{status: 200, body: "port 42"}}
-
-      %{method: :post, url: "http://42.site/users/nick1/inbox"} ->
-        {:ok, %Tesla.Env{status: 200, body: "port 80"}}
-    end)
-
     assert_enqueued(
       worker: "Pleroma.Workers.PublisherWorker",
       args: %{
