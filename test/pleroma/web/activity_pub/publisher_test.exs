@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.PublisherTest do
+  use Oban.Testing, repo: Pleroma.Repo
   use Pleroma.Web.ConnCase
 
   import ExUnit.CaptureLog
@@ -310,12 +311,15 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
 
       assert res == :ok
 
-      assert not called(
-               Publisher.enqueue_one(%{
-                 inbox: "https://domain.com/users/nick1/inbox",
-                 activity_id: note_activity.id
-               })
-             )
+      refute_enqueued(
+        worker: "Pleroma.Workers.PublisherWorker",
+        args: %{
+          "params" => %{
+            inbox: "https://domain.com/users/nick1/inbox",
+            activity_id: note_activity.id
+          }
+        }
+      )
     end
 
     test_with_mock "Publishes a non-public activity to non-quarantined instances.",
@@ -345,15 +349,16 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
 
       assert res == :ok
 
-      assert called(
-               Publisher.enqueue_one(
-                 %{
-                   inbox: "https://domain.com/users/nick1/inbox",
-                   activity_id: note_activity.id
-                 },
-                 priority: 1
-               )
-             )
+      assert_enqueued(
+        worker: "Pleroma.Workers.PublisherWorker",
+        args: %{
+          "params" => %{
+            inbox: "https://domain.com/users/nick1/inbox",
+            activity_id: note_activity.id
+          }
+        },
+        priority: 1
+      )
     end
 
     test_with_mock "Publishes to directly addressed actors with higher priority.",
@@ -403,12 +408,15 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       res = Publisher.publish(actor, note_activity)
       assert res == :ok
 
-      assert called(
-               Publisher.enqueue_one(%{
-                 inbox: "https://domain.com/users/nick1/inbox",
-                 activity_id: note_activity.id
-               })
-             )
+      assert_enqueued(
+        worker: "Pleroma.Workers.PublisherWorker",
+        args: %{
+          "params" => %{
+            inbox: "https://domain.com/users/nick1/inbox",
+            activity_id: note_activity.id
+          }
+        }
+      )
     end
 
     test_with_mock "publishes a delete activity to peers who signed fetch requests to the create acitvity/object.",
@@ -452,25 +460,27 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       res = Publisher.publish(actor, delete)
       assert res == :ok
 
-      assert called(
-               Publisher.enqueue_one(
-                 %{
-                   inbox: "https://domain.com/users/nick1/inbox",
-                   activity_id: delete.id
-                 },
-                 priority: 1
-               )
-             )
+      assert_enqueued(
+        worker: "Pleroma.Workers.PublisherWorker",
+        args: %{
+          "params" => %{
+            inbox: "https://domain.com/users/nick1/inbox",
+            activity_id: delete.id
+          }
+        },
+        priority: 1
+      )
 
-      assert called(
-               Publisher.enqueue_one(
-                 %{
-                   inbox: "https://domain2.com/users/nick1/inbox",
-                   activity_id: delete.id
-                 },
-                 priority: 1
-               )
-             )
+      assert_enqueued(
+        worker: "Pleroma.Workers.PublisherWorker",
+        args: %{
+          "params" => %{
+            inbox: "https://domain2.com/users/nick1/inbox",
+            activity_id: delete.id
+          }
+        },
+        priority: 1
+      )
     end
   end
 end
