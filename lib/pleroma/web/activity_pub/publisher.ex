@@ -136,7 +136,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   * `unreachable_since`: timestamp the instance was marked unreachable
 
   """
-  def publish_one(p = %Prepared{}) do
+  def publish_one(%Prepared{} = p) do
     with {:ok, %{status: code}} = result when code in 200..299 <-
            HTTP.post(
              p.inbox,
