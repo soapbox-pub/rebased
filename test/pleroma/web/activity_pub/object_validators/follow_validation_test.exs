@@ -29,8 +29,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.FollowValidationTest do
     end
 
     test "supports an empty cc", %{valid_follow: valid_follow} do
-      valid_follow_with_nil_cc = Map.put(valid_follow, "cc", [])
-      assert {:ok, _follow, []} = ObjectValidator.validate(valid_follow_with_nil_cc, [])
+      valid_follow_with_empty_cc = Map.put(valid_follow, "cc", [])
+      assert {:ok, _follow, []} = ObjectValidator.validate(valid_follow_with_empty_cc, [])
     end
   end
 end
