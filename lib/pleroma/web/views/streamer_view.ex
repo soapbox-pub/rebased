@@ -114,6 +114,20 @@ defmodule Pleroma.Web.StreamerView do
         %{follower: follower, following: following} = item,
         topic
       ) do
+    follower_count =
+      if Enum.any?([following.hide_followers_count, following.hide_followers]) do
+        0
+      else
+        following.follower_count
+      end
+
+    following_count =
+      if Enum.any?([following.hide_follows_count, following.hide_follows]) do
+        0
+      else
+        following.following_count
+      end
+
     %{
       stream: render("stream.json", %{topic: topic}),
       event: "pleroma:follow_relationships_update",
@@ -127,16 +141,8 @@ defmodule Pleroma.Web.StreamerView do
           },
           following: %{
             id: following.id,
-            follower_count:
-              if(!following.hide_followers_count or !following.hide_followers,
-                do: following.follower_count,
-                else: 0
-              ),
-            following_count:
-              if(!following.hide_follows_count or !following.hide_follows,
-                do: following.following_count,
-                else: 0
-              )
+            follower_count: follower_count,
+            following_count: following_count
           }
         }
         |> Jason.encode!()
