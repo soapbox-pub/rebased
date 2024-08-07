@@ -17,7 +17,7 @@ defmodule Pleroma.Web.StreamerViewTest do
       follower = insert(:user)
 
       {:ok, _, _, _} = CommonAPI.follow(other_user, following)
-      {:ok, follower, following, _activity} = CommonAPI.follow(following, follower)
+      {:ok, following, follower, _activity} = CommonAPI.follow(following, follower)
 
       result =
         StreamerView.render(
@@ -46,7 +46,7 @@ defmodule Pleroma.Web.StreamerViewTest do
         follower = insert(:user)
 
         {:ok, _, _, _} = CommonAPI.follow(other_user, following)
-        {:ok, follower, following, _activity} = CommonAPI.follow(following, follower)
+        {:ok, following, follower, _activity} = CommonAPI.follow(following, follower)
 
         result =
           StreamerView.render(
@@ -76,7 +76,7 @@ defmodule Pleroma.Web.StreamerViewTest do
         follower = insert(:user)
 
         {:ok, _, _, _} = CommonAPI.follow(other_user, following)
-        {:ok, follower, following, _activity} = CommonAPI.follow(following, follower)
+        {:ok, following, follower, _activity} = CommonAPI.follow(following, follower)
 
         result =
           StreamerView.render(
