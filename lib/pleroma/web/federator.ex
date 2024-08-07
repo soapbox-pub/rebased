@@ -71,7 +71,10 @@ defmodule Pleroma.Web.Federator do
   # Job Worker Callbacks
 
   @spec perform(atom(), any()) :: {:ok, any()} | {:error, any()}
-  def perform(:publish_one, params), do: Publisher.publish_one(params)
+  def perform(:publish_one, params) do
+    Publisher.prepare_one(params)
+    |> Publisher.publish_one()
+  end
 
   def perform(:publish, activity) do
     Logger.debug(fn -> "Running publish for #{activity.data["id"]}" end)

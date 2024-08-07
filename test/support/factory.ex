@@ -63,7 +63,8 @@ defmodule Pleroma.Factory do
           ap_id: ap_id,
           follower_address: ap_id <> "/followers",
           following_address: ap_id <> "/following",
-          featured_address: ap_id <> "/collections/featured"
+          featured_address: ap_id <> "/collections/featured",
+          inbox: "https://#{base_domain}/inbox"
         }
       else
         %{
