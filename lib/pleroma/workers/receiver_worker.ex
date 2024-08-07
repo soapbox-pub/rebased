@@ -7,9 +7,9 @@ defmodule Pleroma.Workers.ReceiverWorker do
   alias Pleroma.User
   alias Pleroma.Web.Federator
 
-  use Pleroma.Workers.WorkerHelper, queue: "federator_incoming"
+  use Oban.Worker, queue: :federator_incoming, max_attempts: 5
 
-  @impl Oban.Worker
+  @impl true
 
   def perform(%Job{
         args: %{
@@ -51,7 +51,7 @@ defmodule Pleroma.Workers.ReceiverWorker do
     end
   end
 
-  @impl Oban.Worker
+  @impl true
   def timeout(%_{args: %{"timeout" => timeout}}), do: timeout
 
   def timeout(_job), do: :timer.seconds(5)

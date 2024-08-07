@@ -12,6 +12,6 @@ defmodule Pleroma.Workers.UserRefreshWorker do
     User.fetch_by_ap_id(ap_id)
   end
 
-  @impl Oban.Worker
+  @impl true
   def timeout(_job), do: :timer.seconds(15)
 end

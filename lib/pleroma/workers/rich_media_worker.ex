@@ -9,7 +9,7 @@ defmodule Pleroma.Workers.RichMediaWorker do
 
   use Oban.Worker, queue: :background, max_attempts: 3, unique: [period: 300]
 
-  @impl Oban.Worker
+  @impl true
   def perform(%Job{args: %{"op" => "expire", "url" => url} = _args}) do
     Card.delete(url)
   end
@@ -33,7 +33,7 @@ defmodule Pleroma.Workers.RichMediaWorker do
   # a slow/infinite data stream and insert a negative cache entry for the URL
   # We pad it by 2 seconds to be certain a slow connection is detected and we
   # can inject a negative cache entry for the URL
-  @impl Oban.Worker
+  @impl true
   def timeout(_job) do
     Config.get!([:rich_media, :timeout]) + :timer.seconds(2)
   end

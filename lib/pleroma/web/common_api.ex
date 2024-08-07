@@ -559,11 +559,11 @@ defmodule Pleroma.Web.CommonAPI do
     with {:ok, _} <- ThreadMute.add_mute(user.id, activity.data["context"]),
          _ <- Pleroma.Notification.mark_context_as_read(user, activity.data["context"]) do
       if expires_in > 0 do
-        Pleroma.Workers.MuteExpireWorker.enqueue(
-          "unmute_conversation",
-          %{"user_id" => user.id, "activity_id" => activity.id},
+        Pleroma.Workers.MuteExpireWorker.new(
+          %{"op" => "unmute_conversation", "user_id" => user.id, "activity_id" => activity.id},
           schedule_in: expires_in
         )
+        |> Oban.insert()
       end
 
       {:ok, activity}

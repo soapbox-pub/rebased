@@ -63,23 +63,29 @@ defmodule Pleroma.User.Import do
   end
 
   def blocks_import(%User{} = blocker, [_ | _] = identifiers) do
-    BackgroundWorker.enqueue(
-      "blocks_import",
-      %{"user_id" => blocker.id, "identifiers" => identifiers}
-    )
+    BackgroundWorker.new(%{
+      "op" => "blocks_import",
+      "user_id" => blocker.id,
+      "identifiers" => identifiers
+    })
+    |> Oban.insert()
   end
 
   def follow_import(%User{} = follower, [_ | _] = identifiers) do
-    BackgroundWorker.enqueue(
-      "follow_import",
-      %{"user_id" => follower.id, "identifiers" => identifiers}
-    )
+    BackgroundWorker.new(%{
+      "op" => "follow_import",
+      "user_id" => follower.id,
+      "identifiers" => identifiers
+    })
+    |> Oban.insert()
   end
 
   def mutes_import(%User{} = user, [_ | _] = identifiers) do
-    BackgroundWorker.enqueue(
-      "mutes_import",
-      %{"user_id" => user.id, "identifiers" => identifiers}
-    )
+    BackgroundWorker.new(%{
+      "op" => "mutes_import",
+      "user_id" => user.id,
+      "identifiers" => identifiers
+    })
+    |> Oban.insert()
   end
 end

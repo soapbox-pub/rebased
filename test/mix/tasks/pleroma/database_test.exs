@@ -623,10 +623,12 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
 
       expires_at = DateTime.add(DateTime.utc_now(), 60 * 61)
 
-      Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
-        activity_id: activity_id3,
-        expires_at: expires_at
-      })
+      Pleroma.Workers.PurgeExpiredActivity.enqueue(
+        %{
+          activity_id: activity_id3
+        },
+        scheduled_at: expires_at
+      )
 
       Mix.Tasks.Pleroma.Database.run(["ensure_expiration"])
 

@@ -31,11 +31,11 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   """
   @spec enqueue_one(map(), Keyword.t()) :: {:ok, %Oban.Job{}}
   def enqueue_one(%{} = params, worker_args \\ []) do
-    PublisherWorker.enqueue(
-      "publish_one",
-      %{"params" => params},
+    PublisherWorker.new(
+      %{"op" => "publish_one", "params" => params},
       worker_args
     )
+    |> Oban.insert()
   end
 
   @doc """

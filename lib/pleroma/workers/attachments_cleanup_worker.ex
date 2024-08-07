@@ -8,9 +8,9 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
   alias Pleroma.Object
   alias Pleroma.Repo
 
-  use Pleroma.Workers.WorkerHelper, queue: "slow"
+  use Oban.Worker, queue: :slow
 
-  @impl Oban.Worker
+  @impl true
   def perform(%Job{
         args: %{
           "op" => "cleanup_attachments",
@@ -31,7 +31,7 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
 
   def perform(%Job{args: %{"op" => "cleanup_attachments", "object" => _object}}), do: {:ok, :skip}
 
-  @impl Oban.Worker
+  @impl true
   def timeout(_job), do: :timer.seconds(900)
 
   defp do_clean({object_ids, attachment_urls}) do
