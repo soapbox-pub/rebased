@@ -130,7 +130,7 @@ defmodule Pleroma.Web.CommonAPI do
       if activity.data["state"] == "reject" do
         {:error, :rejected}
       else
-        {:ok, follower, followed, activity}
+        {:ok, followed, follower, activity}
       end
     end
   end

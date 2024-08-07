@@ -132,7 +132,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
   test "Follow notification" do
     follower = insert(:user)
     followed = insert(:user)
-    {:ok, follower, followed, _activity} = CommonAPI.follow(followed, follower)
+    {:ok, followed, follower, _activity} = CommonAPI.follow(followed, follower)
     notification = Notification |> Repo.one() |> Repo.preload(:activity)
 
     expected = %{
