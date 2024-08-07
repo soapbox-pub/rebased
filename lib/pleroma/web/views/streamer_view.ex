@@ -114,14 +114,14 @@ defmodule Pleroma.Web.StreamerView do
         %{follower: follower, following: following} = item,
         topic
       ) do
-    follower_count =
+    following_follower_count =
       if Enum.any?([following.hide_followers_count, following.hide_followers]) do
         0
       else
         following.follower_count
       end
 
-    following_count =
+    following_following_count =
       if Enum.any?([following.hide_follows_count, following.hide_follows]) do
         0
       else
@@ -141,8 +141,8 @@ defmodule Pleroma.Web.StreamerView do
           },
           following: %{
             id: following.id,
-            follower_count: follower_count,
-            following_count: following_count
+            follower_count: following_follower_count,
+            following_count: following_following_count
           }
         }
         |> Jason.encode!()
