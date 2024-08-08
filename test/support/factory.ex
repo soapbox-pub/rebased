@@ -53,6 +53,15 @@ defmodule Pleroma.Factory do
       keys: pem
     }
 
+    attrs = Map.delete(attrs, :domain)
+
+    user
+    |> Map.put(:raw_bio, user.bio)
+    |> merge_attributes(attrs)
+    |> user_urls(attrs)
+  end
+
+  defp user_urls(user, attrs) do
     urls =
       if attrs[:local] == false do
         base_domain = attrs[:domain] || Enum.random(["domain1.com", "domain2.com", "domain3.com"])
@@ -75,12 +84,7 @@ defmodule Pleroma.Factory do
         }
       end
 
-    attrs = Map.delete(attrs, :domain)
-
-    user
-    |> Map.put(:raw_bio, user.bio)
-    |> Map.merge(urls)
-    |> merge_attributes(attrs)
+    Map.merge(user, urls)
   end
 
   def user_relationship_factory(attrs \\ %{}) do
