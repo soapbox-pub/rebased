@@ -29,7 +29,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AcceptRejectValidator do
 
   defp validate_data(cng) do
     cng
-    |> validate_required([:id, :type, :actor, :to, :cc, :object])
+    |> validate_required([:id, :type, :actor, :to, :object])
     |> validate_inclusion(:type, ["Accept", "Reject"])
     |> validate_actor_presence()
     |> validate_object_presence(allowed_types: ["Follow"])
