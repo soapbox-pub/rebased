@@ -21,6 +21,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.QuietReplyTest do
     reply = %{
       "type" => "Create",
       "actor" => robin.ap_id,
+      "to" => [
+        batman.ap_id,
+        Pleroma.Constants.as_public()
+      ],
+      "cc" => [robin.follower_address],
       "object" => %{
         "type" => "Note",
         "actor" => robin.ap_id,
@@ -39,6 +44,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.QuietReplyTest do
 
     assert {:ok, filtered} = QuietReply.filter(reply)
 
+    assert expected_to == filtered["to"]
+    assert expected_cc == filtered["cc"]
     assert expected_to == filtered["object"]["to"]
     assert expected_cc == filtered["object"]["cc"]
   end
@@ -52,6 +59,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.QuietReplyTest do
     reply = %{
       "type" => "Create",
       "actor" => robin.ap_id,
+      "to" => [batman.ap_id],
+      "cc" => [],
       "object" => %{
         "type" => "Note",
         "actor" => robin.ap_id,
@@ -76,6 +85,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.QuietReplyTest do
     reply = %{
       "type" => "Create",
       "actor" => robin.ap_id,
+      "to" => [batman.ap_id, robin.follower_address],
+      "cc" => [],
       "object" => %{
         "type" => "Note",
         "actor" => robin.ap_id,

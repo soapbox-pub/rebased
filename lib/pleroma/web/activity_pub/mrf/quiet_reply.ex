@@ -16,11 +16,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.QuietReply do
   def filter(
         %{
           "type" => "Create",
+          "to" => to,
+          "cc" => cc,
           "object" => %{
             "actor" => actor,
             "type" => "Note",
-            "to" => to,
-            "cc" => cc,
             "inReplyTo" => in_reply_to
           }
         } = object
@@ -38,6 +38,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.QuietReply do
 
       updated_object =
         object
+        |> Map.put("to", updated_to)
+        |> Map.put("cc", updated_cc)
         |> put_in(["object", "to"], updated_to)
         |> put_in(["object", "cc"], updated_cc)
 
