@@ -498,22 +498,6 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  def identity_proofs_operation do
-    %Operation{
-      tags: ["Retrieve account information"],
-      summary: "Identity proofs",
-      operationId: "AccountController.identity_proofs",
-      # Validators complains about unused path params otherwise
-      parameters: [
-        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"}
-      ],
-      description: "Not implemented",
-      responses: %{
-        200 => empty_array_response()
-      }
-    }
-  end
-
   def familiar_followers_operation do
     %Operation{
       tags: ["Retrieve account information"],

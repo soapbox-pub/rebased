@@ -22,7 +22,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.ListView
   alias Pleroma.Web.MastodonAPI.MastodonAPI
-  alias Pleroma.Web.MastodonAPI.MastodonAPIController
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.OAuth.OAuthController
   alias Pleroma.Web.Plugs.OAuthScopesPlug
@@ -51,7 +50,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:accounts"]}
-    when action in [:verify_credentials, :endorsements, :identity_proofs]
+    when action in [:verify_credentials, :endorsements]
   )
 
   plug(
@@ -660,7 +659,4 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   defp get_familiar_followers(user, current_user) do
     User.get_familiar_followers(user, current_user)
   end
-
-  @doc "GET /api/v1/identity_proofs"
-  def identity_proofs(conn, params), do: MastodonAPIController.empty_array(conn, params)
 end
