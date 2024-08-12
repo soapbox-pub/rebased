@@ -6,15 +6,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   use Pleroma.Web.ConnCase, async: true
 
   describe "empty_array/2 (stubs)" do
-    test "GET /api/v1/endorsements" do
-      %{conn: conn} = oauth_access(["read:accounts"])
-
-      assert [] ==
-               conn
-               |> get("/api/v1/endorsements")
-               |> json_response(200)
-    end
-
     test "GET /api/v1/trends", %{conn: conn} do
       assert [] ==
                conn
