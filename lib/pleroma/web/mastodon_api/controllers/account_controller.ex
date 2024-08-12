@@ -22,7 +22,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.ListView
   alias Pleroma.Web.MastodonAPI.MastodonAPI
-  alias Pleroma.Web.MastodonAPI.MastodonAPIController
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.OAuth.OAuthController
   alias Pleroma.Web.Plugs.OAuthScopesPlug
