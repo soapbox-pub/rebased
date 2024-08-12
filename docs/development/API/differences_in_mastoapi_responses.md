@@ -510,12 +510,6 @@ Pleroma is generally compatible with the Mastodon 2.7.2 API, but some newer feat
 
 - `GET /api/v1/trends`: Returns an empty array, `[]`
 
-### Identity proofs
-
-*Added in Mastodon 2.8.0*
-
-- `GET /api/v1/identity_proofs`: Returns an empty array, `[]`
-
 ### Featured tags
 
 *Added in Mastodon 3.0.0*
