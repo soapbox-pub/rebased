@@ -7,7 +7,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.FODirectReply do
   FODirectReply alters the scope of replies to activities which are Followers Only to be Direct. The purpose of this policy is to prevent broken threads for followers of the reply author because their response was to a user that they are not also following.
   """
 
+  alias Pleroma.Object
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Visibility
 
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
@@ -25,7 +27,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.FODirectReply do
       ) do
     with true <- is_binary(in_reply_to),
          %User{follower_address: followers_collection, local: true} <- User.get_by_ap_id(actor),
-         true <- followers_only?(in_reply_to) do
+         %Object{} = in_reply_to_object <- Object.get_by_ap_id(in_reply_to),
+         "private" <- Visibility.get_visibility(in_reply_to_object) do
       direct_to = to -- [followers_collection]
 
       updated_activity =
@@ -47,19 +50,4 @@ defmodule Pleroma.Web.ActivityPub.MRF.FODirectReply do
 
   @impl true
   def describe, do: {:ok, %{}}
-
-  defp followers_only?(parent_ap_id) do
-    with %Pleroma.Object{} = object <- Pleroma.Object.get_by_ap_id(parent_ap_id),
-         object_data <- Map.get(object, :data),
-         %Pleroma.User{} = user <- User.get_cached_by_ap_id(object_data["actor"]) do
-      if user.follower_address in object_data["to"] do
-        true
-      else
-        false
-      end
-    else
-      _ ->
-        false
-    end
-  end
 end

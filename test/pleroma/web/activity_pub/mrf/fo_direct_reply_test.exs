@@ -48,6 +48,36 @@ defmodule Pleroma.Web.ActivityPub.MRF.FODirectReplyTest do
     assert expected_cc == filtered["object"]["cc"]
   end
 
+  test "replies to unlisted posts are unmodified" do
+    batman = insert(:user, nickname: "batman")
+    robin = insert(:user, nickname: "robin")
+
+    {:ok, post} =
+      CommonAPI.post(batman, %{
+        status: "Has anyone seen Selina Kyle's latest selfies?",
+        visibility: "unlisted"
+      })
+
+    reply = %{
+      "type" => "Create",
+      "actor" => robin.ap_id,
+      "to" => [batman.ap_id, robin.follower_address],
+      "cc" => [],
+      "object" => %{
+        "type" => "Note",
+        "actor" => robin.ap_id,
+        "content" => "@batman 🤤 ❤️ 🐈<200d>⬛",
+        "to" => [batman.ap_id, robin.follower_address],
+        "cc" => [],
+        "inReplyTo" => Object.normalize(post).data["id"]
+      }
+    }
+
+    assert {:ok, filtered} = FODirectReply.filter(reply)
+
+    assert match?(^filtered, reply)
+  end
+
   test "replies to public posts are unmodified" do
     batman = insert(:user, nickname: "batman")
     robin = insert(:user, nickname: "robin")
