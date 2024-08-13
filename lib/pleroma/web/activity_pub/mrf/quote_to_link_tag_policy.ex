@@ -10,18 +10,18 @@ defmodule Pleroma.Web.ActivityPub.MRF.QuoteToLinkTagPolicy do
 
   require Pleroma.Constants
 
-  @impl Pleroma.Web.ActivityPub.MRF.Policy
+  @impl true
   def filter(%{"object" => %{"quoteUrl" => _} = object} = activity) do
     {:ok, Map.put(activity, "object", filter_object(object))}
   end
 
-  @impl Pleroma.Web.ActivityPub.MRF.Policy
-  def filter(object), do: {:ok, object}
+  @impl true
+  def filter(activity), do: {:ok, activity}
 
-  @impl Pleroma.Web.ActivityPub.MRF.Policy
+  @impl true
   def describe, do: {:ok, %{}}
 
-  @impl Pleroma.Web.ActivityPub.MRF.Policy
+  @impl true
   def history_awareness, do: :auto
 
   defp filter_object(%{"quoteUrl" => quote_url} = object) do

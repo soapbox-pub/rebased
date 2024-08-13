@@ -7,7 +7,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
 
   alias Pleroma.Web.ActivityPub.MRF.Utils
 
-  @moduledoc "Reject or Word-Replace messages with a keyword or regex"
+  @moduledoc "Reject or Word-Replace activities with a keyword or regex"
 
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
@@ -25,7 +25,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
     |> Enum.join("\n")
   end
 
-  defp check_reject(%{"object" => %{} = object} = message) do
+  defp check_reject(%{"object" => %{} = object} = activity) do
     with {:ok, _new_object} <-
            Pleroma.Object.Updater.do_with_history(object, fn object ->
              payload = object_payload(object)
@@ -35,16 +35,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
                 end) do
                {:reject, "[KeywordPolicy] Matches with rejected keyword"}
              else
-               {:ok, message}
+               {:ok, activity}
              end
            end) do
-      {:ok, message}
+      {:ok, activity}
     else
       e -> e
     end
   end
 
-  defp check_ftl_removal(%{"type" => "Create", "to" => to, "object" => %{} = object} = message) do
+  defp check_ftl_removal(%{"type" => "Create", "to" => to, "object" => %{} = object} = activity) do
     check_keyword = fn object ->
       payload = object_payload(object)
 
@@ -67,24 +67,24 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
 
     if Pleroma.Constants.as_public() in to and should_delist?.(object) do
       to = List.delete(to, Pleroma.Constants.as_public())
-      cc = [Pleroma.Constants.as_public() | message["cc"] || []]
+      cc = [Pleroma.Constants.as_public() | activity["cc"] || []]
 
-      message =
-        message
+      activity =
+        activity
         |> Map.put("to", to)
         |> Map.put("cc", cc)
 
-      {:ok, message}
+      {:ok, activity}
     else
-      {:ok, message}
+      {:ok, activity}
     end
   end
 
-  defp check_ftl_removal(message) do
-    {:ok, message}
+  defp check_ftl_removal(activity) do
+    {:ok, activity}
   end
 
-  defp check_replace(%{"object" => %{} = object} = message) do
+  defp check_replace(%{"object" => %{} = object} = activity) do
     replace_kw = fn object ->
       ["content", "name", "summary"]
       |> Enum.filter(fn field -> Map.has_key?(object, field) && object[field] end)
@@ -103,18 +103,18 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
 
     {:ok, object} = Pleroma.Object.Updater.do_with_history(object, replace_kw)
 
-    message = Map.put(message, "object", object)
+    activity = Map.put(activity, "object", object)
 
-    {:ok, message}
+    {:ok, activity}
   end
 
   @impl true
-  def filter(%{"type" => type, "object" => %{"content" => _content}} = message)
+  def filter(%{"type" => type, "object" => %{"content" => _content}} = activity)
       when type in ["Create", "Update"] do
-    with {:ok, message} <- check_reject(message),
-         {:ok, message} <- check_ftl_removal(message),
-         {:ok, message} <- check_replace(message) do
-      {:ok, message}
+    with {:ok, activity} <- check_reject(activity),
+         {:ok, activity} <- check_ftl_removal(activity),
+         {:ok, activity} <- check_replace(activity) do
+      {:ok, activity}
     else
       {:reject, nil} -> {:reject, "[KeywordPolicy] "}
       {:reject, _} = e -> e
@@ -123,7 +123,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
   end
 
   @impl true
-  def filter(message), do: {:ok, message}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe do
@@ -154,13 +154,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
       related_policy: "Pleroma.Web.ActivityPub.MRF.KeywordPolicy",
       label: "MRF Keyword",
       description:
-        "Reject or Word-Replace messages matching a keyword or [Regex](https://hexdocs.pm/elixir/Regex.html).",
+        "Reject or Word-Replace activities matching a keyword or [Regex](https://hexdocs.pm/elixir/Regex.html).",
       children: [
         %{
           key: :reject,
           type: {:list, :string},
           description: """
-            A list of patterns which result in message being rejected.
+            A list of patterns which result in the activity being rejected.
 
             Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
           """,
@@ -170,7 +170,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
           key: :federated_timeline_removal,
           type: {:list, :string},
           description: """
-            A list of patterns which result in message being removed from federated timelines (a.k.a unlisted).
+            A list of patterns which result in the activity being removed from federated timelines (a.k.a unlisted).
 
             Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
           """,

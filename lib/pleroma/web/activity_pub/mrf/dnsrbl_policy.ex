@@ -38,18 +38,18 @@ defmodule Pleroma.Web.ActivityPub.MRF.DNSRBLPolicy do
   @query_timeout 500
 
   @impl true
-  def filter(%{"actor" => actor} = object) do
+  def filter(%{"actor" => actor} = activity) do
     actor_info = URI.parse(actor)
 
-    with {:ok, object} <- check_rbl(actor_info, object) do
-      {:ok, object}
+    with {:ok, activity} <- check_rbl(actor_info, activity) do
+      {:ok, activity}
     else
       _ -> {:reject, "[DNSRBLPolicy]"}
     end
   end
 
   @impl true
-  def filter(object), do: {:ok, object}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe do
@@ -90,7 +90,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.DNSRBLPolicy do
     }
   end
 
-  defp check_rbl(%{host: actor_host}, object) do
+  defp check_rbl(%{host: actor_host}, activity) do
     with false <- match?(^actor_host, Pleroma.Web.Endpoint.host()),
          zone when not is_nil(zone) <- Keyword.get(Config.get([:mrf_dnsrbl]), :zone) do
       query =
@@ -100,7 +100,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.DNSRBLPolicy do
       rbl_response = rblquery(query)
 
       if Enum.empty?(rbl_response) do
-        {:ok, object}
+        {:ok, activity}
       else
         Task.start(fn ->
           reason =
@@ -117,7 +117,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.DNSRBLPolicy do
         :error
       end
     else
-      _ -> {:ok, object}
+      _ -> {:ok, activity}
     end
   end
 

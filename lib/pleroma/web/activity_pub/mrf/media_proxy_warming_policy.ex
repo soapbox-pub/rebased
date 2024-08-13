@@ -31,7 +31,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
     HTTP.get(url, [], http_client_opts)
   end
 
-  defp preload(%{"object" => %{"attachment" => attachments}} = _message) do
+  defp preload(%{"object" => %{"attachment" => attachments}} = _activity) do
     Enum.each(attachments, fn
       %{"url" => url} when is_list(url) ->
         url
@@ -49,15 +49,15 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
   end
 
   @impl true
-  def filter(%{"type" => type, "object" => %{"attachment" => attachments} = _object} = message)
+  def filter(%{"type" => type, "object" => %{"attachment" => attachments} = _object} = activity)
       when type in ["Create", "Update"] and is_list(attachments) and length(attachments) > 0 do
-    preload(message)
+    preload(activity)
 
-    {:ok, message}
+    {:ok, activity}
   end
 
   @impl true
-  def filter(message), do: {:ok, message}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe, do: {:ok, %{}}

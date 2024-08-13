@@ -79,18 +79,18 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
         %{
           "type" => type,
           "object" => %{"type" => "Note", "to" => to, "inReplyTo" => in_reply_to}
-        } = object
+        } = activity
       )
       when type in ["Create", "Update"] and is_list(to) and is_binary(in_reply_to) do
     # image-only posts from pleroma apparently reach this MRF without the content field
-    content = object["object"]["content"] || ""
+    content = activity["object"]["content"] || ""
 
     # Get the replied-to user for sorting
-    replied_to_user = get_replied_to_user(object["object"])
+    replied_to_user = get_replied_to_user(activity["object"])
 
     mention_users =
       to
-      |> clean_recipients(object)
+      |> clean_recipients(activity)
       |> Enum.map(&User.get_cached_by_ap_id/1)
       |> Enum.reject(&is_nil/1)
       |> sort_replied_user(replied_to_user)
@@ -126,11 +126,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
           content
       end
 
-    {:ok, put_in(object["object"]["content"], content)}
+    {:ok, put_in(activity["object"]["content"], content)}
   end
 
   @impl true
-  def filter(object), do: {:ok, object}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe, do: {:ok, %{}}

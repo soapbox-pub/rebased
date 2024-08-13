@@ -63,20 +63,20 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicy do
   end
 
   @impl true
-  def filter(%{"type" => "Follow", "actor" => actor_id} = message) do
+  def filter(%{"type" => "Follow", "actor" => actor_id} = activity) do
     %User{} = actor = normalize_by_ap_id(actor_id)
 
     score = determine_if_followbot(actor)
 
-    if score < 0.8 || bot_allowed?(message, actor) do
-      {:ok, message}
+    if score < 0.8 || bot_allowed?(activity, actor) do
+      {:ok, activity}
     else
       {:reject, "[AntiFollowbotPolicy] Scored #{actor_id} as #{score}"}
     end
   end
 
   @impl true
-  def filter(message), do: {:ok, message}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe, do: {:ok, %{}}
