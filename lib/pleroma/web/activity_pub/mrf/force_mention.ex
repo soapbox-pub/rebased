@@ -52,7 +52,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMention do
   end
 
   @impl true
-  def filter(object), do: {:ok, object}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe, do: {:ok, %{}}

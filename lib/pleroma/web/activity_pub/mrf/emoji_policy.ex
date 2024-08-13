@@ -28,11 +28,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
     Pleroma.Config.get([:mrf_emoji, :federated_timeline_removal_shortcode], [])
   end
 
-  @impl Pleroma.Web.ActivityPub.MRF.Policy
+  @impl true
   def history_awareness, do: :manual
 
-  @impl Pleroma.Web.ActivityPub.MRF.Policy
-  def filter(%{"type" => type, "object" => %{"type" => objtype} = object} = message)
+  @impl true
+  def filter(%{"type" => type, "object" => %{"type" => objtype} = object} = activity)
       when type in ["Create", "Update"] and objtype in Pleroma.Constants.status_object_types() do
     with {:ok, object} <-
            Updater.do_with_history(object, fn object ->
@@ -42,13 +42,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
            Updater.do_with_history(object, fn object ->
              {:ok, process_remove(object, :shortcode, config_remove_shortcode())}
            end),
-         activity <- Map.put(message, "object", object),
+         activity <- Map.put(activity, "object", object),
          activity <- maybe_delist(activity) do
       {:ok, activity}
     end
   end
 
-  @impl Pleroma.Web.ActivityPub.MRF.Policy
+  @impl true
   def filter(%{"type" => type} = object) when type in Pleroma.Constants.actor_types() do
     with object <- process_remove(object, :url, config_remove_url()),
          object <- process_remove(object, :shortcode, config_remove_shortcode()) do
@@ -56,7 +56,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
     end
   end
 
-  @impl Pleroma.Web.ActivityPub.MRF.Policy
+  @impl true
   def filter(%{"type" => "EmojiReact"} = object) do
     with {:ok, _} <-
            matched_emoji_checker(config_remove_url(), config_remove_shortcode()).(object) do
@@ -67,9 +67,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
     end
   end
 
-  @impl Pleroma.Web.ActivityPub.MRF.Policy
-  def filter(message) do
-    {:ok, message}
+  @impl true
+  def filter(activity) do
+    {:ok, activity}
   end
 
   defp match_string?(string, pattern) when is_binary(pattern) do
@@ -214,7 +214,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
     )
   end
 
-  @impl Pleroma.Web.ActivityPub.MRF.Policy
+  @impl true
   def describe do
     mrf_emoji =
       Pleroma.Config.get(:mrf_emoji, [])
@@ -226,7 +226,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
     {:ok, %{mrf_emoji: mrf_emoji}}
   end
 
-  @impl Pleroma.Web.ActivityPub.MRF.Policy
+  @impl true
   def config_description do
     %{
       key: :mrf_emoji,
@@ -239,7 +239,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
           key: :remove_url,
           type: {:list, :string},
           description: """
-            A list of patterns which result in emoji whose URL matches being removed from the message. This will apply to statuses, emoji reactions, and user profiles.
+            A list of patterns which result in emoji whose URL matches being removed from the activity. This will apply to statuses, emoji reactions, and user profiles.
 
             Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
           """,
@@ -249,7 +249,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
           key: :remove_shortcode,
           type: {:list, :string},
           description: """
-            A list of patterns which result in emoji whose shortcode matches being removed from the message. This will apply to statuses, emoji reactions, and user profiles.
+            A list of patterns which result in emoji whose shortcode matches being removed from the activity. This will apply to statuses, emoji reactions, and user profiles.
 
             Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
           """,
@@ -259,7 +259,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
           key: :federated_timeline_removal_url,
           type: {:list, :string},
           description: """
-            A list of patterns which result in message with emojis whose URLs match being removed from federated timelines (a.k.a unlisted). This will apply only to statuses.
+            A list of patterns which result in activity with emojis whose URLs match being removed from federated timelines (a.k.a unlisted). This will apply only to statuses.
 
             Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
           """,
@@ -269,7 +269,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
           key: :federated_timeline_removal_shortcode,
           type: {:list, :string},
           description: """
-            A list of patterns which result in message with emojis whose shortcodes match being removed from federated timelines (a.k.a unlisted). This will apply only to statuses.
+            A list of patterns which result in activities with emojis whose shortcodes match being removed from federated timelines (a.k.a unlisted). This will apply only to statuses.
 
             Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
           """,

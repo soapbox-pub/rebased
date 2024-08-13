@@ -26,7 +26,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.QuietReply do
             "type" => "Note",
             "inReplyTo" => in_reply_to
           }
-        } = object
+        } = activity
       ) do
     with true <- is_binary(in_reply_to),
          false <- match?([], cc),
@@ -39,21 +39,21 @@ defmodule Pleroma.Web.ActivityPub.MRF.QuietReply do
 
       updated_cc = [Pleroma.Constants.as_public()]
 
-      updated_object =
-        object
+      updated_activity =
+        activity
         |> Map.put("to", updated_to)
         |> Map.put("cc", updated_cc)
         |> put_in(["object", "to"], updated_to)
         |> put_in(["object", "cc"], updated_cc)
 
-      {:ok, updated_object}
+      {:ok, updated_activity}
     else
-      _ -> {:ok, object}
+      _ -> {:ok, activity}
     end
   end
 
   @impl true
-  def filter(object), do: {:ok, object}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe, do: {:ok, %{}}

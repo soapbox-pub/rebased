@@ -11,12 +11,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
   @moduledoc "Filter activities depending on their age"
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
-  defp check_date(%{"object" => %{"published" => published}} = message) do
+  defp check_date(%{"object" => %{"published" => published}} = activity) do
     with %DateTime{} = now <- DateTime.utc_now(),
          {:ok, %DateTime{} = then, _} <- DateTime.from_iso8601(published),
          max_ttl <- Config.get([:mrf_object_age, :threshold]),
          {:ttl, false} <- {:ttl, DateTime.diff(now, then) > max_ttl} do
-      {:ok, message}
+      {:ok, activity}
     else
       {:ttl, true} ->
         {:reject, nil}
@@ -26,73 +26,73 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
     end
   end
 
-  defp check_reject(message, actions) do
+  defp check_reject(activity, actions) do
     if :reject in actions do
       {:reject, "[ObjectAgePolicy]"}
     else
-      {:ok, message}
+      {:ok, activity}
     end
   end
 
-  defp check_delist(message, actions) do
+  defp check_delist(activity, actions) do
     if :delist in actions do
-      with %User{} = user <- User.get_cached_by_ap_id(message["actor"]) do
+      with %User{} = user <- User.get_cached_by_ap_id(activity["actor"]) do
         to =
-          List.delete(message["to"] || [], Pleroma.Constants.as_public()) ++
+          List.delete(activity["to"] || [], Pleroma.Constants.as_public()) ++
             [user.follower_address]
 
         cc =
-          List.delete(message["cc"] || [], user.follower_address) ++
+          List.delete(activity["cc"] || [], user.follower_address) ++
             [Pleroma.Constants.as_public()]
 
-        message =
-          message
+        activity =
+          activity
           |> Map.put("to", to)
           |> Map.put("cc", cc)
           |> Kernel.put_in(["object", "to"], to)
           |> Kernel.put_in(["object", "cc"], cc)
 
-        {:ok, message}
+        {:ok, activity}
       else
         _e ->
           {:reject, "[ObjectAgePolicy] Unhandled error"}
       end
     else
-      {:ok, message}
+      {:ok, activity}
     end
   end
 
-  defp check_strip_followers(message, actions) do
+  defp check_strip_followers(activity, actions) do
     if :strip_followers in actions do
-      with %User{} = user <- User.get_cached_by_ap_id(message["actor"]) do
-        to = List.delete(message["to"] || [], user.follower_address)
-        cc = List.delete(message["cc"] || [], user.follower_address)
+      with %User{} = user <- User.get_cached_by_ap_id(activity["actor"]) do
+        to = List.delete(activity["to"] || [], user.follower_address)
+        cc = List.delete(activity["cc"] || [], user.follower_address)
 
-        message =
-          message
+        activity =
+          activity
           |> Map.put("to", to)
           |> Map.put("cc", cc)
           |> Kernel.put_in(["object", "to"], to)
           |> Kernel.put_in(["object", "cc"], cc)
 
-        {:ok, message}
+        {:ok, activity}
       else
         _e ->
           {:reject, "[ObjectAgePolicy] Unhandled error"}
       end
     else
-      {:ok, message}
+      {:ok, activity}
     end
   end
 
   @impl true
-  def filter(%{"type" => "Create", "object" => %{"published" => _}} = message) do
+  def filter(%{"type" => "Create", "object" => %{"published" => _}} = activity) do
     with actions <- Config.get([:mrf_object_age, :actions]),
-         {:reject, _} <- check_date(message),
-         {:ok, message} <- check_reject(message, actions),
-         {:ok, message} <- check_delist(message, actions),
-         {:ok, message} <- check_strip_followers(message, actions) do
-      {:ok, message}
+         {:reject, _} <- check_date(activity),
+         {:ok, activity} <- check_reject(activity, actions),
+         {:ok, activity} <- check_delist(activity, actions),
+         {:ok, activity} <- check_strip_followers(activity, actions) do
+      {:ok, activity}
     else
       # check_date() is allowed to short-circuit the pipeline
       e -> e
@@ -100,7 +100,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
   end
 
   @impl true
-  def filter(message), do: {:ok, message}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe do
@@ -131,8 +131,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
           type: {:list, :atom},
           description:
             "A list of actions to apply to the post. `:delist` removes the post from public timelines; " <>
-              "`:strip_followers` removes followers from the ActivityPub recipient list ensuring they won't be delivered to home timelines, additionally for followers-only it degrades to a direct message; " <>
-              "`:reject` rejects the message entirely",
+              "`:strip_followers` removes followers from the ActivityPub recipient list ensuring they won't be delivered to home timelines, additionally for followers-only it degrades to a direct activity; " <>
+              "`:reject` rejects the activity entirely",
           suggestions: [:delist, :strip_followers, :reject]
         }
       ]
