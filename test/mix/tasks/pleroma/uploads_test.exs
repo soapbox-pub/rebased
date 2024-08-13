@@ -58,7 +58,7 @@ defmodule Mix.Tasks.Pleroma.UploadsTest do
     end
   end
 
-  defp prep_uploads() do
+  defp prep_uploads do
     upload_dir = Config.get([Pleroma.Uploaders.Local, :uploads])
 
     if not File.exists?(upload_dir) || File.ls!(upload_dir) == [] do
