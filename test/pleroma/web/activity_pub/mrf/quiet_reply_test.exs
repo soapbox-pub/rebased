@@ -50,6 +50,32 @@ defmodule Pleroma.Web.ActivityPub.MRF.QuietReplyTest do
     assert expected_cc == filtered["object"]["cc"]
   end
 
+  test "replying to unlisted post is unmodified" do
+    batman = insert(:user, nickname: "batman")
+    robin = insert(:user, nickname: "robin")
+
+    {:ok, post} = CommonAPI.post(batman, %{status: "To the Batmobile!", visibility: "private"})
+
+    reply = %{
+      "type" => "Create",
+      "actor" => robin.ap_id,
+      "to" => [batman.ap_id],
+      "cc" => [],
+      "object" => %{
+        "type" => "Note",
+        "actor" => robin.ap_id,
+        "content" => "@batman Wait up, I forgot my spandex!",
+        "to" => [batman.ap_id],
+        "cc" => [],
+        "inReplyTo" => Object.normalize(post).data["id"]
+      }
+    }
+
+    assert {:ok, filtered} = QuietReply.filter(reply)
+
+    assert match?(^filtered, reply)
+  end
+
   test "replying direct is unmodified" do
     batman = insert(:user, nickname: "batman")
     robin = insert(:user, nickname: "robin")
