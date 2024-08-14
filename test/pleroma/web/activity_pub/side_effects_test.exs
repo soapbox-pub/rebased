@@ -54,20 +54,17 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
           [
             stream: fn _, _ -> nil end
           ]
-        },
-        {
-          Pleroma.Web.Push,
-          [],
-          [
-            send: fn _ -> nil end
-          ]
         }
       ]) do
         SideEffects.handle_after_transaction(meta)
 
         assert called(Pleroma.Web.Streamer.stream(["user", "user:notification"], notification))
         assert called(Pleroma.Web.Streamer.stream(["user", "user:pleroma_chat"], :_))
-        assert called(Pleroma.Web.Push.send(notification))
+
+        assert_enqueued(
+          worker: "Pleroma.Workers.WebPusherWorker",
+          args: %{"notification_id" => notification.id, "op" => "web_push"}
+        )
       end
     end
   end

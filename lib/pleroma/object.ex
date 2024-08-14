@@ -255,7 +255,8 @@ defmodule Pleroma.Object do
   @spec cleanup_attachments(boolean(), Object.t()) ::
           {:ok, Oban.Job.t() | nil}
   def cleanup_attachments(true, %Object{} = object) do
-    AttachmentsCleanupWorker.enqueue("cleanup_attachments", %{"object" => object})
+    AttachmentsCleanupWorker.new(%{"op" => "cleanup_attachments", "object" => object})
+    |> Oban.insert()
   end
 
   def cleanup_attachments(_, _), do: {:ok, nil}

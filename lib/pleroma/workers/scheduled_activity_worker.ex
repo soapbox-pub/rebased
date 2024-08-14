@@ -7,7 +7,7 @@ defmodule Pleroma.Workers.ScheduledActivityWorker do
   The worker to post scheduled activity.
   """
 
-  use Pleroma.Workers.WorkerHelper, queue: "federator_outgoing"
+  use Oban.Worker, queue: :federator_outgoing, max_attempts: 5
 
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
@@ -15,7 +15,7 @@ defmodule Pleroma.Workers.ScheduledActivityWorker do
 
   require Logger
 
-  @impl Oban.Worker
+  @impl true
   def perform(%Job{args: %{"activity_id" => activity_id}}) do
     with %ScheduledActivity{} = scheduled_activity <- find_scheduled_activity(activity_id),
          %User{} = user <- find_user(scheduled_activity.user_id) do
@@ -37,7 +37,7 @@ defmodule Pleroma.Workers.ScheduledActivityWorker do
     end
   end
 
-  @impl Oban.Worker
+  @impl true
   def timeout(_job), do: :timer.seconds(5)
 
   defp find_scheduled_activity(id) do

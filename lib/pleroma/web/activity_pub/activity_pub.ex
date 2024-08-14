@@ -225,10 +225,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          %{data: %{"expires_at" => %DateTime{} = expires_at}} = activity
        ) do
     with {:ok, _job} <-
-           Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
-             activity_id: activity.id,
-             expires_at: expires_at
-           }) do
+           Pleroma.Workers.PurgeExpiredActivity.enqueue(
+             %{
+               activity_id: activity.id
+             },
+             scheduled_at: expires_at
+           ) do
       {:ok, activity}
     end
   end
@@ -467,10 +469,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          _ <- notify_and_stream(activity) do
       maybe_federate(activity)
 
-      BackgroundWorker.enqueue("move_following", %{
+      BackgroundWorker.new(%{
+        "op" => "move_following",
         "origin_id" => origin.id,
         "target_id" => target.id
       })
+      |> Oban.insert()
 
       User.update_last_move_at(origin)
 
@@ -1882,10 +1886,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     # enqueue a task to fetch all pinned objects
     Enum.each(pins, fn {ap_id, _} ->
       if is_nil(Object.get_cached_by_ap_id(ap_id)) do
-        Pleroma.Workers.RemoteFetcherWorker.enqueue("fetch_remote", %{
+        Pleroma.Workers.RemoteFetcherWorker.new(%{
+          "op" => "fetch_remote",
           "id" => ap_id,
           "depth" => 1
         })
+        |> Oban.insert()
       end
     end)
   end

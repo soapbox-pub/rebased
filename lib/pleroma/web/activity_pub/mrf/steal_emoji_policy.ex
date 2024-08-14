@@ -62,7 +62,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
   end
 
   @impl true
-  def filter(%{"object" => %{"emoji" => foreign_emojis, "actor" => actor}} = message) do
+  def filter(%{"object" => %{"emoji" => foreign_emojis, "actor" => actor}} = activity) do
     host = URI.parse(actor).host
 
     if host != Pleroma.Web.Endpoint.host() and accept_host?(host) do
@@ -97,10 +97,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
       end
     end
 
-    {:ok, message}
+    {:ok, activity}
   end
 
-  def filter(message), do: {:ok, message}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   @spec config_description :: %{

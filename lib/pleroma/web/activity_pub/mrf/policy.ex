@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.Policy do
-  @callback filter(map()) :: {:ok | :reject, map()}
+  @callback filter(Pleroma.Activity.t()) :: {:ok | :reject, Pleroma.Activity.t()}
   @callback describe() :: {:ok | :error, map()}
   @callback config_description() :: %{
               optional(:children) => [map()],

@@ -28,6 +28,7 @@ defmodule Pleroma.Web.Push do
   @spec send(Pleroma.Notification.t()) ::
           {:ok, Oban.Job.t()} | {:error, Oban.Job.changeset() | term()}
   def send(notification) do
-    WebPusherWorker.enqueue("web_push", %{"notification_id" => notification.id})
+    WebPusherWorker.new(%{"op" => "web_push", "notification_id" => notification.id})
+    |> Oban.insert()
   end
 end

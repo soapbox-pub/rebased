@@ -1,0 +1,1 @@
+Worker configuration is no longer available. This only affects custom max_retries values for a couple Oban queues.

@@ -2,11 +2,13 @@ defmodule Pleroma.Search do
   alias Pleroma.Workers.SearchIndexingWorker
 
   def add_to_index(%Pleroma.Activity{id: activity_id}) do
-    SearchIndexingWorker.enqueue("add_to_index", %{"activity" => activity_id})
+    SearchIndexingWorker.new(%{"op" => "add_to_index", "activity" => activity_id})
+    |> Oban.insert()
   end
 
   def remove_from_index(%Pleroma.Object{id: object_id}) do
-    SearchIndexingWorker.enqueue("remove_from_index", %{"object" => object_id})
+    SearchIndexingWorker.new(%{"op" => "remove_from_index", "object" => object_id})
+    |> Oban.insert()
   end
 
   def search(query, options) do

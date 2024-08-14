@@ -35,22 +35,30 @@ defmodule Pleroma.Web.Federator do
   end
 
   # Client API
-  def incoming_ap_doc(%{params: _params, req_headers: _req_headers} = args) do
-    job_args = Enum.into(args, %{}, fn {k, v} -> {Atom.to_string(k), v} end)
-
-    ReceiverWorker.enqueue(
-      "incoming_ap_doc",
-      Map.put(job_args, "timeout", :timer.seconds(20)),
+  def incoming_ap_doc(%{params: params, req_headers: req_headers}) do
+    ReceiverWorker.new(
+      %{
+        "op" => "incoming_ap_doc",
+        "req_headers" => req_headers,
+        "params" => params,
+        "timeout" => :timer.seconds(20)
+      },
       priority: 2
     )
+    |> Oban.insert()
   end
 
   def incoming_ap_doc(%{"type" => "Delete"} = params) do
-    ReceiverWorker.enqueue("incoming_ap_doc", %{"params" => params}, priority: 3, queue: :slow)
+    ReceiverWorker.new(%{"op" => "incoming_ap_doc", "params" => params},
+      priority: 3,
+      queue: :slow
+    )
+    |> Oban.insert()
   end
 
   def incoming_ap_doc(params) do
-    ReceiverWorker.enqueue("incoming_ap_doc", %{"params" => params})
+    ReceiverWorker.new(%{"op" => "incoming_ap_doc", "params" => params})
+    |> Oban.insert()
   end
 
   @impl true
@@ -60,9 +68,10 @@ defmodule Pleroma.Web.Federator do
 
   @impl true
   def publish(%Pleroma.Activity{data: %{"type" => type}} = activity) do
-    PublisherWorker.enqueue("publish", %{"activity_id" => activity.id},
+    PublisherWorker.new(%{"op" => "publish", "activity_id" => activity.id},
       priority: publish_priority(type)
     )
+    |> Oban.insert()
   end
 
   defp publish_priority("Delete"), do: 3

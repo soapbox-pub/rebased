@@ -52,11 +52,14 @@ defmodule Pleroma.MFA.Token do
   @spec create(User.t(), Authorization.t() | nil) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
   def create(user, authorization \\ nil) do
     with {:ok, token} <- do_create(user, authorization) do
-      Pleroma.Workers.PurgeExpiredToken.enqueue(%{
-        token_id: token.id,
-        valid_until: DateTime.from_naive!(token.valid_until, "Etc/UTC"),
-        mod: __MODULE__
-      })
+      Pleroma.Workers.PurgeExpiredToken.new(
+        %{
+          token_id: token.id,
+          mod: __MODULE__
+        },
+        scheduled_at: DateTime.from_naive!(token.valid_until, "Etc/UTC")
+      )
+      |> Oban.insert()
 
       {:ok, token}
     end

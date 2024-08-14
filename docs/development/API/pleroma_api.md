@@ -145,6 +145,9 @@ See [Admin-API](admin_api.md)
 
 ## `/api/v1/pleroma/accounts/:id/subscribe`
 ### Subscribe to receive notifications for all statuses posted by a user
+
+Deprecated. `notify` parameter in `POST /api/v1/accounts/:id/follow` should be used instead.
+
 * Method `POST`
 * Authentication: required
 * Params:
@@ -171,6 +174,9 @@ See [Admin-API](admin_api.md)
 
 ## `/api/v1/pleroma/accounts/:id/unsubscribe`
 ### Unsubscribe to stop receiving notifications from user statuses
+
+Deprecated. `notify` parameter in `POST /api/v1/accounts/:id/follow` should be used instead.
+
 * Method `POST`
 * Authentication: required
 * Params:

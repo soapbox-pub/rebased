@@ -5,9 +5,9 @@
 defmodule Pleroma.Workers.BackgroundWorker do
   alias Pleroma.User
 
-  use Pleroma.Workers.WorkerHelper, queue: "background"
+  use Oban.Worker, queue: :background
 
-  @impl Oban.Worker
+  @impl true
 
   def perform(%Job{args: %{"op" => "user_activation", "user_id" => user_id, "status" => status}}) do
     user = User.get_cached_by_id(user_id)
@@ -39,6 +39,6 @@ defmodule Pleroma.Workers.BackgroundWorker do
     User.perform(:verify_fields_links, user)
   end
 
-  @impl Oban.Worker
-  def timeout(_job), do: :timer.seconds(15)
+  @impl true
+  def timeout(_job), do: :timer.seconds(900)
 end

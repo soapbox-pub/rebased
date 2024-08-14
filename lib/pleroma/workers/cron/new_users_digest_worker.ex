@@ -9,9 +9,9 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorker do
 
   import Ecto.Query
 
-  use Pleroma.Workers.WorkerHelper, queue: "background"
+  use Oban.Worker, queue: :background
 
-  @impl Oban.Worker
+  @impl true
   def perform(_job) do
     if Pleroma.Config.get([Pleroma.Emails.NewUsersDigestEmail, :enabled]) do
       today = NaiveDateTime.utc_now() |> Timex.beginning_of_day()
@@ -61,6 +61,6 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorker do
     :ok
   end
 
-  @impl Oban.Worker
+  @impl true
   def timeout(_job), do: :timer.seconds(5)
 end

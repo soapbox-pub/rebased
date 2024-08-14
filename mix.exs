@@ -205,6 +205,7 @@ defmodule Pleroma.Mixfile do
       {:bandit, "~> 1.5.2"},
       {:websock_adapter, "~> 0.5.6"},
       {:oban_live_dashboard, "~> 0.1.1"},
+      {:multipart, "~> 0.4.0", optional: true},
       {:icalendar, "~> 1.1"},
       {:geospatial, "~> 0.3.1"},
 

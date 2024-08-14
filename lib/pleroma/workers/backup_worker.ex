@@ -9,7 +9,7 @@ defmodule Pleroma.Workers.BackupWorker do
   alias Pleroma.Config.Getting, as: Config
   alias Pleroma.User.Backup
 
-  @impl Oban.Worker
+  @impl true
   def perform(%Job{
         args: %{"op" => "process", "backup_id" => backup_id}
       }) do
@@ -32,7 +32,7 @@ defmodule Pleroma.Workers.BackupWorker do
     end
   end
 
-  @impl Oban.Worker
+  @impl true
   def timeout(_job), do: Config.get([Backup, :timeout], :timer.minutes(30))
 
   defp has_email?(user) do

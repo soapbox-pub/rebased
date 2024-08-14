@@ -6,13 +6,13 @@ defmodule Pleroma.Workers.PollWorker do
   @moduledoc """
   Generates notifications when a poll ends.
   """
-  use Pleroma.Workers.WorkerHelper, queue: "background"
+  use Oban.Worker, queue: :background
 
   alias Pleroma.Activity
   alias Pleroma.Notification
   alias Pleroma.Object
 
-  @impl Oban.Worker
+  @impl true
   def perform(%Job{args: %{"op" => "poll_end", "activity_id" => activity_id}}) do
     with %Activity{} = activity <- find_poll_activity(activity_id),
          {:ok, notifications} <- Notification.create_poll_notifications(activity) do
@@ -23,7 +23,7 @@ defmodule Pleroma.Workers.PollWorker do
     end
   end
 
-  @impl Oban.Worker
+  @impl true
   def timeout(_job), do: :timer.seconds(5)
 
   defp find_poll_activity(activity_id) do

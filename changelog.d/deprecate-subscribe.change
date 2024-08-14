@@ -1,0 +1,1 @@
+Deprecate `/api/v1/pleroma/accounts/:id/subscribe`/`unsubscribe`
