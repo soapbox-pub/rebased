@@ -463,6 +463,7 @@ defmodule Pleroma.User do
   def remote_user_changeset(struct \\ %User{local: false}, params) do
     bio_limit = Config.get([:instance, :user_bio_length], 5000)
     name_limit = Config.get([:instance, :user_name_length], 100)
+    fields_limit = Config.get([:instance, :max_remote_account_fields], 0)
 
     name =
       case params[:name] do
@@ -476,6 +477,7 @@ defmodule Pleroma.User do
       |> Map.put_new(:last_refreshed_at, NaiveDateTime.utc_now())
       |> truncate_if_exists(:name, name_limit)
       |> truncate_if_exists(:bio, bio_limit)
+      |> Map.update(:fields, [], &Enum.take(&1, fields_limit))
       |> truncate_fields_param()
       |> fix_follower_address()
 
