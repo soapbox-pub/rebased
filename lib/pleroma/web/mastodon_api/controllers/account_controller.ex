@@ -279,6 +279,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       {:error, %Ecto.Changeset{errors: [{:name, {_, _}} | _]}} ->
         render_error(conn, :request_entity_too_large, "Name is too long")
 
+      {:error, %Ecto.Changeset{errors: [{:avatar_description, {_, _}} | _]}} ->
+        render_error(conn, :request_entity_too_large, "Avatar description is too long")
+
+      {:error, %Ecto.Changeset{errors: [{:header_description, {_, _}} | _]}} ->
+        render_error(conn, :request_entity_too_large, "Banner description is too long")
+
       {:error, %Ecto.Changeset{errors: [{:fields, {"invalid", _}} | _]}} ->
         render_error(conn, :request_entity_too_large, "One or more field entries are too long")
 

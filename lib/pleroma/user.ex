@@ -586,16 +586,18 @@ defmodule Pleroma.User do
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
     |> validate_inclusion(:actor_type, Pleroma.Constants.allowed_user_actor_types())
+    |> validate_image_description(:avatar_description, params)
+    |> validate_image_description(:header_description, params)
     |> put_fields()
     |> put_emoji()
     |> put_change_if_present(:bio, &{:ok, parse_bio(&1, struct)})
     |> put_change_if_present(
       :avatar,
-      &put_upload(&1, :avatar, Map.get(params, :avatar_description, nil))
+      &put_upload(&1, :avatar, Map.get(params, :avatar_description))
     )
     |> put_change_if_present(
       :banner,
-      &put_upload(&1, :banner, Map.get(params, :header_description, nil))
+      &put_upload(&1, :banner, Map.get(params, :header_description))
     )
     |> put_change_if_present(:background, &put_upload(&1, :background))
     |> put_change_if_present(
@@ -689,7 +691,20 @@ defmodule Pleroma.User do
     end
   end
 
-  defp maybe_update_image_description(changeset, image_field, description) do
+  defp validate_image_description(changeset, key, params) do
+    description_limit = Config.get([:instance, :description_limit], 5_000)
+    description = Map.get(params, key)
+
+    if is_binary(description) and String.length(description) > description_limit do
+      changeset
+      |> add_error(key, "#{key} is too long")
+    else
+      changeset
+    end
+  end
+
+  defp maybe_update_image_description(changeset, image_field, description)
+       when is_binary(description) do
     with {:image_missing, true} <- {:image_missing, not changed?(changeset, image_field)},
          {:existing_image, %{"id" => id}} <-
            {:existing_image, Map.get(changeset.data, image_field)},
@@ -697,9 +712,12 @@ defmodule Pleroma.User do
          {:ok, object} <- Object.update_data(object, %{"name" => description}) do
       put_change(changeset, image_field, object.data)
     else
+      {:description_too_long, true} -> {:error}
       _ -> changeset
     end
   end
+
+  defp maybe_update_image_description(changeset, _, _), do: changeset
 
   def update_as_admin_changeset(struct, params) do
     struct
