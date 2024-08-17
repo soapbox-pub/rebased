@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.CheckDomainResolveWorker do
-  use Pleroma.Workers.WorkerHelper, queue: "check_domain_resolve"
+  use Oban.Worker, queue: :check_domain_resolve
 
   alias Pleroma.Domain
   alias Pleroma.HTTP
@@ -11,7 +11,7 @@ defmodule Pleroma.Workers.CheckDomainResolveWorker do
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.WebFinger
 
-  @impl Oban.Worker
+  @impl true
   def perform(%Job{args: %{"id" => domain_id}}) do
     domain = Domain.get(domain_id)
 
@@ -31,6 +31,6 @@ defmodule Pleroma.Workers.CheckDomainResolveWorker do
     |> Repo.update()
   end
 
-  @impl Oban.Worker
+  @impl true
   def timeout(_job), do: :timer.seconds(5)
 end

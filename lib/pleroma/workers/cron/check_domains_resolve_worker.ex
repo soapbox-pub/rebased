@@ -23,11 +23,14 @@ defmodule Pleroma.Workers.Cron.CheckDomainsResolveWorker do
       |> select([d], d.id)
       |> Repo.all()
 
-    Enum.each(domains, fn domain_id ->
-      Pleroma.Workers.CheckDomainResolveWorker.enqueue("check_domain_resolve", %{
+    domains
+    |> Enum.map(fn domain_id ->
+      Pleroma.Workers.CheckDomainResolveWorker.new(%{
+        "op" => "check_domain_resolve",
         "id" => domain_id
       })
     end)
+    |> Oban.insert_all()
 
     :ok
   end

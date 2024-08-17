@@ -204,7 +204,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def notify_and_stream(activity) do
-    NotificationWorker.enqueue("create", %{"activity_id" => activity.id})
+    NotificationWorker.new(%{"op" => "create", "activity_id" => activity.id})
+    |> Oban.insert()
 
     original_activity =
       case activity do

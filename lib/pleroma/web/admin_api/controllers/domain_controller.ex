@@ -41,9 +41,11 @@ defmodule Pleroma.Web.AdminAPI.DomainController do
            {:domain_not_used, params[:domain] !== Pleroma.Web.WebFinger.host()},
          {:ok, domain} <- Domain.create(params),
          _ <- @cachex.del(:domain_cache, :domains_list) do
-      Pleroma.Workers.CheckDomainResolveWorker.enqueue("check_domain_resolve", %{
+      Pleroma.Workers.CheckDomainResolveWorker.new(%{
+        "op" => "check_domain_resolve",
         "id" => domain.id
       })
+      |> Oban.insert()
 
       render(conn, "show.json", domain: domain)
     else
