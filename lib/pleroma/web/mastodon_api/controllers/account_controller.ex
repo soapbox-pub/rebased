@@ -232,6 +232,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Maps.put_if_present(:is_discoverable, params[:discoverable])
       |> Maps.put_if_present(:birthday, params[:birthday])
       |> Maps.put_if_present(:language, Pleroma.Web.Gettext.normalize_locale(params[:language]))
+      |> Maps.put_if_present(:avatar_description, params[:avatar_description])
+      |> Maps.put_if_present(:header_description, params[:header_description])
 
     # What happens here:
     #

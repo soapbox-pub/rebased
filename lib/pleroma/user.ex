@@ -589,13 +589,21 @@ defmodule Pleroma.User do
     |> put_fields()
     |> put_emoji()
     |> put_change_if_present(:bio, &{:ok, parse_bio(&1, struct)})
-    |> put_change_if_present(:avatar, &put_upload(&1, :avatar))
-    |> put_change_if_present(:banner, &put_upload(&1, :banner))
+    |> put_change_if_present(
+      :avatar,
+      &put_upload(&1, :avatar, Map.get(params, :avatar_description, nil))
+    )
+    |> put_change_if_present(
+      :banner,
+      &put_upload(&1, :banner, Map.get(params, :header_description, nil))
+    )
     |> put_change_if_present(:background, &put_upload(&1, :background))
     |> put_change_if_present(
       :pleroma_settings_store,
       &{:ok, Map.merge(struct.pleroma_settings_store, &1)}
     )
+    |> maybe_update_image_description(:avatar, Map.get(params, :avatar_description))
+    |> maybe_update_image_description(:banner, Map.get(params, :header_description))
     |> validate_fields(false)
   end
 
@@ -674,10 +682,22 @@ defmodule Pleroma.User do
     end
   end
 
-  defp put_upload(value, type) do
+  defp put_upload(value, type, description \\ nil) do
     with %Plug.Upload{} <- value,
-         {:ok, object} <- ActivityPub.upload(value, type: type) do
+         {:ok, object} <- ActivityPub.upload(value, type: type, description: description) do
       {:ok, object.data}
+    end
+  end
+
+  defp maybe_update_image_description(changeset, image_field, description) do
+    with {:image_missing, true} <- {:image_missing, not changed?(changeset, image_field)},
+         {:existing_image, %{"id" => id}} <-
+           {:existing_image, Map.get(changeset.data, image_field)},
+         {:object, %Object{} = object} <- {:object, Object.get_by_ap_id(id)},
+         {:ok, object} <- Object.update_data(object, %{"name" => description}) do
+      put_change(changeset, image_field, object.data)
+    else
+      e -> changeset
     end
   end
 
