@@ -697,7 +697,7 @@ defmodule Pleroma.User do
          {:ok, object} <- Object.update_data(object, %{"name" => description}) do
       put_change(changeset, image_field, object.data)
     else
-      e -> changeset
+      _ -> changeset
     end
   end
 
