@@ -111,7 +111,9 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
             format: :uri,
             nullable: true,
             description: "Favicon image of the user's instance"
-          }
+          },
+          avatar_description: %Schema{type: :string},
+          header_description: %Schema{type: :string}
         }
       },
       source: %Schema{
@@ -147,9 +149,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
             }
           }
         }
-      },
-      avatar_description: %Schema{type: :string},
-      header_description: %Schema{type: :string}
+      }
     },
     example: %{
       "acct" => "foobar",

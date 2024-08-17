@@ -97,11 +97,6 @@ Endpoints which accept `with_relationships` parameter:
 - `/api/v1/accounts/:id/following`
 - `/api/v1/mutes`
 
-Has these additional fields:
-
-- `avatar_description`: string, image description for user avatar, defaults to empty string
-- `header_description`: string, image description for user banner, defaults to empty string
-
 Has these additional fields under the `pleroma` object:
 
 - `ap_id`: nullable URL string, ActivityPub id of the user
@@ -125,6 +120,8 @@ Has these additional fields under the `pleroma` object:
 - `notification_settings`: object, can be absent. See `/api/v1/pleroma/notification_settings` for the parameters/keys returned.
 - `accepts_chat_messages`: boolean, but can be null if we don't have that information about a user
 - `favicon`: nullable URL string, Favicon image of the user's instance
+- `avatar_description`: string, image description for user avatar, defaults to empty string
+- `header_description`: string, image description for user banner, defaults to empty string
 
 ### Source
 

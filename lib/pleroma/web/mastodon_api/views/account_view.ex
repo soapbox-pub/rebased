@@ -324,10 +324,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         skip_thread_containment: user.skip_thread_containment,
         background_image: image_url(user.background) |> MediaProxy.url(),
         accepts_chat_messages: user.accepts_chat_messages,
-        favicon: favicon
-      },
-      avatar_description: avatar_description,
-      header_description: header_description
+        favicon: favicon,
+        avatar_description: avatar_description,
+        header_description: header_description
+      }
     }
     |> maybe_put_role(user, opts[:for])
     |> maybe_put_settings(user, opts[:for], opts)
