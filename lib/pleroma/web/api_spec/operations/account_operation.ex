@@ -826,6 +826,16 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           type: :string,
           nullable: true,
           description: "User location"
+        },
+        avatar_description: %Schema{
+          type: :string,
+          nullable: true,
+          description: "Avatar image description."
+        },
+        header_description: %Schema{
+          type: :string,
+          nullable: true,
+          description: "Header image description."
         }
       },
       example: %{

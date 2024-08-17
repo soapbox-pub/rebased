@@ -97,7 +97,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         skip_thread_containment: false,
         accepts_chat_messages: nil,
         location: nil,
-        is_local: true
+        is_local: true,
+        avatar_description: "",
+        header_description: ""
       }
     }
 
@@ -306,7 +308,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         skip_thread_containment: false,
         accepts_chat_messages: nil,
         location: nil,
-        is_local: true
+        is_local: true,
+        avatar_description: "",
+        header_description: ""
       }
     }
 
