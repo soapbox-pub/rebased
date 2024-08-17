@@ -144,7 +144,7 @@ defmodule Pleroma.Mixfile do
       {:telemetry_poller, "~> 1.0"},
       {:tzdata, "~> 1.0.3"},
       {:plug_cowboy, "~> 2.5"},
-      {:oban, "~> 2.17.9"},
+      {:oban, "~> 2.18.0"},
       {:gettext, "~> 0.20"},
       {:bcrypt_elixir, "~> 2.2"},
       {:trailing_format_plug, "~> 0.0.7"},
