@@ -97,13 +97,18 @@ Endpoints which accept `with_relationships` parameter:
 - `/api/v1/accounts/:id/following`
 - `/api/v1/mutes`
 
+Has these additional fields:
+
+- `avatar_description`: string, image description for user avatar, defaults to empty string
+- `header_description`: string, image description for user banner, defaults to empty string
+
 Has these additional fields under the `pleroma` object:
 
 - `ap_id`: nullable URL string, ActivityPub id of the user
 - `background_image`: nullable URL string, background image of the user
 - `tags`: Lists an array of tags for the user
 - `relationship` (object): Includes fields as documented for Mastodon API https://docs.joinmastodon.org/entities/relationship/
-- `is_moderator`: boolean, nullable,  true if user is a moderator
+- `is_moderator`: boolean, nullable, true if user is a moderator
 - `is_admin`: boolean, nullable, true if user is an admin
 - `confirmation_pending`: boolean, true if a new user account is waiting on email confirmation to be activated
 - `hide_favorites`: boolean, true when the user has hiding favorites enabled
@@ -255,6 +260,8 @@ Additional parameters can be added to the JSON body/Form data:
 - `actor_type` - the type of this account.
 - `accepts_chat_messages` - if false, this account will reject all chat messages.
 - `language` - user's preferred language for receiving emails (digest, confirmation, etc.)
+- `avatar_description` - image description for user avatar
+- `header_description` - image description for user banner
 
 All images (avatar, banner and background) can be reset to the default by sending an empty string ("") instead of a file.
 

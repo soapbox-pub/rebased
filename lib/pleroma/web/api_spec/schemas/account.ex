@@ -147,7 +147,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
             }
           }
         }
-      }
+      },
       avatar_description: %Schema{type: :string},
       header_description: %Schema{type: :string}
     },
