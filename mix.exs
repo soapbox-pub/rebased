@@ -158,7 +158,7 @@ defmodule Pleroma.Mixfile do
       {:gun, "~> 2.0.0-rc.1", override: true},
       {:finch, "~> 0.15"},
       {:jason, "~> 1.2"},
-      {:mogrify, "~> 0.8.0"},
+      {:mogrify, "~> 0.9.0", override: "true"},
       {:ex_aws, "~> 2.1.6"},
       {:ex_aws_s3, "~> 2.0"},
       {:sweet_xml, "~> 0.7.2"},
