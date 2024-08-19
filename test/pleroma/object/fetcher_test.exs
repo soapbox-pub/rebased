@@ -100,7 +100,7 @@ defmodule Pleroma.Object.FetcherTest do
     test "it returns thread depth exceeded error if thread depth is exceeded" do
       clear_config([:instance, :federation_incoming_replies_max_depth], 0)
 
-      assert {:error, :allowed_depth} = Fetcher.fetch_object_from_id(@ap_id, depth: 1)
+      assert {:allowed_depth, false} = Fetcher.fetch_object_from_id(@ap_id, depth: 1)
     end
 
     test "it fetches object if max thread depth is restricted to 0 and depth is not specified" do
@@ -118,15 +118,18 @@ defmodule Pleroma.Object.FetcherTest do
 
   describe "actor origin containment" do
     test "it rejects objects with a bogus origin" do
-      {:error, _} = Fetcher.fetch_object_from_id("https://info.pleroma.site/activity.json")
+      {:containment, :error} =
+        Fetcher.fetch_object_from_id("https://info.pleroma.site/activity.json")
     end
 
     test "it rejects objects when attributedTo is wrong (variant 1)" do
-      {:error, _} = Fetcher.fetch_object_from_id("https://info.pleroma.site/activity2.json")
+      {:containment, :error} =
+        Fetcher.fetch_object_from_id("https://info.pleroma.site/activity2.json")
     end
 
     test "it rejects objects when attributedTo is wrong (variant 2)" do
-      {:error, _} = Fetcher.fetch_object_from_id("https://info.pleroma.site/activity3.json")
+      {:containment, :error} =
+        Fetcher.fetch_object_from_id("https://info.pleroma.site/activity3.json")
     end
   end
 
@@ -150,14 +153,14 @@ defmodule Pleroma.Object.FetcherTest do
       clear_config([:mrf_keyword, :reject], ["yeah"])
       clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.KeywordPolicy])
 
-      assert {:reject, "[KeywordPolicy] Matches with rejected keyword"} ==
+      assert {:transmogrifier, {:reject, "[KeywordPolicy] Matches with rejected keyword"}} ==
                Fetcher.fetch_object_from_id(
                  "http://mastodon.example.org/@admin/99541947525187367"
                )
     end
 
     test "it does not fetch a spoofed object uploaded on an instance as an attachment" do
-      assert {:error, _} =
+      assert {:fetch, {:error, {:content_type, "application/json"}}} =
                Fetcher.fetch_object_from_id(
                  "https://patch.cx/media/03ca3c8b4ac3ddd08bf0f84be7885f2f88de0f709112131a22d83650819e36c2.json"
                )
