@@ -148,12 +148,17 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
                {"digest", p.digest}
              ]
            ) do
-      maybe_set_reachable(p.unreachable_since, p.inbox)
+      if not is_nil(p.unreachable_since) do
+        Instances.set_reachable(p.inbox)
+      end
 
       result
     else
       {_post_result, %{status: code} = response} = e ->
-        maybe_set_unreachable(p.unreachable_since, p.inbox)
+        if is_nil(p.unreachable_since) do
+          Instances.set_unreachable(p.inbox)
+        end
+
         Logger.metadata(activity: p.activity_id, inbox: p.inbox, status: code)
         Logger.error("Publisher failed to inbox #{p.inbox} with status #{code}")
 
@@ -174,7 +179,10 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         connection_pool_snooze()
 
       e ->
-        maybe_set_unreachable(p.unreachable_since, p.inbox)
+        if is_nil(p.unreachable_since) do
+          Instances.set_unreachable(p.inbox)
+        end
+
         Logger.metadata(activity: p.activity_id, inbox: p.inbox)
         Logger.error("Publisher failed to inbox #{p.inbox} #{inspect(e)}")
         {:error, e}
@@ -182,12 +190,6 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   end
 
   defp connection_pool_snooze, do: {:snooze, 3}
-
-  defp maybe_set_reachable(%NaiveDateTime{}, inbox), do: Instances.set_reachable(inbox)
-  defp maybe_set_reachable(_, _), do: :ok
-
-  defp maybe_set_unreachable(nil, inbox), do: Instances.set_unreachable(inbox)
-  defp maybe_set_unreachable(%NaiveDateTime{}, _), do: :ok
 
   defp signature_host(%URI{port: port, scheme: scheme, host: host}) do
     if port == URI.default_port(scheme) do

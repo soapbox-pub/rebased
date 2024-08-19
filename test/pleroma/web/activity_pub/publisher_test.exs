@@ -180,7 +180,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                Publisher.prepare_one(%{
                  inbox: inbox,
                  activity_id: activity.id,
-                 unreachable_since: NaiveDateTime.utc_now()
+                 unreachable_since: NaiveDateTime.utc_now() |> NaiveDateTime.to_string()
                })
                |> Publisher.publish_one()
 
@@ -269,7 +269,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                         Publisher.prepare_one(%{
                           inbox: inbox,
                           activity_id: activity.id,
-                          unreachable_since: NaiveDateTime.utc_now()
+                          unreachable_since: NaiveDateTime.utc_now() |> NaiveDateTime.to_string()
                         })
                         |> Publisher.publish_one()
              end) =~ "connrefused"
