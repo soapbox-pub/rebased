@@ -442,7 +442,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           %Schema{
             type: :object,
             properties: %{
-              target_language: %Schema{
+              lang: %Schema{
                 type: :string,
                 nullable: true,
                 description: "Translation target language."

@@ -574,7 +574,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
             Object.local?(object) ||
               Pleroma.Config.get([Pleroma.Language.Translation, :allow_remote])},
          {:language, language} when is_binary(language) <-
-           {:language, Map.get(params, :target_language) || user.language},
+           {:language, Map.get(params, :lang) || user.language},
          {:ok, result} <-
            Translation.translate(
              object.data["content"],
