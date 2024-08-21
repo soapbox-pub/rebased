@@ -803,19 +803,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   defp build_application(_), do: nil
 
-  # Workaround for Elixir issue #10771
-  # Avoid applying URI.merge unless necessary
-  # TODO: revert to always attempting URI.merge(image_url_data, page_url_data)
-  # when Elixir 1.12 is the minimum supported version
-  @spec build_image_url(struct() | nil, struct()) :: String.t() | nil
-  defp build_image_url(
-         %URI{scheme: image_scheme, host: image_host} = image_url_data,
-         %URI{} = _page_url_data
-       )
-       when not is_nil(image_scheme) and not is_nil(image_host) do
-    image_url_data |> to_string
-  end
-
+  @spec build_image_url(URI.t(), URI.t()) :: String.t()
   defp build_image_url(%URI{} = image_url_data, %URI{} = page_url_data) do
     URI.merge(page_url_data, image_url_data) |> to_string
   end
