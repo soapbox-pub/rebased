@@ -18,7 +18,7 @@ defmodule Pleroma.User.Import do
       fn identifier ->
         with {:ok, %User{} = muted_user} <- User.get_or_fetch(identifier),
              {:ok, _} <- User.mute(user, muted_user) do
-          muted_user
+          {:ok, muted_user}
         else
           error -> handle_error(:mutes_import, identifier, error)
         end
@@ -32,7 +32,7 @@ defmodule Pleroma.User.Import do
       fn identifier ->
         with {:ok, %User{} = blocked} <- User.get_or_fetch(identifier),
              {:ok, _block} <- CommonAPI.block(blocked, blocker) do
-          blocked
+          {:ok, blocked}
         else
           error -> handle_error(:blocks_import, identifier, error)
         end
@@ -47,7 +47,7 @@ defmodule Pleroma.User.Import do
         with {:ok, %User{} = followed} <- User.get_or_fetch(identifier),
              {:ok, follower, followed} <- User.maybe_direct_follow(follower, followed),
              {:ok, _, _, _} <- CommonAPI.follow(followed, follower) do
-          followed
+          {:ok, followed}
         else
           error -> handle_error(:follow_import, identifier, error)
         end

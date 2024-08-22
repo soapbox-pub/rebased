@@ -1,0 +1,1 @@
+Imports of blocks, mutes, and following would retry until Oban runs out of attempts due to incorrect return value being considered an error.

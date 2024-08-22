@@ -29,7 +29,7 @@ defmodule Pleroma.User.ImportTest do
 
       assert {:ok, result} = ObanHelpers.perform(job)
       assert is_list(result)
-      assert result == [refresh_record(user2), refresh_record(user3)]
+      assert result == [{:ok, refresh_record(user2)}, {:ok, refresh_record(user3)}]
       assert User.following?(user1, user2)
       assert User.following?(user1, user3)
     end
@@ -48,7 +48,7 @@ defmodule Pleroma.User.ImportTest do
 
       assert {:ok, result} = ObanHelpers.perform(job)
       assert is_list(result)
-      assert result == [user2, user3]
+      assert result == [{:ok, user2}, {:ok, user3}]
       assert User.blocks?(user1, user2)
       assert User.blocks?(user1, user3)
     end
@@ -67,7 +67,7 @@ defmodule Pleroma.User.ImportTest do
 
       assert {:ok, result} = ObanHelpers.perform(job)
       assert is_list(result)
-      assert result == [user2, user3]
+      assert result == [{:ok, user2}, {:ok, user3}]
       assert User.mutes?(user1, user2)
       assert User.mutes?(user1, user3)
     end
