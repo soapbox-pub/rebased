@@ -27,11 +27,3 @@ defenum(Pleroma.DataMigration.State,
   failed: 4,
   manual: 5
 )
-
-defenum(Pleroma.User.Backup.State,
-  pending: 1,
-  running: 2,
-  complete: 3,
-  failed: 4,
-  invalid: 5
-)

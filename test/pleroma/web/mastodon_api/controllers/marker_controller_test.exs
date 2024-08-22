@@ -5,6 +5,10 @@
 defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
   use Pleroma.Web.ConnCase, async: true
 
+  alias Pleroma.Notification
+  alias Pleroma.Repo
+  alias Pleroma.Web.CommonAPI
+
   import Pleroma.Factory
 
   describe "GET /api/v1/markers" do
@@ -126,6 +130,37 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
         |> json_response_and_validate_schema(403)
 
       assert response == %{"error" => "Insufficient permissions: write:statuses."}
+    end
+
+    test "marks notifications as read", %{conn: conn} do
+      user1 = insert(:user)
+      token = insert(:oauth_token, user: user1, scopes: ["write:statuses"])
+
+      user2 = insert(:user)
+      {:ok, _activity1} = CommonAPI.post(user2, %{status: "hi @#{user1.nickname}"})
+      {:ok, _activity2} = CommonAPI.post(user2, %{status: "hi @#{user1.nickname}"})
+      {:ok, _activity3} = CommonAPI.post(user2, %{status: "HIE @#{user1.nickname}"})
+
+      [notification3, notification2, notification1] = Notification.for_user(user1, %{limit: 3})
+
+      refute Repo.get(Notification, notification1.id).seen
+      refute Repo.get(Notification, notification2.id).seen
+      refute Repo.get(Notification, notification3.id).seen
+
+      conn
+      |> assign(:user, user1)
+      |> assign(:token, token)
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/markers", %{
+        notifications: %{last_read_id: to_string(notification2.id)}
+      })
+      |> json_response_and_validate_schema(200)
+
+      [notification3, notification2, notification1] = Notification.for_user(user1, %{limit: 3})
+
+      assert Repo.get(Notification, notification1.id).seen
+      assert Repo.get(Notification, notification2.id).seen
+      refute Repo.get(Notification, notification3.id).seen
     end
   end
 end

@@ -1,1 +1,0 @@
-MediaProxy was setting the content-length header which is not permitted by RFC9112§6.2 when we are chunking the reply as it conflicts with the existence of the transfer-encoding header.

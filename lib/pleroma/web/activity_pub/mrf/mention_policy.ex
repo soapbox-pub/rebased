@@ -3,25 +3,25 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.MentionPolicy do
-  @moduledoc "Block messages which mention a user"
+  @moduledoc "Block activities which mention a user"
 
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   @impl true
-  def filter(%{"type" => "Create"} = message) do
+  def filter(%{"type" => "Create"} = activity) do
     reject_actors = Pleroma.Config.get([:mrf_mention, :actors], [])
-    recipients = (message["to"] || []) ++ (message["cc"] || [])
+    recipients = (activity["to"] || []) ++ (activity["cc"] || [])
 
     if rejected_mention =
          Enum.find(recipients, fn recipient -> Enum.member?(reject_actors, recipient) end) do
       {:reject, "[MentionPolicy] Rejected for mention of #{rejected_mention}"}
     else
-      {:ok, message}
+      {:ok, activity}
     end
   end
 
   @impl true
-  def filter(message), do: {:ok, message}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe, do: {:ok, %{}}
@@ -32,7 +32,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MentionPolicy do
       key: :mrf_mention,
       related_policy: "Pleroma.Web.ActivityPub.MRF.MentionPolicy",
       label: "MRF Mention",
-      description: "Block messages which mention a specific user",
+      description: "Block activities which mention a specific user",
       children: [
         %{
           key: :actors,

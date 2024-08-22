@@ -14,9 +14,10 @@ defmodule Pleroma.User.Backup do
 
   alias Pleroma.Activity
   alias Pleroma.Bookmark
+  alias Pleroma.Config
   alias Pleroma.Repo
+  alias Pleroma.Uploaders.Uploader
   alias Pleroma.User
-  alias Pleroma.User.Backup.State
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.UserView
@@ -29,71 +30,111 @@ defmodule Pleroma.User.Backup do
     field(:file_name, :string)
     field(:file_size, :integer, default: 0)
     field(:processed, :boolean, default: false)
-    field(:state, State, default: :invalid)
-    field(:processed_number, :integer, default: 0)
+    field(:tempdir, :string)
 
     belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
 
     timestamps()
   end
 
-  @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
+  @doc """
+  Schedules a job to backup a user if the number of backup requests has not exceeded the limit.
 
-  def create(user, admin_id \\ nil) do
-    with :ok <- validate_limit(user, admin_id),
-         {:ok, backup} <- user |> new() |> Repo.insert() do
-      BackupWorker.process(backup, admin_id)
+  Admins can directly call new/1 and schedule_backup/1 to bypass the limit.
+  """
+  @spec user(User.t()) :: {:ok, t()} | {:error, any()}
+  def user(user) do
+    days = Config.get([__MODULE__, :limit_days])
+
+    with true <- permitted?(user),
+         %__MODULE__{} = backup <- new(user),
+         {:ok, inserted_backup} <- Repo.insert(backup),
+         {:ok, %Oban.Job{}} <- schedule_backup(inserted_backup) do
+      {:ok, inserted_backup}
+    else
+      false ->
+        {:error,
+         dngettext(
+           "errors",
+           "Last export was less than a day ago",
+           "Last export was less than %{days} days ago",
+           days,
+           days: days
+         )}
+
+      e ->
+        {:error, e}
     end
   end
 
+  @doc "Generates a %Backup{} for a user with a random file name"
+  @spec new(User.t()) :: t()
   def new(user) do
     rand_str = :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
     datetime = Calendar.NaiveDateTime.Format.iso8601_basic(NaiveDateTime.utc_now())
     name = "archive-#{user.nickname}-#{datetime}-#{rand_str}.zip"
 
     %__MODULE__{
-      user_id: user.id,
       content_type: "application/zip",
       file_name: name,
-      state: :pending
+      tempdir: tempdir(),
+      user: user
     }
   end
 
-  def delete(backup) do
-    uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])
+  @doc "Schedules the execution of the provided backup"
+  @spec schedule_backup(t()) :: {:ok, Oban.Job.t()} | {:error, any()}
+  def schedule_backup(backup) do
+    with false <- is_nil(backup.id) do
+      %{"op" => "process", "backup_id" => backup.id}
+      |> BackupWorker.new()
+      |> Oban.insert()
+    else
+      true ->
+        {:error, "Backup is missing id. Please insert it into the Repo first."}
+
+      e ->
+        {:error, e}
+    end
+  end
+
+  @doc "Deletes the backup archive file and removes the database record"
+  @spec delete_archive(t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  def delete_archive(backup) do
+    uploader = Config.get([Pleroma.Upload, :uploader])
 
     with :ok <- uploader.delete_file(Path.join("backups", backup.file_name)) do
       Repo.delete(backup)
     end
   end
 
-  defp validate_limit(_user, admin_id) when is_binary(admin_id), do: :ok
+  @doc "Schedules a job to delete the backup archive"
+  @spec schedule_delete(t()) :: {:ok, Oban.Job.t()} | {:error, any()}
+  def schedule_delete(backup) do
+    days = Config.get([__MODULE__, :purge_after_days])
+    time = 60 * 60 * 24 * days
+    scheduled_at = Calendar.NaiveDateTime.add!(backup.inserted_at, time)
 
-  defp validate_limit(user, nil) do
-    case get_last(user.id) do
-      %__MODULE__{inserted_at: inserted_at} ->
-        days = Pleroma.Config.get([__MODULE__, :limit_days])
-        diff = Timex.diff(NaiveDateTime.utc_now(), inserted_at, :days)
+    %{"op" => "delete", "backup_id" => backup.id}
+    |> BackupWorker.new(scheduled_at: scheduled_at)
+    |> Oban.insert()
+  end
 
-        if diff > days do
-          :ok
-        else
-          {:error,
-           dngettext(
-             "errors",
-             "Last export was less than a day ago",
-             "Last export was less than %{days} days ago",
-             days,
-             days: days
-           )}
-        end
-
-      nil ->
-        :ok
+  defp permitted?(user) do
+    with {_, %__MODULE__{inserted_at: inserted_at}} <- {:last, get_last(user)},
+         days = Config.get([__MODULE__, :limit_days]),
+         diff = Timex.diff(NaiveDateTime.utc_now(), inserted_at, :days),
+         {_, true} <- {:diff, diff > days} do
+      true
+    else
+      {:last, nil} -> true
+      {:diff, false} -> false
     end
   end
 
-  def get_last(user_id) do
+  @doc "Returns last backup for the provided user"
+  @spec get_last(User.t()) :: t()
+  def get_last(%User{id: user_id}) do
     __MODULE__
     |> where(user_id: ^user_id)
     |> order_by(desc: :id)
@@ -101,6 +142,8 @@ defmodule Pleroma.User.Backup do
     |> Repo.one()
   end
 
+  @doc "Lists all existing backups for a user"
+  @spec list(User.t()) :: [Ecto.Schema.t() | term()]
   def list(%User{id: user_id}) do
     __MODULE__
     |> where(user_id: ^user_id)
@@ -108,92 +151,35 @@ defmodule Pleroma.User.Backup do
     |> Repo.all()
   end
 
-  def remove_outdated(%__MODULE__{id: latest_id, user_id: user_id}) do
-    __MODULE__
-    |> where(user_id: ^user_id)
-    |> where([b], b.id != ^latest_id)
-    |> Repo.all()
-    |> Enum.each(&BackupWorker.delete/1)
-  end
-
-  def get(id), do: Repo.get(__MODULE__, id)
-
-  defp set_state(backup, state, processed_number \\ nil) do
-    struct =
-      %{state: state}
-      |> Pleroma.Maps.put_if_present(:processed_number, processed_number)
-
-    backup
-    |> cast(struct, [:state, :processed_number])
-    |> Repo.update()
-  end
-
-  def process(
-        %__MODULE__{} = backup,
-        processor_module \\ __MODULE__.Processor
-      ) do
-    set_state(backup, :running, 0)
-
-    current_pid = self()
-
-    task =
-      Task.Supervisor.async_nolink(
-        Pleroma.TaskSupervisor,
-        processor_module,
-        :do_process,
-        [backup, current_pid]
-      )
-
-    wait_backup(backup, backup.processed_number, task)
-  end
-
-  defp wait_backup(backup, current_processed, task) do
-    wait_time = @config_impl.get([__MODULE__, :process_wait_time])
-
-    receive do
-      {:progress, new_processed} ->
-        total_processed = current_processed + new_processed
-
-        set_state(backup, :running, total_processed)
-        wait_backup(backup, total_processed, task)
-
-      {:DOWN, _ref, _proc, _pid, reason} ->
-        backup = get(backup.id)
-
-        if reason != :normal do
-          Logger.error("Backup #{backup.id} process ended abnormally: #{inspect(reason)}")
-
-          {:ok, backup} = set_state(backup, :failed)
-
-          cleanup(backup)
-
-          {:error,
-           %{
-             backup: backup,
-             reason: :exit,
-             details: reason
-           }}
-        else
-          {:ok, backup}
-        end
-    after
-      wait_time ->
-        Logger.error(
-          "Backup #{backup.id} timed out after no response for #{wait_time}ms, terminating"
-        )
-
-        Task.Supervisor.terminate_child(Pleroma.TaskSupervisor, task.pid)
-
-        {:ok, backup} = set_state(backup, :failed)
-
-        cleanup(backup)
-
-        {:error,
-         %{
-           backup: backup,
-           reason: :timeout
-         }}
+  @doc "Schedules deletion of all but the the most recent backup"
+  @spec remove_outdated(User.t()) :: :ok
+  def remove_outdated(user) do
+    with %__MODULE__{} = latest_backup <- get_last(user) do
+      __MODULE__
+      |> where(user_id: ^user.id)
+      |> where([b], b.id != ^latest_backup.id)
+      |> Repo.all()
+      |> Enum.each(&schedule_delete/1)
+    else
+      _ -> :ok
     end
+  end
+
+  def get_by_id(id), do: Repo.get(__MODULE__, id)
+
+  @doc "Generates changeset for %Pleroma.User.Backup{}"
+  @spec changeset(%__MODULE__{}, map()) :: %Ecto.Changeset{}
+  def changeset(backup \\ %__MODULE__{}, attrs) do
+    backup
+    |> cast(attrs, [:content_type, :file_name, :file_size, :processed, :tempdir])
+  end
+
+  @doc "Updates the backup record"
+  @spec update_record(%__MODULE__{}, map()) :: {:ok, %__MODULE__{}} | {:error, %Ecto.Changeset{}}
+  def update_record(%__MODULE__{} = backup, attrs) do
+    backup
+    |> changeset(attrs)
+    |> Repo.update()
   end
 
   @files [
@@ -204,53 +190,68 @@ defmodule Pleroma.User.Backup do
     ~c"followers.json",
     ~c"following.json"
   ]
-  @spec export(Pleroma.User.Backup.t(), pid()) :: {:ok, String.t()} | :error
-  def export(%__MODULE__{} = backup, caller_pid) do
-    backup = Repo.preload(backup, :user)
-    dir = backup_tempdir(backup)
 
-    with :ok <- File.mkdir(dir),
-         :ok <- actor(dir, backup.user, caller_pid),
-         :ok <- statuses(dir, backup.user, caller_pid),
-         :ok <- likes(dir, backup.user, caller_pid),
-         :ok <- bookmarks(dir, backup.user, caller_pid),
-         :ok <- followers(dir, backup.user, caller_pid),
-         :ok <- following(dir, backup.user, caller_pid),
-         {:ok, zip_path} <- :zip.create(backup.file_name, @files, cwd: dir),
-         {:ok, _} <- File.rm_rf(dir) do
-      {:ok, zip_path}
+  @spec run(t()) :: {:ok, t()} | {:error, :failed}
+  def run(%__MODULE__{} = backup) do
+    backup = Repo.preload(backup, :user)
+    tempfile = Path.join([backup.tempdir, backup.file_name])
+
+    with {_, :ok} <- {:mkdir, File.mkdir_p(backup.tempdir)},
+         {_, :ok} <- {:actor, actor(backup.tempdir, backup.user)},
+         {_, :ok} <- {:statuses, statuses(backup.tempdir, backup.user)},
+         {_, :ok} <- {:likes, likes(backup.tempdir, backup.user)},
+         {_, :ok} <- {:bookmarks, bookmarks(backup.tempdir, backup.user)},
+         {_, :ok} <- {:followers, followers(backup.tempdir, backup.user)},
+         {_, :ok} <- {:following, following(backup.tempdir, backup.user)},
+         {_, {:ok, _zip_path}} <-
+           {:zip, :zip.create(to_charlist(tempfile), @files, cwd: to_charlist(backup.tempdir))},
+         {_, {:ok, %File.Stat{size: zip_size}}} <- {:filestat, File.stat(tempfile)},
+         {:ok, updated_backup} <- update_record(backup, %{file_size: zip_size}) do
+      {:ok, updated_backup}
     else
-      _ -> :error
+      _ ->
+        File.rm_rf(backup.tempdir)
+        {:error, :failed}
     end
   end
 
-  def dir(name) do
-    dir = Pleroma.Config.get([__MODULE__, :dir]) || System.tmp_dir!()
-    Path.join(dir, name)
+  defp tempdir do
+    rand = :crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false)
+    subdir = "backup-#{rand}"
+
+    case Config.get([__MODULE__, :tempdir]) do
+      nil ->
+        Path.join([System.tmp_dir!(), subdir])
+
+      path ->
+        Path.join([path, subdir])
+    end
   end
 
-  def upload(%__MODULE__{} = backup, zip_path) do
-    uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])
+  @doc "Uploads the completed backup and marks it as processed"
+  @spec upload(t()) :: {:ok, t()}
+  def upload(%__MODULE__{tempdir: tempdir} = backup) when is_binary(tempdir) do
+    uploader = Config.get([Pleroma.Upload, :uploader])
 
     upload = %Pleroma.Upload{
       name: backup.file_name,
-      tempfile: zip_path,
+      tempfile: Path.join([tempdir, backup.file_name]),
       content_type: backup.content_type,
       path: Path.join("backups", backup.file_name)
     }
 
-    with {:ok, _} <- Pleroma.Uploaders.Uploader.put_file(uploader, upload),
-         :ok <- File.rm(zip_path) do
-      {:ok, upload}
+    with {:ok, _} <- Uploader.put_file(uploader, upload),
+         {:ok, uploaded_backup} <- update_record(backup, %{processed: true}),
+         {:ok, _} <- File.rm_rf(tempdir) do
+      {:ok, uploaded_backup}
     end
   end
 
-  defp actor(dir, user, caller_pid) do
+  defp actor(dir, user) do
     with {:ok, json} <-
            UserView.render("user.json", %{user: user})
            |> Map.merge(%{"likes" => "likes.json", "bookmarks" => "bookmarks.json"})
            |> Jason.encode() do
-      send(caller_pid, {:progress, 1})
       File.write(Path.join(dir, "actor.json"), json)
     end
   end
@@ -269,22 +270,10 @@ defmodule Pleroma.User.Backup do
     )
   end
 
-  defp should_report?(num, chunk_size), do: rem(num, chunk_size) == 0
-
-  defp backup_tempdir(backup) do
-    name = String.trim_trailing(backup.file_name, ".zip")
-    dir(name)
-  end
-
-  defp cleanup(backup) do
-    dir = backup_tempdir(backup)
-    File.rm_rf(dir)
-  end
-
-  defp write(query, dir, name, fun, caller_pid) do
+  defp write(query, dir, name, fun) do
     path = Path.join(dir, "#{name}.json")
 
-    chunk_size = Pleroma.Config.get([__MODULE__, :process_chunk_size])
+    chunk_size = Config.get([__MODULE__, :process_chunk_size])
 
     with {:ok, file} <- File.open(path, [:write, :utf8]),
          :ok <- write_header(file, name) do
@@ -300,10 +289,6 @@ defmodule Pleroma.User.Backup do
                   end),
                {:ok, str} <- Jason.encode(data),
                :ok <- IO.write(file, str <> ",\n") do
-            if should_report?(acc + 1, chunk_size) do
-              send(caller_pid, {:progress, chunk_size})
-            end
-
             acc + 1
           else
             {:error, e} ->
@@ -318,31 +303,29 @@ defmodule Pleroma.User.Backup do
           end
         end)
 
-      send(caller_pid, {:progress, rem(total, chunk_size)})
-
       with :ok <- :file.pwrite(file, {:eof, -2}, "\n],\n  \"totalItems\": #{total}}") do
         File.close(file)
       end
     end
   end
 
-  defp bookmarks(dir, %{id: user_id} = _user, caller_pid) do
+  defp bookmarks(dir, %{id: user_id} = _user) do
     Bookmark
     |> where(user_id: ^user_id)
     |> join(:inner, [b], activity in assoc(b, :activity))
     |> select([b, a], %{id: b.id, object: fragment("(?)->>'object'", a.data)})
-    |> write(dir, "bookmarks", fn a -> {:ok, a.object} end, caller_pid)
+    |> write(dir, "bookmarks", fn a -> {:ok, a.object} end)
   end
 
-  defp likes(dir, user, caller_pid) do
+  defp likes(dir, user) do
     user.ap_id
     |> Activity.Queries.by_actor()
     |> Activity.Queries.by_type("Like")
     |> select([like], %{id: like.id, object: fragment("(?)->>'object'", like.data)})
-    |> write(dir, "likes", fn a -> {:ok, a.object} end, caller_pid)
+    |> write(dir, "likes", fn a -> {:ok, a.object} end)
   end
 
-  defp statuses(dir, user, caller_pid) do
+  defp statuses(dir, user) do
     opts =
       %{}
       |> Map.put(:type, ["Create", "Announce"])
@@ -362,52 +345,17 @@ defmodule Pleroma.User.Backup do
         with {:ok, activity} <- Transmogrifier.prepare_outgoing(a.data) do
           {:ok, Map.delete(activity, "@context")}
         end
-      end,
-      caller_pid
+      end
     )
   end
 
-  defp followers(dir, user, caller_pid) do
+  defp followers(dir, user) do
     User.get_followers_query(user)
-    |> write(dir, "followers", fn a -> {:ok, a.ap_id} end, caller_pid)
+    |> write(dir, "followers", fn a -> {:ok, a.ap_id} end)
   end
 
-  defp following(dir, user, caller_pid) do
+  defp following(dir, user) do
     User.get_friends_query(user)
-    |> write(dir, "following", fn a -> {:ok, a.ap_id} end, caller_pid)
-  end
-end
-
-defmodule Pleroma.User.Backup.ProcessorAPI do
-  @callback do_process(%Pleroma.User.Backup{}, pid()) ::
-              {:ok, %Pleroma.User.Backup{}} | {:error, any()}
-end
-
-defmodule Pleroma.User.Backup.Processor do
-  @behaviour Pleroma.User.Backup.ProcessorAPI
-
-  alias Pleroma.Repo
-  alias Pleroma.User.Backup
-
-  import Ecto.Changeset
-
-  @impl true
-  def do_process(backup, current_pid) do
-    with {:ok, zip_file} <- Backup.export(backup, current_pid),
-         {:ok, %{size: size}} <- File.stat(zip_file),
-         {:ok, _upload} <- Backup.upload(backup, zip_file) do
-      backup
-      |> cast(
-        %{
-          file_size: size,
-          processed: true,
-          state: :complete
-        },
-        [:file_size, :processed, :state]
-      )
-      |> Repo.update()
-    else
-      e -> {:error, e}
-    end
+    |> write(dir, "following", fn a -> {:ok, a.ap_id} end)
   end
 end

@@ -297,7 +297,8 @@ defmodule Pleroma.Instances.Instance do
   all of those users' activities and notifications.
   """
   def delete_users_and_activities(host) when is_binary(host) do
-    DeleteWorker.enqueue("delete_instance", %{"host" => host})
+    DeleteWorker.new(%{"op" => "delete_instance", "host" => host})
+    |> Oban.insert()
   end
 
   def perform(:delete_instance, host) when is_binary(host) do

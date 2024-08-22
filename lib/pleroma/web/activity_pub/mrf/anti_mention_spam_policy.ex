@@ -22,11 +22,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiMentionSpamPolicy do
   end
 
   # copied from HellthreadPolicy
-  defp get_recipient_count(message) do
-    recipients = (message["to"] || []) ++ (message["cc"] || [])
+  defp get_recipient_count(activity) do
+    recipients = (activity["to"] || []) ++ (activity["cc"] || [])
 
     follower_collection =
-      User.get_cached_by_ap_id(message["actor"] || message["attributedTo"]).follower_address
+      User.get_cached_by_ap_id(activity["actor"] || activity["attributedTo"]).follower_address
 
     if Enum.member?(recipients, Pleroma.Constants.as_public()) do
       recipients =
@@ -80,7 +80,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiMentionSpamPolicy do
   end
 
   # in all other cases, pass through
-  def filter(message), do: {:ok, message}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe, do: {:ok, %{}}

@@ -4,7 +4,7 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.6.52"),
+      version: version("2.7.0"),
       elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: Mix.compilers(),
@@ -144,7 +144,7 @@ defmodule Pleroma.Mixfile do
       {:telemetry_poller, "~> 1.0"},
       {:tzdata, "~> 1.0.3"},
       {:plug_cowboy, "~> 2.5"},
-      {:oban, "~> 2.17.9"},
+      {:oban, "~> 2.18.0"},
       {:gettext, "~> 0.20"},
       {:bcrypt_elixir, "~> 2.2"},
       {:trailing_format_plug, "~> 0.0.7"},
@@ -158,7 +158,7 @@ defmodule Pleroma.Mixfile do
       {:gun, "~> 2.0.0-rc.1", override: true},
       {:finch, "~> 0.15"},
       {:jason, "~> 1.2"},
-      {:mogrify, "~> 0.8.0"},
+      {:mogrify, "~> 0.9.0", override: "true"},
       {:ex_aws, "~> 2.1.6"},
       {:ex_aws_s3, "~> 2.0"},
       {:sweet_xml, "~> 0.7.2"},
@@ -202,6 +202,7 @@ defmodule Pleroma.Mixfile do
       {:bandit, "~> 1.5.2"},
       {:websock_adapter, "~> 0.5.6"},
       {:oban_live_dashboard, "~> 0.1.1"},
+      {:multipart, "~> 0.4.0", optional: true},
 
       ## dev & test
       {:phoenix_live_reload, "~> 1.3.3", only: :dev},

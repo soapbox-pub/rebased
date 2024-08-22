@@ -9,16 +9,6 @@ defmodule Pleroma.Workers.PurgeExpiredToken do
 
   use Oban.Worker, queue: :background, max_attempts: 1
 
-  @spec enqueue(%{token_id: integer(), valid_until: DateTime.t(), mod: module()}) ::
-          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def enqueue(args) do
-    {scheduled_at, args} = Map.pop(args, :valid_until)
-
-    args
-    |> __MODULE__.new(scheduled_at: scheduled_at)
-    |> Oban.insert()
-  end
-
   @impl true
   def perform(%Oban.Job{args: %{"token_id" => id, "mod" => module}}) do
     module
@@ -27,6 +17,6 @@ defmodule Pleroma.Workers.PurgeExpiredToken do
     |> Pleroma.Repo.delete()
   end
 
-  @impl Oban.Worker
+  @impl true
   def timeout(_job), do: :timer.seconds(5)
 end

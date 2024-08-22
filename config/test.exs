@@ -188,6 +188,8 @@ config :pleroma, Pleroma.Web.RichMedia.Backfill,
 
 config :pleroma, Pleroma.Web.Plugs.HTTPSecurityPlug, enable: false
 
+config :pleroma, Pleroma.User.Backup, tempdir: "test/tmp"
+
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
 else

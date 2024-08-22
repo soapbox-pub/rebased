@@ -1,1 +1,0 @@
-Permit passing --chunk and --step values to the Pleroma.Search.Indexer Mix task

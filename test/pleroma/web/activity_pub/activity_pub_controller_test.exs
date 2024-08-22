@@ -1747,7 +1747,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
          %{conn: conn} do
       user = insert(:user, hide_followers: true)
       other_user = insert(:user)
-      {:ok, _other_user, user, _activity} = CommonAPI.follow(user, other_user)
+      {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
 
       result =
         conn
@@ -1843,7 +1843,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
          %{conn: conn} do
       user = insert(:user, hide_follows: true)
       other_user = insert(:user)
-      {:ok, user, _other_user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
 
       result =
         conn

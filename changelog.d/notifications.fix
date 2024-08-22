@@ -1,1 +1,0 @@
-Notifications: improve performance by filtering on users table instead of activities table

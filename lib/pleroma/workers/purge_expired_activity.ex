@@ -13,16 +13,13 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
 
   alias Pleroma.Activity
 
-  @spec enqueue(map()) ::
+  @spec enqueue(map(), list()) ::
           {:ok, Oban.Job.t()}
           | {:error, :expired_activities_disabled}
           | {:error, :expiration_too_close}
-  def enqueue(args) do
+  def enqueue(params, worker_args) do
     with true <- enabled?() do
-      {scheduled_at, args} = Map.pop(args, :expires_at)
-
-      args
-      |> new(scheduled_at: scheduled_at)
+      new(params, worker_args)
       |> Oban.insert()
     end
   end
@@ -35,7 +32,7 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
     end
   end
 
-  @impl Oban.Worker
+  @impl true
   def timeout(_job), do: :timer.seconds(5)
 
   defp enabled? do

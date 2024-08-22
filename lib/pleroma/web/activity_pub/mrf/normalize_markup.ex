@@ -12,20 +12,20 @@ defmodule Pleroma.Web.ActivityPub.MRF.NormalizeMarkup do
   def history_awareness, do: :auto
 
   @impl true
-  def filter(%{"type" => type, "object" => child_object} = object)
+  def filter(%{"type" => type, "object" => object} = activity)
       when type in ["Create", "Update"] do
     scrub_policy = Pleroma.Config.get([:mrf_normalize_markup, :scrub_policy])
 
     content =
-      child_object["content"]
+      object["content"]
       |> HTML.filter_tags(scrub_policy)
 
-    object = put_in(object, ["object", "content"], content)
+    activity = put_in(activity, ["object", "content"], content)
 
-    {:ok, object}
+    {:ok, activity}
   end
 
-  def filter(object), do: {:ok, object}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe, do: {:ok, %{}}

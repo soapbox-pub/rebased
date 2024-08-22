@@ -463,6 +463,7 @@ defmodule Pleroma.User do
   def remote_user_changeset(struct \\ %User{local: false}, params) do
     bio_limit = Config.get([:instance, :user_bio_length], 5000)
     name_limit = Config.get([:instance, :user_name_length], 100)
+    fields_limit = Config.get([:instance, :max_remote_account_fields], 0)
 
     name =
       case params[:name] do
@@ -476,6 +477,7 @@ defmodule Pleroma.User do
       |> Map.put_new(:last_refreshed_at, NaiveDateTime.utc_now())
       |> truncate_if_exists(:name, name_limit)
       |> truncate_if_exists(:bio, bio_limit)
+      |> Map.update(:fields, [], &Enum.take(&1, fields_limit))
       |> truncate_fields_param()
       |> fix_follower_address()
 
@@ -736,7 +738,8 @@ defmodule Pleroma.User do
   end
 
   def force_password_reset_async(user) do
-    BackgroundWorker.enqueue("force_password_reset", %{"user_id" => user.id})
+    BackgroundWorker.new(%{"op" => "force_password_reset", "user_id" => user.id})
+    |> Oban.insert()
   end
 
   @spec force_password_reset(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
@@ -1218,7 +1221,8 @@ defmodule Pleroma.User do
   def update_and_set_cache(changeset) do
     with {:ok, user} <- Repo.update(changeset, stale_error_field: :id) do
       if get_change(changeset, :raw_fields) do
-        BackgroundWorker.enqueue("verify_fields_links", %{"user_id" => user.id})
+        BackgroundWorker.new(%{"op" => "verify_fields_links", "user_id" => user.id})
+        |> Oban.insert()
       end
 
       set_cache(user)
@@ -1589,11 +1593,11 @@ defmodule Pleroma.User do
               )) ||
              {:ok, nil} do
       if duration > 0 do
-        Pleroma.Workers.MuteExpireWorker.enqueue(
-          "unmute_user",
-          %{"muter_id" => muter.id, "mutee_id" => mutee.id},
+        Pleroma.Workers.MuteExpireWorker.new(
+          %{"op" => "unmute_user", "muter_id" => muter.id, "mutee_id" => mutee.id},
           scheduled_at: expires_at
         )
+        |> Oban.insert()
       end
 
       @cachex.del(:user_cache, "muted_users_ap_ids:#{muter.ap_id}")
@@ -1836,7 +1840,8 @@ defmodule Pleroma.User do
   defp maybe_filter_on_ap_id(query, _ap_ids), do: query
 
   def set_activation_async(user, status \\ true) do
-    BackgroundWorker.enqueue("user_activation", %{"user_id" => user.id, "status" => status})
+    BackgroundWorker.new(%{"op" => "user_activation", "user_id" => user.id, "status" => status})
+    |> Oban.insert()
   end
 
   @spec set_activation([User.t()], boolean()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
@@ -1983,7 +1988,9 @@ defmodule Pleroma.User do
   def delete(%User{} = user) do
     # Purge the user immediately
     purge(user)
-    DeleteWorker.enqueue("delete_user", %{"user_id" => user.id})
+
+    DeleteWorker.new(%{"op" => "delete_user", "user_id" => user.id})
+    |> Oban.insert()
   end
 
   # *Actually* delete the user from the DB

@@ -1096,9 +1096,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       ObanHelpers.perform_all()
 
-      email = Pleroma.Emails.UserEmail.backup_is_ready_email(backup, admin.id)
+      email = Pleroma.Emails.UserEmail.backup_is_ready_email(backup)
 
-      assert String.contains?(email.html_body, "Admin @#{admin.nickname} requested a full backup")
+      assert String.contains?(
+               email.html_body,
+               "A full backup of your Pleroma account was requested"
+             )
+
       assert_email_sent(to: {user.name, user.email}, html_body: email.html_body)
 
       log_message = "@#{admin_nickname} requested account backup for @#{user_nickname}"

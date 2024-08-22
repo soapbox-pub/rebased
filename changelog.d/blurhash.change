@@ -1,1 +1,0 @@
-Replace eblurhash with rinpatch_blurhash. This also removes a dependency on ImageMagick.

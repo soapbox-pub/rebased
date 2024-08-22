@@ -1,1 +1,0 @@
-Make remote emoji packs API use specifically the V1 URL. Akkoma does not understand it without V1, and it works either way with normal pleroma, so no reason to not do this

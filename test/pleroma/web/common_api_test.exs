@@ -1420,7 +1420,7 @@ defmodule Pleroma.Web.CommonAPITest do
   describe "follow/2" do
     test "directly follows a non-locked local user" do
       [follower, followed] = insert_pair(:user)
-      {:ok, follower, followed, _} = CommonAPI.follow(followed, follower)
+      {:ok, followed, follower, _} = CommonAPI.follow(followed, follower)
 
       assert User.following?(follower, followed)
     end
@@ -1429,7 +1429,7 @@ defmodule Pleroma.Web.CommonAPITest do
   describe "unfollow/2" do
     test "also unsubscribes a user" do
       [follower, followed] = insert_pair(:user)
-      {:ok, follower, followed, _} = CommonAPI.follow(followed, follower)
+      {:ok, followed, follower, _} = CommonAPI.follow(followed, follower)
       {:ok, _subscription} = User.subscribe(follower, followed)
 
       assert User.subscribed_to?(follower, followed)
@@ -1441,7 +1441,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
     test "also unpins a user" do
       [follower, followed] = insert_pair(:user)
-      {:ok, follower, followed, _} = CommonAPI.follow(followed, follower)
+      {:ok, followed, follower, _} = CommonAPI.follow(followed, follower)
       {:ok, _endorsement} = User.endorse(follower, followed)
 
       assert User.endorses?(follower, followed)
@@ -1455,7 +1455,7 @@ defmodule Pleroma.Web.CommonAPITest do
       follower = insert(:user)
       followed = insert(:user, is_locked: true)
 
-      assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
+      assert {:ok, followed, follower, %{id: activity_id, data: %{"state" => "pending"}}} =
                CommonAPI.follow(followed, follower)
 
       assert User.get_follow_state(follower, followed) == :follow_pending
@@ -1477,7 +1477,7 @@ defmodule Pleroma.Web.CommonAPITest do
       follower = insert(:user)
       followed = insert(:user, is_locked: true, local: false)
 
-      assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
+      assert {:ok, followed, follower, %{id: activity_id, data: %{"state" => "pending"}}} =
                CommonAPI.follow(followed, follower)
 
       assert User.get_follow_state(follower, followed) == :follow_pending
@@ -1957,7 +1957,7 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, _, _} = Pleroma.User.follow(remote_one, local_user)
       {:ok, _, _} = Pleroma.User.follow(remote_two, local_user)
 
-      {:ok, %{data: %{"id" => ap_id}} = activity} =
+      {:ok, %{id: activity_id} = _activity} =
         CommonAPI.post(local_user, %{status: "Happy Friday everyone!"})
 
       # Generate the publish_one jobs
@@ -1971,7 +1971,7 @@ defmodule Pleroma.Web.CommonAPITest do
               state: "available",
               queue: "federator_outgoing",
               worker: "Pleroma.Workers.PublisherWorker",
-              args: %{"op" => "publish_one", "params" => %{"id" => ^ap_id}}
+              args: %{"op" => "publish_one", "params" => %{"activity_id" => ^activity_id}}
             },
             job
           )
@@ -1980,7 +1980,7 @@ defmodule Pleroma.Web.CommonAPITest do
       assert length(publish_one_jobs) == 2
 
       # The delete should have triggered cancelling the publish_one jobs
-      assert {:ok, _delete} = CommonAPI.delete(activity.id, local_user)
+      assert {:ok, _delete} = CommonAPI.delete(activity_id, local_user)
 
       # all_enqueued/1 will not return cancelled jobs
       cancelled_jobs =
@@ -1988,7 +1988,7 @@ defmodule Pleroma.Web.CommonAPITest do
         |> where([j], j.worker == "Pleroma.Workers.PublisherWorker")
         |> where([j], j.state == "cancelled")
         |> where([j], j.args["op"] == "publish_one")
-        |> where([j], j.args["params"]["id"] == ^ap_id)
+        |> where([j], j.args["params"]["activity_id"] == ^activity_id)
         |> Pleroma.Repo.all()
 
       assert length(cancelled_jobs) == 2
@@ -2001,7 +2001,7 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, activity} =
         CommonAPI.post(remote_user, %{status: "I like turtles!"})
 
-      {:ok, %{data: %{"id" => ap_id}} = _favorite} =
+      {:ok, %{id: favorite_id} = _favorite} =
         CommonAPI.favorite(activity.id, local_user)
 
       # Generate the publish_one jobs
@@ -2015,7 +2015,7 @@ defmodule Pleroma.Web.CommonAPITest do
               state: "available",
               queue: "federator_outgoing",
               worker: "Pleroma.Workers.PublisherWorker",
-              args: %{"op" => "publish_one", "params" => %{"id" => ^ap_id}}
+              args: %{"op" => "publish_one", "params" => %{"activity_id" => ^favorite_id}}
             },
             job
           )
@@ -2032,7 +2032,7 @@ defmodule Pleroma.Web.CommonAPITest do
         |> where([j], j.worker == "Pleroma.Workers.PublisherWorker")
         |> where([j], j.state == "cancelled")
         |> where([j], j.args["op"] == "publish_one")
-        |> where([j], j.args["params"]["id"] == ^ap_id)
+        |> where([j], j.args["params"]["activity_id"] == ^favorite_id)
         |> Pleroma.Repo.all()
 
       assert length(cancelled_jobs) == 1
@@ -2049,7 +2049,7 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, activity} =
         CommonAPI.post(remote_one, %{status: "This is an unpleasant post"})
 
-      {:ok, %{data: %{"id" => ap_id}} = _repeat} =
+      {:ok, %{id: repeat_id} = _repeat} =
         CommonAPI.repeat(activity.id, local_user)
 
       # Generate the publish_one jobs
@@ -2063,7 +2063,7 @@ defmodule Pleroma.Web.CommonAPITest do
               state: "available",
               queue: "federator_outgoing",
               worker: "Pleroma.Workers.PublisherWorker",
-              args: %{"op" => "publish_one", "params" => %{"id" => ^ap_id}}
+              args: %{"op" => "publish_one", "params" => %{"activity_id" => ^repeat_id}}
             },
             job
           )
@@ -2080,7 +2080,7 @@ defmodule Pleroma.Web.CommonAPITest do
         |> where([j], j.worker == "Pleroma.Workers.PublisherWorker")
         |> where([j], j.state == "cancelled")
         |> where([j], j.args["op"] == "publish_one")
-        |> where([j], j.args["params"]["id"] == ^ap_id)
+        |> where([j], j.args["params"]["activity_id"] == ^repeat_id)
         |> Pleroma.Repo.all()
 
       assert length(cancelled_jobs) == 2
@@ -2094,11 +2094,11 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, _, _} = Pleroma.User.follow(remote_one, local_user)
       {:ok, _, _} = Pleroma.User.follow(remote_two, local_user)
 
-      {:ok, activity} =
+      {:ok, %{id: activity_id}} =
         CommonAPI.post(remote_one, %{status: "Gang gang!!!!"})
 
-      {:ok, %{data: %{"id" => ap_id}} = _react} =
-        CommonAPI.react_with_emoji(activity.id, local_user, "👍")
+      {:ok, %{id: react_id} = _react} =
+        CommonAPI.react_with_emoji(activity_id, local_user, "👍")
 
       # Generate the publish_one jobs
       ObanHelpers.perform_all()
@@ -2111,7 +2111,7 @@ defmodule Pleroma.Web.CommonAPITest do
               state: "available",
               queue: "federator_outgoing",
               worker: "Pleroma.Workers.PublisherWorker",
-              args: %{"op" => "publish_one", "params" => %{"id" => ^ap_id}}
+              args: %{"op" => "publish_one", "params" => %{"activity_id" => ^react_id}}
             },
             job
           )
@@ -2120,7 +2120,7 @@ defmodule Pleroma.Web.CommonAPITest do
       assert length(publish_one_jobs) == 2
 
       # The unreact should have triggered cancelling the publish_one jobs
-      assert {:ok, _unreact} = CommonAPI.unreact_with_emoji(activity.id, local_user, "👍")
+      assert {:ok, _unreact} = CommonAPI.unreact_with_emoji(activity_id, local_user, "👍")
 
       # all_enqueued/1 will not return cancelled jobs
       cancelled_jobs =
@@ -2128,7 +2128,7 @@ defmodule Pleroma.Web.CommonAPITest do
         |> where([j], j.worker == "Pleroma.Workers.PublisherWorker")
         |> where([j], j.state == "cancelled")
         |> where([j], j.args["op"] == "publish_one")
-        |> where([j], j.args["params"]["id"] == ^ap_id)
+        |> where([j], j.args["params"]["activity_id"] == ^react_id)
         |> Pleroma.Repo.all()
 
       assert length(cancelled_jobs) == 2

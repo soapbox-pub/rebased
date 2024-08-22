@@ -53,6 +53,13 @@ defmodule Pleroma.Factory do
       keys: pem
     }
 
+    user
+    |> Map.put(:raw_bio, user.bio)
+    |> merge_attributes(Map.delete(attrs, :domain))
+    |> make_user_urls(attrs)
+  end
+
+  defp make_user_urls(user, attrs) do
     urls =
       if attrs[:local] == false do
         base_domain = attrs[:domain] || Enum.random(["domain1.com", "domain2.com", "domain3.com"])
@@ -60,26 +67,22 @@ defmodule Pleroma.Factory do
         ap_id = "https://#{base_domain}/users/#{user.nickname}"
 
         %{
-          ap_id: ap_id,
-          follower_address: ap_id <> "/followers",
-          following_address: ap_id <> "/following",
-          featured_address: ap_id <> "/collections/featured"
+          ap_id: attrs[:ap_id] || ap_id,
+          follower_address: attrs[:follower_address] || ap_id <> "/followers",
+          following_address: attrs[:following_address] || ap_id <> "/following",
+          featured_address: attrs[:featured_address] || ap_id <> "/collections/featured",
+          inbox: attrs[:inbox] || "https://#{base_domain}/inbox"
         }
       else
         %{
-          ap_id: User.ap_id(user),
-          follower_address: User.ap_followers(user),
-          following_address: User.ap_following(user),
-          featured_address: User.ap_featured_collection(user)
+          ap_id: attrs[:ap_id] || User.ap_id(user),
+          follower_address: attrs[:follower_address] || User.ap_followers(user),
+          following_address: attrs[:following_address] || User.ap_following(user),
+          featured_address: attrs[:featured_address] || User.ap_featured_collection(user)
         }
       end
 
-    attrs = Map.delete(attrs, :domain)
-
-    user
-    |> Map.put(:raw_bio, user.bio)
-    |> Map.merge(urls)
-    |> merge_attributes(attrs)
+    Map.merge(user, urls)
   end
 
   def user_relationship_factory(attrs \\ %{}) do

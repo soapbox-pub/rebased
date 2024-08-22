@@ -9,20 +9,20 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoEmptyPolicy do
   alias Pleroma.Web.Endpoint
 
   @impl true
-  def filter(%{"actor" => actor} = object) do
+  def filter(%{"actor" => actor} = activity) do
     with true <- local?(actor),
-         true <- eligible_type?(object),
-         true <- note?(object),
-         false <- has_attachment?(object),
-         true <- only_mentions?(object) do
+         true <- eligible_type?(activity),
+         true <- note?(activity),
+         false <- has_attachment?(activity),
+         true <- only_mentions?(activity) do
       {:reject, "[NoEmptyPolicy]"}
     else
       _ ->
-        {:ok, object}
+        {:ok, activity}
     end
   end
 
-  def filter(object), do: {:ok, object}
+  def filter(activity), do: {:ok, activity}
 
   defp local?(actor) do
     if actor |> String.starts_with?("#{Endpoint.url()}") do

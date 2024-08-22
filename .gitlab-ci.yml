@@ -9,6 +9,7 @@ variables: &global_variables
   DB_HOST: postgres
   DB_PORT: "5432"
   MIX_ENV: test
+  GIT_STRATEGY: fetch
 
 workflow:
   rules:
@@ -133,7 +134,7 @@ unit-testing-1.13.4-otp-25:
   script: &testing_script
     - mix ecto.create
     - mix ecto.migrate
-    - mix pleroma.test_runner --cover --preload-modules
+    - mix test --cover --preload-modules
   coverage: '/^Line total: ([^ ]*%)$/'
   artifacts:
     reports:

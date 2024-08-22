@@ -65,12 +65,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaBackupOperation do
         file_name: %Schema{type: :string},
         file_size: %Schema{type: :integer},
         processed: %Schema{type: :boolean, description: "whether this backup has succeeded"},
-        state: %Schema{
-          type: :string,
-          description: "the state of the backup",
-          enum: ["pending", "running", "complete", "failed"]
-        },
-        processed_number: %Schema{type: :integer, description: "the number of records processed"}
+        tempdir: %Schema{type: :string}
       },
       example: %{
         "content_type" => "application/zip",
@@ -79,8 +74,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaBackupOperation do
         "file_size" => 4105,
         "inserted_at" => "2020-09-08T16:42:07.000Z",
         "processed" => true,
-        "state" => "complete",
-        "processed_number" => 20
+        "tempdir" => "/tmp/PZIMw40vmpM"
       }
     }
   end

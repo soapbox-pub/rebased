@@ -1,1 +1,0 @@
-Add new parameters to /api/v2/instance: configuration[accounts][max_pinned_statuses] and configuration[statuses][characters_reserved_per_url]

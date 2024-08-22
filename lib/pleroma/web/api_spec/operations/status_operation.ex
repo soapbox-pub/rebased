@@ -31,10 +31,16 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
       security: [%{"oAuth" => ["read:statuses"]}],
       parameters: [
         Operation.parameter(
-          :ids,
+          :id,
           :query,
           %Schema{type: :array, items: FlakeID},
           "Array of status IDs"
+        ),
+        Operation.parameter(
+          :ids,
+          :query,
+          %Schema{type: :array, items: FlakeID},
+          "Deprecated, use `id` instead"
         ),
         Operation.parameter(
           :with_muted,
