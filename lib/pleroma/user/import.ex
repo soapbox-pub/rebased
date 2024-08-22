@@ -16,11 +16,7 @@ defmodule Pleroma.User.Import do
   def perform(:mute_import, %User{} = user, actor) do
     with {:ok, %User{} = muted_user} <- User.get_or_fetch(actor),
          {_, false} <- {:existing_mute, User.mutes_user?(user, muted_user)},
-         {:ok, _} <- User.mute(user, muted_user),
-         # User.mute/2 returns a FollowingRelationship not a %User{} like we get
-         # from CommonAPI.block/2 or CommonAPI.follow/2, so we fetch again to
-         # return the target actor for consistency
-         {:ok, muted_user} <- User.get_or_fetch(actor) do
+         {:ok, _} <- User.mute(user, muted_user) do
       {:ok, muted_user}
     else
       {:existing_mute, true} -> :ok
