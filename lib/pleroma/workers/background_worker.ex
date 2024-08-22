@@ -19,10 +19,10 @@ defmodule Pleroma.Workers.BackgroundWorker do
     User.perform(:force_password_reset, user)
   end
 
-  def perform(%Job{args: %{"op" => op, "user_id" => user_id, "identifiers" => identifiers}})
-      when op in ["blocks_import", "follow_import", "mutes_import"] do
+  def perform(%Job{args: %{"op" => op, "user_id" => user_id, "actor" => actor}})
+      when op in ["block_import", "follow_import", "mute_import"] do
     user = User.get_cached_by_id(user_id)
-    {:ok, User.Import.perform(String.to_existing_atom(op), user, identifiers)}
+    User.Import.perform(String.to_existing_atom(op), user, actor)
   end
 
   def perform(%Job{
