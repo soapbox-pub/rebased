@@ -3,9 +3,9 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-09-20 13:18+0000\n"
-"PO-Revision-Date: 2022-07-22 19:00+0000\n"
-"Last-Translator: Yating Zhan <thestrandedvalley@protonmail.com>\n"
-"Language-Team: Chinese (Simplified) <http://weblate.pleroma-dev.ebin.club/"
+"PO-Revision-Date: 2024-08-01 08:19+0000\n"
+"Last-Translator: Eric Zhang <ericzhang456@disroot.org>\n"
+"Language-Team: Chinese (Simplified) <https://translate.pleroma.social/"
 "projects/pleroma/pleroma-backend-domain-errors/zh_Hans/>\n"
 "Language: zh_Hans\n"
 "MIME-Version: 1.0\n"
@@ -392,7 +392,7 @@ msgid "Invalid answer data"
 msgstr "无效的回答数据"
 
 #: lib/pleroma/web/nodeinfo/nodeinfo_controller.ex:33
-#, elixir-format, fuzzy
+#, elixir-format
 msgid "Nodeinfo schema version not handled"
 msgstr "Nodeinfo schema 版本没被处理"
 

@@ -73,48 +73,20 @@ defmodule Pleroma.Object.Fetcher do
            {:object, data, Object.normalize(activity, fetch: false)} do
       {:ok, object}
     else
-      {:allowed_depth, false} = e ->
-        log_fetch_error(id, e)
-        {:error, :allowed_depth}
-
-      {:containment, reason} = e ->
-        log_fetch_error(id, e)
-        {:error, reason}
-
-      {:transmogrifier, {:error, {:reject, reason}}} = e ->
-        log_fetch_error(id, e)
-        {:reject, reason}
-
-      {:transmogrifier, {:reject, reason}} = e ->
-        log_fetch_error(id, e)
-        {:reject, reason}
-
-      {:transmogrifier, reason} = e ->
-        log_fetch_error(id, e)
-        {:error, reason}
-
-      {:object, data, nil} ->
-        reinject_object(%Object{}, data)
-
       {:normalize, object = %Object{}} ->
         {:ok, object}
 
       {:fetch_object, %Object{} = object} ->
         {:ok, object}
 
-      {:fetch, {:error, reason}} = e ->
-        log_fetch_error(id, e)
-        {:error, reason}
+      {:object, data, nil} ->
+        reinject_object(%Object{}, data)
 
       e ->
-        log_fetch_error(id, e)
-        {:error, e}
+        Logger.metadata(object: id)
+        Logger.error("Object rejected while fetching #{id} #{inspect(e)}")
+        e
     end
-  end
-
-  defp log_fetch_error(id, error) do
-    Logger.metadata(object: id)
-    Logger.error("Object rejected while fetching #{id} #{inspect(error)}")
   end
 
   defp prepare_activity_params(data) do
