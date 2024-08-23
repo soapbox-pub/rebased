@@ -8,9 +8,9 @@
 ## to merge POT files into PO files.
 msgid ""
 msgstr ""
-"PO-Revision-Date: 2022-07-22 19:00+0000\n"
-"Last-Translator: Yating Zhan <thestrandedvalley@protonmail.com>\n"
-"Language-Team: Chinese (Simplified) <http://weblate.pleroma-dev.ebin.club/"
+"PO-Revision-Date: 2024-08-02 09:02+0000\n"
+"Last-Translator: Eric Zhang <ericzhang456@disroot.org>\n"
+"Language-Team: Chinese (Simplified) <https://translate.pleroma.social/"
 "projects/pleroma/pleroma-backend-domain-default/zh_Hans/>\n"
 "Language: zh_Hans\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -106,7 +106,7 @@ msgstr "转换到 %{polymorphic_type} 中的任一 schema 失败"
 #: lib/pleroma/web/api_spec/render_error.ex:71
 #, elixir-format
 msgid "Failed to cast value as %{invalid_schema}. Value must be castable using `allOf` schemas listed."
-msgstr "把值转换成 %{invalid_schema} 失败。值必须可以被转换成在列的「所有」schema。"
+msgstr "把值转换成 %{invalid_schema} 失败。值必须可以被转换成在列的 `allOf` schema。"
 
 #: lib/pleroma/web/api_spec/render_error.ex:84
 #, elixir-format
@@ -136,17 +136,17 @@ msgstr "缺少头：%{name}。"
 #: lib/pleroma/web/api_spec/render_error.ex:196
 #, elixir-format
 msgid "No value provided for required discriminator `%{field}`."
-msgstr ""
+msgstr "没有提供给鉴别器 `%{field}` 提供所需要的值。"
 
 #: lib/pleroma/web/api_spec/render_error.ex:216
 #, elixir-format
 msgid "Object property count %{property_count} is greater than maxProperties: %{max_properties}."
-msgstr ""
+msgstr "对象属性数 %{property_count} 大于 maxProperties: %{max_properties}。"
 
 #: lib/pleroma/web/api_spec/render_error.ex:224
 #, elixir-format
 msgid "Object property count %{property_count} is less than minProperties: %{min_properties}"
-msgstr ""
+msgstr "对象属性数 %{property_count} 小于 minProperties: %{min_properties}"
 
 #: lib/pleroma/web/templates/static_fe/static_fe/error.html.eex:2
 #, elixir-format
@@ -166,7 +166,7 @@ msgstr "未知的 schema：%{name}。"
 #: lib/pleroma/web/api_spec/render_error.ex:192
 #, elixir-format
 msgid "Value used as discriminator for `%{field}` matches no schemas."
-msgstr ""
+msgstr "用于 `%{field}` 鉴别器的值无法匹配到任何 schema。"
 
 #: lib/pleroma/web/templates/embed/show.html.eex:43
 #: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:37
