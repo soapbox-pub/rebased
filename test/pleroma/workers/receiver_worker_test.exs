@@ -245,4 +245,26 @@ defmodule Pleroma.Workers.ReceiverWorkerTest do
 
     assert {:ok, %Pleroma.Activity{}} = ReceiverWorker.perform(oban_job)
   end
+
+  # When activity is delivered to the inbox and we cannot immediately verify signature
+  # we capture all the params and process it later in the Oban job.
+  # This requires we replicate the same scenario by including additional fields in the params
+  test "Deletes cancelled for an unknown actor" do
+    params = %{
+      "type" => "Delete",
+      "actor" => "https://unknown.mastodon.instance/users/somebody"
+    }
+
+    assert {:cancel, "Delete from unknown actor"} =
+             ReceiverWorker.perform(%Oban.Job{
+               args: %{
+                 "op" => "incoming_ap_doc",
+                 "method" => :post,
+                 "req_headers" => [],
+                 "request_path" => "/inbox",
+                 "query_string" => "",
+                 "params" => params
+               }
+             })
+  end
 end
