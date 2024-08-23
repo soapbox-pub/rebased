@@ -33,8 +33,7 @@ defmodule Pleroma.Workers.ReceiverWorker do
       query_string: query_string
     }
 
-    with {_, false} <- {:unknown_delete, unknown_delete?(params)},
-         {:ok, %User{} = _actor} <- User.get_or_fetch_by_ap_id(conn_data.params["actor"]),
+    with {:ok, %User{} = _actor} <- User.get_or_fetch_by_ap_id(conn_data.params["actor"]),
          {:ok, _public_key} <- Signature.refetch_public_key(conn_data),
          {:signature, true} <- {:signature, Signature.validate_signature(conn_data)},
          {:ok, res} <- Federator.perform(:incoming_ap_doc, params) do
@@ -73,16 +72,4 @@ defmodule Pleroma.Workers.ReceiverWorker do
       e -> {:error, e}
     end
   end
-
-  defp unknown_delete?(%{
-         "type" => "Delete",
-         "actor" => actor
-       }) do
-    case User.get_cached_by_ap_id(actor) do
-      %User{} -> false
-      _ -> true
-    end
-  end
-
-  defp unknown_delete?(_), do: false
 end
