@@ -684,6 +684,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       |> json_response(400)
     end
 
+    # When activity is delivered to the inbox and we cannot immediately verify signature
+    # we capture all the params and process it later in the Oban job.
+    # Once we begin processing it through Oban we risk fetching the actor to validate the
+    # activity which just leads to inserting a new user to process a Delete not relevant to us.
+    test "Deletes from an unknown actor are discarded", %{conn: conn} do
+      params =
+        %{
+          "type" => "Delete",
+          "actor" => "https://unknown.mastodon.instance/users/somebody"
+        }
+        |> Jason.encode!()
+
+      conn
+      |> assign(:valid_signature, false)
+      |> put_req_header("content-type", "application/activity+json")
+      |> post("/inbox", params)
+      |> json_response(200)
+
+      assert all_enqueued() == []
+    end
+
     test "accepts Add/Remove activities", %{conn: conn} do
       object_id = "c61d6733-e256-4fe1-ab13-1e369789423f"
 
