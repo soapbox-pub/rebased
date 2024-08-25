@@ -565,9 +565,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  defp unknown_delete?(%{
-         "type" => "Delete",
-       } = data) do
+  defp unknown_delete?(
+         %{
+           "type" => "Delete"
+         } = data
+       ) do
     case data |> Pleroma.Object.Containment.get_actor() |> User.get_cached_by_ap_id() do
       %User{} -> false
       _ -> true
