@@ -949,4 +949,36 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Enum.reject(&User.blocks?(&1, poster))
     |> Enum.each(&Pleroma.Web.CommonAPI.repeat(activity.id, &1))
   end
+
+  def make_bite_data(biting, bitten, activity_id) do
+    %{
+      "type" => "Bite",
+      "actor" => biting.ap_id,
+      "to" => [bitten.ap_id],
+      "target" => bitten.ap_id
+    }
+    |> Maps.put_if_present("id", activity_id)
+  end
+
+  def fetch_latest_bite(
+        %User{ap_id: biting_ap_id},
+        %{ap_id: bitten_ap_id},
+        exclude_activity \\ nil
+      ) do
+    "Bite"
+    |> Activity.Queries.by_type()
+    |> where(actor: ^biting_ap_id)
+    |> maybe_exclude_activity_id(exclude_activity)
+    |> Activity.Queries.by_object_id(bitten_ap_id)
+    |> order_by([activity], fragment("? desc nulls last", activity.id))
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  defp maybe_exclude_activity_id(query, nil), do: query
+
+  defp maybe_exclude_activity_id(query, %Activity{id: activity_id}) do
+    query
+    |> where([a], a.id != ^activity_id)
+  end
 end

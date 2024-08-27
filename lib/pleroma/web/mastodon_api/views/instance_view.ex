@@ -145,7 +145,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       end,
       "pleroma:get:main/ostatus",
       "pleroma:group_actors",
-      "pleroma:bookmark_folders"
+      "pleroma:bookmark_folders",
+      "pleroma:bites"
     ]
     |> Enum.filter(& &1)
   end

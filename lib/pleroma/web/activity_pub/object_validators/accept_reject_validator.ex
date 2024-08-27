@@ -32,7 +32,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AcceptRejectValidator do
     |> validate_required([:id, :type, :actor, :to, :object])
     |> validate_inclusion(:type, ["Accept", "Reject"])
     |> validate_actor_presence()
-    |> validate_object_presence(allowed_types: ["Follow"])
+    |> validate_object_presence(allowed_types: ["Follow", "Bite"])
     |> validate_accept_reject_rights()
   end
 
@@ -44,13 +44,21 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AcceptRejectValidator do
 
   def validate_accept_reject_rights(cng) do
     with object_id when is_binary(object_id) <- get_field(cng, :object),
-         %Activity{data: %{"object" => followed_actor}} <- Activity.get_by_ap_id(object_id),
-         true <- followed_actor == get_field(cng, :actor) do
+         %Activity{} = activity <- Activity.get_by_ap_id(object_id),
+         true <- validate_actor(activity, get_field(cng, :actor)) do
       cng
     else
       _e ->
         cng
         |> add_error(:actor, "can't accept or reject the given activity")
     end
+  end
+
+  defp validate_actor(%Activity{data: %{"type" => "Follow", "object" => followed_actor}}, actor) do
+    followed_actor == actor
+  end
+
+  defp validate_actor(%Activity{data: %{"type" => "Bite", "target" => biten_actor}}, actor) do
+    biten_actor == actor
   end
 end

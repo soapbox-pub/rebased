@@ -138,7 +138,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       "pleroma:report" ->
         put_report(response, activity)
 
-      type when type in ["follow", "follow_request"] ->
+      type when type in ["follow", "follow_request", "bite"] ->
         response
     end
   end

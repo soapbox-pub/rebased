@@ -74,6 +74,10 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
         features: features,
         restrictedNicknames: Config.get([Pleroma.User, :restricted_nicknames]),
         skipThreadContainment: Config.get([:instance, :skip_thread_containment], false)
+      },
+      operations: %{
+        "com.shinolabs.api.bite": ["1.0.0"],
+        "jetzt.mia.ns.activitypub.accept.bite": ["1.0.0"]
       }
     }
   end

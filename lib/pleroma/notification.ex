@@ -74,6 +74,7 @@ defmodule Pleroma.Notification do
     reblog
     poll
     status
+    bite
   }
 
   def changeset(%Notification{} = notification, attrs) do
@@ -367,7 +368,7 @@ defmodule Pleroma.Notification do
   end
 
   def create_notifications(%Activity{data: %{"type" => type}} = activity)
-      when type in ["Follow", "Like", "Announce", "Move", "EmojiReact", "Flag", "Update"] do
+      when type in ["Follow", "Like", "Announce", "Move", "EmojiReact", "Flag", "Update", "Bite"] do
     do_create_notifications(activity)
   end
 
@@ -424,6 +425,9 @@ defmodule Pleroma.Notification do
 
       "Update" ->
         "update"
+
+      "Bite" ->
+        "bite"
 
       t ->
         raise "No notification type for activity type #{t}"
@@ -501,7 +505,8 @@ defmodule Pleroma.Notification do
              "Move",
              "EmojiReact",
              "Flag",
-             "Update"
+             "Update",
+             "Bite"
            ] do
     potential_receiver_ap_ids = get_potential_receiver_ap_ids(activity)
 

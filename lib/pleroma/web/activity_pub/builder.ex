@@ -431,4 +431,15 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   defp pinned_url(nickname) when is_binary(nickname) do
     Pleroma.Web.Router.Helpers.activity_pub_url(Pleroma.Web.Endpoint, :pinned, nickname)
   end
+
+  def bite(%User{} = biting, %User{} = bitten) do
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "target" => bitten.ap_id,
+       "actor" => biting.ap_id,
+       "type" => "Bite",
+       "to" => [bitten.ap_id]
+     }, []}
+  end
 end
