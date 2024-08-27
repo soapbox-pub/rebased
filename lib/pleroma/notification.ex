@@ -79,6 +79,7 @@ defmodule Pleroma.Notification do
     pleroma:participation_request
     pleroma:event_reminder
     pleroma:event_update
+    bite
   }
 
   def changeset(%Notification{} = notification, attrs) do
@@ -390,7 +391,8 @@ defmodule Pleroma.Notification do
              "Flag",
              "Update",
              "Accept",
-             "Join"
+             "Join",
+             "Bite"
            ] do
     do_create_notifications(activity)
   end
@@ -461,6 +463,9 @@ defmodule Pleroma.Notification do
 
       "Join" ->
         "pleroma:participation_request"
+
+      "Bite" ->
+        "bite"
 
       t ->
         raise "No notification type for activity type #{t}"
@@ -562,7 +567,8 @@ defmodule Pleroma.Notification do
              "Flag",
              "Update",
              "Accept",
-             "Join"
+             "Join",
+             "Bite"
            ] do
     potential_receiver_ap_ids = get_potential_receiver_ap_ids(activity)
 

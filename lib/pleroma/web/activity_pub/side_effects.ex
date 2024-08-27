@@ -458,6 +458,56 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
+  # Task this handles
+  # - Bites
+  # - Sends a notification
+  @impl true
+  def handle(
+        %{
+          data: %{
+            "id" => bite_id,
+            "type" => "Bite",
+            "target" => bitten_user,
+            "actor" => biting_user
+          }
+        } = object,
+        meta
+      ) do
+    with %User{} = biting <- User.get_cached_by_ap_id(biting_user),
+         %User{} = bitten <- User.get_cached_by_ap_id(bitten_user),
+         {:previous_bite, previous_bite} <-
+           {:previous_bite, Utils.fetch_latest_bite(biting, bitten, object)},
+         {:reverse_bite, reverse_bite} <-
+           {:reverse_bite, Utils.fetch_latest_bite(bitten, biting)},
+         {:can_bite, true, _} <- {:can_bite, can_bite?(previous_bite, reverse_bite), bitten} do
+      if bitten.local do
+        {:ok, accept_data, _} = Builder.accept(bitten, object)
+        {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
+      end
+
+      if reverse_bite do
+        Notification.dismiss(reverse_bite)
+      end
+
+      {:ok, notifications} = Notification.create_notifications(object)
+
+      meta
+      |> add_notifications(notifications)
+    else
+      {:can_bite, false, bitten} ->
+        {:ok, reject_data, _} = Builder.reject(bitten, object)
+        {:ok, _activity, _} = Pipeline.common_pipeline(reject_data, local: true)
+        meta
+
+      _ ->
+        meta
+    end
+
+    updated_object = Activity.get_by_ap_id(bite_id)
+
+    {:ok, updated_object, meta}
+  end
+
   # Nothing to do
   @impl true
   def handle(object, meta) do
@@ -487,6 +537,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
+  defp handle_accepted(_, _), do: nil
+
   defp handle_rejected(
          %Activity{actor: follower_id, data: %{"type" => "Follow"}} = follow_activity,
          actor
@@ -508,6 +560,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       Utils.remove_participation_from_object(join_activity, joined_event)
       Notification.dismiss(join_activity)
     end
+  end
+
+  defp handle_rejected(%Activity{data: %{"type" => "Bite"}} = bite_activity, _actor) do
+    Notification.dismiss(bite_activity)
   end
 
   defp handle_update_user(
@@ -725,5 +781,13 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     meta
     |> stream_notifications()
     |> send_streamables()
+  end
+
+  defp can_bite?(nil, _), do: true
+
+  defp can_bite?(_, nil), do: false
+
+  defp can_bite?(previous_bite, reverse_bite) do
+    NaiveDateTime.diff(previous_bite.inserted_at, reverse_bite.inserted_at) < 0
   end
 end

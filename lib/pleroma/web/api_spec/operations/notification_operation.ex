@@ -214,7 +214,8 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
         "pleroma:event_reminder",
         "pleroma:event_update",
         "admin.sign_up",
-        "admin.report"
+        "admin.report",
+        "bite"
       ],
       description: """
       The type of event that resulted in the notification.
@@ -237,6 +238,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
       - `pleroma:participation_accepted - Your event participation request was accepted
       - `admin.sign_up` - Someone signed up (optionally sent to admins)
       - `admin.report` - A new report has been filed
+      - `bite` - Someone bit you
       """
     }
   end

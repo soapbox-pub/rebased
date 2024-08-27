@@ -149,7 +149,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
         |> put_status(create_activity, reading_user, status_render_opts)
         |> put_participation_request(activity)
 
-      type when type in ["follow", "follow_request"] ->
+      type when type in ["follow", "follow_request", "bite"] ->
         response
     end
   end

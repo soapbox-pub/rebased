@@ -181,7 +181,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         "language_detection"
       end,
       "events",
-      "multitenancy"
+      "multitenancy",
+      "pleroma:bites"
     ]
     |> Enum.filter(& &1)
   end

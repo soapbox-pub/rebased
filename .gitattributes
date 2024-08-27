@@ -2,6 +2,7 @@
 *.exs diff=elixir
 
 priv/static/instance/static.css diff=css
+priv/static/schemas/litepub-0.1.jsonld diff
 
 # Most of js/css files included in the repo are minified bundles,
 #   and we don't want to search/diff those as text files.

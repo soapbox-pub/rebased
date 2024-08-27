@@ -43,7 +43,6 @@
             "vcard": "http://www.w3.org/2006/vcard/ns#",
             "formerRepresentations": "litepub:formerRepresentations",
             "sm": "http://smithereen.software/ns#",
-<<<<<<< HEAD
             "nonAnonymous": "sm:nonAnonymous",
             "votersCount": "toot:votersCount",
             "mz": "https://joinmobilizon.org/ns#",
@@ -67,10 +66,8 @@
             "location": {
                 "@id": "schema:location",
                 "@type": "schema:Place"
-            }
-=======
-            "nonAnonymous": "sm:nonAnonymous"
->>>>>>> origin/develop
+            },
+            "Bite": "https://ns.mia.jetzt/as#Bite"
         }
     ]
 }

@@ -478,4 +478,15 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
     {:ok, data, []}
   end
+
+  def bite(%User{} = biting, %User{} = bitten) do
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "target" => bitten.ap_id,
+       "actor" => biting.ap_id,
+       "type" => "Bite",
+       "to" => [bitten.ap_id]
+     }, []}
+  end
 end

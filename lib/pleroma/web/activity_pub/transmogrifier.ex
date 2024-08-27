@@ -512,7 +512,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => type} = data,
         _options
       )
-      when type in ~w{Update Block Follow Accept Reject Join Leave} do
+      when type in ~w{Update Block Follow Accept Reject Join Leave Bite} do
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
          {:ok, activity, _} <-
            Pipeline.common_pipeline(data, local: false) do
