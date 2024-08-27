@@ -206,7 +206,8 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
         "status",
         "update",
         "admin.sign_up",
-        "admin.report"
+        "admin.report",
+        "bite"
       ],
       description: """
       The type of event that resulted in the notification.
@@ -224,6 +225,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
       - `update` - A status you boosted has been edited
       - `admin.sign_up` - Someone signed up (optionally sent to admins)
       - `admin.report` - A new report has been filed
+      - `bite` - Someone bit you
       """
     }
   end

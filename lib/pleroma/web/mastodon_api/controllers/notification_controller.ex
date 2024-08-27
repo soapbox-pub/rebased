@@ -35,6 +35,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
       poll
       update
       status
+      bite
     }
 
   # GET /api/v1/notifications

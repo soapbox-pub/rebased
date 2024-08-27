@@ -751,6 +751,8 @@ defmodule Pleroma.Web.Router do
 
     get("/announcements", AnnouncementController, :index)
     post("/announcements/:id/dismiss", AnnouncementController, :mark_read)
+
+    post("/bite", BiteController, :bite)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do

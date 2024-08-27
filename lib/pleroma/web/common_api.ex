@@ -723,4 +723,15 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   defp maybe_cancel_jobs(_), do: {:ok, 0}
+
+  def bite(biting, bitten) do
+    with {:ok, bite_data, _} <- Builder.bite(biting, bitten),
+         {:ok, activity, _} <- Pipeline.common_pipeline(bite_data, local: true) do
+      if activity.data["state"] == "reject" do
+        {:error, :rejected}
+      else
+        {:ok, biting, bitten, activity}
+      end
+    end
+  end
 end

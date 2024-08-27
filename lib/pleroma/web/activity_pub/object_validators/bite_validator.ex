@@ -1,11 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2024 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ActivityPub.ObjectValidators.AcceptRejectValidator do
+defmodule Pleroma.Web.ActivityPub.ObjectValidators.BiteValidator do
   use Ecto.Schema
-
-  alias Pleroma.Activity
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
@@ -30,27 +28,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AcceptRejectValidator do
   defp validate_data(cng) do
     cng
     |> validate_required([:id, :type, :actor, :to, :object])
-    |> validate_inclusion(:type, ["Accept", "Reject"])
+    |> validate_inclusion(:type, ["Bite"])
     |> validate_actor_presence()
-    |> validate_object_presence(allowed_types: ["Follow", "Bite"])
-    |> validate_accept_reject_rights()
+    |> validate_actor_presence(field_name: :object)
   end
 
   def cast_and_validate(data) do
     data
     |> cast_data
     |> validate_data
-  end
-
-  def validate_accept_reject_rights(cng) do
-    with object_id when is_binary(object_id) <- get_field(cng, :object),
-         %Activity{data: %{"object" => followed_actor}} <- Activity.get_by_ap_id(object_id),
-         true <- followed_actor == get_field(cng, :actor) do
-      cng
-    else
-      _e ->
-        cng
-        |> add_error(:actor, "can't accept or reject the given activity")
-    end
   end
 end
