@@ -74,7 +74,6 @@ defmodule Pleroma.Workers.ReceiverWorker do
       # HTTP Sigs
       {:signature, false} -> {:cancel, :invalid_signature}
       {:error, :origin_containment_failed} -> {:cancel, :origin_containment_failed}
-      {:error, {:validate_object, _} = reason} -> {:cancel, reason}
       {:error, {:side_effects, {:error, :no_object_actor}} = reason} -> {:cancel, reason}
       {:error, _} = e -> e
       e -> {:error, e}
