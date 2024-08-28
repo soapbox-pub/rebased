@@ -1,0 +1,1 @@
+Rich Media preview fetching will skip making an HTTP HEAD request to check a URL for allowed content type and length if the Tesla adapter is Gun or Finch
