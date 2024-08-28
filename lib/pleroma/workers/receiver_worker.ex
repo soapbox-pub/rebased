@@ -33,7 +33,8 @@ defmodule Pleroma.Workers.ReceiverWorker do
       query_string: query_string
     }
 
-    with {:ok, %User{} = _actor} <- User.get_or_fetch_by_ap_id(conn_data.params["actor"]),
+    with {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(conn_data.params["actor"]),
+         {:user_active, true} <- {:user_active, match?(true, actor.is_active)},
          {:ok, _public_key} <- Signature.refetch_public_key(conn_data),
          {:signature, true} <- {:signature, Signature.validate_signature(conn_data)},
          {:ok, res} <- Federator.perform(:incoming_ap_doc, params) do
@@ -70,6 +71,7 @@ defmodule Pleroma.Workers.ReceiverWorker do
       {:error, {:side_effects, {:error, :no_object_actor}} = reason} -> {:cancel, reason}
       {:error, :not_found} = reason -> {:cancel, reason}
       {:error, :forbidden} = reason -> {:cancel, reason}
+      {:user_active, false} = reason -> {:cancel, reason}
       {:error, _} = e -> e
       e -> {:error, e}
     end

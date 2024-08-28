@@ -9,6 +9,7 @@ defmodule Pleroma.Workers.ReceiverWorkerTest do
   import Mock
   import Pleroma.Factory
 
+  alias Pleroma.User
   alias Pleroma.Web.Federator
   alias Pleroma.Workers.ReceiverWorker
 
@@ -123,6 +124,31 @@ defmodule Pleroma.Workers.ReceiverWorkerTest do
         })
 
       assert {:cancel, {:error, :not_found}} = ReceiverWorker.perform(oban_job)
+    end
+
+    test "when user account is disabled" do
+      user = insert(:user)
+
+      fake_activity = URI.parse(user.ap_id) |> Map.put(:path, "/fake-activity") |> to_string
+
+      params =
+        insert(:note_activity, user: user).data
+        |> Map.put("id", fake_activity)
+
+      {:ok, %User{}} = User.set_activation(user, false)
+
+      {:ok, oban_job} =
+        ReceiverWorker.new(%{
+          "op" => "incoming_ap_doc",
+          "method" => "POST",
+          "req_headers" => [],
+          "request_path" => "/inbox",
+          "params" => params,
+          "query_string" => ""
+        })
+        |> Oban.insert()
+
+      assert {:cancel, {:user_active, false}} = ReceiverWorker.perform(oban_job)
     end
   end
 
