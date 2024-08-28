@@ -177,4 +177,21 @@ defmodule Pleroma.Workers.ReceiverWorkerTest do
 
     assert {:ok, %Pleroma.Activity{}} = ReceiverWorker.perform(oban_job)
   end
+
+  test "cancels due to origin containment" do
+    params =
+      insert(:note_activity).data
+      |> Map.put("id", "https://notorigindomain.com/activity")
+
+    {:ok, oban_job} =
+      Federator.incoming_ap_doc(%{
+        method: "POST",
+        req_headers: [],
+        request_path: "/inbox",
+        params: params,
+        query_string: ""
+      })
+
+    assert {:cancel, :origin_containment_failed} = ReceiverWorker.perform(oban_job)
+  end
 end
