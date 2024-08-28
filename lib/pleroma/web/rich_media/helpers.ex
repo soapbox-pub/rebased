@@ -59,10 +59,6 @@ defmodule Pleroma.Web.RichMedia.Helpers do
       {:get, _} ->
         Logger.debug("Rich media error for #{url}: HTTP GET failed")
         {:error, :get}
-
-      {:error, :recv_chunk_timeout} ->
-        Logger.debug("Rich media error for #{url}: HTTP streaming response failed")
-        {:error, :get}
     end
   end
 
