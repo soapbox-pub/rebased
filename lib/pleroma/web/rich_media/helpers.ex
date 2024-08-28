@@ -20,7 +20,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
 
   defp stream(url) do
     with {_, {:ok, %Tesla.Env{status: 200, body: stream_body, headers: headers}}} <-
-           {:head, Pleroma.HTTP.get(url, req_headers(), http_options())},
+           {:get, Pleroma.HTTP.get(url, req_headers(), http_options())},
          {_, :ok} <- {:content_type, check_content_type(headers)},
          {_, :ok} <- {:content_length, check_content_length(headers)},
          body <- Enum.into(stream_body, <<>>) do
