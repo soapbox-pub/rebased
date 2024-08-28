@@ -65,6 +65,12 @@ defmodule Pleroma.Workers.ReceiverWorkerTest do
             status: 404,
             body: ""
           }
+
+        %{url: "https://springfield.social/users/hankscorpio"} ->
+          %Tesla.Env{
+            status: 410,
+            body: ""
+          }
       end)
     end
 
@@ -89,6 +95,23 @@ defmodule Pleroma.Workers.ReceiverWorkerTest do
       params =
         insert(:note_activity).data
         |> Map.put("actor", "https://springfield.social/users/troymcclure")
+
+      {:ok, oban_job} =
+        Federator.incoming_ap_doc(%{
+          method: "POST",
+          req_headers: [],
+          request_path: "/inbox",
+          params: params,
+          query_string: ""
+        })
+
+      assert {:cancel, {:error, :not_found}} = ReceiverWorker.perform(oban_job)
+    end
+
+    test "when request returns a 410" do
+      params =
+        insert(:note_activity).data
+        |> Map.put("actor", "https://springfield.social/users/hankscorpio")
 
       {:ok, oban_job} =
         Federator.incoming_ap_doc(%{
