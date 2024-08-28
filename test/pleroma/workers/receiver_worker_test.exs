@@ -138,15 +138,13 @@ defmodule Pleroma.Workers.ReceiverWorkerTest do
       {:ok, %User{}} = User.set_activation(user, false)
 
       {:ok, oban_job} =
-        ReceiverWorker.new(%{
-          "op" => "incoming_ap_doc",
-          "method" => "POST",
-          "req_headers" => [],
-          "request_path" => "/inbox",
-          "params" => params,
-          "query_string" => ""
+        Federator.incoming_ap_doc(%{
+          method: "POST",
+          req_headers: [],
+          request_path: "/inbox",
+          params: params,
+          query_string: ""
         })
-        |> Oban.insert()
 
       assert {:cancel, {:user_active, false}} = ReceiverWorker.perform(oban_job)
     end

@@ -33,8 +33,7 @@ defmodule Pleroma.Workers.ReceiverWorker do
       query_string: query_string
     }
 
-    with {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(conn_data.params["actor"]),
-         {:user_active, true} <- {:user_active, match?(true, actor.is_active)},
+    with {:ok, %User{}} <- User.get_or_fetch_by_ap_id(conn_data.params["actor"]),
          {:ok, _public_key} <- Signature.refetch_public_key(conn_data),
          {:signature, true} <- {:signature, Signature.validate_signature(conn_data)},
          {:ok, res} <- Federator.perform(:incoming_ap_doc, params) do
@@ -65,7 +64,7 @@ defmodule Pleroma.Workers.ReceiverWorker do
       {:error, :not_found} = reason -> {:cancel, reason}
       {:error, :forbidden} = reason -> {:cancel, reason}
       # Inactive user
-      {:user_active, false} = reason -> {:cancel, reason}
+      {:error, {:user_active, false} = reason} -> {:cancel, reason}
       # Validator will error and return a changeset error
       # e.g., duplicate activities or if the object was deleted
       {:error, {:validate, {:error, _changeset} = reason}} -> {:cancel, reason}
