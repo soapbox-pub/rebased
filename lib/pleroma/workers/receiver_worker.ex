@@ -61,17 +61,21 @@ defmodule Pleroma.Workers.ReceiverWorker do
 
   defp process_errors(errors) do
     case errors do
-      {:error, :origin_containment_failed} -> {:cancel, :origin_containment_failed}
-      {:error, :already_present} -> {:cancel, :already_present}
-      {:error, {:validate_object, _} = reason} -> {:cancel, reason}
-      {:error, {:validate, {:error, _changeset} = reason}} -> {:cancel, reason}
-      {:error, {:reject, _} = reason} -> {:cancel, reason}
-      {:signature, false} -> {:cancel, :invalid_signature}
-      {:error, "Object has been deleted"} = reason -> {:cancel, reason}
-      {:error, {:side_effects, {:error, :no_object_actor}} = reason} -> {:cancel, reason}
+      # User fetch failures
       {:error, :not_found} = reason -> {:cancel, reason}
       {:error, :forbidden} = reason -> {:cancel, reason}
+      # Inactive user
       {:user_active, false} = reason -> {:cancel, reason}
+      # Validator will error and return a changeset error
+      # e.g., duplicate activities or if the object was deleted
+      {:error, {:validate, {:error, _changeset} = reason}} -> {:cancel, reason}
+      # MRFs will return a reject
+      {:error, {:reject, _} = reason} -> {:cancel, reason}
+      # HTTP Sigs
+      {:signature, false} -> {:cancel, :invalid_signature}
+      {:error, :origin_containment_failed} -> {:cancel, :origin_containment_failed}
+      {:error, {:validate_object, _} = reason} -> {:cancel, reason}
+      {:error, {:side_effects, {:error, :no_object_actor}} = reason} -> {:cancel, reason}
       {:error, _} = e -> e
       e -> {:error, e}
     end
