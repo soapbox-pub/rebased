@@ -11,10 +11,10 @@ defmodule Pleroma.Web.RichMedia.Helpers do
 
   @spec rich_media_get(String.t()) :: {:ok, String.t()} | get_errors()
   def rich_media_get(url) do
-      case Pleroma.HTTP.AdapterHelper.can_stream?() do
-        true -> stream(url)
-        false -> head_first(url)
-      end
+    case Pleroma.HTTP.AdapterHelper.can_stream?() do
+      true -> stream(url)
+      false -> head_first(url)
+    end
     |> handle_result(url)
   end
 
@@ -22,8 +22,8 @@ defmodule Pleroma.Web.RichMedia.Helpers do
     with {_, {:ok, %Tesla.Env{status: 200, body: stream_body, headers: headers}}} <-
            {:head, Pleroma.HTTP.get(url, req_headers(), http_options())},
          {_, :ok} <- {:content_type, check_content_type(headers)},
-         {_, :ok} <- {:content_length, check_content_length(headers)} do
-      body = Enum.into(stream_body, <<>>)
+         {_, :ok} <- {:content_length, check_content_length(headers)},
+         body <- Enum.into(stream_body, <<>>) do
       {:ok, body}
     end
   end
@@ -58,6 +58,10 @@ defmodule Pleroma.Web.RichMedia.Helpers do
 
       {:get, _} ->
         Logger.debug("Rich media error for #{url}: HTTP GET failed")
+        {:error, :get}
+
+      {:error, :recv_chunk_timeout} ->
+        Logger.debug("Rich media error for #{url}: HTTP streaming response failed")
         {:error, :get}
     end
   end
