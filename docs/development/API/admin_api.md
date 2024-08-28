@@ -1879,7 +1879,7 @@ Note that this differs from the Mastodon API variant: Mastodon API only returns 
 }
 ```
 
-## `POST /api/v1/pleroma/admin/domains/:id`
+## `PATCH /api/v1/pleroma/admin/domains/:id`
 
 ### Change domain publicity
 
