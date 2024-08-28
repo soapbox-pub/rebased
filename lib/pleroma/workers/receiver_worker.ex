@@ -56,17 +56,20 @@ defmodule Pleroma.Workers.ReceiverWorker do
 
   def timeout(_job), do: :timer.seconds(5)
 
+  defp process_errors({:error, {:error, _} = error}), do: process_errors(error)
+
   defp process_errors(errors) do
     case errors do
       {:error, :origin_containment_failed} -> {:cancel, :origin_containment_failed}
       {:error, :already_present} -> {:cancel, :already_present}
       {:error, {:validate_object, _} = reason} -> {:cancel, reason}
-      {:error, {:error, {:validate, {:error, _changeset} = reason}}} -> {:cancel, reason}
+      {:error, {:validate, {:error, _changeset} = reason}} -> {:cancel, reason}
       {:error, {:reject, _} = reason} -> {:cancel, reason}
       {:signature, false} -> {:cancel, :invalid_signature}
       {:error, "Object has been deleted"} = reason -> {:cancel, reason}
       {:error, {:side_effects, {:error, :no_object_actor}} = reason} -> {:cancel, reason}
       {:error, :not_found} = reason -> {:cancel, reason}
+      {:error, :forbidden} = reason -> {:cancel, reason}
       {:error, _} = e -> e
       e -> {:error, e}
     end
