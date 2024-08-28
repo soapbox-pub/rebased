@@ -69,6 +69,8 @@ defmodule Pleroma.Workers.ReceiverWorker do
       # Validator will error and return a changeset error
       # e.g., duplicate activities or if the object was deleted
       {:error, {:validate, {:error, _changeset} = reason}} -> {:cancel, reason}
+      # Duplicate detection during Normalization
+      {:error, :already_present} -> {:cancel, :already_present}
       # MRFs will return a reject
       {:error, {:reject, _} = reason} -> {:cancel, reason}
       # HTTP Sigs
