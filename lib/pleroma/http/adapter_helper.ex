@@ -120,7 +120,6 @@ defmodule Pleroma.HTTP.AdapterHelper do
     end
   end
 
-  # TODO add Finch support once we have an AdapterHelper for it
   @spec can_stream? :: bool()
   def can_stream? do
     case Application.get_env(:tesla, :adapter) do

@@ -23,7 +23,7 @@ defmodule Pleroma.HTTP.AdapterHelper.Finch do
     |> maybe_stream()
   end
 
-  # Tesla Finch adapter uses response: :stream
+  # Finch uses [response: :stream]
   defp maybe_stream(opts) do
     case Keyword.pop(opts, :stream, nil) do
       {true, opts} -> Keyword.put(opts, :response, :stream)

@@ -48,7 +48,7 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
     Keyword.put(opts, :timeout, recv_timeout)
   end
 
-  # Tesla Gun adapter uses body_as: :stream
+  # Gun uses [body_as: :stream]
   defp maybe_stream(opts) do
     case Keyword.pop(opts, :stream, nil) do
       {true, opts} -> Keyword.put(opts, :body_as, :stream)
