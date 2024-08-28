@@ -51,52 +51,56 @@ defmodule Pleroma.Workers.ReceiverWorkerTest do
              })
   end
 
-  test "it does not retry if a user fetch fails with a 403" do
-    Tesla.Mock.mock(fn
-      %{url: "https://simpsons.com/users/bart"} ->
-        %Tesla.Env{
-          status: 403,
-          body: ""
-        }
-    end)
+  describe "cancels on a failed user fetch" do
+    setup do
+      Tesla.Mock.mock(fn
+        %{url: "https://springfield.social/users/bart"} ->
+          %Tesla.Env{
+            status: 403,
+            body: ""
+          }
 
-    params =
-      %{
-        "@context" => [
-          "https://www.w3.org/ns/activitystreams",
-          "https://w3id.org/security/v1"
-        ],
-        "actor" => "https://simpsons.com/users/bart",
-        "cc" => [],
-        "id" => "https://simpsons.com/activity/eat-my-shorts",
-        "object" => %{},
-        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
-        "type" => "Create"
-      }
+        %{url: "https://springfield.social/users/troymcclure"} ->
+          %Tesla.Env{
+            status: 404,
+            body: ""
+          }
+      end)
+    end
 
-    req_headers = [
-      ["accept-encoding", "gzip"],
-      ["content-length", "31337"],
-      ["content-type", "application/activity+json"],
-      ["date", "Wed, 28 Aug 2024 15:36:31 GMT"],
-      ["digest", "SHA-256=ouge/6HP2/QryG6F3JNtZ6vzs/hSwMk67xdxe87eH7A="],
-      ["host", "bikeshed.party"],
-      [
-        "signature",
-        "does not matter as user needs to be fetched first"
-      ]
-    ]
+    test "when request returns a 403" do
+      params =
+        insert(:note_activity).data
+        |> Map.put("actor", "https://springfield.social/users/bart")
 
-    {:ok, oban_job} =
-      Federator.incoming_ap_doc(%{
-        method: "POST",
-        req_headers: req_headers,
-        request_path: "/inbox",
-        params: params,
-        query_string: ""
-      })
+      {:ok, oban_job} =
+        Federator.incoming_ap_doc(%{
+          method: "POST",
+          req_headers: [],
+          request_path: "/inbox",
+          params: params,
+          query_string: ""
+        })
 
-    assert {:cancel, {:error, :forbidden}} = ReceiverWorker.perform(oban_job)
+      assert {:cancel, {:error, :forbidden}} = ReceiverWorker.perform(oban_job)
+    end
+
+    test "when request returns a 404" do
+      params =
+        insert(:note_activity).data
+        |> Map.put("actor", "https://springfield.social/users/troymcclure")
+
+      {:ok, oban_job} =
+        Federator.incoming_ap_doc(%{
+          method: "POST",
+          req_headers: [],
+          request_path: "/inbox",
+          params: params,
+          query_string: ""
+        })
+
+      assert {:cancel, {:error, :not_found}} = ReceiverWorker.perform(oban_job)
+    end
   end
 
   test "it can validate the signature" do
