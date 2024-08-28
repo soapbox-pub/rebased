@@ -220,4 +220,29 @@ defmodule Pleroma.Workers.ReceiverWorkerTest do
 
     assert {:cancel, :origin_containment_failed} = ReceiverWorker.perform(oban_job)
   end
+
+  test "canceled due to deleted object" do
+    params =
+      insert(:announce_activity).data
+      |> Map.put("object", "http://localhost:4001/deleted")
+
+    Tesla.Mock.mock(fn
+      %{url: "http://localhost:4001/deleted"} ->
+        %Tesla.Env{
+          status: 404,
+          body: ""
+        }
+    end)
+
+    {:ok, oban_job} =
+      Federator.incoming_ap_doc(%{
+        method: "POST",
+        req_headers: [],
+        request_path: "/inbox",
+        params: params,
+        query_string: ""
+      })
+
+    assert {:cancel, _} = ReceiverWorker.perform(oban_job)
+  end
 end
