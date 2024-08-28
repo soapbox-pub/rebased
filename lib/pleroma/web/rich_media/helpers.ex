@@ -11,16 +11,39 @@ defmodule Pleroma.Web.RichMedia.Helpers do
 
   @spec rich_media_get(String.t()) :: {:ok, String.t()} | get_errors()
   def rich_media_get(url) do
-    headers = [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
+      case Pleroma.HTTP.AdapterHelper.can_stream?() do
+        true -> stream(url)
+        false -> head_first(url)
+      end
+    |> handle_result(url)
+  end
 
+  defp stream(url) do
+    with {_, {:ok, %Tesla.Env{status: 200, body: stream_body, headers: headers}}} <-
+           {:head, Pleroma.HTTP.get(url, req_headers(), http_options())},
+         {_, :ok} <- {:content_type, check_content_type(headers)},
+         {_, :ok} <- {:content_length, check_content_length(headers)} do
+      body = Enum.into(stream_body, <<>>)
+      {:ok, body}
+    end
+  end
+
+  defp head_first(url) do
     with {_, {:ok, %Tesla.Env{status: 200, headers: headers}}} <-
-           {:head, Pleroma.HTTP.head(url, headers, http_options())},
+           {:head, Pleroma.HTTP.head(url, req_headers(), http_options())},
          {_, :ok} <- {:content_type, check_content_type(headers)},
          {_, :ok} <- {:content_length, check_content_length(headers)},
          {_, {:ok, %Tesla.Env{status: 200, body: body}}} <-
-           {:get, Pleroma.HTTP.get(url, headers, http_options())} do
+           {:get, Pleroma.HTTP.get(url, req_headers(), http_options())} do
       {:ok, body}
-    else
+    end
+  end
+
+  defp handle_result(result, url) do
+    case result do
+      {:ok, body} ->
+        {:ok, body}
+
       {:head, _} ->
         Logger.debug("Rich media error for #{url}: HTTP HEAD failed")
         {:error, :head}
@@ -74,7 +97,12 @@ defmodule Pleroma.Web.RichMedia.Helpers do
     [
       pool: :rich_media,
       max_body: Config.get([:rich_media, :max_body], 5_000_000),
-      tesla_middleware: [{Tesla.Middleware.Timeout, timeout: timeout}]
+      tesla_middleware: [{Tesla.Middleware.Timeout, timeout: timeout}],
+      stream: true
     ]
+  end
+
+  defp req_headers do
+    [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
   end
 end
