@@ -1,0 +1,1 @@
+ReceiverWorker will cancel processing jobs instead of retrying if the user cannot be fetched due to 403, 404, or 410 errors or if the account is disabled locally.
