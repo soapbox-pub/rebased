@@ -657,7 +657,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
 
     test "without valid signature, " <>
-           "it only accepts Create activities and requires enabled federation",
+           "it accepts Create activities and requires enabled federation",
          %{conn: conn} do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Jason.decode!()
       non_create_data = File.read!("test/fixtures/mastodon-announce.json") |> Jason.decode!()
