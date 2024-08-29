@@ -688,21 +688,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     # we capture all the params and process it later in the Oban job.
     # Once we begin processing it through Oban we risk fetching the actor to validate the
     # activity which just leads to inserting a new user to process a Delete not relevant to us.
-    test "Deletes from an unknown actor are discarded", %{conn: conn} do
-      params =
-        %{
-          "type" => "Delete",
-          "actor" => "https://unknown.mastodon.instance/users/somebody"
-        }
-        |> Jason.encode!()
+    test "Activities of certain types from an unknown actor are discarded", %{conn: conn} do
+      example_bad_types = ["Announce", "Delete", "Undo"]
 
-      conn
-      |> assign(:valid_signature, false)
-      |> put_req_header("content-type", "application/activity+json")
-      |> post("/inbox", params)
-      |> json_response(400)
+      Enum.each(example_bad_types, fn bad_type ->
+        params =
+          %{
+            "type" => bad_type,
+            "actor" => "https://unknown.mastodon.instance/users/somebody"
+          }
+          |> Jason.encode!()
 
-      assert all_enqueued() == []
+        conn
+        |> assign(:valid_signature, false)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/inbox", params)
+        |> json_response(400)
+
+        assert all_enqueued() == []
+      end)
     end
 
     test "accepts Add/Remove activities", %{conn: conn} do
