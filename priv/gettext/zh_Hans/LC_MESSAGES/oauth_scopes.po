@@ -1,0 +1,274 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-08-01 10:12+0300\n"
+"PO-Revision-Date: 2024-08-01 08:19+0000\n"
+"Last-Translator: Eric Zhang <ericzhang456@disroot.org>\n"
+"Language-Team: Chinese (Simplified) <https://translate.pleroma.social/"
+"projects/pleroma/pleroma-backend-domain-oauth_scopes/zh_Hans/>\n"
+"Language: zh_Hans\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.13.1\n"
+
+## This file is a PO Template file.
+##
+## "msgid"s here are often extracted from source code.
+## Add new translations manually only if they're dynamic
+## translations that can't be statically extracted.
+##
+## Run "mix gettext.extract" to bring this file up to
+## date. Leave "msgstr"s empty as changing them here has no
+## effect: edit them in PO (.po) files instead.
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "admin"
+msgstr "全部管理员权限"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "admin:read"
+msgstr "使用管理员 API 读取"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "admin:write"
+msgstr "使用管理员 API 写入"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "follow"
+msgstr "读取并写入用户关系"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read"
+msgstr "读取任何信息"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:accounts"
+msgstr "读取所有账号的信息"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:blocks"
+msgstr "读取块关系"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:bookmarks"
+msgstr "读取您的书签"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:favourites"
+msgstr "读取您喜欢的帖子"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:filters"
+msgstr "读取您的过滤器设置"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:follows"
+msgstr "读取关注关系"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:lists"
+msgstr "读取您的列表"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:notifications"
+msgstr "读取您的通知"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:search"
+msgstr "执行搜索"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:statuses"
+msgstr "读取您可以看到的动态"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write"
+msgstr "写入任何信息"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:accounts"
+msgstr "更改您的账号信息"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:blocks"
+msgstr "屏蔽或取消屏蔽任何人"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:bookmarks"
+msgstr "从您的书签中添加或移除"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:conversations"
+msgstr "更改收件人，标记为已阅，或删除聊天"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:favourites"
+msgstr "喜欢或取消喜欢动态"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:filters"
+msgstr "更改您的过滤器设置"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:follows"
+msgstr "关注或取消关注任何人"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:lists"
+msgstr "创建，更改或删除您的列表"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:media"
+msgstr "上传媒体文件或更改您上传的媒体文件"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:mutes"
+msgstr "隐藏或取消隐藏任何人"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:notifications"
+msgstr "标记通知为已读"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:statuses"
+msgstr "发表，编辑，转发帖子或对帖子做出回应"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "admin:read:accounts"
+msgstr "使用管理员 API 读取所有账号"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "admin:read:chats"
+msgstr "使用管理员 API 读取所有聊天"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "admin:read:invites"
+msgstr "使用管理员 API 读取所有邀请码"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "admin:read:media_proxy_caches"
+msgstr "使用管理员 API 读取媒体代理缓存"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "admin:read:reports"
+msgstr "使用管理员 API 读取所有举报"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "admin:read:statuses"
+msgstr "使用管理员 API 读取所有动态"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "admin:write:accounts"
+msgstr "使用管理员 API 更改所有账号"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "admin:write:chats"
+msgstr "使用管理员 API 更改所有聊天"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "admin:write:follows"
+msgstr "使用管理员 API 更改关注关系"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "admin:write:invites"
+msgstr "使用管理员 API 创建或吊销邀请码"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "admin:write:media_proxy_caches"
+msgstr "使用管理员 API 更改媒体代理缓存"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "admin:write:reports"
+msgstr "使用管理员 API 处理举报"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "admin:write:statuses"
+msgstr "使用管理员 API 删除动态，更改动态的范围，或标记为敏感动态"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:mutes"
+msgstr "读取隐藏关系"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "push"
+msgstr "推送通知"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:backups"
+msgstr "读取您的备份"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:chats"
+msgstr "读取您的聊天"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:media"
+msgstr "读取媒体附件"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "read:reports"
+msgstr "读取您的举报"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:chats"
+msgstr "添加或移除聊天信息，或者标记它们为已阅"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:follow"
+msgstr "关注或取消关注任何人"
+
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+#, elixir-autogen, elixir-format
+msgid "write:reports"
+msgstr "提交举报"
