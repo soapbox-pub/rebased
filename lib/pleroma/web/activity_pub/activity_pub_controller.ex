@@ -294,19 +294,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   def inbox(%{assigns: %{valid_signature: false}} = conn, params) do
-    case unknown_delete?(params) do
-      true ->
-        :ok
-
-      false ->
-        Federator.incoming_ap_doc(%{
-          method: conn.method,
-          req_headers: conn.req_headers,
-          request_path: conn.request_path,
-          params: params,
-          query_string: conn.query_string
-        })
-    end
+    Federator.incoming_ap_doc(%{
+      method: conn.method,
+      req_headers: conn.req_headers,
+      request_path: conn.request_path,
+      params: params,
+      query_string: conn.query_string
+    })
 
     json(conn, "ok")
   end
@@ -564,17 +558,4 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> json(UserView.render("featured.json", %{user: user}))
     end
   end
-
-  defp unknown_delete?(
-         %{
-           "type" => "Delete"
-         } = data
-       ) do
-    case data |> Pleroma.Object.Containment.get_actor() |> User.get_cached_by_ap_id() do
-      %User{} -> false
-      _ -> true
-    end
-  end
-
-  defp unknown_delete?(_), do: false
 end

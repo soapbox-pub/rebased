@@ -85,6 +85,18 @@ defmodule Pleroma.Constants do
     ]
   )
 
+  const(allowed_activity_types_from_strangers,
+    do: [
+      "Block",
+      "Create",
+      "Flag",
+      "Follow",
+      "Like",
+      "Move",
+      "React"
+    ]
+  )
+
   # basic regex, just there to weed out potential mistakes
   # https://datatracker.ietf.org/doc/html/rfc2045#section-5.1
   const(mime_regex,

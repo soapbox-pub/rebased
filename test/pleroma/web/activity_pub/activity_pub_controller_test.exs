@@ -700,7 +700,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       |> assign(:valid_signature, false)
       |> put_req_header("content-type", "application/activity+json")
       |> post("/inbox", params)
-      |> json_response(200)
+      |> json_response(400)
 
       assert all_enqueued() == []
     end
