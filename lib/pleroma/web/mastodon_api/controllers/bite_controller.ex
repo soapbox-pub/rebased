@@ -9,14 +9,13 @@ defmodule Pleroma.Web.MastodonAPI.BiteController do
 
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Plugs.OAuthScopesPlug
-  # alias Pleroma.Web.Plugs.RateLimiter
+  alias Pleroma.Web.Plugs.RateLimiter
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
 
-  plug(OAuthScopesPlug, %{scopes: ["write:bite"]} when action == :bite)
+  plug(OAuthScopesPlug, %{scopes: ["write:bites"]} when action == :bite)
 
-  # plug(RateLimiter, [name: :relations_actions] when action in @relationship_actions)
-  # plug(RateLimiter, [name: :app_account_creation] when action == :create)
+  plug(RateLimiter, [name: :bites])
 
   plug(:assign_account_by_id)
 
