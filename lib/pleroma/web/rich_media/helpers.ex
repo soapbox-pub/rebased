@@ -23,7 +23,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
            {:get, Pleroma.HTTP.get(url, req_headers(), http_options())},
          {_, :ok} <- {:content_type, check_content_type(headers)},
          {_, :ok} <- {:content_length, check_content_length(headers)},
-         body <- Enum.into(stream_body, <<>>) do
+         {:read_stream, {:ok, body}} <- {:read_stream, read_stream(stream_body)} do
       {:ok, body}
     end
   end
@@ -52,8 +52,12 @@ defmodule Pleroma.Web.RichMedia.Helpers do
         Logger.debug("Rich media error for #{url}: content-type is #{type}")
         {:error, :content_type}
 
-      {:content_length, {_, length}} ->
-        Logger.debug("Rich media error for #{url}: content-length is #{length}")
+      {:content_length, :error} ->
+        Logger.debug("Rich media error for #{url}: content-length exceeded")
+        {:error, :body_too_large}
+
+      {:read_stream, :error} ->
+        Logger.debug("Rich media error for #{url}: content-length exceeded")
         {:error, :body_too_large}
 
       {:get, _} ->
@@ -82,12 +86,34 @@ defmodule Pleroma.Web.RichMedia.Helpers do
       {_, maybe_content_length} ->
         case Integer.parse(maybe_content_length) do
           {content_length, ""} when content_length <= max_body -> :ok
-          {_, ""} -> {:error, maybe_content_length}
+          {_, ""} -> :error
           _ -> :ok
         end
 
       _ ->
         :ok
+    end
+  end
+
+  defp read_stream(stream) do
+    max_body = Keyword.get(http_options(), :max_body)
+
+    try do
+      result =
+        Stream.transform(stream, 0, fn chunk, total_bytes ->
+          new_total = total_bytes + byte_size(chunk)
+
+          if new_total > max_body do
+            raise("Exceeds max body limit of #{max_body}")
+          else
+            {[chunk], new_total}
+          end
+        end)
+        |> Enum.into(<<>>)
+
+      {:ok, result}
+    rescue
+      _ -> :error
     end
   end
 
