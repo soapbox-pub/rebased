@@ -1479,12 +1479,12 @@ defmodule Pleroma.Web.CommonAPITest do
       uselective = insert(:user, is_locked: true, permit_followback: true)
 
       assert {:ok, uselective, uopen, %{data: %{"state" => "accept"}}} =
-               CommonAPI.follow(uselective, uopen)
+               CommonAPI.follow(uopen, uselective)
 
       assert User.get_follow_state(uselective, uopen) == :follow_accept
 
       assert {:ok, uopen, uselective, %{data: %{"state" => "accept"}}} =
-               CommonAPI.follow(uopen, uselective)
+               CommonAPI.follow(uselective, uopen)
 
       assert User.get_follow_state(uopen, uselective) == :follow_accept
     end
@@ -1494,12 +1494,12 @@ defmodule Pleroma.Web.CommonAPITest do
       ulocked = insert(:user, is_locked: true, permit_followback: false)
 
       assert {:ok, ulocked, uopen, %{data: %{"state" => "accept"}}} =
-               CommonAPI.follow(ulocked, uopen)
+               CommonAPI.follow(uopen, ulocked)
 
       assert User.get_follow_state(ulocked, uopen) == :follow_accept
 
       assert {:ok, uopen, ulocked, %{data: %{"state" => "pending"}}} =
-               CommonAPI.follow(uopen, ulocked)
+               CommonAPI.follow(ulocked, uopen)
 
       assert User.get_follow_state(uopen, ulocked) == :follow_pending
     end
