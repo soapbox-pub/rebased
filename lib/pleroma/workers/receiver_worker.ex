@@ -58,7 +58,6 @@ defmodule Pleroma.Workers.ReceiverWorker do
 
   defp process_errors(errors) do
     case errors do
-      {:unknown_delete, true} -> {:cancel, "Delete from unknown actor"}
       {:error, :origin_containment_failed} -> {:cancel, :origin_containment_failed}
       {:error, :already_present} -> {:cancel, :already_present}
       {:error, {:validate_object, _} = reason} -> {:cancel, reason}
