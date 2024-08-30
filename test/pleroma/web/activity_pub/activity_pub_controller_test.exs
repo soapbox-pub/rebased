@@ -711,6 +711,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       end)
     end
 
+    test "Unknown activity types are discarded", %{conn: conn} do
+      unknown_types = ["Poke", "Read", "Dazzle"]
+
+      Enum.each(unknown_types, fn bad_type ->
+        params =
+          %{
+            "type" => bad_type,
+            "actor" => "https://unknown.mastodon.instance/users/somebody"
+          }
+          |> Jason.encode!()
+
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/inbox", params)
+        |> json_response(400)
+
+        assert all_enqueued() == []
+      end)
+    end
+
     test "accepts Add/Remove activities", %{conn: conn} do
       object_id = "c61d6733-e256-4fe1-ab13-1e369789423f"
 

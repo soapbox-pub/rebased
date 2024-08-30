@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.Plugs.InboxGuardPlug do
   import Plug.Conn
-  import Pleroma.Constants, only: [allowed_activity_types_from_strangers: 0]
+  import Pleroma.Constants, only: [activity_types: 0, allowed_activity_types_from_strangers: 0]
 
   alias Pleroma.Config
   alias Pleroma.User
@@ -14,21 +14,43 @@ defmodule Pleroma.Web.Plugs.InboxGuardPlug do
   end
 
   def call(%{assigns: %{valid_signature: true}} = conn, _opts) do
-    conn
+    with {_, true} <- {:federating, Config.get!([:instance, :federating])} do
+      conn
+      |> filter_activity_types()
+    else
+      {:federating, false} ->
+        conn
+        |> json(403, "Not federating")
+        |> halt()
+    end
   end
 
   def call(conn, _opts) do
     with {_, true} <- {:federating, Config.get!([:instance, :federating])},
-         true <- known_actor?(conn) do
+         conn = filter_activity_types(conn),
+         {:known, true} <- {:known, known_actor?(conn)} do
       conn
     else
       {:federating, false} ->
         conn
         |> json(403, "Not federating")
+        |> halt()
 
-      _ ->
+      {:known, false} ->
         conn
         |> filter_from_strangers()
+    end
+  end
+
+  # Early rejection of unrecognized types
+  defp filter_activity_types(%{body_params: %{"type" => type}} = conn) do
+    with true <- type in activity_types() do
+      conn
+    else
+      _ ->
+        conn
+        |> json(400, "Invalid activity type")
+        |> halt()
     end
   end
 
@@ -52,6 +74,7 @@ defmodule Pleroma.Web.Plugs.InboxGuardPlug do
       _ ->
         conn
         |> json(400, "Invalid activity type for an unknown actor")
+        |> halt()
     end
   end
 
