@@ -689,7 +689,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     # Once we begin processing it through Oban we risk fetching the actor to validate the
     # activity which just leads to inserting a new user to process a Delete not relevant to us.
     test "Activities of certain types from an unknown actor are discarded", %{conn: conn} do
-      example_bad_types = ["Announce", "Delete", "Undo"]
+      example_bad_types =
+        Pleroma.Constants.activity_types() --
+          Pleroma.Constants.allowed_activity_types_from_strangers()
 
       Enum.each(example_bad_types, fn bad_type ->
         params =

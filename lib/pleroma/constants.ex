@@ -85,6 +85,24 @@ defmodule Pleroma.Constants do
     ]
   )
 
+  const(activity_types,
+    do: [
+      "Create",
+      "Update",
+      "Delete",
+      "Follow",
+      "Accept",
+      "Reject",
+      "Add",
+      "Remove",
+      "Like",
+      "Announce",
+      "Undo",
+      "Flag",
+      "EmojiReact"
+    ]
+  )
+
   const(allowed_activity_types_from_strangers,
     do: [
       "Block",
