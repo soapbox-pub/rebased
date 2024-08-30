@@ -92,8 +92,8 @@ defmodule Pleroma.Constants do
       "Flag",
       "Follow",
       "Like",
-      "Move",
-      "React"
+      "EmojiReact",
+      "Announce"
     ]
   )
 
