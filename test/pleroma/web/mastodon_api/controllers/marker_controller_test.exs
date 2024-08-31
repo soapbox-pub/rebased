@@ -137,9 +137,13 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
       token = insert(:oauth_token, user: user1, scopes: ["write:statuses"])
 
       user2 = insert(:user)
-      {:ok, _activity1} = CommonAPI.post(user2, %{status: "hi @#{user1.nickname}"})
-      {:ok, _activity2} = CommonAPI.post(user2, %{status: "hi @#{user1.nickname}"})
-      {:ok, _activity3} = CommonAPI.post(user2, %{status: "HIE @#{user1.nickname}"})
+      {:ok, activity1} = CommonAPI.post(user2, %{status: "hi @#{user1.nickname}"})
+      {:ok, activity2} = CommonAPI.post(user2, %{status: "hi @#{user1.nickname}"})
+      {:ok, activity3} = CommonAPI.post(user2, %{status: "HIE @#{user1.nickname}"})
+
+      Notification.create_notifications(activity1)
+      Notification.create_notifications(activity2)
+      Notification.create_notifications(activity3)
 
       [notification3, notification2, notification1] = Notification.for_user(user1, %{limit: 3})
 
