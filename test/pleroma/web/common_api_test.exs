@@ -1481,12 +1481,12 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:ok, uselective, uopen, %{data: %{"state" => "accept"}}} =
                CommonAPI.follow(uopen, uselective)
 
-      assert User.get_follow_state(uselective, uopen) == :follow_accept
+      assert User.get_follow_state(uopen, uselective) == :follow_accept
 
       assert {:ok, uopen, uselective, %{data: %{"state" => "accept"}}} =
                CommonAPI.follow(uselective, uopen)
 
-      assert User.get_follow_state(uopen, uselective) == :follow_accept
+      assert User.get_follow_state(uselective, uopen) == :follow_accept
     end
 
     test "creates a pending request for locked, non-followback local user" do
@@ -1496,12 +1496,12 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:ok, ulocked, uopen, %{data: %{"state" => "accept"}}} =
                CommonAPI.follow(uopen, ulocked)
 
-      assert User.get_follow_state(ulocked, uopen) == :follow_accept
+      assert User.get_follow_state(uopen, ulocked) == :follow_accept
 
       assert {:ok, uopen, ulocked, %{data: %{"state" => "pending"}}} =
                CommonAPI.follow(ulocked, uopen)
 
-      assert User.get_follow_state(uopen, ulocked) == :follow_pending
+      assert User.get_follow_state(ulocked, uopen) == :follow_pending
     end
   end
 

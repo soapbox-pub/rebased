@@ -1090,9 +1090,9 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   end
 
   describe "bubble" do
-    setup do: oauth_access(["read:statuses"])
+    test "filtering" do
+      %{conn: conn, user: user} = oauth_access(["read:statuses"])
 
-    test "filtering", %{conn: conn, user: user} do
       clear_config([:instance, :local_bubble], [])
       # our endpoint host has a port in it so let's set the AP ID
       local_user = insert(:user, %{ap_id: "https://localhost/users/user"})
