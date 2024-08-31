@@ -473,35 +473,36 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         } = object,
         meta
       ) do
-    with %User{} = biting <- User.get_cached_by_ap_id(biting_user),
-         %User{} = bitten <- User.get_cached_by_ap_id(bitten_user),
-         {:previous_bite, previous_bite} <-
-           {:previous_bite, Utils.fetch_latest_bite(biting, bitten, object)},
-         {:reverse_bite, reverse_bite} <-
-           {:reverse_bite, Utils.fetch_latest_bite(bitten, biting)},
-         {:can_bite, true, _} <- {:can_bite, can_bite?(previous_bite, reverse_bite), bitten} do
-      if bitten.local do
-        {:ok, accept_data, _} = Builder.accept(bitten, object)
-        {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
-      end
+    meta =
+      with %User{} = biting <- User.get_cached_by_ap_id(biting_user),
+           %User{} = bitten <- User.get_cached_by_ap_id(bitten_user),
+           {:previous_bite, previous_bite} <-
+             {:previous_bite, Utils.fetch_latest_bite(biting, bitten, object)},
+           {:reverse_bite, reverse_bite} <-
+             {:reverse_bite, Utils.fetch_latest_bite(bitten, biting)},
+           {:can_bite, true, _} <- {:can_bite, can_bite?(previous_bite, reverse_bite), bitten} do
+        if bitten.local do
+          {:ok, accept_data, _} = Builder.accept(bitten, object)
+          {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
+        end
 
-      if reverse_bite do
-        Notification.dismiss(reverse_bite)
-      end
+        if reverse_bite do
+          Notification.dismiss(reverse_bite)
+        end
 
-      {:ok, notifications} = Notification.create_notifications(object)
+        {:ok, notifications} = Notification.create_notifications(object)
 
-      meta
-      |> add_notifications(notifications)
-    else
-      {:can_bite, false, bitten} ->
-        {:ok, reject_data, _} = Builder.reject(bitten, object)
-        {:ok, _activity, _} = Pipeline.common_pipeline(reject_data, local: true)
         meta
+        |> add_notifications(notifications)
+      else
+        {:can_bite, false, bitten} ->
+          {:ok, reject_data, _} = Builder.reject(bitten, object)
+          {:ok, _activity, _} = Pipeline.common_pipeline(reject_data, local: true)
+          meta
 
-      _ ->
-        meta
-    end
+        _ ->
+          meta
+      end
 
     updated_object = Activity.get_by_ap_id(bite_id)
 

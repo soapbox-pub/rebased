@@ -17,7 +17,7 @@ defmodule Pleroma.Web.Push.Impl do
   import Ecto.Query
 
   @body_chars 140
-  @types ["Create", "Follow", "Announce", "Like", "Move", "EmojiReact", "Update"]
+  @types ["Create", "Follow", "Announce", "Like", "Move", "EmojiReact", "Update", "Bite"]
 
   @doc "Builds webpush notification payloads for the subscriptions enabled by the receiving user"
   @spec build(Notification.t()) ::
