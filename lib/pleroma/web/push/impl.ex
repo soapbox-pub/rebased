@@ -178,11 +178,12 @@ defmodule Pleroma.Web.Push.Impl do
         user,
         _object
       )
-      when type in ["Follow", "Like"] do
+      when type in ["Follow", "Like", "Bite"] do
     case notification.type do
       "follow" -> "@#{user.nickname} has followed you"
       "follow_request" -> "@#{user.nickname} has requested to follow you"
       "favourite" -> "@#{user.nickname} has favorited your post"
+      "bite" -> "@#{user.nickname} has bit you"
     end
   end
 
