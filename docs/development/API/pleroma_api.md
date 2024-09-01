@@ -671,6 +671,7 @@ Audio scrobbling in Pleroma is **deprecated**.
        "artist": "Some Artist",
        "album": "Some Album",
        "length": 180000,
+       "external_link": "https://www.last.fm/music/Some+Artist/_/Some+Title",
        "created_at": "2019-09-28T12:40:45.000Z"
    }
 ]
