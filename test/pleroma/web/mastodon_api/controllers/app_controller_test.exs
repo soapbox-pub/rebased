@@ -169,4 +169,34 @@ defmodule Pleroma.Web.MastodonAPI.AppControllerTest do
 
     assert List.first(Repo.all(App)).scopes == String.split(updated_scopes, " ")
   end
+
+  test "app website URL can be updated", %{conn: conn} do
+    client_name = "BleromaSE"
+    redirect_uris = "https://bleroma.app/oauth-callback"
+    website = "https://bleromase.com"
+
+    conn
+    |> put_req_header("content-type", "application/json")
+    |> post("/api/v1/apps", %{
+      client_name: client_name,
+      redirect_uris: redirect_uris,
+      website: website
+    })
+    |> json_response_and_validate_schema(200)
+
+    assert List.first(Repo.all(App)).website == website
+
+    updated_website = "https://bleromase2ultimateedition.com"
+
+    conn
+    |> put_req_header("content-type", "application/json")
+    |> post("/api/v1/apps", %{
+      client_name: client_name,
+      redirect_uris: redirect_uris,
+      website: updated_website
+    })
+    |> json_response_and_validate_schema(200)
+
+    assert List.first(Repo.all(App)).website == updated_website
+  end
 end
