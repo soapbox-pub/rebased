@@ -217,6 +217,10 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.MappedSignatureToIdentityPlug)
   end
 
+  pipeline :inbox_guard do
+    plug(Pleroma.Web.Plugs.InboxGuardPlug)
+  end
+
   pipeline :static_fe do
     plug(Pleroma.Web.Plugs.StaticFEPlug)
   end
@@ -1077,7 +1081,7 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/", Pleroma.Web.ActivityPub do
-    pipe_through(:activitypub)
+    pipe_through([:activitypub, :inbox_guard])
     post("/inbox", ActivityPubController, :inbox)
     post("/users/:nickname/inbox", ActivityPubController, :inbox)
   end

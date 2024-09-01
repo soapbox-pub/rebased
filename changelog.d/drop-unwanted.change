@@ -1,0 +1,1 @@
+Restrict incoming activities from unknown actors to a subset that does not imply a previous relationship and early rejection of unrecognized activity types.
