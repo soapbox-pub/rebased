@@ -20,6 +20,7 @@ You can give all the options directly on the command line, but missing informati
 
 Currently, known `<frontend>` values are:
 
+- [pl-fe](https://github.com/mkljczk/pl-fe)
 - [admin-fe](https://git.pleroma.social/pleroma/admin-fe)
 - [kenoma](http://git.pleroma.social/lambadalambda/kenoma)
 - [pleroma-fe](http://git.pleroma.social/pleroma/pleroma-fe)

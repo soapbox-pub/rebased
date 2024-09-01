@@ -776,6 +776,13 @@ config :pleroma, :static_fe, enabled: false
 
 config :pleroma, :frontends,
   available: %{
+    "pl-fe" => %{
+      "name" => "pl-fe",
+      "git" => "https://github.com/mkljczk/pl-fe",
+      "build_url" => "https://pl.mkljczk.pl/pl-fe.zip",
+      "ref" => "develop",
+      "build_dir" => "."
+    },
     "kenoma" => %{
       "name" => "kenoma",
       "git" => "https://git.pleroma.social/lambadalambda/kenoma",
