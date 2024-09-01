@@ -136,4 +136,37 @@ defmodule Pleroma.Web.MastodonAPI.AppControllerTest do
     assert List.first(apps).client_name == client_name
     assert List.first(apps).redirect_uris == redirect_uris
   end
+
+  test "app scopes can be updated", %{conn: conn} do
+    client_name = "BleromaSE"
+    redirect_uris = "https://bleroma.app/oauth-callback"
+    website = "https://bleromase.com"
+    scopes = "read write"
+
+    conn
+    |> put_req_header("content-type", "application/json")
+    |> post("/api/v1/apps", %{
+      client_name: client_name,
+      redirect_uris: redirect_uris,
+      website: website,
+      scopes: scopes
+    })
+    |> json_response_and_validate_schema(200)
+
+    assert List.first(Repo.all(App)).scopes == String.split(scopes, " ")
+
+    updated_scopes = "read write push"
+
+    conn
+    |> put_req_header("content-type", "application/json")
+    |> post("/api/v1/apps", %{
+      client_name: client_name,
+      redirect_uris: redirect_uris,
+      website: website,
+      scopes: updated_scopes
+    })
+    |> json_response_and_validate_schema(200)
+
+    assert List.first(Repo.all(App)).scopes == String.split(updated_scopes, " ")
+  end
 end
