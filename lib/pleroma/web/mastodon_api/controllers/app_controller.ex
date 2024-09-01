@@ -33,11 +33,9 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
     app_attrs =
       params
       |> Map.take([:client_name, :redirect_uris, :website])
-      |> Map.put(:scopes, scopes)
       |> Maps.put_if_present(:user_id, user_id)
 
-    with cs <- App.register_changeset(%App{}, app_attrs),
-         {:ok, app} <- Repo.insert(cs) do
+    with {:ok, app} <- App.get_or_make(app_attrs, scopes) do
       render(conn, "show.json", app: app)
     end
   end
