@@ -1,4 +1,32 @@
-`pl`. A fork of Pleroma/Rebased. More information soon.
+`pl` is my personal fork of Pleroma that I use on my single-user instance.
+
+Added features:
+
+- You can bite users
+- `$INSTANCE$host$` gets replaced by domain name of instance viewing your posts
+- [Mobilizon-compatible events](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3955)
+- [Posts can have a language assigned](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3940)
+- [Machine translation providers (DeepL, LibreTranslate) are supported](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/4102)
+- [Post language can be automatically detected (with fastText)](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/4103)
+- [User avatars and headers can have image decriptions](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/4227)
+- [A single server can allow users to register accounts with different domains](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3965)
+- [Chats and chat messages get exported in account backups](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/4088)
+- [You can pin/unpin chats](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3637)
+- [Partial implementation of Mastodon admin API](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3671)
+- [Moderators can assign users to reports](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3670)
+- [Mastodon-compatible webhooks](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3683)
+- UI is restyled to match pl-fe/Soapbox visuals
+
+Features not authored by me:
+- [Chat deletion](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3029)
+- [AntiDuplicationPolicy, AntiMentionSpamPolicy](https://gitlab.com/soapbox-pub/rebased/-/merge_requests/249), [RemoteReportPolicy](https://gitlab.com/soapbox-pub/rebased/-/merge_requests/202) MRFs
+- [Bubble timeline](https://akkoma.dev/AkkomaGang/akkoma/pulls/100)
+- [Hashtag following](https://akkoma.dev/AkkomaGang/akkoma/pulls/341)
+- [Ability to auto-approve followbacks](https://akkoma.dev/AkkomaGang/akkoma/pulls/674)
+
+There might be more, it's hard to keep track of it. I'm trying to keep the fork as close to upstream and I hope the list will eventually get much shorter.
+
+It should be possible to migrate from Pleroma or Rebased to `pl` without issues. It is recommended to use `pl` with [`pl-fe`](https://github.com/mkljczk/pl-fe/tree/develop/packages/pl-fe) for full feature compatibility, but pleroma-fe and other frontends work fine.
 
 ---
 
