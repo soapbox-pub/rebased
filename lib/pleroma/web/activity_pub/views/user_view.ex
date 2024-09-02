@@ -262,14 +262,20 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     |> Map.merge(pagination)
   end
 
-  def render("featured.json", %{
-        user: %{featured_address: featured_address, pinned_objects: pinned_objects}
-      }) do
+  def render(
+        "featured.json",
+        %{
+          user: %{featured_address: featured_address, pinned_objects: pinned_objects}
+        } = opts
+      ) do
     objects =
       pinned_objects
       |> Enum.sort_by(fn {_, pinned_at} -> pinned_at end, &>=/2)
       |> Enum.map(fn {id, _} ->
-        ObjectView.render("object.json", %{object: Object.get_cached_by_ap_id(id)})
+        ObjectView.render("object.json", %{
+          object: Object.get_cached_by_ap_id(id),
+          host: Map.get(opts, :host)
+        })
       end)
 
     %{

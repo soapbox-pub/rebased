@@ -723,7 +723,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   defp set_voters_count(obj), do: obj
 
   # Prepares the object of an outgoing create activity.
-  def prepare_object(object) do
+  def prepare_object(object, host \\ nil) do
     object
     |> add_hashtags
     |> add_mention_tags
@@ -738,15 +738,21 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> strip_internal_fields
     |> strip_internal_tags
     |> set_type
-    |> maybe_process_history
+    |> maybe_process_history(host)
+    |> replace_instance_host(host)
   end
 
-  defp maybe_process_history(%{"formerRepresentations" => %{"orderedItems" => history}} = object) do
+  defp maybe_process_history(object, host)
+
+  defp maybe_process_history(
+         %{"formerRepresentations" => %{"orderedItems" => history}} = object,
+         host
+       ) do
     processed_history =
       Enum.map(
         history,
         fn
-          item when is_map(item) -> prepare_object(item)
+          item when is_map(item) -> prepare_object(item, host)
           item -> item
         end
       )
@@ -754,7 +760,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     put_in(object, ["formerRepresentations", "orderedItems"], processed_history)
   end
 
-  defp maybe_process_history(object) do
+  defp maybe_process_history(object, _host) do
     object
   end
 
@@ -763,7 +769,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   #  internal -> Mastodon
   #  """
 
-  def prepare_outgoing(%{"type" => activity_type, "object" => object_id} = data)
+  def prepare_outgoing(data, host \\ nil)
+
+  def prepare_outgoing(%{"type" => activity_type, "object" => object_id} = data, host)
       when activity_type in ["Create", "Listen"] do
     object =
       object_id
@@ -772,32 +780,38 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     data =
       data
-      |> Map.put("object", prepare_object(object))
+      |> Map.put("object", prepare_object(object, host))
       |> Map.merge(Utils.make_json_ld_header(object))
       |> Map.delete("bcc")
 
     {:ok, data}
   end
 
-  def prepare_outgoing(%{"type" => "Update", "object" => %{"type" => objtype} = object} = data)
+  def prepare_outgoing(
+        %{"type" => "Update", "object" => %{"type" => objtype} = object} = data,
+        host
+      )
       when objtype in Pleroma.Constants.updatable_object_types() do
     data =
       data
-      |> Map.put("object", prepare_object(object))
+      |> Map.put("object", prepare_object(object, host))
       |> Map.merge(Utils.make_json_ld_header(object))
       |> Map.delete("bcc")
 
     {:ok, data}
   end
 
-  def prepare_outgoing(%{"type" => "Announce", "actor" => ap_id, "object" => object_id} = data) do
+  def prepare_outgoing(
+        %{"type" => "Announce", "actor" => ap_id, "object" => object_id} = data,
+        host
+      ) do
     object =
       object_id
       |> Object.normalize(fetch: false)
 
     data =
       if Visibility.private?(object) && object.data["actor"] == ap_id do
-        data |> Map.put("object", object |> Map.get(:data) |> prepare_object)
+        data |> Map.put("object", object |> Map.get(:data) |> prepare_object(host))
       else
         data |> maybe_fix_object_url
       end
@@ -813,7 +827,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   # Mastodon Accept/Reject requires a non-normalized object containing the actor URIs,
   # because of course it does.
-  def prepare_outgoing(%{"type" => "Accept"} = data) do
+  def prepare_outgoing(%{"type" => "Accept"} = data, _host) do
     with follow_activity <- Activity.normalize(data["object"]) do
       object = %{
         "actor" => follow_activity.actor,
@@ -831,7 +845,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def prepare_outgoing(%{"type" => "Reject"} = data) do
+  def prepare_outgoing(%{"type" => "Reject"} = data, _host) do
     with follow_activity <- Activity.normalize(data["object"]) do
       object = %{
         "actor" => follow_activity.actor,
@@ -849,7 +863,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def prepare_outgoing(%{"type" => _type} = data) do
+  def prepare_outgoing(%{"type" => _type} = data, _host) do
     data =
       data
       |> strip_internal_fields
@@ -1000,4 +1014,37 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def maybe_fix_user_url(data), do: data
 
   def maybe_fix_user_object(data), do: maybe_fix_user_url(data)
+
+  defp replace_instance_host(value, nil), do: value
+
+  defp replace_instance_host(content, host) when is_binary(content) do
+    content
+    |> String.replace("$INSTANCE$host$", host)
+  end
+
+  defp replace_instance_host(object, host) when is_map(object) do
+    object
+    |> update_if_exists("source", &replace_instance_host(&1, host))
+    |> update_if_exists("content", &replace_instance_host(&1, host))
+    |> patch_content_map(host)
+  end
+
+  defp replace_instance_host(value, _), do: value
+
+  defp patch_content_map(%{"contentMap" => %{} = content_map}, host) do
+    content_map
+    |> Enum.map(fn {key, value} -> {key, replace_instance_host(value, host)} end)
+    |> Map.new()
+  end
+
+  defp patch_content_map(content_map, _host), do: content_map
+
+  defp update_if_exists(map, key, func) do
+    if Map.has_key?(map, key) do
+      value = Map.get(map, key)
+      Map.put(map, key, func.(value))
+    else
+      map
+    end
+  end
 end

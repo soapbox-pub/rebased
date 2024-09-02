@@ -92,14 +92,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     with ap_id <- Endpoint.url() <> conn.request_path,
          %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
          user <- Map.get(assigns, :user, nil),
-         {_, true} <- {:visible?, Visibility.visible_for_user?(object, user)} do
+         {_, true} <- {:visible?, Visibility.visible_for_user?(object, user)},
+         host <- maybe_get_host(Map.get(assigns, :actor_id, nil)) do
       conn
       |> maybe_skip_cache(user)
       |> assign(:tracking_fun_data, object.id)
       |> set_cache_ttl_for(object)
       |> put_resp_content_type("application/activity+json")
       |> put_view(ObjectView)
-      |> render("object.json", object: object)
+      |> render("object.json", object: object, host: host)
     else
       {:visible?, false} -> {:error, :not_found}
       nil -> {:error, :not_found}
@@ -121,14 +122,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          %Activity{} = activity <- Activity.normalize(ap_id),
          {_, true} <- {:local?, activity.local},
          user <- Map.get(assigns, :user, nil),
-         {_, true} <- {:visible?, Visibility.visible_for_user?(activity, user)} do
+         {_, true} <- {:visible?, Visibility.visible_for_user?(activity, user)},
+         host <- maybe_get_host(Map.get(assigns, :actor_id, nil)) do
       conn
       |> maybe_skip_cache(user)
       |> maybe_set_tracking_data(activity)
       |> set_cache_ttl_for(activity)
       |> put_resp_content_type("application/activity+json")
       |> put_view(ObjectView)
-      |> render("object.json", object: activity)
+      |> render("object.json", object: activity, host: host)
     else
       {:visible?, false} -> {:error, :not_found}
       {:local?, false} -> {:error, :not_found}
@@ -562,10 +564,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   def pinned(conn, %{"nickname" => nickname}) do
-    with %User{} = user <- User.get_cached_by_nickname(nickname) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname),
+         host <- maybe_get_host(Map.get(conn.assigns, :actor_id, nil)) do
       conn
       |> put_resp_header("content-type", "application/activity+json")
-      |> json(UserView.render("featured.json", %{user: user}))
+      |> json(UserView.render("featured.json", %{user: user, host: host}))
     end
   end
+
+  defp maybe_get_host(actor_id) when is_binary(actor_id) do
+    %{host: host} = URI.parse(actor_id)
+
+    host
+  end
+
+  defp maybe_get_host(_), do: nil
 end

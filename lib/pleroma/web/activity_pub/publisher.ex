@@ -89,9 +89,9 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
     ap_id = activity.data["id"]
     Logger.debug("Federating #{ap_id} to #{inbox}")
-    uri = %{path: path} = URI.parse(inbox)
+    uri = %{host: host, path: path} = URI.parse(inbox)
 
-    {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
+    {:ok, data} = Transmogrifier.prepare_outgoing(activity.data, host)
 
     cc = Map.get(params, :cc, [])
 
