@@ -813,7 +813,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       if Visibility.private?(object) && object.data["actor"] == ap_id do
         data |> Map.put("object", object |> Map.get(:data) |> prepare_object(host))
       else
-        data |> maybe_fix_object_url
+        data |> maybe_fix_object_url |> replace_instance_host(host)
       end
 
     data =
