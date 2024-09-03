@@ -465,7 +465,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         parent_visible: visible_for_user?(reply_to, opts[:for]),
         pinned_at: pinned_at,
         quotes_count: object.data["quotesCount"] || 0,
-        bookmark_folder: bookmark_folder
+        bookmark_folder: bookmark_folder,
+        list_id: get_list_id(object, client_posted_this_activity)
       }
     }
   end
@@ -833,6 +834,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       build_image_url(URI.parse(url), page_url_data) |> MediaProxy.url()
     else
       nil
+    end
+  end
+
+  defp get_list_id(object, client_posted_this_activity) do
+    with true <- client_posted_this_activity,
+         %{data: %{"listMessage" => list_ap_id}} when is_binary(list_ap_id) <- object,
+         %{id: list_id} <- Pleroma.List.get_by_ap_id(list_ap_id) do
+      list_id
+    else
+      _ -> nil
     end
   end
 end
