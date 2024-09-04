@@ -318,6 +318,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   def token_exchange(%Plug.Conn{} = conn, params), do: bad_request(conn, params)
 
   def after_token_exchange(%Plug.Conn{} = conn, %{token: token} = view_params) do
+    App.maybe_update_owner(token)
+
     conn
     |> AuthHelper.put_session_token(token.token)
     |> json(OAuthView.render("token.json", view_params))

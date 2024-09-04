@@ -8,6 +8,7 @@ defmodule Pleroma.Web.OAuth.App do
   import Ecto.Query
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.OAuth.Token
 
   @type t :: %__MODULE__{}
 
@@ -155,4 +156,13 @@ defmodule Pleroma.Web.OAuth.App do
         Map.put(acc, key, error)
     end)
   end
+
+  @spec maybe_update_owner(Token.t()) :: :ok
+  def maybe_update_owner(%Token{app_id: app_id, user_id: user_id}) when not is_nil(user_id) do
+    __MODULE__.update(app_id, %{user_id: user_id})
+
+    :ok
+  end
+
+  def maybe_update_owner(_), do: :ok
 end
