@@ -53,4 +53,16 @@ defmodule Pleroma.Web.OAuth.AppTest do
 
     assert Enum.sort(App.get_user_apps(user)) == Enum.sort(apps)
   end
+
+  test "removes orphaned apps" do
+    attrs = %{client_name: "Mastodon-Local", redirect_uris: "."}
+    {:ok, %App{} = app} = App.get_or_make(attrs, ["write"])
+    assert app.scopes == ["write"]
+
+    assert app == Pleroma.Repo.get_by(App, %{id: app.id})
+
+    App.remove_orphans()
+
+    assert nil == Pleroma.Repo.get_by(App, %{id: app.id})
+  end
 end

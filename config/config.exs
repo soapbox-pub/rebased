@@ -597,7 +597,8 @@ config :pleroma, Oban,
   plugins: [{Oban.Plugins.Pruner, max_age: 900}],
   crontab: [
     {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
-    {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
+    {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker},
+    {"0 0 * * *", Pleroma.Workers.Cron.AppCleanupWorker}
   ]
 
 config :pleroma, Pleroma.Formatter,

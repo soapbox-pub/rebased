@@ -165,4 +165,10 @@ defmodule Pleroma.Web.OAuth.App do
   end
 
   def maybe_update_owner(_), do: :ok
+
+  @spec remove_orphans() :: :ok
+  def remove_orphans() do
+    from(a in __MODULE__, where: is_nil(a.user_id))
+    |> Repo.delete_all()
+  end
 end
