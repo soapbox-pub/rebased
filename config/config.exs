@@ -598,7 +598,7 @@ config :pleroma, Oban,
   crontab: [
     {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
     {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker},
-    {"0 0 * * *", Pleroma.Workers.Cron.AppCleanupWorker}
+    {"*/10 * * * *", Pleroma.Workers.Cron.AppCleanupWorker}
   ]
 
 config :pleroma, Pleroma.Formatter,
