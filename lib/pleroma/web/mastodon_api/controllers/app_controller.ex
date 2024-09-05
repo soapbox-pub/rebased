@@ -19,6 +19,8 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
+  plug(Pleroma.Web.Plugs.RateLimiter, [name: :oauth_app_creation] when action == :create)
+
   plug(:skip_auth when action in [:create, :verify_credentials])
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)

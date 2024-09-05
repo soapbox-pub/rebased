@@ -1,0 +1,1 @@
+Add a rate limiter to the OAuth App creation endpoint and ensure registered apps are assigned to users.
