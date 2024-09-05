@@ -467,7 +467,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       assert %{data: %{"state" => "accept"}} =
                Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(user, other_user)
 
-      # Fetch the relationship and forcibly delete it to simulate a Follow Accept that did not complete processing
+      # Fetch the relationship and forcibly delete it to simulate
+      # a Follow Accept that did not complete processing
       %{following_relationships: [relationship]} =
         Pleroma.UserRelationship.view_relationships_option(user, [other_user])
 
