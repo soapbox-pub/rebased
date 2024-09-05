@@ -56,13 +56,18 @@ defmodule Pleroma.Web.OAuth.AppTest do
 
   test "removes orphaned apps" do
     attrs = %{client_name: "Mastodon-Local", redirect_uris: "."}
-    {:ok, %App{} = app} = App.get_or_make(attrs, ["write"])
-    assert app.scopes == ["write"]
+    {:ok, %App{} = old_app} = App.get_or_make(attrs, ["write"])
 
-    assert app == Pleroma.Repo.get_by(App, %{id: app.id})
+    attrs = %{client_name: "PleromaFE", redirect_uris: "."}
+    {:ok, %App{} = app} = App.get_or_make(attrs, ["write"])
+
+    # backdate the old app so it's within the threshold for being cleaned up
+    {:ok, _} =
+      "UPDATE apps SET inserted_at = now() - interval '1 hour' WHERE id = #{old_app.id}"
+      |> Pleroma.Repo.query()
 
     App.remove_orphans()
 
-    assert nil == Pleroma.Repo.get_by(App, %{id: app.id})
+    assert [app] == Pleroma.Repo.all(App)
   end
 end

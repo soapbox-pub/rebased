@@ -168,8 +168,13 @@ defmodule Pleroma.Web.OAuth.App do
 
   @spec remove_orphans(pos_integer()) :: :ok
   def remove_orphans(limit \\ 100) do
+    fifteen_mins_ago = DateTime.add(DateTime.utc_now(), -900, :second)
+
     Repo.transaction(fn ->
-      from(a in __MODULE__, where: is_nil(a.user_id), limit: ^limit)
+      from(a in __MODULE__,
+        where: is_nil(a.user_id) and a.inserted_at < ^fifteen_mins_ago,
+        limit: ^limit
+      )
       |> Repo.all()
       |> Enum.each(&Repo.delete(&1))
     end)
