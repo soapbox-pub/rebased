@@ -456,6 +456,45 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       test_relationship_rendering(user, other_user, expected)
     end
 
+    test "relationship does not indicate following if a FollowingRelationship is missing" do
+      user = insert(:user)
+      other_user = insert(:user, local: false)
+
+      # Create a follow relationship with the real Follow Activity and Accept it
+      assert {:ok, _, _, _} = CommonAPI.follow(other_user, user)
+      assert {:ok, _} = CommonAPI.accept_follow_request(user, other_user)
+
+      assert %{data: %{"state" => "accept"}} =
+               Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(user, other_user)
+
+      # Fetch the relationship and forcibly delete it to simulate
+      # a Follow Accept that did not complete processing
+      %{following_relationships: [relationship]} =
+        Pleroma.UserRelationship.view_relationships_option(user, [other_user])
+
+      assert {:ok, _} = Pleroma.Repo.delete(relationship)
+
+      assert %{following_relationships: [], user_relationships: []} ==
+               Pleroma.UserRelationship.view_relationships_option(user, [other_user])
+
+      expected =
+        Map.merge(
+          @blank_response,
+          %{
+            following: false,
+            followed_by: false,
+            muting: false,
+            muting_notifications: false,
+            subscribing: false,
+            notifying: false,
+            showing_reblogs: true,
+            id: to_string(other_user.id)
+          }
+        )
+
+      test_relationship_rendering(user, other_user, expected)
+    end
+
     test "represent a relationship for the blocking and blocked user" do
       user = insert(:user)
       other_user = insert(:user)
