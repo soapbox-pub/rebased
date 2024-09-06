@@ -41,6 +41,10 @@ defmodule Pleroma.HTMLTest do
   <span class="h-card"><a class="u-url mention animate-spin">@<span>foo</span></a></span>
   """
 
+  @mention_hashtags_sample """
+  <a href="https://mastodon.example/tags/linux" class="mention hashtag" rel="tag">#<span>linux</span></a>
+  """
+
   describe "StripTags scrubber" do
     test "works as expected" do
       expected = """
@@ -126,6 +130,15 @@ defmodule Pleroma.HTMLTest do
                  Pleroma.HTML.Scrubber.TwitterText
                )
     end
+
+    test "does allow mention hashtags" do
+      expected = """
+      <a href="https://mastodon.example/tags/linux" class="mention hashtag" rel="tag">#<span>linux</span></a>
+      """
+
+      assert expected ==
+               HTML.filter_tags(@mention_hashtags_sample, Pleroma.HTML.Scrubber.Default)
+    end
   end
 
   describe "default scrubber" do
@@ -188,6 +201,15 @@ defmodule Pleroma.HTMLTest do
                  @html_span_invalid_microformats_sample,
                  Pleroma.HTML.Scrubber.Default
                )
+    end
+
+    test "does allow mention hashtags" do
+      expected = """
+      <a href="https://mastodon.example/tags/linux" class="mention hashtag" rel="tag">#<span>linux</span></a>
+      """
+
+      assert expected ==
+               HTML.filter_tags(@mention_hashtags_sample, Pleroma.HTML.Scrubber.Default)
     end
   end
 
