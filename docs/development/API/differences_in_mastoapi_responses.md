@@ -43,6 +43,7 @@ Has these additional fields under the `pleroma` object:
 - `event`: event information if the post is an event, `null` otherwise.
 - `non_anonymous`: true if the source post specifies the poll results are not anonymous. Currently only implemented by Smithereen.
 - `bookmark_folder`: the ID of the folder bookmark is stored within (if any).
+- `list_id`: the ID of the list the post is addressed to (if any, only returned to author).
 
 The `GET /api/v1/statuses/:id/source` endpoint additionally has the following attributes:
 

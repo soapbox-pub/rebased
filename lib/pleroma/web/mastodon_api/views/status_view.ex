@@ -467,7 +467,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         content_type: opts[:with_source] && (object.data["content_type"] || "text/plain"),
         quotes_count: object.data["quotesCount"] || 0,
         event: build_event(object.data, opts[:for]),
-        bookmark_folder: bookmark_folder
+        bookmark_folder: bookmark_folder,
+        list_id: get_list_id(object, client_posted_this_activity)
       }
     }
   end
@@ -919,4 +920,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp get_language(%{data: %{"language" => "und"}}), do: nil
 
   defp get_language(object), do: object.data["language"]
+
+  defp get_list_id(object, client_posted_this_activity) do
+    with true <- client_posted_this_activity,
+         %{data: %{"listMessage" => list_ap_id}} when is_binary(list_ap_id) <- object,
+         %{id: list_id} <- Pleroma.List.get_by_ap_id(list_ap_id) do
+      list_id
+    else
+      _ -> nil
+    end
+  end
 end
