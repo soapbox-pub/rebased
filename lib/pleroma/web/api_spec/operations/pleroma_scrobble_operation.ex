@@ -57,11 +57,15 @@ defmodule Pleroma.Web.ApiSpec.PleromaScrobbleOperation do
         album: %Schema{type: :string, description: "The album of the media playing"},
         artist: %Schema{type: :string, description: "The artist of the media playing"},
         length: %Schema{type: :integer, description: "The length of the media playing"},
-        externalLink: %Schema{type: :string, description: "A URL referencing the media playing"},
+        external_link: %Schema{type: :string, description: "A URL referencing the media playing"},
         visibility: %Schema{
           allOf: [VisibilityScope],
           default: "public",
           description: "Scrobble visibility"
+        },
+        externalLink: %Schema{
+          type: :string,
+          description: "Deprecated, use `external_link` instead"
         }
       },
       example: %{
@@ -69,7 +73,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaScrobbleOperation do
         "artist" => "Some Artist",
         "album" => "Some Album",
         "length" => 180_000,
-        "externalLink" => "https://www.last.fm/music/Some+Artist/_/Some+Title"
+        "external_link" => "https://www.last.fm/music/Some+Artist/_/Some+Title"
       }
     }
   end
@@ -83,7 +87,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaScrobbleOperation do
         title: %Schema{type: :string, description: "The title of the media playing"},
         album: %Schema{type: :string, description: "The album of the media playing"},
         artist: %Schema{type: :string, description: "The artist of the media playing"},
-        externalLink: %Schema{type: :string, description: "A URL referencing the media playing"},
+        external_link: %Schema{type: :string, description: "A URL referencing the media playing"},
         length: %Schema{
           type: :integer,
           description: "The length of the media playing",
@@ -98,7 +102,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaScrobbleOperation do
         "artist" => "Some Artist",
         "album" => "Some Album",
         "length" => 180_000,
-        "externalLink" => "https://www.last.fm/music/Some+Artist/_/Some+Title",
+        "external_link" => "https://www.last.fm/music/Some+Artist/_/Some+Title",
         "created_at" => "2019-09-28T12:40:45.000Z"
       }
     }
