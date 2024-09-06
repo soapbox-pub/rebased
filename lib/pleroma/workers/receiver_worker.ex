@@ -7,7 +7,7 @@ defmodule Pleroma.Workers.ReceiverWorker do
   alias Pleroma.User
   alias Pleroma.Web.Federator
 
-  use Oban.Worker, queue: :federator_incoming, max_attempts: 5
+  use Oban.Worker, queue: :federator_incoming, max_attempts: 5, unique: [period: :infinity]
 
   @impl true
 

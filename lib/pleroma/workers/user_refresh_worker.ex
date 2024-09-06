@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.UserRefreshWorker do
-  use Oban.Worker, queue: :background, max_attempts: 1, unique: [period: 300]
+  use Oban.Worker, queue: :background, max_attempts: 1, unique: [period: :infinity]
 
   alias Pleroma.User
 

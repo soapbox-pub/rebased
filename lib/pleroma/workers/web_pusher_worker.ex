@@ -7,7 +7,7 @@ defmodule Pleroma.Workers.WebPusherWorker do
   alias Pleroma.Repo
   alias Pleroma.Web.Push.Impl
 
-  use Oban.Worker, queue: :web_push
+  use Oban.Worker, queue: :web_push, unique: [period: :infinity]
 
   @impl true
   def perform(%Job{args: %{"op" => "web_push", "notification_id" => notification_id}}) do

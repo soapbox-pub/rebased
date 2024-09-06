@@ -1,0 +1,1 @@
+Resolved edge case where the API can report you are following a user but the relationship is not fully established.
