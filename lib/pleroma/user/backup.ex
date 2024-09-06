@@ -294,9 +294,6 @@ defmodule Pleroma.User.Backup do
               )
 
               acc
-
-            _ ->
-              acc
           end
         end)
 
