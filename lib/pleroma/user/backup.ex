@@ -92,9 +92,6 @@ defmodule Pleroma.User.Backup do
     else
       true ->
         {:error, "Backup is missing id. Please insert it into the Repo first."}
-
-      e ->
-        {:error, e}
     end
   end
 
