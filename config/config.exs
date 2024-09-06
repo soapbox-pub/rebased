@@ -610,7 +610,8 @@ config :pleroma, Oban,
   crontab: [
     {"0 0 * * 0", Pleroma.Workers.Cron.CheckDomainsResolveWorker},
     {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
-    {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
+    {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker},
+    {"*/10 * * * *", Pleroma.Workers.Cron.AppCleanupWorker}
   ]
 
 config :pleroma, Pleroma.Formatter,
@@ -735,6 +736,7 @@ config :pleroma, :rate_limit,
   timeline: {500, 3},
   search: [{1000, 10}, {1000, 30}],
   app_account_creation: {1_800_000, 25},
+  oauth_app_creation: {900_000, 5},
   relations_actions: {10_000, 10},
   relation_id_action: {60_000, 2},
   statuses_actions: {10_000, 15},

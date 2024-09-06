@@ -12,23 +12,20 @@ defmodule Pleroma.Web.OAuth.AppTest do
     test "gets exist app" do
       attrs = %{client_name: "Mastodon-Local", redirect_uris: "."}
       app = insert(:oauth_app, Map.merge(attrs, %{scopes: ["read", "write"]}))
-      {:ok, %App{} = exist_app} = App.get_or_make(attrs)
+      {:ok, %App{} = exist_app} = App.get_or_make(attrs, [])
       assert exist_app == app
     end
 
     test "make app" do
-      attrs = %{client_name: "Mastodon-Local", redirect_uris: ".", scopes: ["write"]}
-      {:ok, %App{} = app} = App.get_or_make(attrs)
+      attrs = %{client_name: "Mastodon-Local", redirect_uris: "."}
+      {:ok, %App{} = app} = App.get_or_make(attrs, ["write"])
       assert app.scopes == ["write"]
     end
 
     test "gets exist app and updates scopes" do
-      attrs = %{client_name: "Mastodon-Local", redirect_uris: ".", scopes: ["read", "write"]}
-      app = insert(:oauth_app, attrs)
-
-      {:ok, %App{} = exist_app} =
-        App.get_or_make(%{attrs | scopes: ["read", "write", "follow", "push"]})
-
+      attrs = %{client_name: "Mastodon-Local", redirect_uris: "."}
+      app = insert(:oauth_app, Map.merge(attrs, %{scopes: ["read", "write"]}))
+      {:ok, %App{} = exist_app} = App.get_or_make(attrs, ["read", "write", "follow", "push"])
       assert exist_app.id == app.id
       assert exist_app.scopes == ["read", "write", "follow", "push"]
     end
@@ -55,5 +52,22 @@ defmodule Pleroma.Web.OAuth.AppTest do
     ]
 
     assert Enum.sort(App.get_user_apps(user)) == Enum.sort(apps)
+  end
+
+  test "removes orphaned apps" do
+    attrs = %{client_name: "Mastodon-Local", redirect_uris: "."}
+    {:ok, %App{} = old_app} = App.get_or_make(attrs, ["write"])
+
+    attrs = %{client_name: "PleromaFE", redirect_uris: "."}
+    {:ok, %App{} = app} = App.get_or_make(attrs, ["write"])
+
+    # backdate the old app so it's within the threshold for being cleaned up
+    {:ok, _} =
+      "UPDATE apps SET inserted_at = now() - interval '1 hour' WHERE id = #{old_app.id}"
+      |> Pleroma.Repo.query()
+
+    App.remove_orphans()
+
+    assert [app] == Pleroma.Repo.all(App)
   end
 end

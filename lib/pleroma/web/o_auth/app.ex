@@ -8,6 +8,7 @@ defmodule Pleroma.Web.OAuth.App do
   import Ecto.Query
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.OAuth.Token
 
   @type t :: %__MODULE__{}
 
@@ -67,25 +68,33 @@ defmodule Pleroma.Web.OAuth.App do
     with %__MODULE__{} = app <- Repo.get(__MODULE__, id) do
       app
       |> changeset(params)
-      |> validate_required([:scopes])
       |> Repo.update()
     end
   end
 
   @doc """
-  Gets app by attrs or create new with attrs.
-  Updates the attrs if needed.
+  Gets app by attrs or create new  with attrs.
+  And updates the scopes if need.
   """
-  @spec get_or_make(map()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
-  def get_or_make(attrs) do
-    with %__MODULE__{} = app <- Repo.get_by(__MODULE__, client_name: attrs.client_name) do
-      __MODULE__.update(app.id, Map.take(attrs, [:scopes, :website]))
+  @spec get_or_make(map(), list(String.t())) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
+  def get_or_make(attrs, scopes) do
+    with %__MODULE__{} = app <- Repo.get_by(__MODULE__, attrs) do
+      update_scopes(app, scopes)
     else
       _e ->
         %__MODULE__{}
-        |> register_changeset(attrs)
+        |> register_changeset(Map.put(attrs, :scopes, scopes))
         |> Repo.insert()
     end
+  end
+
+  defp update_scopes(%__MODULE__{} = app, []), do: {:ok, app}
+  defp update_scopes(%__MODULE__{scopes: scopes} = app, scopes), do: {:ok, app}
+
+  defp update_scopes(%__MODULE__{} = app, scopes) do
+    app
+    |> change(%{scopes: scopes})
+    |> Repo.update()
   end
 
   @spec search(map()) :: {:ok, [t()], non_neg_integer()}
@@ -146,5 +155,30 @@ defmodule Pleroma.Web.OAuth.App do
       {key, {error, _}}, acc ->
         Map.put(acc, key, error)
     end)
+  end
+
+  @spec maybe_update_owner(Token.t()) :: :ok
+  def maybe_update_owner(%Token{app_id: app_id, user_id: user_id}) when not is_nil(user_id) do
+    __MODULE__.update(app_id, %{user_id: user_id})
+
+    :ok
+  end
+
+  def maybe_update_owner(_), do: :ok
+
+  @spec remove_orphans(pos_integer()) :: :ok
+  def remove_orphans(limit \\ 100) do
+    fifteen_mins_ago = DateTime.add(DateTime.utc_now(), -900, :second)
+
+    Repo.transaction(fn ->
+      from(a in __MODULE__,
+        where: is_nil(a.user_id) and a.inserted_at < ^fifteen_mins_ago,
+        limit: ^limit
+      )
+      |> Repo.all()
+      |> Enum.each(&Repo.delete(&1))
+    end)
+
+    :ok
   end
 end
