@@ -2,7 +2,7 @@
 
 ## Database migration
 
-> Note: You will lose data related about Akkoma-specific features, including: MastoFE settings, user frontend profiles, status auto-expiration config, hashtag follows, DM restrictions and auto follow-back. Consider taking a backup.
+> Note: You will lose data related about Akkoma-specific features, including: MastoFE settings, user frontend profiles, status auto-expiration config and DM restrictions. Consider taking a backup.
 
 To rollback Akkoma-specific migrations:
 
