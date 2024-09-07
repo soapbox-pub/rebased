@@ -604,6 +604,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   def render("attachment.json", %{attachment: attachment}) do
     [attachment_url | _] = attachment["url"]
+    attachment_type = attachment["type"]
     media_type = attachment_url["mediaType"] || attachment_url["mimeType"] || "image"
     href_remote = attachment_url["href"]
     href = href_remote |> MediaProxy.url()
@@ -615,6 +616,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         String.contains?(media_type, "image") -> "image"
         String.contains?(media_type, "video") -> "video"
         String.contains?(media_type, "audio") -> "audio"
+        attachment_type in ~w[Audio Image Video] -> attachment_type |> String.downcase()
         true -> "unknown"
       end
 
