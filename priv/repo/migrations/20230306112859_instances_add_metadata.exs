@@ -7,8 +7,8 @@ defmodule Pleroma.Repo.Migrations.InstancesAddMetadata do
 
   def change do
     alter table(:instances) do
-      add(:metadata, :map)
-      add(:metadata_updated_at, :utc_datetime)
+      add_if_not_exists(:metadata, :map)
+      add_if_not_exists(:metadata_updated_at, :utc_datetime)
     end
   end
 end
