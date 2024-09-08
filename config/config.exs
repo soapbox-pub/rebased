@@ -830,6 +830,21 @@ config :pleroma, :frontends,
         "https://lily-is.land/infra/glitch-lily/-/jobs/artifacts/${ref}/download?job=build",
       "ref" => "servant",
       "build_dir" => "public"
+    },
+    "akkoma-fe" => %{
+      "name" => "akkoma-fe",
+      "git" => "https://akkoma.dev/AkkomaGang/akkoma-fe",
+      "build_url" =>
+        "https://akkoma-updates.s3-website.fr-par.scw.cloud/frontend/${ref}/akkoma-fe.zip",
+      "ref" => "develop",
+      "build_dir" => "dist"
+    },
+    "akkoma-admin-fe" => %{
+      "name" => "akkoma-admin-fe",
+      "git" => "https://akkoma.dev/AkkomaGang/admin-fe",
+      "build_url" =>
+        "https://akkoma-updates.s3-website.fr-par.scw.cloud/frontend/${ref}/admin-fe.zip",
+      "ref" => "stable"
     }
   }
 
