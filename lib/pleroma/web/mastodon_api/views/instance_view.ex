@@ -182,7 +182,11 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       end,
       "events",
       "multitenancy",
-      "pleroma:bites"
+      "pleroma:bites",
+      # Akkoma compatibility
+      if Pleroma.Language.Translation.configured?() do
+        "akkoma:machine_translation"
+      end
     ]
     |> Enum.filter(& &1)
   end

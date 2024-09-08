@@ -718,6 +718,13 @@ defmodule Pleroma.Web.Router do
     end
   end
 
+  scope "/", Pleroma.Web do
+    pipe_through(:api)
+
+    get("/api/v1/akkoma/translation/languages", AkkomaCompatController, :translation_languages)
+    get("/api/v1/statuses/:id/translations/:language", AkkomaCompatController, :translate)
+  end
+
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:authenticated_api)
 
