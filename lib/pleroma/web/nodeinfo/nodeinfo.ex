@@ -75,6 +75,7 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
         restrictedNicknames: Config.get([Pleroma.User, :restricted_nicknames]),
         skipThreadContainment: Config.get([:instance, :skip_thread_containment], false),
         federatedTimelineAvailable: Config.get([:instance, :federated_timeline_available], true),
+        localBubbleInstances: Config.get([:instance, :local_bubble], []),
         publicTimelineVisibility: %{
           federated:
             !Config.restrict_unauthenticated_access?(:timelines, :federated) &&
