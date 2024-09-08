@@ -47,6 +47,10 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlug do
     Pleroma.Password.Pbkdf2.verify_pass(password, password_hash)
   end
 
+  def checkpw(password, "$argon2" <> _ = password_hash) do
+    Argon2.verify_pass(password, password_hash)
+  end
+
   def checkpw(_password, _password_hash) do
     Logger.error("Password hash not recognized")
     false
