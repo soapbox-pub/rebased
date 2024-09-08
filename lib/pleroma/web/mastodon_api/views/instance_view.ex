@@ -183,6 +183,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "events",
       "multitenancy",
       "pleroma:bites",
+      if !Enum.empty?(Config.get([:instance, :local_bubble], [])) do
+        "bubble_timeline"
+      end,
       # Akkoma compatibility
       if Pleroma.Language.Translation.configured?() do
         "akkoma:machine_translation"
