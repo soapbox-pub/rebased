@@ -978,8 +978,6 @@ config :geospatial, Geospatial.Providers.Pelias,
 
 config :geospatial, Geospatial.HTTP, user_agent: &Pleroma.Application.user_agent/0
 
-import_config "soapbox.exs"
-
 config :pleroma, Pleroma.Search, module: Pleroma.Search.DatabaseSearch
 
 config :pleroma, Pleroma.Search.Meilisearch,
@@ -1008,6 +1006,8 @@ config :pleroma, Pleroma.Search.QdrantSearch,
   qdrant_index_configuration: %{
     vectors: %{size: 384, distance: "Cosine"}
   }
+
+import_config "pl-fe.exs"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

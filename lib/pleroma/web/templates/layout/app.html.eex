@@ -9,13 +9,13 @@
       :root {
         <%= Pleroma.Web.Utils.Colors.shades_to_css(
           "primary",
-          Pleroma.Config.get([:frontend_configurations, :soapbox_fe, "brandColor"], "#0482d8"),
-          Pleroma.Config.get([:frontend_configurations, :soapbox_fe, "colors", "primary"], %{})
+          Pleroma.Config.get([:frontend_configurations, :pl_fe, "brandColor"], "#d80482"),
+          Pleroma.Config.get([:frontend_configurations, :pl_fe, "colors", "primary"], %{})
         ) %>
         <%= Pleroma.Web.Utils.Colors.shades_to_css(
           "accent",
-          Pleroma.Config.get([:frontend_configurations, :soapbox_fe, "accentColor"], "#2bd110"),
-          Pleroma.Config.get([:frontend_configurations, :soapbox_fe, "colors", "accent"], %{})
+          Pleroma.Config.get([:frontend_configurations, :pl_fe, "accentColor"], "#d110b4"),
+          Pleroma.Config.get([:frontend_configurations, :pl_fe, "colors", "accent"], %{})
         ) %>
       }
     </style>
@@ -23,7 +23,7 @@
   <body>
     <div class="instance-header">
       <a class="instance-header__content" href="/">
-        <img class="instance-header__thumbnail" src="<%= Pleroma.Config.get([:frontend_configurations, :soapbox_fe, "logo"], Pleroma.Config.get([:instance, :instance_thumbnail])) %>">
+        <img class="instance-header__thumbnail" src="<%= Pleroma.Config.get([:frontend_configurations, :pl_fe, "logo"], Pleroma.Config.get([:instance, :instance_thumbnail])) %>">
         <h1 class="instance-header__title"><%= Pleroma.Config.get([:instance, :name]) %></h1>
       </a>
     </div>

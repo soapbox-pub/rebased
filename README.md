@@ -15,7 +15,7 @@ Added features:
 - [Partial implementation of Mastodon admin API](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3671)
 - [Moderators can assign users to reports](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3670)
 - [Mastodon-compatible webhooks](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3683)
-- UI is restyled to match pl-fe/Soapbox visuals
+- UI is restyled to match pl-fe visuals
 
 Features not authored by me:
 - [Chat deletion](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3029)

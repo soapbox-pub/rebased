@@ -1,10 +1,7 @@
-# Soapbox default config overrides
+# pl-fe default config overrides
 # This file gets loaded after config.exs
 # and before prod.secret.exs
 import Config
-
-# Twitter-like block behavior
-config :pleroma, :activitypub, blockers_visible: false
 
 # Sane default upload filters
 config :pleroma, Pleroma.Upload,
@@ -45,11 +42,7 @@ config :pleroma, :mrf_hellthread,
 # Sane default media attachment limit
 config :pleroma, :instance, max_media_attachments: 20
 
-# Use Soapbox branding
 config :pleroma, :instance,
-  name: "Soapbox",
-  description: "Social media owned by you",
-  instance_thumbnail: "/instance/thumbnail.png",
   account_approval_required: true,
   moderator_privileges: [
     :users_read,

@@ -125,7 +125,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
 
   describe "instance domain blocks" do
     setup do
-      clear_config([:mrf_simple, :reject], [{"fediverse.pl", "uses Soapbox"}])
+      clear_config([:mrf_simple, :reject], [{"fediverse.pl", "uses pl-fe"}])
     end
 
     test "get instance domain blocks", %{conn: conn} do
@@ -133,7 +133,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
 
       assert [
                %{
-                 "comment" => "uses Soapbox",
+                 "comment" => "uses pl-fe",
                  "digest" => "55e3f44aefe7eb022d3b1daaf7396cabf7f181bf6093c8ea841e30c9fc7d8226",
                  "domain" => "fediverse.pl",
                  "severity" => "suspend"

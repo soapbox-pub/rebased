@@ -92,7 +92,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
     static_url = Pleroma.Web.Endpoint.static_url()
     websocket_url = Pleroma.Web.Endpoint.websocket_url()
     report_uri = @config_impl.get([:http_security, :report_uri])
-    sentry_dsn = @config_impl.get([:frontend_configurations, :soapbox_fe, "sentryDsn"])
+    sentry_dsn = @config_impl.get([:frontend_configurations, :pl_fe, "sentryDsn"])
 
     img_src = "img-src 'self' data: blob:"
     media_src = "media-src 'self'"
@@ -200,7 +200,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
 
   defp map_tile_server do
     with tile_server when is_binary(tile_server) <-
-           @config_impl.get([:frontend_configurations, :soapbox_fe, "tileServer"]),
+           @config_impl.get([:frontend_configurations, :pl_fe, "tileServer"]),
          %{host: host} <- URI.parse(tile_server) do
       ["*.#{host}"]
     else
