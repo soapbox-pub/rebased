@@ -78,6 +78,11 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         email: Keyword.get(instance, :email),
         account: contact_account(Keyword.get(instance, :contact_username))
       },
+      api_versions: %{
+        "mastodon" => 2137,
+        "social.pleroma" => 420,
+        "pl.mkljczk.pl" => 69
+      },
       # Extra (not present in Mastodon):
       pleroma: pleroma_configuration2(instance)
     })
