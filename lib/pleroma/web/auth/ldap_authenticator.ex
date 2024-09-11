@@ -41,6 +41,7 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
     port = Keyword.get(ldap, :port, 389)
     ssl = Keyword.get(ldap, :ssl, false)
     sslopts = Keyword.get(ldap, :sslopts, [])
+    tlsopts = Keyword.get(ldap, :tlsopts, [])
 
     options =
       [{:port, port}, {:ssl, ssl}, {:timeout, @connection_timeout}] ++
@@ -54,7 +55,16 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
 
             case :eldap.start_tls(
                    connection,
-                   Keyword.get(ldap, :tlsopts, []),
+                   Keyword.merge(
+                     [
+                       verify: :verify_peer,
+                       cacerts: :certifi.cacerts(),
+                       customize_hostname_check: [
+                         fqdn_fun: fn _ -> to_charlist(host) end
+                       ]
+                     ],
+                     tlsopts
+                   ),
                    @connection_timeout
                  ) do
               :ok ->
