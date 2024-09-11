@@ -209,6 +209,7 @@ defmodule Pleroma.Mixfile do
       {:icalendar, "~> 1.1"},
       {:geospatial, "~> 0.3.1"},
       {:argon2_elixir, "~> 4.0"},
+      {:certifi, "~> 2.12"},
 
       ## dev & test
       {:phoenix_live_reload, "~> 1.3.3", only: :dev},
