@@ -34,6 +34,6 @@ defmodule Pleroma.Web.Utils.ColorsTest do
 
   test "shades_to_css/2" do
     result = Colors.shades_to_css("primary")
-    assert String.contains?(result, "--color-primary-500: 4, 130, 216;")
+    assert String.contains?(result, "--color-primary-500: 216, 4, 130;")
   end
 end
