@@ -65,14 +65,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
       cast_params(params) |> Map.update(:include_types, [], fn include_types -> include_types end)
 
     options =
-      if ("pleroma:report" not in options.include_types and
+      if ("admin.report" not in options.include_types and
             User.privileged?(user, :reports_manage_reports)) or
            User.privileged?(user, :reports_manage_reports) do
         options
       else
         options
-        |> Map.update(:exclude_types, ["pleroma:report"], fn current_exclude_types ->
-          current_exclude_types ++ ["pleroma:report"]
+        |> Map.update(:exclude_types, ["admin.report"], fn current_exclude_types ->
+          current_exclude_types ++ ["admin.report"]
         end)
       end
 

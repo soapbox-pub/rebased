@@ -275,7 +275,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     expected = %{
       id: to_string(notification.id),
       pleroma: %{is_seen: false, is_muted: false},
-      type: "pleroma:report",
+      type: "admin.report",
       account: AccountView.render("show.json", %{user: reporting_user, for: moderator_user}),
       created_at: Utils.to_masto_date(notification.inserted_at),
       report: ReportView.render("show.json", Report.extract_report_info(activity))
