@@ -1,4 +1,4 @@
-# Adapter from https://fly.io/phoenix-files/github-actions-for-elixir-ci/
+# Adapted from https://fly.io/phoenix-files/github-actions-for-elixir-ci/
 
 name: pl CI
 
