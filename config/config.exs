@@ -351,7 +351,7 @@ config :pleroma, :manifest,
   icons: [
     %{
       src: "/static/logo.svg",
-      sizes: "144x144",
+      sizes: "512x512",
       purpose: "any",
       type: "image/svg+xml"
     }
