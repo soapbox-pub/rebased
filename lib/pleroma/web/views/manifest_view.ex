@@ -15,6 +15,7 @@ defmodule Pleroma.Web.ManifestView do
       theme_color: Config.get([:manifest, :theme_color]),
       background_color: Config.get([:manifest, :background_color]),
       display: "standalone",
+      "display_override": ["window-controls-overlay"],
       scope: Endpoint.url(),
       start_url: "/",
       categories: [
