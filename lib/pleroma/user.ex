@@ -440,6 +440,11 @@ defmodule Pleroma.User do
     end
   end
 
+  def image_description(image, default \\ "")
+
+  def image_description(%{"name" => name}, _default), do: name
+  def image_description(_, default), do: default
+
   # Should probably be renamed or removed
   @spec ap_id(User.t()) :: String.t()
   def ap_id(%User{nickname: nickname}), do: "#{Endpoint.url()}/users/#{nickname}"
