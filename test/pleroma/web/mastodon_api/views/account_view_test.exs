@@ -96,7 +96,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         hide_follows_count: false,
         relationship: %{},
         skip_thread_containment: false,
-        accepts_chat_messages: nil
+        accepts_chat_messages: nil,
+        avatar_description: "",
+        header_description: ""
       }
     }
 
@@ -340,7 +342,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         hide_follows_count: false,
         relationship: %{},
         skip_thread_containment: false,
-        accepts_chat_messages: nil
+        accepts_chat_messages: nil,
+        avatar_description: "",
+        header_description: ""
       }
     }
 

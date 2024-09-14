@@ -813,6 +813,16 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           allOf: [BooleanLike],
           nullable: true,
           description: "User's birthday will be visible"
+        },
+        avatar_description: %Schema{
+          type: :string,
+          nullable: true,
+          description: "Avatar image description."
+        },
+        header_description: %Schema{
+          type: :string,
+          nullable: true,
+          description: "Header image description."
         }
       },
       example: %{
