@@ -907,17 +907,30 @@ defmodule Pleroma.Web.Router do
     plug(:after_auth)
   end
 
+  # AP interactions used by both S2S and C2S
+  pipeline :activitypub_server_or_client do
+    plug(:ap_service_actor)
+    plug(:fetch_session)
+    plug(:authenticate)
+    plug(:after_auth)
+    plug(:http_signature)
+  end
+
   scope "/", Pleroma.Web.ActivityPub do
     pipe_through([:activitypub_client])
 
     get("/api/ap/whoami", ActivityPubController, :whoami)
     get("/users/:nickname/inbox", ActivityPubController, :read_inbox)
 
-    get("/users/:nickname/outbox", ActivityPubController, :outbox)
     post("/users/:nickname/outbox", ActivityPubController, :update_outbox)
     post("/api/ap/upload_media", ActivityPubController, :upload_media)
+  end
 
-    # The following two are S2S as well, see `ActivityPub.fetch_follow_information_for_user/1`:
+  scope "/", Pleroma.Web.ActivityPub do
+    pipe_through([:activitypub_server_or_client])
+
+    get("/users/:nickname/outbox", ActivityPubController, :outbox)
+
     get("/users/:nickname/followers", ActivityPubController, :followers)
     get("/users/:nickname/following", ActivityPubController, :following)
     get("/users/:nickname/collections/featured", ActivityPubController, :pinned)

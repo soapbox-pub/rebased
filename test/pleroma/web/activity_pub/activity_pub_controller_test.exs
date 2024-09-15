@@ -1323,6 +1323,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "GET /users/:nickname/outbox" do
+    setup do
+      Mox.stub_with(Pleroma.StaticStubbedConfigMock, Pleroma.Config)
+      :ok
+    end
+
     test "it paginates correctly", %{conn: conn} do
       user = insert(:user)
       conn = assign(conn, :user, user)
@@ -1461,6 +1466,35 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert [answer_outbox] = outbox_get["orderedItems"]
       assert answer_outbox["id"] == activity.data["id"]
+    end
+
+    test "it works with authorized fetch forced when authenticated" do
+      clear_config([:activitypub, :authorized_fetch_mode], true)
+
+      user = insert(:user)
+      outbox_endpoint = user.ap_id <> "/outbox"
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> put_req_header("accept", "application/activity+json")
+        |> get(outbox_endpoint)
+
+      assert json_response(conn, 200)
+    end
+
+    test "it fails with authorized fetch forced when unauthenticated", %{conn: conn} do
+      clear_config([:activitypub, :authorized_fetch_mode], true)
+
+      user = insert(:user)
+      outbox_endpoint = user.ap_id <> "/outbox"
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get(outbox_endpoint)
+
+      assert response(conn, 401)
     end
   end
 
