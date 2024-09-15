@@ -42,10 +42,13 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
     ssl = Keyword.get(ldap, :ssl, false)
     sslopts = Keyword.get(ldap, :sslopts, [])
     tlsopts = Keyword.get(ldap, :tlsopts, [])
+    cacertfile = Keyword.get(ldap, :cacertfile) || CAStore.file_path()
 
     options =
       [{:port, port}, {:ssl, ssl}, {:timeout, @connection_timeout}] ++
         if sslopts != [], do: [{:sslopts, sslopts}], else: []
+
+    cacerts = decode_certfile(cacertfile)
 
     case :eldap.open([to_charlist(host)], options) do
       {:ok, connection} ->
@@ -58,7 +61,7 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
                    Keyword.merge(
                      [
                        verify: :verify_peer,
-                       cacerts: :certifi.cacerts(),
+                       cacerts: cacerts,
                        customize_hostname_check: [
                          fqdn_fun: fn _ -> to_charlist(host) end
                        ]
@@ -145,6 +148,18 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
     case User.register(changeset) do
       {:ok, user} -> user
       error -> error
+    end
+  end
+
+  defp decode_certfile(file) do
+    with {:ok, data} <- File.read(file) do
+      data
+      |> :public_key.pem_decode()
+      |> Enum.map(fn {_, b, _} -> b end)
+    else
+      _ ->
+        Logger.error("Unable to read certfile: #{file}")
+        []
     end
   end
 end
