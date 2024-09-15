@@ -968,9 +968,9 @@ Pleroma account will be created with the same name as the LDAP user name.
 * `enabled`: enables LDAP authentication
 * `host`: LDAP server hostname
 * `port`: LDAP port, e.g. 389 or 636
-* `ssl`: true to use SSL, usually implies the port 636
+* `ssl`: true to use implicit SSL/TLS, usually port 636
 * `sslopts`: additional SSL options
-* `tls`: true to start TLS, usually implies the port 389
+* `tls`: true to use explicit TLS (STARTTLS), usually port 389
 * `tlsopts`: additional TLS options
 * `base`: LDAP base, e.g. "dc=example,dc=com"
 * `uid`: LDAP attribute name to authenticate the user, e.g. when "cn", the filter will be "cn=username,base"
