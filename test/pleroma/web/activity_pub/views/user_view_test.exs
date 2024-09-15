@@ -78,13 +78,13 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
       insert(:user,
         avatar: %{
           "url" => [%{"href" => "https://someurl"}],
-          "name" => "pleroma-tan using pleroma groups"
+          "name" => "a drawing of pleroma-tan using pleroma groups"
         }
       )
 
     result = UserView.render("user.json", %{user: user})
 
-    assert result["icon"]["name"] == "pleroma-tan using pleroma groups"
+    assert result["icon"]["name"] == "a drawing of pleroma-tan using pleroma groups"
   end
 
   test "renders an invisible user with the invisible property set to true" do
