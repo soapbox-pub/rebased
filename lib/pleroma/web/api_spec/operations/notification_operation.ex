@@ -157,6 +157,10 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
       type: :object,
       properties: %{
         id: %Schema{type: :string},
+        group_key: %Schema{
+          type: :string,
+          description: "Group key shared by similar notifications"
+        },
         type: notification_type(),
         created_at: %Schema{type: :string, format: :"date-time"},
         account: %Schema{
@@ -184,6 +188,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
       },
       example: %{
         "id" => "34975861",
+        "group-key" => "ungrouped-34975861",
         "type" => "mention",
         "created_at" => "2019-11-23T07:49:02.064Z",
         "account" => Account.schema().example,
