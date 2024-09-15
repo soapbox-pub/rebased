@@ -70,7 +70,7 @@ defmodule Pleroma.Notification do
     move
     pleroma:chat_mention
     pleroma:emoji_reaction
-    pleroma:report
+    admin.report
     reblog
     poll
     status
@@ -445,7 +445,7 @@ defmodule Pleroma.Notification do
         "pleroma:emoji_reaction"
 
       "Flag" ->
-        "pleroma:report"
+        "admin.report"
 
       # Compatibility with old reactions
       "EmojiReaction" ->

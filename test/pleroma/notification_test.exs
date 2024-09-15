@@ -49,7 +49,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, [notification]} = Notification.create_notifications(activity2)
 
       assert notification.user_id == moderator_user.id
-      assert notification.type == "pleroma:report"
+      assert notification.type == "admin.report"
     end
 
     test "suppresses notifications for own reports" do
@@ -65,7 +65,7 @@ defmodule Pleroma.NotificationTest do
 
       refute notification.user_id == reporting_admin.id
       assert notification.user_id == other_admin.id
-      assert notification.type == "pleroma:report"
+      assert notification.type == "admin.report"
     end
 
     test "creates a notification for an emoji reaction" do

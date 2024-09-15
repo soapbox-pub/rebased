@@ -208,7 +208,6 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
         "mention",
         "pleroma:emoji_reaction",
         "pleroma:chat_mention",
-        "pleroma:report",
         "move",
         "follow_request",
         "poll",
@@ -234,7 +233,6 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
       - `move` - Someone moved their account
       - `pleroma:emoji_reaction` - Someone reacted with emoji to your status
       - `pleroma:chat_mention` - Someone mentioned you in a chat message
-      - `pleroma:report` - Someone was reported
       - `status` - Someone you are subscribed to created a status
       - `update` - A status you boosted has been edited
       - `pleroma:event_reminder` – An event you are participating in or created is taking place soon

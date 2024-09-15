@@ -132,7 +132,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       "pleroma:chat_mention" ->
         put_chat_message(response, activity, reading_user, status_render_opts)
 
-      "pleroma:report" ->
+      "admin.report" ->
         put_report(response, activity)
 
       "pleroma:participation_accepted" ->
