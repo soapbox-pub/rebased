@@ -36,10 +36,10 @@ defmodule Pleroma.Repo.Migrations.RenamePleromaReportNotificationTypeToAdminRepo
       'poll',
       'status',
       'update',
-      'pleroma:participation_accepted'
-      'pleroma:participation_request'
-      'pleroma:event_reminder'
-      'pleroma:event_update'
+      'pleroma:participation_accepted',
+      'pleroma:participation_request',
+      'pleroma:event_reminder',
+      'pleroma:event_update',
       'bite'
     )
     """
@@ -83,10 +83,10 @@ defmodule Pleroma.Repo.Migrations.RenamePleromaReportNotificationTypeToAdminRepo
       'poll',
       'status',
       'update',
-      'pleroma:participation_accepted'
-      'pleroma:participation_request'
-      'pleroma:event_reminder'
-      'pleroma:event_update'
+      'pleroma:participation_accepted',
+      'pleroma:participation_request',
+      'pleroma:event_reminder',
+      'pleroma:event_update',
       'bite'
     )
     """
