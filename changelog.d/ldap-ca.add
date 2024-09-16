@@ -1,0 +1,1 @@
+LDAP configuration now permits overriding the CA root certificate file for TLS validation.
