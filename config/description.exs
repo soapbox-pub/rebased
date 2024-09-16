@@ -2297,6 +2297,12 @@ config :pleroma, :config_description, [
         description:
           "LDAP attribute name to authenticate the user, e.g. when \"cn\", the filter will be \"cn=username,base\"",
         suggestions: ["cn"]
+      },
+      %{
+        key: :cacertfile,
+        label: "CACertfile",
+        type: :string,
+        description: "Path to CA certificate file"
       }
     ]
   },
