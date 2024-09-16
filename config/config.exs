@@ -619,7 +619,9 @@ config :pleroma, :ldap,
   tls: System.get_env("LDAP_TLS") == "true",
   tlsopts: [],
   base: System.get_env("LDAP_BASE") || "dc=example,dc=com",
-  uid: System.get_env("LDAP_UID") || "cn"
+  uid: System.get_env("LDAP_UID") || "cn",
+  # defaults to CAStore's Mozilla roots
+  cacertfile: nil
 
 oauth_consumer_strategies =
   System.get_env("OAUTH_CONSUMER_STRATEGIES")
