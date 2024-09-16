@@ -22,7 +22,8 @@ defmodule Pleroma.Config.TransferTask do
       {:pleroma, :markup},
       {:pleroma, :streamer},
       {:pleroma, :pools},
-      {:pleroma, :connections_pool}
+      {:pleroma, :connections_pool},
+      {:pleroma, :ldap}
     ]
 
   defp reboot_time_subkeys,
