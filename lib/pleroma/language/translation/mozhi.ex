@@ -1,8 +1,8 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2024 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Language.Translation.Libretranslate do
+defmodule Pleroma.Language.Translation.Mozhi do
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   alias Pleroma.Language.Translation.Provider
@@ -11,35 +11,33 @@ defmodule Pleroma.Language.Translation.Libretranslate do
 
   @behaviour Provider
 
-  @name "LibreTranslate"
+  @name "Mozhi"
 
   @impl Provider
-  def configured?, do: not_empty_string(base_url()) and not_empty_string(api_key())
+  def configured?, do: not_empty_string(base_url()) and not_empty_string(engine())
 
   @impl Provider
   def translate(content, source_language, target_language) do
-    case Pleroma.HTTP.post(
-           base_url() <> "/translate",
-           Jason.encode!(%{
-             q: content,
-             source: source_language |> String.upcase(),
-             target: target_language,
-             format: "html",
-             api_key: api_key()
-           }),
-           [
-             {"Content-Type", "application/json"}
-           ]
+    endpoint =
+      base_url()
+      |> URI.merge("/api/translate")
+      |> URI.to_string()
+
+    case Pleroma.HTTP.get(
+           endpoint <>
+             "?" <>
+             URI.encode_query(%{
+               engine: engine(),
+               text: content,
+               from: source_language,
+               to: target_language
+             }),
+           [{"Accept", "application/json"}]
          ) do
-      {:ok, %{status: 429}} ->
-        {:error, :too_many_requests}
-
-      {:ok, %{status: 403}} ->
-        {:error, :quota_exceeded}
-
       {:ok, %{status: 200} = res} ->
         %{
-          "translatedText" => content
+          "translated-text" => content,
+          "source_language" => source_language
         } = Jason.decode!(res.body)
 
         {:ok,
@@ -55,12 +53,30 @@ defmodule Pleroma.Language.Translation.Libretranslate do
   end
 
   @impl Provider
-  def supported_languages(_) do
-    case Pleroma.HTTP.get(base_url() <> "/languages") do
+  def supported_languages(type) when type in [:source, :target] do
+    path =
+      case type do
+        :source -> "/api/source_languages"
+        :target -> "/api/target_languages"
+      end
+
+    endpoint =
+      base_url()
+      |> URI.merge(path)
+      |> URI.to_string()
+
+    case Pleroma.HTTP.get(
+           endpoint <>
+             "?" <>
+             URI.encode_query(%{
+               engine: engine()
+             }),
+           [{"Accept", "application/json"}]
+         ) do
       {:ok, %{status: 200} = res} ->
         languages =
           Jason.decode!(res.body)
-          |> Enum.map(fn %{"code" => code} -> code end)
+          |> Enum.map(fn %{"Id" => language} -> language end)
 
         {:ok, languages}
 
@@ -87,7 +103,7 @@ defmodule Pleroma.Language.Translation.Libretranslate do
     Pleroma.Config.get([__MODULE__, :base_url])
   end
 
-  defp api_key do
-    Pleroma.Config.get([__MODULE__, :api_key], "")
+  defp engine do
+    Pleroma.Config.get([__MODULE__, :engine])
   end
 end
