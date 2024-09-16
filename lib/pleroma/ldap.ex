@@ -34,6 +34,9 @@ defmodule Pleroma.LDAP do
         )
 
         {:ok, state}
+
+      _ ->
+        {:ok, state}
     end
   end
 
