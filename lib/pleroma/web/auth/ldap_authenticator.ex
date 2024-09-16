@@ -65,29 +65,33 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
 
     case :eldap.open([to_charlist(host)], options) do
       {:ok, connection} ->
-        cond do
-          ssl ->
-            :application.ensure_all_started(:ssl)
+        try do
+          cond do
+            ssl ->
+              :application.ensure_all_started(:ssl)
 
-          tls ->
-            case :eldap.start_tls(
-                   connection,
-                   tlsopts,
-                   @connection_timeout
-                 ) do
-              :ok ->
-                :ok
+            tls ->
+              case :eldap.start_tls(
+                     connection,
+                     tlsopts,
+                     @connection_timeout
+                   ) do
+                :ok ->
+                  :ok
 
-              error ->
-                Logger.error("Could not start TLS: #{inspect(error)}")
-                :eldap.close(connection)
-            end
+                error ->
+                  Logger.error("Could not start TLS: #{inspect(error)}")
+                  :eldap.close(connection)
+              end
 
-          true ->
-            :ok
+            true ->
+              :ok
+          end
+
+          bind_user(connection, ldap, name, password)
+        after
+          :eldap.close(connection)
         end
-
-        bind_user(connection, ldap, name, password)
 
       {:error, error} ->
         Logger.error("Could not open LDAP connection: #{inspect(error)}")
