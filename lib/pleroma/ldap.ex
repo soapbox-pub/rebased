@@ -51,7 +51,7 @@ defmodule Pleroma.LDAP do
     {:noreply, state}
   end
 
-  defp do_handle_connect() do
+  defp do_handle_connect do
     state =
       case connect() do
         {:ok, connection} ->
@@ -86,7 +86,7 @@ defmodule Pleroma.LDAP do
     :ok
   end
 
-  defp connect() do
+  defp connect do
     ldap = Config.get(:ldap, [])
     host = Keyword.get(ldap, :host, "localhost")
     port = Keyword.get(ldap, :port, 389)
