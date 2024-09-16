@@ -902,6 +902,7 @@ defmodule Pleroma.Web.Router do
   # Client to Server (C2S) AP interactions
   pipeline :activitypub_client do
     plug(:ap_service_actor)
+    plug(Pleroma.Web.Plugs.APClientApiEnabledPlug)
     plug(:fetch_session)
     plug(:authenticate)
     plug(:after_auth)
@@ -912,6 +913,7 @@ defmodule Pleroma.Web.Router do
     plug(:ap_service_actor)
     plug(:fetch_session)
     plug(:authenticate)
+    plug(Pleroma.Web.Plugs.APClientApiEnabledPlug, allow_server: true)
     plug(:after_auth)
     plug(:http_signature)
   end
