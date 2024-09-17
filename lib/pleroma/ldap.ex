@@ -47,7 +47,7 @@ defmodule Pleroma.LDAP do
   def handle_info(:connect, _state), do: do_handle_connect()
 
   def handle_info({:bind_after_reconnect, name, password, from}, state) do
-    result = bind_user(state[:connection], name, password)
+    result = bind_user(state[:handle], name, password)
 
     GenServer.reply(from, result)
 
@@ -57,10 +57,10 @@ defmodule Pleroma.LDAP do
   defp do_handle_connect do
     state =
       case connect() do
-        {:ok, connection} ->
-          :eldap.controlling_process(connection, self())
-          Process.link(connection)
-          [connection: connection]
+        {:ok, handle} ->
+          :eldap.controlling_process(handle, self())
+          Process.link(handle)
+          [handle: handle]
 
         _ ->
           Logger.error("Failed to connect to LDAP. Retrying in 5000ms")
@@ -73,7 +73,7 @@ defmodule Pleroma.LDAP do
 
   @impl true
   def handle_call({:bind_user, name, password}, from, state) do
-    case bind_user(state[:connection], name, password) do
+    case bind_user(state[:handle], name, password) do
       :needs_reconnect ->
         Process.send(self(), {:bind_after_reconnect, name, password, from}, [])
         {:noreply, state, {:continue, :connect}}
@@ -85,10 +85,10 @@ defmodule Pleroma.LDAP do
 
   @impl true
   def terminate(_, state) do
-    connection = Keyword.get(state, :connection)
+    handle = Keyword.get(state, :handle)
 
-    if not is_nil(connection) do
-      :eldap.close(connection)
+    if not is_nil(handle) do
+      :eldap.close(handle)
     end
 
     :ok
@@ -127,25 +127,25 @@ defmodule Pleroma.LDAP do
       end
 
     case :eldap.open([to_charlist(host)], options) do
-      {:ok, connection} ->
+      {:ok, handle} ->
         try do
           cond do
             tls ->
               case :eldap.start_tls(
-                     connection,
+                     handle,
                      tlsopts,
                      @connection_timeout
                    ) do
                 :ok ->
-                  {:ok, connection}
+                  {:ok, handle}
 
                 error ->
                   Logger.error("Could not start TLS: #{inspect(error)}")
-                  :eldap.close(connection)
+                  :eldap.close(handle)
               end
 
             true ->
-              {:ok, connection}
+              {:ok, handle}
           end
         after
           :ok
@@ -157,24 +157,24 @@ defmodule Pleroma.LDAP do
     end
   end
 
-  defp bind_user(connection, name, password) do
+  defp bind_user(handle, name, password) do
     uid = Config.get([:ldap, :uid], "cn")
     base = Config.get([:ldap, :base])
 
-    case :eldap.simple_bind(connection, "#{uid}=#{name},#{base}", password) do
+    case :eldap.simple_bind(handle, "#{uid}=#{name},#{base}", password) do
       :ok ->
         case fetch_user(name) do
           %User{} = user ->
             user
 
           _ ->
-            register_user(connection, base, uid, name)
+            register_user(handle, base, uid, name)
         end
 
       # eldap does not inform us of socket closure
       # until it is used
       {:error, {:gen_tcp_error, :closed}} ->
-        :eldap.close(connection)
+        :eldap.close(handle)
         :needs_reconnect
 
       error ->
@@ -183,8 +183,8 @@ defmodule Pleroma.LDAP do
     end
   end
 
-  defp register_user(connection, base, uid, name) do
-    case :eldap.search(connection, [
+  defp register_user(handle, base, uid, name) do
+    case :eldap.search(handle, [
            {:base, to_charlist(base)},
            {:filter, :eldap.equalityMatch(to_charlist(uid), to_charlist(name))},
            {:scope, :eldap.wholeSubtree()},
