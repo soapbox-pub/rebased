@@ -40,39 +40,52 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
     host = Keyword.get(ldap, :host, "localhost")
     port = Keyword.get(ldap, :port, 389)
     ssl = Keyword.get(ldap, :ssl, false)
-    sslopts = Keyword.get(ldap, :sslopts, [])
-    tlsopts = Keyword.get(ldap, :tlsopts, [])
+    tls = Keyword.get(ldap, :tls, false)
+    cacertfile = Keyword.get(ldap, :cacertfile) || CAStore.file_path()
 
+    default_secure_opts = [
+      verify: :verify_peer,
+      cacerts: decode_certfile(cacertfile),
+      customize_hostname_check: [
+        fqdn_fun: fn _ -> to_charlist(host) end
+      ]
+    ]
+
+    sslopts = Keyword.merge(default_secure_opts, Keyword.get(ldap, :sslopts, []))
+    tlsopts = Keyword.merge(default_secure_opts, Keyword.get(ldap, :tlsopts, []))
+
+    # :sslopts can only be included in :eldap.open/2 when {ssl: true}
+    # or the connection will fail
     options =
-      [{:port, port}, {:ssl, ssl}, {:timeout, @connection_timeout}] ++
-        if sslopts != [], do: [{:sslopts, sslopts}], else: []
+      if ssl do
+        [{:port, port}, {:ssl, ssl}, {:sslopts, sslopts}, {:timeout, @connection_timeout}]
+      else
+        [{:port, port}, {:ssl, ssl}, {:timeout, @connection_timeout}]
+      end
 
     case :eldap.open([to_charlist(host)], options) do
       {:ok, connection} ->
         try do
-          if Keyword.get(ldap, :tls, false) do
-            :application.ensure_all_started(:ssl)
+          cond do
+            ssl ->
+              :application.ensure_all_started(:ssl)
 
-            case :eldap.start_tls(
-                   connection,
-                   Keyword.merge(
-                     [
-                       verify: :verify_peer,
-                       cacerts: :certifi.cacerts(),
-                       customize_hostname_check: [
-                         fqdn_fun: fn _ -> to_charlist(host) end
-                       ]
-                     ],
-                     tlsopts
-                   ),
-                   @connection_timeout
-                 ) do
-              :ok ->
-                :ok
+            tls ->
+              case :eldap.start_tls(
+                     connection,
+                     tlsopts,
+                     @connection_timeout
+                   ) do
+                :ok ->
+                  :ok
 
-              error ->
-                Logger.error("Could not start TLS: #{inspect(error)}")
-            end
+                error ->
+                  Logger.error("Could not start TLS: #{inspect(error)}")
+                  :eldap.close(connection)
+              end
+
+            true ->
+              :ok
           end
 
           bind_user(connection, ldap, name, password)
@@ -145,6 +158,18 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
     case User.register(changeset) do
       {:ok, user} -> user
       error -> error
+    end
+  end
+
+  defp decode_certfile(file) do
+    with {:ok, data} <- File.read(file) do
+      data
+      |> :public_key.pem_decode()
+      |> Enum.map(fn {_, b, _} -> b end)
+    else
+      _ ->
+        Logger.error("Unable to read certfile: #{file}")
+        []
     end
   end
 end
