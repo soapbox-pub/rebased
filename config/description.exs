@@ -2296,7 +2296,8 @@ config :pleroma, :config_description, [
         key: :mail,
         label: "Mail Attribute",
         type: :string,
-        description: "LDAP attribute name to use as the email address when automatically registering the user on first login",
+        description:
+          "LDAP attribute name to use as the email address when automatically registering the user on first login",
         suggestions: ["mail"]
       }
     ]
