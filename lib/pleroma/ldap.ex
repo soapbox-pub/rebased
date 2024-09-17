@@ -8,8 +8,8 @@ defmodule Pleroma.LDAP do
 
   import Pleroma.Web.Auth.Helpers, only: [fetch_user: 1]
 
-  @connection_timeout 10_000
-  @search_timeout 10_000
+  @connection_timeout 2_000
+  @search_timeout 2_000
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
