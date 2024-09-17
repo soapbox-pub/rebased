@@ -1,0 +1,1 @@
+LDAP authentication has been refactored to operate as a GenServer process which will maintain an active connection to the LDAP server.

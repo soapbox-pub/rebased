@@ -2241,14 +2241,8 @@ config :pleroma, :config_description, [
         label: "SSL options",
         type: :keyword,
         description: "Additional SSL options",
-        suggestions: [cacertfile: "path/to/file/with/PEM/cacerts", verify: :verify_peer],
+        suggestions: [verify: :verify_peer],
         children: [
-          %{
-            key: :cacertfile,
-            type: :string,
-            description: "Path to file with PEM encoded cacerts",
-            suggestions: ["path/to/file/with/PEM/cacerts"]
-          },
           %{
             key: :verify,
             type: :atom,
@@ -2268,14 +2262,8 @@ config :pleroma, :config_description, [
         label: "TLS options",
         type: :keyword,
         description: "Additional TLS options",
-        suggestions: [cacertfile: "path/to/file/with/PEM/cacerts", verify: :verify_peer],
+        suggestions: [verify: :verify_peer],
         children: [
-          %{
-            key: :cacertfile,
-            type: :string,
-            description: "Path to file with PEM encoded cacerts",
-            suggestions: ["path/to/file/with/PEM/cacerts"]
-          },
           %{
             key: :verify,
             type: :atom,
@@ -2292,11 +2280,25 @@ config :pleroma, :config_description, [
       },
       %{
         key: :uid,
-        label: "UID",
+        label: "UID Attribute",
         type: :string,
         description:
           "LDAP attribute name to authenticate the user, e.g. when \"cn\", the filter will be \"cn=username,base\"",
         suggestions: ["cn"]
+      },
+      %{
+        key: :cacertfile,
+        label: "CACertfile",
+        type: :string,
+        description: "Path to CA certificate file"
+      },
+      %{
+        key: :mail,
+        label: "Mail Attribute",
+        type: :string,
+        description:
+          "LDAP attribute name to use as the email address when automatically registering the user on first login",
+        suggestions: ["mail"]
       }
     ]
   },

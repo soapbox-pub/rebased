@@ -28,11 +28,7 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
       {:eldap, [],
        [
          open: fn [^host], [{:port, ^port}, {:ssl, false} | _] -> {:ok, self()} end,
-         simple_bind: fn _connection, _dn, ^password -> :ok end,
-         close: fn _connection ->
-           send(self(), :close_connection)
-           :ok
-         end
+         simple_bind: fn _connection, _dn, ^password -> :ok end
        ]}
     ] do
       conn =
@@ -50,7 +46,6 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
       token = Repo.get_by(Token, token: token)
 
       assert token.user_id == user.id
-      assert_received :close_connection
     end
   end
 
@@ -72,10 +67,6 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
          wholeSubtree: fn -> :ok end,
          search: fn _connection, _options ->
            {:ok, {:eldap_search_result, [{:eldap_entry, ~c"", []}], []}}
-         end,
-         close: fn _connection ->
-           send(self(), :close_connection)
-           :ok
          end
        ]}
     ] do
@@ -94,7 +85,6 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
       token = Repo.get_by(Token, token: token) |> Repo.preload(:user)
 
       assert token.user.nickname == user.nickname
-      assert_received :close_connection
     end
   end
 
@@ -111,11 +101,7 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
       {:eldap, [],
        [
          open: fn [^host], [{:port, ^port}, {:ssl, false} | _] -> {:ok, self()} end,
-         simple_bind: fn _connection, _dn, ^password -> {:error, :invalidCredentials} end,
-         close: fn _connection ->
-           send(self(), :close_connection)
-           :ok
-         end
+         simple_bind: fn _connection, _dn, ^password -> {:error, :invalidCredentials} end
        ]}
     ] do
       conn =
@@ -129,7 +115,6 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
         })
 
       assert %{"error" => "Invalid credentials"} = json_response(conn, 400)
-      assert_received :close_connection
     end
   end
 end
