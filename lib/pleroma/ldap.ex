@@ -144,7 +144,7 @@ defmodule Pleroma.LDAP do
               end
 
             true ->
-              {:ok, :connection}
+              {:ok, connection}
           end
         after
           :ok
