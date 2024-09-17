@@ -59,6 +59,7 @@ defmodule Pleroma.LDAP do
       case connect() do
         {:ok, connection} ->
           :eldap.controlling_process(connection, self())
+          Process.link(connection)
           [connection: connection]
 
         _ ->
