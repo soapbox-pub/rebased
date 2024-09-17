@@ -205,6 +205,8 @@ defmodule Pleroma.LDAP do
   end
 
   defp try_register(name, attributes) do
+    mail_attribute = Config.get([:ldap, :mail])
+
     params = %{
       name: name,
       nickname: name,
@@ -212,7 +214,7 @@ defmodule Pleroma.LDAP do
     }
 
     params =
-      case List.keyfind(attributes, ~c"mail", 0) do
+      case List.keyfind(attributes, to_charlist(mail_attribute), 0) do
         {_, [mail]} -> Map.put_new(params, :email, :erlang.list_to_binary(mail))
         _ -> params
       end

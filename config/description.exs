@@ -2280,7 +2280,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :uid,
-        label: "UID",
+        label: "UID Attribute",
         type: :string,
         description:
           "LDAP attribute name to authenticate the user, e.g. when \"cn\", the filter will be \"cn=username,base\"",
@@ -2291,6 +2291,13 @@ config :pleroma, :config_description, [
         label: "CACertfile",
         type: :string,
         description: "Path to CA certificate file"
+      },
+      %{
+        key: :mail,
+        label: "Mail Attribute",
+        type: :string,
+        description: "LDAP attribute name to use as the email address when automatically registering the user on first login",
+        suggestions: ["mail"]
       }
     ]
   },
