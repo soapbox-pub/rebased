@@ -742,6 +742,21 @@ config :pleroma, Pleroma.Emails.Mailer,
   auth: :always
 ```
 
+An example for Mua adapter:
+
+```elixir
+config :pleroma, Pleroma.Emails.Mailer,
+  enabled: true,
+  adapter: Swoosh.Adapters.Mua,
+  relay: "mail.example.com",
+  port: 465,
+  auth: [
+    username: "YOUR_USERNAME@domain.tld",
+    password: "YOUR_SMTP_PASSWORD"
+  ],
+  protocol: :ssl
+```
+
 ### :email_notifications
 
 Email notifications settings.
