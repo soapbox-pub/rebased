@@ -283,7 +283,7 @@ button:hover {
   background-size: cover;
   background-position: center;
   margin: -47px 10px 0;
-  border: 4px solid var(--foreground-color);
+  border: 4px solid rgb(var(--color-primary-900));
   border-radius: 999px;
 }
 
