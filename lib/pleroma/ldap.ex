@@ -177,9 +177,9 @@ defmodule Pleroma.LDAP do
         :eldap.close(handle)
         :needs_reconnect
 
-      error ->
+      {:error, error} = e ->
         Logger.error("Could not bind LDAP user #{name}: #{inspect(error)}")
-        {:error, {:ldap_bind_error, error}}
+        e
     end
   end
 
