@@ -97,6 +97,8 @@ defmodule Pleroma.LDAP do
     tls = Keyword.get(ldap, :tls, false)
     cacertfile = Keyword.get(ldap, :cacertfile) || CAStore.file_path()
 
+    if ssl, do: Application.ensure_all_started(:ssl)
+
     default_secure_opts = [
       verify: :verify_peer,
       cacerts: decode_certfile(cacertfile),
@@ -123,10 +125,6 @@ defmodule Pleroma.LDAP do
       {:ok, connection} ->
         try do
           cond do
-            ssl ->
-              :application.ensure_all_started(:ssl)
-              {:ok, connection}
-
             tls ->
               case :eldap.start_tls(
                      connection,
