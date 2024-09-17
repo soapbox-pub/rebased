@@ -84,7 +84,11 @@ defmodule Pleroma.LDAP do
 
   @impl true
   def terminate(_, state) do
-    :eldap.close(state[:connection])
+    connection = Keyword.get(state, :connection)
+
+    if not is_nil(connection) do
+      :eldap.close(connection)
+    end
 
     :ok
   end
