@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Auth.LDAPAuthenticator do
+  alias Pleroma.LDAP
   alias Pleroma.User
 
   import Pleroma.Web.Auth.Helpers, only: [fetch_credentials: 1]
@@ -19,7 +20,7 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
   def get_user(%Plug.Conn{} = conn) do
     with {:ldap, true} <- {:ldap, Pleroma.Config.get([:ldap, :enabled])},
          {:ok, {name, password}} <- fetch_credentials(conn),
-         %User{} = user <- GenServer.call(Pleroma.LDAP, {:bind_user, name, password}) do
+         %User{} = user <- LDAP.bind_user(name, password) do
       {:ok, user}
     else
       {:ldap, _} ->
