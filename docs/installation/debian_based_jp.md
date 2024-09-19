@@ -14,7 +14,7 @@ Note: This article is potentially outdated because at this time we may not have 
 
 - PostgreSQL 11.0以上 (Ubuntu16.04では9.5しか提供されていないので，[](https://www.postgresql.org/download/linux/ubuntu/)こちらから新しいバージョンを入手してください)
 - `postgresql-contrib` 11.0以上 (同上)
-- Elixir 1.13 以上 ([Debianのリポジトリからインストールしないこと！！！ ここからインストールすること！](https://elixir-lang.org/install.html#unix-and-unix-like)。または [asdf](https://github.com/asdf-vm/asdf) をpleromaユーザーでインストールしてください)
+- Elixir 1.14 以上 ([Debianのリポジトリからインストールしないこと！！！ ここからインストールすること！](https://elixir-lang.org/install.html#unix-and-unix-like)。または [asdf](https://github.com/asdf-vm/asdf) をpleromaユーザーでインストールしてください)
 - `erlang-dev`
 - `erlang-nox`
 - `git`
