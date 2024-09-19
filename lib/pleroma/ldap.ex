@@ -94,6 +94,10 @@ defmodule Pleroma.LDAP do
     :ok
   end
 
+  def bind_user(name, password) do
+    GenServer.call(__MODULE__, {:bind_user, name, password})
+  end
+
   defp connect do
     ldap = Config.get(:ldap, [])
     host = Keyword.get(ldap, :host, "localhost")
