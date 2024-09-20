@@ -1,8 +1,8 @@
-image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.13.4-otp-25
+image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.14.5-otp-25
 
 variables: &global_variables
   # Only used for the release
-  ELIXIR_VER: 1.13.4
+  ELIXIR_VER: 1.14.5
   POSTGRES_DB: pleroma_test
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
@@ -71,7 +71,7 @@ check-changelog:
   tags:
     - amd64
 
-build-1.13.4-otp-25:
+build-1.14.5-otp-25:
   extends:
   - .build_changes_policy
   - .using-ci-base
@@ -119,7 +119,7 @@ benchmark:
     - mix ecto.migrate
     - mix pleroma.load_testing
 
-unit-testing-1.13.4-otp-25:
+unit-testing-1.14.5-otp-25:
   extends:
   - .build_changes_policy
   - .using-ci-base
@@ -134,7 +134,7 @@ unit-testing-1.13.4-otp-25:
   script: &testing_script
     - mix ecto.create
     - mix ecto.migrate
-    - mix test --cover --preload-modules
+    - mix pleroma.test_runner --cover --preload-modules
   coverage: '/^Line total: ([^ ]*%)$/'
   artifacts:
     reports:

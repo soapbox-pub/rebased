@@ -97,6 +97,7 @@ defmodule Pleroma.Application do
     children =
       [
         Pleroma.PromEx,
+        Pleroma.LDAP,
         Pleroma.Repo,
         Config.TransferTask,
         Pleroma.Emoji,
