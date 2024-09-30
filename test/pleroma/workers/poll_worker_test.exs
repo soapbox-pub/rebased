@@ -52,4 +52,33 @@ defmodule Pleroma.Workers.PollWorkerTest do
       )
     end
   end
+
+  test "poll refresh job" do
+    user = insert(:user, local: false)
+    question = insert(:question, user: user)
+    activity = insert(:question_activity, question: question)
+
+    PollWorker.new(%{"op" => "refresh", "activity_id" => activity.id})
+    |> Oban.insert()
+
+    expected_job_args = %{"activity_id" => activity.id, "op" => "refresh"}
+
+    assert_enqueued(args: expected_job_args)
+
+    with_mocks([
+      {
+        Pleroma.Web.Streamer,
+        [],
+        [
+          stream: fn _, _ -> nil end
+        ]
+      }
+    ]) do
+      [job] = all_enqueued(worker: PollWorker)
+      PollWorker.perform(job)
+
+      # Ensure updates are streamed out
+      assert called(Pleroma.Web.Streamer.stream(["user", "list", "public", "public:local"], :_))
+    end
+  end
 end
