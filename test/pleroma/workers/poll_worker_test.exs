@@ -44,6 +44,12 @@ defmodule Pleroma.Workers.PollWorkerTest do
       # Ensure notifications were streamed out when job executes
       assert called(Pleroma.Web.Streamer.stream(["user", "user:notification"], :_))
       assert called(Pleroma.Web.Push.send(:_))
+
+      # Ensure we scheduled a final refresh of the poll
+      assert_enqueued(
+        worker: PollWorker,
+        args: %{"op" => "refresh", "activity_id" => activity.id}
+      )
     end
   end
 end
