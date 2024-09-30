@@ -97,7 +97,7 @@ defmodule Pleroma.Workers.PollWorkerTest do
       assert_enqueued(args: expected_job_args)
 
       [job] = all_enqueued(worker: PollWorker)
-      assert {:cancel, :poll_finalized} = PollWorker.perform(job)
+      assert {:cancel, :poll_finalized} == PollWorker.perform(job)
     end
   end
 end
