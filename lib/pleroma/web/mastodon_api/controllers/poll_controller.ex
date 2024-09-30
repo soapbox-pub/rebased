@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
 
   alias Pleroma.Activity
   alias Pleroma.Object
+  alias Pleroma.Workers.PollWorker
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Plugs.OAuthScopesPlug
@@ -33,6 +34,9 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
     with %Object{} = object <- Object.get_by_id(id),
          %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
          true <- Visibility.visible_for_user?(activity, user) do
+      PollWorker.new(%{"op" => "refresh", "activity_id" => activity.id})
+      |> Oban.insert(unique: [period: 60])
+
       try_render(conn, "show.json", %{object: object, for: user})
     else
       error when is_nil(error) or error == false ->
