@@ -53,32 +53,51 @@ defmodule Pleroma.Workers.PollWorkerTest do
     end
   end
 
-  test "poll refresh job" do
-    user = insert(:user, local: false)
-    question = insert(:question, user: user)
-    activity = insert(:question_activity, question: question)
+  describe "poll refresh" do
+    test "normal job" do
+      user = insert(:user, local: false)
+      question = insert(:question, user: user)
+      activity = insert(:question_activity, question: question)
 
-    PollWorker.new(%{"op" => "refresh", "activity_id" => activity.id})
-    |> Oban.insert()
+      PollWorker.new(%{"op" => "refresh", "activity_id" => activity.id})
+      |> Oban.insert()
 
-    expected_job_args = %{"activity_id" => activity.id, "op" => "refresh"}
+      expected_job_args = %{"activity_id" => activity.id, "op" => "refresh"}
 
-    assert_enqueued(args: expected_job_args)
+      assert_enqueued(args: expected_job_args)
 
-    with_mocks([
-      {
-        Pleroma.Web.Streamer,
-        [],
-        [
-          stream: fn _, _ -> nil end
-        ]
-      }
-    ]) do
+      with_mocks([
+        {
+          Pleroma.Web.Streamer,
+          [],
+          [
+            stream: fn _, _ -> nil end
+          ]
+        }
+      ]) do
+        [job] = all_enqueued(worker: PollWorker)
+        PollWorker.perform(job)
+
+        # Ensure updates are streamed out
+        assert called(Pleroma.Web.Streamer.stream(["user", "list", "public", "public:local"], :_))
+      end
+    end
+
+    test "when updated_at is after poll closing" do
+      poll_closed = DateTime.utc_now() |> DateTime.add(-86_400) |> DateTime.to_iso8601()
+      user = insert(:user, local: false)
+      question = insert(:question, user: user, closed: poll_closed)
+      activity = insert(:question_activity, question: question)
+
+      PollWorker.new(%{"op" => "refresh", "activity_id" => activity.id})
+      |> Oban.insert()
+
+      expected_job_args = %{"activity_id" => activity.id, "op" => "refresh"}
+
+      assert_enqueued(args: expected_job_args)
+
       [job] = all_enqueued(worker: PollWorker)
-      PollWorker.perform(job)
-
-      # Ensure updates are streamed out
-      assert called(Pleroma.Web.Streamer.stream(["user", "list", "public", "public:local"], :_))
+      assert {:cancel, :poll_finalized} = PollWorker.perform(job)
     end
   end
 end
