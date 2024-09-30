@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
+  use Oban.Testing, repo: Pleroma.Repo
   use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Object
@@ -27,6 +28,11 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
       response = json_response_and_validate_schema(conn, 200)
       id = to_string(object.id)
       assert %{"id" => ^id, "expired" => false, "multiple" => false} = response
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PollWorker,
+        args: %{"op" => "refresh", "activity_id" => activity.id}
+      )
     end
 
     test "does not expose polls for private statuses", %{conn: conn} do
