@@ -30,7 +30,7 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
 
   @doc "GET /api/v1/polls/:id"
   def show(%{assigns: %{user: user}, private: %{open_api_spex: %{params: %{id: id}}}} = conn, _) do
-    with %Object{} = object <- Object.get_by_id_and_maybe_refetch(id, interval: 60),
+    with %Object{} = object <- Object.get_by_id(id),
          %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
          true <- Visibility.visible_for_user?(activity, user) do
       try_render(conn, "show.json", %{object: object, for: user})
