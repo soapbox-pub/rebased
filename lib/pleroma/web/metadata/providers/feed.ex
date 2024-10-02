@@ -20,4 +20,7 @@ defmodule Pleroma.Web.Metadata.Providers.Feed do
        ], []}
     ]
   end
+
+  @impl Provider
+  def build_tags(_), do: []
 end
