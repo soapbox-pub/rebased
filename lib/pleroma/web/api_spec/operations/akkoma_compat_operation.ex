@@ -13,7 +13,7 @@ defmodule Pleroma.Web.ApiSpec.AkkomaCompatOperation do
   end
 
   # Adapted from https://akkoma.dev/AkkomaGang/akkoma/src/branch/develop/lib/pleroma/web/api_spec/operations/translate_operation.ex
-  def translation_languages_operation() do
+  def translation_languages_operation do
     %Operation{
       tags: ["Akkoma compatibility routes"],
       summary: "Get translation languages",
@@ -54,7 +54,7 @@ defmodule Pleroma.Web.ApiSpec.AkkomaCompatOperation do
     }
   end
 
-  def translate_operation() do
+  def translate_operation do
     %Operation{
       tags: ["Akkoma compatibility routes"],
       summary: "Translate status",

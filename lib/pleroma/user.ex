@@ -21,7 +21,6 @@ defmodule Pleroma.User do
   alias Pleroma.FollowingRelationship
   alias Pleroma.Formatter
   alias Pleroma.Hashtag
-  alias Pleroma.User.HashtagFollow
   alias Pleroma.HTML
   alias Pleroma.Keys
   alias Pleroma.MFA
@@ -31,6 +30,7 @@ defmodule Pleroma.User do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.UserRelationship
+  alias Pleroma.User.HashtagFollow
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
@@ -1167,7 +1167,7 @@ defmodule Pleroma.User do
   # "Locked" (self-locked) users demand explicit authorization of follow requests
   @spec can_direct_follow_local(User.t(), User.t()) :: true | false
   def can_direct_follow_local(%User{} = follower, %User{local: true} = followed) do
-    !followed.is_locked || (followed.permit_followback and is_friend_of(follower, followed))
+    !followed.is_locked || (followed.permit_followback and friend_of?(follower, followed))
   end
 
   @spec maybe_direct_follow(User.t(), User.t()) ::
@@ -1552,7 +1552,7 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
-  def is_friend_of(%User{} = potential_friend, %User{local: true} = user) do
+  def friend_of?(%User{} = potential_friend, %User{local: true} = user) do
     user
     |> get_friends_query()
     |> where(id: ^potential_friend.id)

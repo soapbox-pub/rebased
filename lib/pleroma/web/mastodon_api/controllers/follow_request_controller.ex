@@ -8,10 +8,10 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestController do
   import Pleroma.Web.ControllerHelper,
     only: [add_link_headers: 2]
 
+  alias Pleroma.Pagination
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Plugs.OAuthScopesPlug
-  alias Pleroma.Pagination
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
   plug(:assign_follower when action != :index)

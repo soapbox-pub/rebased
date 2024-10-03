@@ -10,9 +10,9 @@ defmodule Pleroma.Hashtag do
 
   alias Ecto.Multi
   alias Pleroma.Hashtag
-  alias Pleroma.User.HashtagFollow
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.User.HashtagFollow
 
   schema "hashtags" do
     field(:name, :string)
