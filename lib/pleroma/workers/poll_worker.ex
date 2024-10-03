@@ -43,7 +43,6 @@ defmodule Pleroma.Workers.PollWorker do
     else
       {:activity, nil} -> {:cancel, :poll_activity_not_found}
       {:refetch, _} = e -> {:cancel, e}
-      e -> {:error, e}
     end
   end
 
