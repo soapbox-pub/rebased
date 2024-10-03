@@ -14,5 +14,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.DropPolicy do
   end
 
   @impl true
+  def id_filter(id) do
+    Logger.debug("REJECTING #{id}")
+    false
+  end
+
+  @impl true
   def describe, do: {:ok, %{}}
 end

@@ -192,6 +192,18 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   end
 
   @impl true
+  def id_filter(id) do
+    host_info = URI.parse(id)
+
+    with {:ok, _} <- check_accept(host_info, %{}),
+         {:ok, _} <- check_reject(host_info, %{}) do
+      true
+    else
+      _ -> false
+    end
+  end
+
+  @impl true
   def filter(%{"type" => "Delete", "actor" => actor} = activity) do
     %{host: actor_host} = URI.parse(actor)
 
