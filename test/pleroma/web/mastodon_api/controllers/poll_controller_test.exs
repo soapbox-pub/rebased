@@ -29,13 +29,16 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
       id = to_string(object.id)
       assert %{"id" => ^id, "expired" => false, "multiple" => false} = response
 
+      # Local activities should not generate an Oban job to refresh
+      assert activity.local
+
       refute_enqueued(
         worker: Pleroma.Workers.PollWorker,
         args: %{"op" => "refresh", "activity_id" => activity.id}
       )
     end
 
-    test "does not create oban job to refresh poll if activity is local", %{conn: conn} do
+    test "creates an oban job to refresh poll if activity is remote", %{conn: conn} do
       user = insert(:user, local: false)
       question = insert(:question, user: user)
       activity = insert(:question_activity, question: question, local: false)

@@ -36,8 +36,6 @@ defmodule Pleroma.Workers.PollWorker do
   def perform(%Job{args: %{"op" => "refresh", "activity_id" => activity_id}}) do
     with {_, %Activity{object: object}} <-
            {:activity, Activity.get_by_id_with_object(activity_id)},
-         {:ok, end_time} <- NaiveDateTime.from_iso8601(object.data["closed"]),
-         {_, :lt} <- {:closed_compare, NaiveDateTime.compare(object.updated_at, end_time)},
          {_, {:ok, _object}} <- {:refetch, Fetcher.refetch_object(object)} do
       stream_update(activity_id)
 
@@ -45,7 +43,6 @@ defmodule Pleroma.Workers.PollWorker do
     else
       {:activity, nil} -> {:cancel, :poll_activity_not_found}
       {:refetch, _} = e -> {:cancel, e}
-      {:closed_compare, _} -> {:cancel, :poll_finalized}
       e -> {:error, e}
     end
   end
