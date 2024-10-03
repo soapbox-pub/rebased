@@ -20,7 +20,7 @@ jobs:
   test:
     services:
       db:
-        image: postgres:12
+        image: postgres:16
         ports: ['5432:5432']
         env:
           POSTGRES_DB: pleroma_test
