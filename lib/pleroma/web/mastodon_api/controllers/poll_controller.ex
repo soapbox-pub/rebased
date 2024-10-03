@@ -28,6 +28,7 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PollOperation
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+  @poll_refresh_interval 120
 
   @doc "GET /api/v1/polls/:id"
   def show(%{assigns: %{user: user}, private: %{open_api_spex: %{params: %{id: id}}}} = conn, _) do
@@ -80,7 +81,7 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
          {:ok, end_time} <- NaiveDateTime.from_iso8601(object.data["closed"]),
          {_, :lt} <- {:closed_compare, NaiveDateTime.compare(object.updated_at, end_time)} do
       PollWorker.new(%{"op" => "refresh", "activity_id" => activity.id})
-      |> Oban.insert(unique: [period: 60])
+      |> Oban.insert(unique: [period: @poll_refresh_interval])
     end
   end
 end
