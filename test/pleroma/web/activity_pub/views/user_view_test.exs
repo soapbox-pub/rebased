@@ -68,6 +68,23 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     result = UserView.render("user.json", %{user: user})
     assert result["icon"]["url"] == "https://someurl"
     assert result["image"]["url"] == "https://somebanner"
+
+    refute result["icon"]["name"]
+    refute result["image"]["name"]
+  end
+
+  test "Avatar has a description if the user set one" do
+    user =
+      insert(:user,
+        avatar: %{
+          "url" => [%{"href" => "https://someurl"}],
+          "name" => "a drawing of pleroma-tan using pleroma groups"
+        }
+      )
+
+    result = UserView.render("user.json", %{user: user})
+
+    assert result["icon"]["name"] == "a drawing of pleroma-tan using pleroma groups"
   end
 
   test "renders an invisible user with the invisible property set to true" do
