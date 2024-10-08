@@ -1020,6 +1020,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   defp replace_instance_host(content, host) when is_binary(content) do
     content
     |> String.replace("$INSTANCE$host$", host)
+    |> String.replace("$INSTANCE$tld$", get_tld(host, "$INSTANCE$tld$"))
   end
 
   defp replace_instance_host(object, host) when is_map(object) do
@@ -1030,6 +1031,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   defp replace_instance_host(value, _), do: value
+
+  defp get_tld(host, default) do
+    with [domain | _] <- String.split(host, ".") |> Enum.reverse() do
+      domain
+    else
+      _ -> default
+    end
+  end
 
   defp patch_content_map(%{"contentMap" => %{} = content_map}, host) do
     content_map
