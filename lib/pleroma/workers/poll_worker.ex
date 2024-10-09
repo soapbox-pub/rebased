@@ -22,9 +22,11 @@ defmodule Pleroma.Workers.PollWorker do
   def perform(%Job{args: %{"op" => "poll_end", "activity_id" => activity_id}}) do
     with {_, %Activity{} = activity} <- {:activity, Activity.get_by_id(activity_id)},
          {:ok, notifications} <- Notification.create_poll_notifications(activity) do
-      # Schedule a final refresh
-      __MODULE__.new(%{"op" => "refresh", "activity_id" => activity_id})
-      |> Oban.insert()
+      unless activity.local do
+        # Schedule a final refresh
+        __MODULE__.new(%{"op" => "refresh", "activity_id" => activity_id})
+        |> Oban.insert()
+      end
 
       Notification.stream(notifications)
     else
