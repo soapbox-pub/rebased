@@ -11,10 +11,10 @@ defmodule Pleroma.Workers.PollWorkerTest do
 
   alias Pleroma.Workers.PollWorker
 
-  test "poll notification job" do
+  test "local poll ending notification job" do
     user = insert(:user)
     question = insert(:question, user: user)
-    activity = insert(:question_activity, question: question)
+    activity = insert(:question_activity, question: question, user: user)
 
     PollWorker.schedule_poll_end(activity)
 
@@ -45,12 +45,36 @@ defmodule Pleroma.Workers.PollWorkerTest do
       assert called(Pleroma.Web.Streamer.stream(["user", "user:notification"], :_))
       assert called(Pleroma.Web.Push.send(:_))
 
-      # Ensure we scheduled a final refresh of the poll
-      assert_enqueued(
+      # Skip refreshing polls for local activities
+      assert activity.local
+
+      refute_enqueued(
         worker: PollWorker,
         args: %{"op" => "refresh", "activity_id" => activity.id}
       )
     end
+  end
+
+  test "remote poll ending notification job schedules refresh" do
+    user = insert(:user, local: false)
+    question = insert(:question, user: user)
+    activity = insert(:question_activity, question: question, user: user)
+
+    PollWorker.schedule_poll_end(activity)
+
+    expected_job_args = %{"activity_id" => activity.id, "op" => "poll_end"}
+
+    assert_enqueued(args: expected_job_args)
+
+    [job] = all_enqueued(worker: PollWorker)
+    PollWorker.perform(job)
+
+    refute activity.local
+
+    assert_enqueued(
+      worker: PollWorker,
+      args: %{"op" => "refresh", "activity_id" => activity.id}
+    )
   end
 
   test "poll refresh" do

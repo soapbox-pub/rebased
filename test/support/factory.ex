@@ -510,7 +510,8 @@ defmodule Pleroma.Factory do
     %Pleroma.Activity{
       data: data,
       actor: data["actor"],
-      recipients: data["to"]
+      recipients: data["to"],
+      local: user.local
     }
     |> Map.merge(attrs)
   end
