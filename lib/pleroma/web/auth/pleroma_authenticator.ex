@@ -6,6 +6,7 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
   alias Pleroma.Registration
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Plugs.AuthenticationPlug
 
   import Pleroma.Web.Auth.Helpers, only: [fetch_credentials: 1, fetch_user: 1]
@@ -101,4 +102,23 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
   def auth_template, do: nil
 
   def oauth_consumer_template, do: nil
+
+  @doc "Changes Pleroma.User password in the database"
+  def change_password(user, password, new_password, new_password) do
+    case CommonAPI.Utils.confirm_current_password(user, password) do
+      {:ok, user} ->
+        with {:ok, _user} <-
+               User.reset_password(user, %{
+                 password: new_password,
+                 password_confirmation: new_password
+               }) do
+          {:ok, user}
+        end
+
+      error ->
+        error
+    end
+  end
+
+  def change_password(_, _, _, _), do: {:error, :password_confirmation}
 end

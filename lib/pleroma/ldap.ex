@@ -15,6 +15,14 @@ defmodule Pleroma.LDAP do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
+  def bind_user(name, password) do
+    GenServer.call(__MODULE__, {:bind_user, name, password})
+  end
+
+  def change_password(name, password, new_password) do
+    GenServer.call(__MODULE__, {:change_password, name, password, new_password})
+  end
+
   @impl true
   def init(state) do
     case {Config.get(Pleroma.Web.Auth.Authenticator), Config.get([:ldap, :enabled])} do
@@ -47,11 +55,40 @@ defmodule Pleroma.LDAP do
   def handle_info(:connect, _state), do: do_handle_connect()
 
   def handle_info({:bind_after_reconnect, name, password, from}, state) do
-    result = bind_user(state[:handle], name, password)
+    result = do_bind_user(state[:handle], name, password)
 
     GenServer.reply(from, result)
 
     {:noreply, state}
+  end
+
+  @impl true
+  def handle_call({:bind_user, name, password}, from, state) do
+    case do_bind_user(state[:handle], name, password) do
+      :needs_reconnect ->
+        Process.send(self(), {:bind_after_reconnect, name, password, from}, [])
+        {:noreply, state, {:continue, :connect}}
+
+      result ->
+        {:reply, result, state, :hibernate}
+    end
+  end
+
+  def handle_call({:change_password, name, password, new_password}, _from, state) do
+    result = change_password(state[:handle], name, password, new_password)
+
+    {:reply, result, state, :hibernate}
+  end
+
+  @impl true
+  def terminate(_, state) do
+    handle = Keyword.get(state, :handle)
+
+    if not is_nil(handle) do
+      :eldap.close(handle)
+    end
+
+    :ok
   end
 
   defp do_handle_connect do
@@ -69,33 +106,6 @@ defmodule Pleroma.LDAP do
       end
 
     {:noreply, state}
-  end
-
-  @impl true
-  def handle_call({:bind_user, name, password}, from, state) do
-    case bind_user(state[:handle], name, password) do
-      :needs_reconnect ->
-        Process.send(self(), {:bind_after_reconnect, name, password, from}, [])
-        {:noreply, state, {:continue, :connect}}
-
-      result ->
-        {:reply, result, state, :hibernate}
-    end
-  end
-
-  @impl true
-  def terminate(_, state) do
-    handle = Keyword.get(state, :handle)
-
-    if not is_nil(handle) do
-      :eldap.close(handle)
-    end
-
-    :ok
-  end
-
-  def bind_user(name, password) do
-    GenServer.call(__MODULE__, {:bind_user, name, password})
   end
 
   defp connect do
@@ -161,18 +171,17 @@ defmodule Pleroma.LDAP do
     end
   end
 
-  defp bind_user(handle, name, password) do
-    uid = Config.get([:ldap, :uid], "cn")
-    base = Config.get([:ldap, :base])
+  defp do_bind_user(handle, name, password) do
+    dn = make_dn(name)
 
-    case :eldap.simple_bind(handle, "#{uid}=#{name},#{base}", password) do
+    case :eldap.simple_bind(handle, dn, password) do
       :ok ->
         case fetch_user(name) do
           %User{} = user ->
             user
 
           _ ->
-            register_user(handle, base, uid, name)
+            register_user(handle, ldap_base(), ldap_uid(), name)
         end
 
       # eldap does not inform us of socket closure
@@ -231,6 +240,14 @@ defmodule Pleroma.LDAP do
     end
   end
 
+  defp change_password(handle, name, password, new_password) do
+    dn = make_dn(name)
+
+    with :ok <- :eldap.simple_bind(handle, dn, password) do
+      :eldap.modify_password(handle, dn, to_charlist(new_password), to_charlist(password))
+    end
+  end
+
   defp decode_certfile(file) do
     with {:ok, data} <- File.read(file) do
       data
@@ -241,5 +258,14 @@ defmodule Pleroma.LDAP do
         Logger.error("Unable to read certfile: #{file}")
         []
     end
+  end
+
+  defp ldap_uid, do: to_charlist(Config.get([:ldap, :uid], "cn"))
+  defp ldap_base, do: to_charlist(Config.get([:ldap, :base]))
+
+  defp make_dn(name) do
+    uid = ldap_uid()
+    base = ldap_base()
+    ~c"#{uid}=#{name},#{base}"
   end
 end
