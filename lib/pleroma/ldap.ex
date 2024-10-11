@@ -83,6 +83,12 @@ defmodule Pleroma.LDAP do
     end
   end
 
+  def handle_call({:change_password, name, password, new_password}, _from, state) do
+    result = change_password(state[:handle], name, password, new_password)
+
+    {:reply, result, state, :hibernate}
+  end
+
   @impl true
   def terminate(_, state) do
     handle = Keyword.get(state, :handle)
@@ -162,17 +168,16 @@ defmodule Pleroma.LDAP do
   end
 
   defp bind_user(handle, name, password) do
-    uid = Config.get([:ldap, :uid], "cn")
-    base = Config.get([:ldap, :base])
+    dn = make_dn(name)
 
-    case :eldap.simple_bind(handle, "#{uid}=#{name},#{base}", password) do
+    case :eldap.simple_bind(handle, dn, password) do
       :ok ->
         case fetch_user(name) do
           %User{} = user ->
             user
 
           _ ->
-            register_user(handle, base, uid, name)
+            register_user(handle, ldap_base(), ldap_uid(), name)
         end
 
       # eldap does not inform us of socket closure
@@ -231,6 +236,14 @@ defmodule Pleroma.LDAP do
     end
   end
 
+  defp change_password(handle, name, password, new_password) do
+    dn = make_dn(name)
+
+    with :ok <- :eldap.simple_bind(handle, dn, password) do
+      :eldap.modify_password(handle, dn, to_charlist(new_password), to_charlist(password))
+    end
+  end
+
   defp decode_certfile(file) do
     with {:ok, data} <- File.read(file) do
       data
@@ -241,5 +254,14 @@ defmodule Pleroma.LDAP do
         Logger.error("Unable to read certfile: #{file}")
         []
     end
+  end
+
+  defp ldap_uid, do: to_charlist(Config.get([:ldap, :uid], "cn"))
+  defp ldap_base, do: to_charlist(Config.get([:ldap, :base]))
+
+  defp make_dn(name) do
+    uid = ldap_uid()
+    base = ldap_base()
+    ~c"#{uid}=#{name},#{base}"
   end
 end
