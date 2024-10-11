@@ -10,4 +10,9 @@ defmodule Pleroma.Web.Auth.Authenticator do
   @callback handle_error(Plug.Conn.t(), any()) :: any()
   @callback auth_template() :: String.t() | nil
   @callback oauth_consumer_template() :: String.t() | nil
+
+  @callback change_password(Pleroma.User.t(), String.t(), String.t(), String.t()) ::
+              {:ok, Pleroma.User.t()} | {:error, term()}
+
+  @optional_callbacks change_password: 4
 end
