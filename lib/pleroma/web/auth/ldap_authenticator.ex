@@ -32,7 +32,7 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
   end
 
   def change_password(user, password, new_password, new_password) do
-    case GenServer.call(LDAP, {:change_password, user.nickname, password, new_password}) do
+    case LDAP.change_password(user.nickname, password, new_password) do
       :ok -> {:ok, user}
       e -> e
     end
