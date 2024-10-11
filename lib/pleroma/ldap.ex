@@ -15,6 +15,14 @@ defmodule Pleroma.LDAP do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
+  def bind_user(name, password) do
+    GenServer.call(__MODULE__, {:bind_user, name, password})
+  end
+
+  def change_password(name, password, new_password) do
+    GenServer.call(__MODULE__, {:change_password, name, password, new_password})
+  end
+
   @impl true
   def init(state) do
     case {Config.get(Pleroma.Web.Auth.Authenticator), Config.get([:ldap, :enabled])} do
@@ -47,33 +55,16 @@ defmodule Pleroma.LDAP do
   def handle_info(:connect, _state), do: do_handle_connect()
 
   def handle_info({:bind_after_reconnect, name, password, from}, state) do
-    result = bind_user(state[:handle], name, password)
+    result = do_bind_user(state[:handle], name, password)
 
     GenServer.reply(from, result)
 
     {:noreply, state}
   end
 
-  defp do_handle_connect do
-    state =
-      case connect() do
-        {:ok, handle} ->
-          :eldap.controlling_process(handle, self())
-          Process.link(handle)
-          [handle: handle]
-
-        _ ->
-          Logger.error("Failed to connect to LDAP. Retrying in 5000ms")
-          Process.send_after(self(), :connect, 5_000)
-          []
-      end
-
-    {:noreply, state}
-  end
-
   @impl true
   def handle_call({:bind_user, name, password}, from, state) do
-    case bind_user(state[:handle], name, password) do
+    case do_bind_user(state[:handle], name, password) do
       :needs_reconnect ->
         Process.send(self(), {:bind_after_reconnect, name, password, from}, [])
         {:noreply, state, {:continue, :connect}}
@@ -100,12 +91,21 @@ defmodule Pleroma.LDAP do
     :ok
   end
 
-  def bind_user(name, password) do
-    GenServer.call(__MODULE__, {:bind_user, name, password})
-  end
+  defp do_handle_connect do
+    state =
+      case connect() do
+        {:ok, handle} ->
+          :eldap.controlling_process(handle, self())
+          Process.link(handle)
+          [handle: handle]
 
-  def change_password(name, password, new_password) do
-    GenServer.call(__MODULE__, {:change_password, name, password, new_password})
+        _ ->
+          Logger.error("Failed to connect to LDAP. Retrying in 5000ms")
+          Process.send_after(self(), :connect, 5_000)
+          []
+      end
+
+    {:noreply, state}
   end
 
   defp connect do
@@ -171,7 +171,7 @@ defmodule Pleroma.LDAP do
     end
   end
 
-  defp bind_user(handle, name, password) do
+  defp do_bind_user(handle, name, password) do
     dn = make_dn(name)
 
     case :eldap.simple_bind(handle, dn, password) do
