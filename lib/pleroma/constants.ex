@@ -102,6 +102,7 @@ defmodule Pleroma.Constants do
 
   const(activity_types,
     do: [
+      "Block",
       "Create",
       "Update",
       "Delete",
@@ -128,6 +129,10 @@ defmodule Pleroma.Constants do
       "EmojiReact",
       "Announce"
     ]
+  )
+
+  const(object_types,
+    do: ~w[Event Question Answer Audio Video Image Article Note Page ChatMessage]
   )
 
   # basic regex, just there to weed out potential mistakes

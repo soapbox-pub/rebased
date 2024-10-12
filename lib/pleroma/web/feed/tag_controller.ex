@@ -10,7 +10,7 @@ defmodule Pleroma.Web.Feed.TagController do
   alias Pleroma.Web.Feed.FeedView
 
   def feed(conn, params) do
-    if Config.get!([:instance, :public]) do
+    if not Config.restrict_unauthenticated_access?(:timelines, :local) do
       render_feed(conn, params)
     else
       render_error(conn, :not_found, "Not found")
@@ -18,10 +18,12 @@ defmodule Pleroma.Web.Feed.TagController do
   end
 
   defp render_feed(conn, %{"tag" => raw_tag} = params) do
+    local_only = Config.restrict_unauthenticated_access?(:timelines, :federated)
+
     {format, tag} = parse_tag(raw_tag)
 
     activities =
-      %{type: ["Create"], tag: tag}
+      %{type: ["Create"], tag: tag, local_only: local_only}
       |> Pleroma.Maps.put_if_present(:max_id, params["max_id"])
       |> ActivityPub.fetch_public_activities()
 

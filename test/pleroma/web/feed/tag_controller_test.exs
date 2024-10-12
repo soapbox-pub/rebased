@@ -191,4 +191,60 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
       |> response(404)
     end
   end
+
+  describe "restricted for unauthenticated" do
+    test "returns 404 when local timeline is disabled", %{conn: conn} do
+      clear_config([:restrict_unauthenticated, :timelines], %{local: true, federated: false})
+
+      conn
+      |> put_req_header("accept", "application/rss+xml")
+      |> get(tag_feed_path(conn, :feed, "pleromaart.rss"))
+      |> response(404)
+    end
+
+    test "returns local posts only when federated timeline is disabled", %{conn: conn} do
+      clear_config([:restrict_unauthenticated, :timelines], %{local: false, federated: true})
+
+      local_user = insert(:user)
+      remote_user = insert(:user, local: false)
+
+      local_note =
+        insert(:note,
+          user: local_user,
+          data: %{
+            "content" => "local post #PleromaArt",
+            "summary" => "",
+            "tag" => ["pleromaart"]
+          }
+        )
+
+      remote_note =
+        insert(:note,
+          user: remote_user,
+          data: %{
+            "content" => "remote post #PleromaArt",
+            "summary" => "",
+            "tag" => ["pleromaart"]
+          },
+          local: false
+        )
+
+      insert(:note_activity, user: local_user, note: local_note)
+      insert(:note_activity, user: remote_user, note: remote_note, local: false)
+
+      response =
+        conn
+        |> put_req_header("accept", "application/rss+xml")
+        |> get(tag_feed_path(conn, :feed, "pleromaart.rss"))
+        |> response(200)
+
+      xml = parse(response)
+
+      assert xpath(xml, ~x"//channel/title/text()") == ~c"#pleromaart"
+
+      assert xpath(xml, ~x"//channel/item/title/text()"l) == [
+               ~c"local post #PleromaArt"
+             ]
+    end
+  end
 end
