@@ -19,7 +19,7 @@ Added features:
 
 Features not authored by me:
 - [Chat deletion](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3029)
-- [AntiDuplicationPolicy, AntiMentionSpamPolicy](https://gitlab.com/soapbox-pub/rebased/-/merge_requests/249), [RemoteReportPolicy](https://gitlab.com/soapbox-pub/rebased/-/merge_requests/202) MRFs
+- [AntiDuplicationPolicy and AntiMentionSpamPolicy MRFs](https://gitlab.com/soapbox-pub/rebased/-/merge_requests/249)
 - [Bubble timeline](https://akkoma.dev/AkkomaGang/akkoma/pulls/100)
 - [Hashtag following](https://akkoma.dev/AkkomaGang/akkoma/pulls/341)
 - [Ability to auto-approve followbacks](https://akkoma.dev/AkkomaGang/akkoma/pulls/674)
