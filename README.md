@@ -16,6 +16,7 @@ Added features:
 - [Moderators can assign users to reports](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3670)
 - [Mastodon-compatible webhooks](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3683)
 - UI is restyled to match pl-fe visuals
+- Improved compatibility with akkoma-fe (profiles saving is still missing)
 
 Features not authored by me:
 - [Chat deletion](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3029)
@@ -26,7 +27,10 @@ Features not authored by me:
 
 There might be more, it's hard to keep track of it. I'm trying to keep the fork as close to upstream and I hope the list will eventually get much shorter.
 
-It should be possible to migrate from Pleroma or Rebased to `pl` without issues. It is recommended to use `pl` with [`pl-fe`](https://github.com/mkljczk/pl-fe/tree/develop/packages/pl-fe) for full feature compatibility, but pleroma-fe and other frontends work fine.
+**DISCLAIMER:**
+Although `pl` *just works* for me, I cannot guarantee that it'll work well for you. There might be bugs I simply don't care about or I might decide to abandon the project one day.
+
+It should be possible to migrate from Pleroma or Rebased to `pl` without issues. It is recommended to use `pl` with [`pl-fe`](https://github.com/mkljczk/pl-fe/tree/develop/packages/pl-fe) for full feature compatibility, but pleroma-fe and other frontends work fine too.
 
 ---
 
