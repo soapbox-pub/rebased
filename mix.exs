@@ -20,10 +20,10 @@ defmodule Pleroma.Mixfile do
       deps: deps(),
       test_coverage: [tool: :covertool, summary: true],
       # Docs
-      homepage_url: "https://github.com/mkljczk/pleroma",
-      source_url: "https://github.com/mkljczk/pleroma",
+      homepage_url: "https://github.com/mkljczk/pl",
+      source_url: "https://github.com/mkljczk/pl",
       docs: [
-        source_url_pattern: "https://github.com/mkljczk/pleroma/blob/develop/%{path}#L%{line}",
+        source_url_pattern: "https://github.com/mkljczk/pl/blob/develop/%{path}#L%{line}",
         logo: "priv/static/images/logo.png",
         extras: ["README.md", "CHANGELOG.md"] ++ Path.wildcard("docs/**/*.md"),
         groups_for_extras: [
