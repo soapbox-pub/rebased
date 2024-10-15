@@ -248,7 +248,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     configuration()
     |> Map.merge(%{
       urls: %{streaming: Pleroma.Web.Endpoint.websocket_url()},
-      translation: %{enabled: Pleroma.Language.Translation.configured?()}
+      translation: %{enabled: Pleroma.Language.Translation.configured?()},
+      vapid: %{public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)}
     })
   end
 
