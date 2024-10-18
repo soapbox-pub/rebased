@@ -489,18 +489,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def handle_incoming(
         %{"type" => "Bite", "target" => target_id} = data,
-        options
+        _options
       ) do
     target_id =
       cond do
         %User{ap_id: actor_id} = User.get_by_ap_id(target_id) ->
           actor_id
 
-        %Object{data: data} = Object.get_by_ap_id(target_id)
-        when is_binary(data["actor"]) or is_binary(data["attributedTo"]) ->
+        %Object{data: data} = Object.get_by_ap_id(target_id) ->
           data["actor"] || data["attributedTo"]
 
-        _ ->
+        true ->
           target_id
       end
 
