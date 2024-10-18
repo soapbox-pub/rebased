@@ -16,7 +16,7 @@ defmodule Pleroma.Web.MastodonAPI.BiteControllerTest do
       |> post("/api/v1/bite?id=#{bitten_id}")
       |> json_response_and_validate_schema(200)
 
-      assert response == %{}
+    assert response == %{}
   end
 
   test "self harm is not supported", %{conn: conn, user: %{id: self_id}} do
@@ -25,6 +25,6 @@ defmodule Pleroma.Web.MastodonAPI.BiteControllerTest do
       |> post("/api/v1/bite?id=#{self_id}")
       |> json_response_and_validate_schema(400)
 
-      assert %{"error" => "Can not bite yourself"} = response
+    assert %{"error" => "Can not bite yourself"} = response
   end
 end

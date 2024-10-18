@@ -984,9 +984,10 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   defp exclude_rejected(query) do
-    rejected_activities = "Reject"
-    |> Activity.Queries.by_type()
-    |> select([a], fragment("?->>'object'", a.data))
+    rejected_activities =
+      "Reject"
+      |> Activity.Queries.by_type()
+      |> select([a], fragment("?->>'object'", a.data))
 
     query
     |> where([a], fragment("?->>'id'", a.data) not in subquery(rejected_activities))

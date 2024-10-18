@@ -15,7 +15,7 @@ defmodule Pleroma.Web.MastodonAPI.BiteController do
 
   plug(OAuthScopesPlug, %{scopes: ["write:bites"]} when action == :bite)
 
-  plug(RateLimiter, [name: :bites])
+  plug(RateLimiter, name: :bites)
 
   plug(:assign_account_by_id)
 

@@ -38,7 +38,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.BiteValidator do
     |> validate_required([:id, :type, :actor, :to, :target])
     |> validate_inclusion(:type, ["Bite"])
     |> validate_actor_presence()
-    |> validate_actor_presence(field_name: :target)
+    |> validate_object_or_user_presence(field_name: :target)
   end
 
   def cast_and_validate(data) do
