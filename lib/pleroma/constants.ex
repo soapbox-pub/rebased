@@ -115,7 +115,9 @@ defmodule Pleroma.Constants do
       "Announce",
       "Undo",
       "Flag",
-      "EmojiReact"
+      "EmojiReact",
+      "Bite",
+      "Join"
     ]
   )
 

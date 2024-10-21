@@ -497,6 +497,32 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  def handle_incoming(
+        %{"type" => "Bite", "target" => target_id} = data,
+        _options
+      ) do
+    target_id =
+      cond do
+        %User{ap_id: actor_id} = User.get_by_ap_id(target_id) ->
+          actor_id
+
+        %Object{data: data} = Object.get_by_ap_id(target_id) ->
+          data["actor"] || data["attributedTo"]
+
+        true ->
+          target_id
+      end
+
+    with data = Map.put(data, "target", target_id),
+         :ok <- ObjectValidator.fetch_actor_and_object(data),
+         {:ok, activity, _meta} <-
+           Pipeline.common_pipeline(data, local: false) do
+      {:ok, activity}
+    else
+      e -> {:error, e}
+    end
+  end
+
   def handle_incoming(%{"type" => type} = data, _options)
       when type in ~w{Like EmojiReact Announce Add Remove} do
     with :ok <- ObjectValidator.fetch_actor_and_object(data),

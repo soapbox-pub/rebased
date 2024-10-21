@@ -747,7 +747,8 @@ config :pleroma, :rate_limit,
   events_actions: {10_000, 15},
   password_reset: {1_800_000, 5},
   account_confirmation_resend: {8_640_000, 5},
-  ap_routes: {60_000, 15}
+  ap_routes: {60_000, 15},
+  bites: {10_000, 10}
 
 config :pleroma, Pleroma.Workers.PurgeExpiredActivity, enabled: true, min_lifetime: 600
 

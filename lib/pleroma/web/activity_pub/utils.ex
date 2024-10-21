@@ -1070,6 +1070,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> maybe_exclude_activity_id(exclude_activity)
     |> Activity.Queries.by_object_id(bitten_ap_id)
     |> order_by([activity], fragment("? desc nulls last", activity.id))
+    |> exclude_rejected()
     |> limit(1)
     |> Repo.one()
   end
@@ -1079,5 +1080,15 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   defp maybe_exclude_activity_id(query, %Activity{id: activity_id}) do
     query
     |> where([a], a.id != ^activity_id)
+  end
+
+  defp exclude_rejected(query) do
+    rejected_activities =
+      "Reject"
+      |> Activity.Queries.by_type()
+      |> select([a], fragment("?->>'object'", a.data))
+
+    query
+    |> where([a], fragment("?->>'id'", a.data) not in subquery(rejected_activities))
   end
 end
