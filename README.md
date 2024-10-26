@@ -1,4 +1,4 @@
-`pl` is my personal fork of Pleroma that I use on my single-user instance.
+Pleroma by mkljczk is a fork of Pleroma I'm developing for personal use.
 
 Added features:
 
@@ -28,9 +28,9 @@ Features not authored by me:
 There might be more, it's hard to keep track of it. I'm trying to keep the fork as close to upstream and I hope the list will eventually get much shorter.
 
 **DISCLAIMER:**
-Although `pl` *just works* for me, I cannot guarantee that it'll work well for you. There might be bugs I simply don't care about or I might decide to abandon the project one day.
+Although Pleroma by mkljczk *just works* for me, I cannot guarantee that it'll work well for you. There might be bugs I simply don't care about or I might decide to abandon the project one day.
 
-It should be possible to migrate from Pleroma or Rebased to `pl` without issues. It is recommended to use `pl` with [`pl-fe`](https://github.com/mkljczk/pl-fe/tree/develop/packages/pl-fe) for full feature compatibility, but pleroma-fe and other frontends work fine too.
+It should be possible to migrate from Pleroma or Rebased to Pleroma by mkljczk without issues. It is recommended to use Pleroma by mkljczk with [`pl-fe`](https://github.com/mkljczk/pl-fe/tree/develop/packages/pl-fe) for full feature compatibility, but pleroma-fe and other frontends work fine too.
 
 ---
 
