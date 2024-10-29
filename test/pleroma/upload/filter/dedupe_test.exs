@@ -23,10 +23,12 @@ defmodule Pleroma.Upload.Filter.DedupeTest do
       tempfile: Path.absname("test/fixtures/image_tmp.jpg")
     }
 
+    expected_path = Dedupe.shard_path(@shasum <> ".jpg")
+
     assert {
              :ok,
              :filtered,
-             %Pleroma.Upload{id: @shasum, path: @shasum <> ".jpg"}
+             %Pleroma.Upload{id: @shasum, path: ^expected_path}
            } = Dedupe.filter(upload)
   end
 end
