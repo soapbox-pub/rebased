@@ -1320,6 +1320,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         html_body: ~r/#{note.data["object"]}/i
       )
     end
+
+    test "it accepts an incoming Block", %{conn: conn, data: data} do
+      user = insert(:user)
+
+      data =
+        data
+        |> Map.put("type", "Block")
+        |> Map.put("to", [user.ap_id])
+        |> Map.put("cc", [])
+        |> Map.put("object", user.ap_id)
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      assert Activity.get_by_ap_id(data["id"])
+    end
   end
 
   describe "GET /users/:nickname/outbox" do

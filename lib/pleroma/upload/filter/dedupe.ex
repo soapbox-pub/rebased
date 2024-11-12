@@ -17,8 +17,16 @@ defmodule Pleroma.Upload.Filter.Dedupe do
       |> Base.encode16(case: :lower)
 
     filename = shasum <> "." <> extension
-    {:ok, :filtered, %Upload{upload | id: shasum, path: filename}}
+
+    {:ok, :filtered, %Upload{upload | id: shasum, path: shard_path(filename)}}
   end
 
   def filter(_), do: {:ok, :noop}
+
+  @spec shard_path(String.t()) :: String.t()
+  def shard_path(
+        <<a::binary-size(2), b::binary-size(2), c::binary-size(2), _::binary>> = filename
+      ) do
+    Path.join([a, b, c, filename])
+  end
 end

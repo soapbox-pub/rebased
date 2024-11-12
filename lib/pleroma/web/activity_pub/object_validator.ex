@@ -11,6 +11,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   @behaviour Pleroma.Web.ActivityPub.ObjectValidator.Validating
 
+  import Pleroma.Constants, only: [activity_types: 0, object_types: 0]
+
   alias Pleroma.Activity
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Object
@@ -37,6 +39,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   @impl true
   def validate(object, meta)
+
+  # This overload works together with the InboxGuardPlug
+  # and ensures that we are not accepting any activity type
+  # that cannot pass InboxGuardPlug.
+  # If we want to support any more activity types, make sure to
+  # add it in Pleroma.Constants's activity_types or object_types,
+  # and, if applicable, allowed_activity_types_from_strangers.
+  def validate(%{"type" => type}, _meta)
+      when type not in activity_types() and type not in object_types(),
+      do: {:error, :not_allowed_object_type}
 
   def validate(%{"type" => "Block"} = block_activity, meta) do
     with {:ok, block_activity} <-
