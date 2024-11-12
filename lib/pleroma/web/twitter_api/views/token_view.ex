@@ -15,7 +15,8 @@ defmodule Pleroma.Web.TwitterAPI.TokenView do
     %{
       id: token_entry.id,
       valid_until: token_entry.valid_until,
-      app_name: token_entry.app.client_name
+      app_name: token_entry.app.client_name,
+      scopes: token_entry.scopes
     }
   end
 end

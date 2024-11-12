@@ -31,7 +31,7 @@ Setup the required services to automatically start at boot, using `sysrc(8)`.
 ### Install media / graphics packages (optional, see [`docs/installation/optional/media_graphics_packages.md`](../installation/optional/media_graphics_packages.md))
 
 ```shell
-# pkg install imagemagick ffmpeg p5-Image-ExifTool
+# pkg install imagemagick ffmpeg p5-Image-ExifTool vips
 ```
 
 ## Configuring Pleroma

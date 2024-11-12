@@ -44,6 +44,9 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
     end
   end
 
+  @impl Provider
+  def build_tags(_), do: []
+
   defp title_tag(user) do
     {:meta, [name: "twitter:title", content: Utils.user_name_string(user)], []}
   end

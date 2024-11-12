@@ -69,7 +69,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> hd()
         |> Map.keys()
 
-      assert keys -- ["id", "app_name", "valid_until"] == []
+      assert Enum.sort(keys) == Enum.sort(["id", "app_name", "valid_until", "scopes"])
     end
 
     test "revoke token", %{token: token} do
