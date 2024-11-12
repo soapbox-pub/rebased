@@ -16,4 +16,7 @@ defmodule Pleroma.Web.Metadata.Providers.ActivityPub do
   def build_tags(%{user: user}) do
     [{:link, [rel: "alternate", type: "application/activity+json", href: user.ap_id], []}]
   end
+
+  @impl Provider
+  def build_tags(_), do: []
 end

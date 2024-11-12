@@ -31,4 +31,10 @@ defmodule Pleroma.Web.Metadata.Providers.ActivityPubTest do
               [rel: "alternate", type: "application/activity+json", href: object.data["id"]], []}
            ] == result
   end
+
+  test "it returns an empty array for anything else" do
+    result = ActivityPub.build_tags(%{})
+
+    assert result == []
+  end
 end
