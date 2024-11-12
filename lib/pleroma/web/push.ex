@@ -20,7 +20,7 @@ defmodule Pleroma.Web.Push do
   end
 
   def vapid_config do
-    Application.get_env(:web_push_encryption, :vapid_details, nil)
+    Application.get_env(:web_push_encryption, :vapid_details, [])
   end
 
   def enabled, do: match?([subject: _, public_key: _, private_key: _], vapid_config())
