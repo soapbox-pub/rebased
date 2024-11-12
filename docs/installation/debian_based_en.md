@@ -69,12 +69,18 @@ cd /opt/pleroma
 sudo -Hu pleroma mix deps.get
 ```
 
-* Generate the configuration: `sudo -Hu pleroma MIX_ENV=prod mix pleroma.instance gen`
+* Generate the configuration: 
+
+```shell
+sudo -Hu pleroma MIX_ENV=prod mix pleroma.instance gen`
+```
+
+* During this process:
   * Answer with `yes` if it asks you to install `rebar3`.
   * This may take some time, because parts of pleroma get compiled first.
   * After that it will ask you a few questions about your instance and generates a configuration file in `config/generated_config.exs`.
 
-* Check the configuration and if all looks right, rename it, so Pleroma will load it (`prod.secret.exs` for productive instance, `dev.secret.exs` for development instances):
+* Check the configuration and if all looks right, rename it, so Pleroma will load it (`prod.secret.exs` for production instances, `dev.secret.exs` for development instances):
 
 ```shell
 sudo -Hu pleroma mv config/{generated_config.exs,prod.secret.exs}

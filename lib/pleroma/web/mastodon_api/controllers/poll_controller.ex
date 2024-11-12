@@ -12,6 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Plugs.OAuthScopesPlug
+  alias Pleroma.Workers.PollWorker
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
@@ -27,12 +28,16 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PollOperation
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+  @poll_refresh_interval 120
 
   @doc "GET /api/v1/polls/:id"
   def show(%{assigns: %{user: user}, private: %{open_api_spex: %{params: %{id: id}}}} = conn, _) do
-    with %Object{} = object <- Object.get_by_id_and_maybe_refetch(id, interval: 60),
-         %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
+    with %Object{} = object <- Object.get_by_id(id),
+         %Activity{} = activity <-
+           Activity.get_create_by_object_ap_id_with_object(object.data["id"]),
          true <- Visibility.visible_for_user?(activity, user) do
+      maybe_refresh_poll(activity)
+
       try_render(conn, "show.json", %{object: object, for: user})
     else
       error when is_nil(error) or error == false ->
@@ -69,5 +74,14 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
         res -> {:commit, res}
       end
     end)
+  end
+
+  defp maybe_refresh_poll(%Activity{object: %Object{} = object} = activity) do
+    with false <- activity.local,
+         {:ok, end_time} <- NaiveDateTime.from_iso8601(object.data["closed"]),
+         {_, :lt} <- {:closed_compare, NaiveDateTime.compare(object.updated_at, end_time)} do
+      PollWorker.new(%{"op" => "refresh", "activity_id" => activity.id})
+      |> Oban.insert(unique: [period: @poll_refresh_interval])
+    end
   end
 end
