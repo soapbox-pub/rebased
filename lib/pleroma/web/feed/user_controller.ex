@@ -15,11 +15,11 @@ defmodule Pleroma.Web.Feed.UserController do
 
   action_fallback(:errors)
 
-  def feed_redirect(%{assigns: %{format: "html"}} = conn, %{"nickname" => nickname}) do
+  def feed_redirect(%{assigns: %{format: "html"}} = conn, %{"nickname" => nickname} = params) do
     with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname_or_id(nickname)} do
       Pleroma.Web.Fallback.RedirectController.redirector_with_meta(conn, %{user: user})
     else
-      _ -> Pleroma.Web.Fallback.RedirectController.redirector(conn, nil)
+      _ -> Pleroma.Web.Fallback.RedirectController.redirector_with_meta(conn, params)
     end
   end
 

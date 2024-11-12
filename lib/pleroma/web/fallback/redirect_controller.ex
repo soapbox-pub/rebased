@@ -46,7 +46,7 @@ defmodule Pleroma.Web.Fallback.RedirectController do
       redirector_with_meta(conn, %{user: user})
     else
       nil ->
-        redirector(conn, params)
+        redirector_with_meta(conn, Map.delete(params, "maybe_nickname_or_id"))
     end
   end
 

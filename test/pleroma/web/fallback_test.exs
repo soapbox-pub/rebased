@@ -32,7 +32,7 @@ defmodule Pleroma.Web.FallbackTest do
       resp = get(conn, "/foo")
 
       assert html_response(resp, 200) =~ "<title>a cool title</title>"
-      refute html_response(resp, 200) =~ "initial-results"
+      assert html_response(resp, 200) =~ "<meta content=\"noindex, noarchive\" name=\"robots\">"
     end
 
     test "GET /*path", %{conn: conn} do
