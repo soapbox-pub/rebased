@@ -174,8 +174,9 @@ defmodule Pleroma.ObjectTest do
 
       filename = Path.basename(href)
 
-      assert {:ok, files} = File.ls(uploads_dir)
-      assert filename in files
+      expected_path = Path.join([uploads_dir, Pleroma.Upload.Filter.Dedupe.shard_path(filename)])
+
+      assert File.exists?(expected_path)
 
       Object.delete(note)
 
@@ -183,8 +184,7 @@ defmodule Pleroma.ObjectTest do
 
       assert Object.get_by_id(note.id).data["deleted"]
       assert Object.get_by_id(attachment.id) == nil
-      assert {:ok, files} = File.ls(uploads_dir)
-      refute filename in files
+      refute File.exists?(expected_path)
     end
 
     test "with objects that have legacy data.url attribute" do

@@ -10,7 +10,7 @@ defmodule Pleroma.Web.Metadata.Providers.Feed do
   @behaviour Provider
 
   @impl Provider
-  def build_tags(%{user: user}) do
+  def build_tags(%{user: %{local: true} = user}) do
     [
       {:link,
        [
@@ -20,4 +20,7 @@ defmodule Pleroma.Web.Metadata.Providers.Feed do
        ], []}
     ]
   end
+
+  @impl Provider
+  def build_tags(_), do: []
 end

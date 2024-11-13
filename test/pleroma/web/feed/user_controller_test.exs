@@ -147,6 +147,15 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
       assert response(conn, 404)
     end
 
+    test "returns noindex meta for missing user", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("accept", "text/html")
+        |> get("/users/nonexisting")
+
+      assert html_response(conn, 200) =~ "<meta content=\"noindex, noarchive\" name=\"robots\">"
+    end
+
     test "returns feed with public and unlisted activities", %{conn: conn} do
       user = insert(:user)
 
