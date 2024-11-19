@@ -1,0 +1,1 @@
+- Bumped `fast_html` to v2.3.0, which notably allows to use system-installed lexbor with passing `WITH_SYSTEM_LEXBOR=1` environment variable at build-time
