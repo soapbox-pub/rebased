@@ -28,7 +28,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
     end
 
     {:ok, _} =
-      meili_post(
+      meili_put(
         "/indexes/objects/settings/ranking-rules",
         [
           "published:desc",
@@ -42,7 +42,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
       )
 
     {:ok, _} =
-      meili_post(
+      meili_put(
         "/indexes/objects/settings/searchable-attributes",
         [
           "content"
