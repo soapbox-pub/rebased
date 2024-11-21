@@ -73,7 +73,7 @@ you have to get the _private key_, which is actually used for authentication.
 
 === "OTP"
     ```sh
-    ./bin/pleroma_ctl meilisearch show-keys <your master key here>
+    ./bin/pleroma_ctl search.meilisearch show-keys <your master key here>
     ```
 
 === "From Source"
@@ -103,7 +103,7 @@ To start the initial indexing, run the `index` command:
 
 === "OTP"
     ```sh
-    ./bin/pleroma_ctl meilisearch index
+    ./bin/pleroma_ctl search.meilisearch index
     ```
 
 === "From Source"
@@ -118,7 +118,7 @@ of indexing and how many posts have actually been indexed, use the `stats` comma
 
 === "OTP"
     ```sh
-    ./bin/pleroma_ctl meilisearch stats
+    ./bin/pleroma_ctl search.meilisearch stats
     ```
 
 === "From Source"
@@ -133,7 +133,7 @@ use the `clear` command:
 
 === "OTP"
     ```sh
-    ./bin/pleroma_ctl meilisearch clear
+    ./bin/pleroma_ctl search.meilisearch clear
     ```
 
 === "From Source"
