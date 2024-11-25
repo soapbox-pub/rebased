@@ -30,7 +30,7 @@ defmodule Pleroma.Language.Translation.Deepl do
                text: content,
                source_lang: source_language |> String.upcase(),
                target_lang: target_language,
-               tag_handling: @name
+               tag_handling: "html"
              }),
            "",
            [
