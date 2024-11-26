@@ -1075,6 +1075,21 @@ defmodule Pleroma.UserTest do
 
       refute cs.valid?
     end
+
+    test "it truncates fields" do
+      clear_config([:instance, :max_remote_account_fields], 2)
+
+      fields = [
+        %{"name" => "One", "value" => "Uno"},
+        %{"name" => "Two", "value" => "Dos"},
+        %{"name" => "Three", "value" => "Tres"}
+      ]
+
+      cs = User.remote_user_changeset(@valid_remote |> Map.put(:fields, fields))
+
+      assert [%{"name" => "One", "value" => "Uno"}, %{"name" => "Two", "value" => "Dos"}] ==
+               Ecto.Changeset.get_field(cs, :fields)
+    end
   end
 
   describe "followers and friends" do

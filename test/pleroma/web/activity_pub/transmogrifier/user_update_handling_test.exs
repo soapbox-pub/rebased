@@ -119,8 +119,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UserUpdateHandlingTest do
     user = User.get_cached_by_ap_id(user.ap_id)
 
     assert user.fields == [
-             %{"name" => "foo", "value" => "updated"},
-             %{"name" => "foo1", "value" => "updated"}
+             %{"name" => "foo", "value" => "bar"},
+             %{"name" => "foo11", "value" => "bar11"}
            ]
 
     update_data =

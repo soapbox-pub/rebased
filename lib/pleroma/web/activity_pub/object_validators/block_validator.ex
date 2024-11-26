@@ -29,7 +29,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.BlockValidator do
 
   defp validate_data(cng) do
     cng
-    |> validate_required([:id, :type, :actor, :to, :cc, :object])
+    |> validate_required([:id, :type, :actor, :to, :object])
     |> validate_inclusion(:type, ["Block"])
     |> CommonValidations.validate_actor_presence()
     |> CommonValidations.validate_actor_presence(field_name: :object)

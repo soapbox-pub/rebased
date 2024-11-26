@@ -4,7 +4,7 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.7.0"),
+      version: version("2.7.1"),
       elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: Mix.compilers(),
@@ -132,7 +132,8 @@ defmodule Pleroma.Mixfile do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.7.3"},
+      {:phoenix,
+       git: "https://github.com/feld/phoenix", branch: "v1.7.14-websocket-headers", override: true},
       {:phoenix_ecto, "~> 4.4"},
       {:ecto_sql, "~> 3.10"},
       {:ecto_enum, "~> 1.4"},
@@ -202,6 +203,7 @@ defmodule Pleroma.Mixfile do
       {:bandit, "~> 1.5.2"},
       {:websock_adapter, "~> 0.5.6"},
       {:oban_live_dashboard, "~> 0.1.1"},
+      {:multipart, "~> 0.4.0", optional: true},
 
       ## dev & test
       {:phoenix_live_reload, "~> 1.3.3", only: :dev},
