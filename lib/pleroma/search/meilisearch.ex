@@ -122,6 +122,7 @@ defmodule Pleroma.Search.Meilisearch do
     # Only index public or unlisted Notes
     if not is_nil(object) and object.data["type"] == "Note" and
          not is_nil(object.data["content"]) and
+         not is_nil(object.data["published"]) and
          (Pleroma.Constants.as_public() in object.data["to"] or
             Pleroma.Constants.as_public() in object.data["cc"]) and
          object.data["content"] not in ["", "."] do

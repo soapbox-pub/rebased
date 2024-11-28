@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 2.7.1
+
+### Changed
+- Accept `application/activity+json` for requests to `/.well-known/nodeinfo`
+
+### Fixed
+- Truncate remote user fields, avoids them getting rejected
+- Improve the `FollowValidator` to successfully incoming activities with an errant `cc` field.
+- Resolved edge case where the API can report you are following a user but the relationship is not fully established.
+- The Swoosh email adapter for Mailgun was missing a new dependency on `:multipart`
+- Fix Mastodon WebSocket authentication
+
 ## 2.7.0
 
 ### Security
