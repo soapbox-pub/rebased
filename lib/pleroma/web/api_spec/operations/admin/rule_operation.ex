@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.RuleOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Instance rule managment"],
+      tags: ["Instance rule management"],
       summary: "Retrieve list of instance rules",
       operationId: "AdminAPI.RuleController.index",
       security: [%{"oAuth" => ["admin:read"]}],
@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.RuleOperation do
 
   def create_operation do
     %Operation{
-      tags: ["Instance rule managment"],
+      tags: ["Instance rule management"],
       summary: "Create new rule",
       operationId: "AdminAPI.RuleController.create",
       security: [%{"oAuth" => ["admin:write"]}],
@@ -49,7 +49,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.RuleOperation do
 
   def update_operation do
     %Operation{
-      tags: ["Instance rule managment"],
+      tags: ["Instance rule management"],
       summary: "Modify existing rule",
       operationId: "AdminAPI.RuleController.update",
       security: [%{"oAuth" => ["admin:write"]}],
@@ -65,7 +65,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.RuleOperation do
 
   def delete_operation do
     %Operation{
-      tags: ["Instance rule managment"],
+      tags: ["Instance rule management"],
       summary: "Delete rule",
       operationId: "AdminAPI.RuleController.delete",
       parameters: [Operation.parameter(:id, :path, :string, "Rule ID")],

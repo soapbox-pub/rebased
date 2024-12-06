@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.DomainOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Domain managment"],
+      tags: ["Domain management"],
       summary: "Retrieve list of domains",
       operationId: "AdminAPI.DomainController.index",
       security: [%{"oAuth" => ["admin:read"]}],
@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.DomainOperation do
 
   def create_operation do
     %Operation{
-      tags: ["Domain managment"],
+      tags: ["Domain management"],
       summary: "Create new domain",
       operationId: "AdminAPI.DomainController.create",
       security: [%{"oAuth" => ["admin:write"]}],
@@ -49,7 +49,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.DomainOperation do
 
   def update_operation do
     %Operation{
-      tags: ["Domain managment"],
+      tags: ["Domain management"],
       summary: "Modify existing domain",
       operationId: "AdminAPI.DomainController.update",
       security: [%{"oAuth" => ["admin:write"]}],
@@ -65,7 +65,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.DomainOperation do
 
   def delete_operation do
     %Operation{
-      tags: ["Domain managment"],
+      tags: ["Domain management"],
       summary: "Delete domain",
       operationId: "AdminAPI.DomainController.delete",
       parameters: [Operation.parameter(:id, :path, :string, "Domain ID")],
