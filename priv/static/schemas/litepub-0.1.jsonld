@@ -44,7 +44,6 @@
             "formerRepresentations": "litepub:formerRepresentations",
             "sm": "http://smithereen.software/ns#",
             "nonAnonymous": "sm:nonAnonymous",
-<<<<<<< HEAD
             "votersCount": "toot:votersCount",
             "mz": "https://joinmobilizon.org/ns#",
             "joinMode": {
@@ -68,8 +67,6 @@
                 "@id": "schema:location",
                 "@type": "schema:Place"
             },
-=======
->>>>>>> bites-pleroma
             "Bite": "https://ns.mia.jetzt/as#Bite"
         }
     ]
