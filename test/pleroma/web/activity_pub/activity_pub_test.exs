@@ -232,12 +232,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert user.avatar == %{
                "type" => "Image",
-               "url" => [%{"href" => "https://jk.nipponalba.scot/images/profile.jpg"}]
+               "url" => [%{"href" => "https://jk.nipponalba.scot/images/profile.jpg"}],
+               "name" => "profile picture"
              }
 
       assert user.banner == %{
                "type" => "Image",
-               "url" => [%{"href" => "https://jk.nipponalba.scot/images/profile.jpg"}]
+               "url" => [%{"href" => "https://jk.nipponalba.scot/images/profile.jpg"}],
+               "name" => "profile picture"
              }
     end
 
@@ -431,6 +433,35 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
 
       assert user.birthday == ~D[2001-02-12]
+    end
+
+    test "fetches avatar description" do
+      user_id = "https://example.com/users/marcin"
+
+      user_data =
+        "test/fixtures/users_mock/user.json"
+        |> File.read!()
+        |> String.replace("{{nickname}}", "marcin")
+        |> Jason.decode!()
+        |> Map.delete("featured")
+        |> Map.update("icon", %{}, fn image -> Map.put(image, "name", "image description") end)
+        |> Jason.encode!()
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :get,
+          url: ^user_id
+        } ->
+          %Tesla.Env{
+            status: 200,
+            body: user_data,
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
+
+      assert user.avatar["name"] == "image description"
     end
   end
 

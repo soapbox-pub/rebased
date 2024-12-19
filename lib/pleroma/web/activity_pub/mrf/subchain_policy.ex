@@ -20,20 +20,20 @@ defmodule Pleroma.Web.ActivityPub.MRF.SubchainPolicy do
   end
 
   @impl true
-  def filter(%{"actor" => actor} = message) do
+  def filter(%{"actor" => actor} = activity) do
     with {:ok, match, subchain} <- lookup_subchain(actor) do
       Logger.debug(
         "[SubchainPolicy] Matched #{actor} against #{inspect(match)} with subchain #{inspect(subchain)}"
       )
 
-      MRF.filter(subchain, message)
+      MRF.filter(subchain, activity)
     else
-      _e -> {:ok, message}
+      _e -> {:ok, activity}
     end
   end
 
   @impl true
-  def filter(message), do: {:ok, message}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe, do: {:ok, %{}}
@@ -45,7 +45,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SubchainPolicy do
       related_policy: "Pleroma.Web.ActivityPub.MRF.SubchainPolicy",
       label: "MRF Subchain",
       description:
-        "This policy processes messages through an alternate pipeline when a given message matches certain criteria." <>
+        "This policy processes activities through an alternate pipeline when a given activity matches certain criteria." <>
           " All criteria are configured as a map of regular expressions to lists of policy modules.",
       children: [
         %{

@@ -63,3 +63,6 @@ pleroma.iml
 
 archive-*
 .gitlab-ci-local
+
+# Test files should be named *.exs
+test/pleroma/**/*.ex

@@ -8,9 +8,15 @@ defmodule Pleroma.Web.ActivityPub.MRF.DropPolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   @impl true
-  def filter(object) do
-    Logger.debug("REJECTING #{inspect(object)}")
-    {:reject, object}
+  def filter(activity) do
+    Logger.debug("REJECTING #{inspect(activity)}")
+    {:reject, activity}
+  end
+
+  @impl true
+  def id_filter(id) do
+    Logger.debug("REJECTING #{id}")
+    false
   end
 
   @impl true

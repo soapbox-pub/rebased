@@ -4,6 +4,65 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 2.8.0
+
+### Changed
+- Metadata: Do not include .atom feed links for remote accounts
+- Bumped `fast_html` to v2.3.0, which notably allows to use system-installed lexbor with passing `WITH_SYSTEM_LEXBOR=1` environment variable at build-time
+- Dedupe upload filter now uses a three-level sharding directory structure
+- Deprecate `/api/v1/pleroma/accounts/:id/subscribe`/`unsubscribe`
+- Restrict incoming activities from unknown actors to a subset that does not imply a previous relationship and early rejection of unrecognized activity types.
+- Elixir 1.14 and Erlang/OTP 23 is now the minimum supported release
+- Support `id` param in `GET /api/v1/statuses`
+- LDAP authentication has been refactored to operate as a GenServer process which will maintain an active connection to the LDAP server.
+- Fix 'Setting a marker should mark notifications as read'
+- Adjust more Oban workers to enforce unique job constraints.
+- Oban updated to 2.18.3
+- Publisher behavior improvement when snoozing Oban jobs due to Gun connection pool contention.
+- Poll results refreshing is handled asynchronously and will not attempt to keep fetching updates to a closed poll.
+- Tuning for release builds to lower CPU usage.
+- Rich Media preview fetching will skip making an HTTP HEAD request to check a URL for allowed content type and length if the Tesla adapter is Gun or Finch
+- Fix nonexisting user will not generate metadata for search engine opt-out
+- Update Oban to 2.18
+- Worker configuration is no longer available. This only affects custom max_retries values for a couple Oban queues.
+
+### Added
+- Add metadata provider for ActivityPub alternate links
+- Added support for argon2 passwords and their conversion for migration from Akkoma fork to upstream.
+- Respect :restrict_unauthenticated for hashtag rss/atom feeds
+- LDAP configuration now permits overriding the CA root certificate file for TLS validation.
+- LDAP now supports users changing their passwords
+- Include list id in StatusView
+- Added MRF.FODirectReply which changes replies to followers-only posts to be direct.
+- Add `id_filter` to MRF to filter URLs and their domain prior to fetching
+- Added MRF.QuietReply which prevents replies to public posts from being published to the timelines
+- Add `group_key` to notifications
+- Allow providing avatar/header descriptions
+- Added RemoteReportPolicy from Rebased for handling bogus federated reports
+- scrubbers/default: Allow "mention hashtag" classes used by Mastodon
+- Added dependencies for Swoosh's Mua mail adapter
+- Include session scopes in TokenView
+
+### Fixed
+- Verify a local Update sent through AP C2S so users can only update their own objects
+- Fixed malformed follow requests that cause them to appear stuck pending due to the recipient being unable to process them.
+- Fix incoming Block activities being rejected
+- STARTTLS certificate and hostname verification for LDAP authentication
+- LDAPS connections (implicit TLS) are now supported.
+- Fix /api/v2/media returning the wrong status code (202) for media processed synchronously
+- Miscellaneous fixes for Meilisearch support
+- Fix pleroma_ctl mix task calls sometimes not being found
+- Add a rate limiter to the OAuth App creation endpoint and ensure registered apps are assigned to users.
+- ReceiverWorker will cancel processing jobs instead of retrying if the user cannot be fetched due to 403, 404, or 410 errors or if the account is disabled locally.
+- Address case where instance reachability status couldn't be updated
+- Remote Fetcher Worker recognizes more permanent failure errors
+- StreamerView: Do not leak follows count if hidden
+- Imports of blocks, mutes, and follows would retry repeatedly due to incorrect error handling and all work executed in a single job
+- Make vapid_config return empty array, fixing preloading for instances without push notifications configured
+
+### Removed
+- Remove stub for /api/v1/accounts/:id/identity_proofs (deprecated by Mastodon 3.5.0)
+
 ## 2.7.1
 
 ### Changed

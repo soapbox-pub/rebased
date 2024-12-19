@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Publisher.Prepared
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Workers.PublisherWorker
@@ -30,11 +31,11 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   """
   @spec enqueue_one(map(), Keyword.t()) :: {:ok, %Oban.Job{}}
   def enqueue_one(%{} = params, worker_args \\ []) do
-    PublisherWorker.enqueue(
-      "publish_one",
-      %{"params" => params},
+    PublisherWorker.new(
+      %{"op" => "publish_one", "params" => params},
       worker_args
     )
+    |> Oban.insert()
   end
 
   @doc """
@@ -76,14 +77,13 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   end
 
   @doc """
-  Publish a single message to a peer.  Takes a struct with the following
-  parameters set:
-
+  Prepare an activity for publishing from an Oban job
   * `inbox`: the inbox to publish to
   * `activity_id`: the internal activity id
   * `cc`: the cc recipients relevant to this inbox (optional)
   """
-  def publish_one(%{inbox: inbox, activity_id: activity_id} = params) do
+  @spec prepare_one(map()) :: Prepared.t()
+  def prepare_one(%{inbox: inbox, activity_id: activity_id} = params) do
     activity = Activity.get_by_id_with_user_actor(activity_id)
     actor = activity.user_actor
 
@@ -93,7 +93,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
 
-    cc = Map.get(params, :cc)
+    cc = Map.get(params, :cc, [])
 
     json =
       data
@@ -113,27 +113,54 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         date: date
       })
 
+    %Prepared{
+      activity_id: activity_id,
+      json: json,
+      date: date,
+      signature: signature,
+      digest: digest,
+      inbox: inbox,
+      unreachable_since: params[:unreachable_since]
+    }
+  end
+
+  @doc """
+  Publish a single message to a peer.  Takes a struct with the following
+  parameters set:
+  * `activity_id`: the activity id
+  * `json`: the json payload
+  * `date`: the signed date from Pleroma.Signature.signed_date()
+  * `signature`: the signature from Pleroma.Signature.sign/2
+  * `digest`: base64 encoded the hash of the json payload prefixed with "SHA-256="
+  * `inbox`: the inbox URI of this delivery
+  * `unreachable_since`: timestamp the instance was marked unreachable
+
+  """
+  def publish_one(%Prepared{} = p) do
     with {:ok, %{status: code}} = result when code in 200..299 <-
            HTTP.post(
-             inbox,
-             json,
+             p.inbox,
+             p.json,
              [
                {"Content-Type", "application/activity+json"},
-               {"Date", date},
-               {"signature", signature},
-               {"digest", digest}
+               {"Date", p.date},
+               {"signature", p.signature},
+               {"digest", p.digest}
              ]
            ) do
-      if not Map.has_key?(params, :unreachable_since) || params[:unreachable_since] do
-        Instances.set_reachable(inbox)
+      if not is_nil(p.unreachable_since) do
+        Instances.set_reachable(p.inbox)
       end
 
       result
     else
       {_post_result, %{status: code} = response} = e ->
-        unless params[:unreachable_since], do: Instances.set_unreachable(inbox)
-        Logger.metadata(activity: activity_id, inbox: inbox, status: code)
-        Logger.error("Publisher failed to inbox #{inbox} with status #{code}")
+        if is_nil(p.unreachable_since) do
+          Instances.set_unreachable(p.inbox)
+        end
+
+        Logger.metadata(activity: p.activity_id, inbox: p.inbox, status: code)
+        Logger.error("Publisher failed to inbox #{p.inbox} with status #{code}")
 
         case response do
           %{status: 400} -> {:cancel, :bad_request}
@@ -143,17 +170,26 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
           _ -> {:error, e}
         end
 
+      {:error, {:already_started, _}} ->
+        Logger.debug("Publisher snoozing worker job due worker :already_started race condition")
+        connection_pool_snooze()
+
       {:error, :pool_full} ->
         Logger.debug("Publisher snoozing worker job due to full connection pool")
-        {:snooze, 30}
+        connection_pool_snooze()
 
       e ->
-        unless params[:unreachable_since], do: Instances.set_unreachable(inbox)
-        Logger.metadata(activity: activity_id, inbox: inbox)
-        Logger.error("Publisher failed to inbox #{inbox} #{inspect(e)}")
+        if is_nil(p.unreachable_since) do
+          Instances.set_unreachable(p.inbox)
+        end
+
+        Logger.metadata(activity: p.activity_id, inbox: p.inbox)
+        Logger.error("Publisher failed to inbox #{p.inbox} #{inspect(e)}")
         {:error, e}
     end
   end
+
+  defp connection_pool_snooze, do: {:snooze, 3}
 
   defp signature_host(%URI{port: port, scheme: scheme, host: host}) do
     if port == URI.default_port(scheme) do

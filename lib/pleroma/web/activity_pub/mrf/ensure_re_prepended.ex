@@ -29,19 +29,19 @@ defmodule Pleroma.Web.ActivityPub.MRF.EnsureRePrepended do
 
   def filter_by_summary(_in_reply_to, child), do: child
 
-  def filter(%{"type" => type, "object" => child_object} = object)
-      when type in ["Create", "Update"] and is_map(child_object) do
+  def filter(%{"type" => type, "object" => object} = activity)
+      when type in ["Create", "Update"] and is_map(object) do
     child =
-      child_object["inReplyTo"]
+      object["inReplyTo"]
       |> Object.normalize(fetch: false)
-      |> filter_by_summary(child_object)
+      |> filter_by_summary(object)
 
-    object = Map.put(object, "object", child)
+    activity = Map.put(activity, "object", child)
 
-    {:ok, object}
+    {:ok, activity}
   end
 
-  def filter(object), do: {:ok, object}
+  def filter(activity), do: {:ok, activity}
 
   def describe, do: {:ok, %{}}
 end

@@ -15,4 +15,10 @@ defmodule Pleroma.Web.Metadata.Providers.FeedTest do
               [rel: "alternate", type: "application/atom+xml", href: "/users/lain/feed.atom"], []}
            ]
   end
+
+  test "it doesn't render a link to remote user's feed" do
+    user = insert(:user, nickname: "lain@lain.com", local: false)
+
+    assert Feed.build_tags(%{user: user}) == []
+  end
 end

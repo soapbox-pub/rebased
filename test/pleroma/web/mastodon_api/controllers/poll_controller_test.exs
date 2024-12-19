@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
+  use Oban.Testing, repo: Pleroma.Repo
   use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Object
@@ -27,6 +28,33 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
       response = json_response_and_validate_schema(conn, 200)
       id = to_string(object.id)
       assert %{"id" => ^id, "expired" => false, "multiple" => false} = response
+
+      # Local activities should not generate an Oban job to refresh
+      assert activity.local
+
+      refute_enqueued(
+        worker: Pleroma.Workers.PollWorker,
+        args: %{"op" => "refresh", "activity_id" => activity.id}
+      )
+    end
+
+    test "creates an oban job to refresh poll if activity is remote", %{conn: conn} do
+      user = insert(:user, local: false)
+      question = insert(:question, user: user)
+      activity = insert(:question_activity, question: question, local: false)
+
+      # Ensure this is not represented as a local activity
+      refute activity.local
+
+      object = Object.normalize(activity, fetch: false)
+
+      get(conn, "/api/v1/polls/#{object.id}")
+      |> json_response_and_validate_schema(200)
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PollWorker,
+        args: %{"op" => "refresh", "activity_id" => activity.id}
+      )
     end
 
     test "does not expose polls for private statuses", %{conn: conn} do

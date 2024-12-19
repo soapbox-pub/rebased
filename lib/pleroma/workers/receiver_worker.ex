@@ -7,9 +7,9 @@ defmodule Pleroma.Workers.ReceiverWorker do
   alias Pleroma.User
   alias Pleroma.Web.Federator
 
-  use Pleroma.Workers.WorkerHelper, queue: "federator_incoming"
+  use Oban.Worker, queue: :federator_incoming, max_attempts: 5, unique: [period: :infinity]
 
-  @impl Oban.Worker
+  @impl true
 
   def perform(%Job{
         args: %{
@@ -33,7 +33,7 @@ defmodule Pleroma.Workers.ReceiverWorker do
       query_string: query_string
     }
 
-    with {:ok, %User{} = _actor} <- User.get_or_fetch_by_ap_id(conn_data.params["actor"]),
+    with {:ok, %User{}} <- User.get_or_fetch_by_ap_id(conn_data.params["actor"]),
          {:ok, _public_key} <- Signature.refetch_public_key(conn_data),
          {:signature, true} <- {:signature, Signature.validate_signature(conn_data)},
          {:ok, res} <- Federator.perform(:incoming_ap_doc, params) do
@@ -51,22 +51,34 @@ defmodule Pleroma.Workers.ReceiverWorker do
     end
   end
 
-  @impl Oban.Worker
+  @impl true
   def timeout(%_{args: %{"timeout" => timeout}}), do: timeout
 
   def timeout(_job), do: :timer.seconds(5)
 
+  defp process_errors({:error, {:error, _} = error}), do: process_errors(error)
+
   defp process_errors(errors) do
     case errors do
-      {:error, :origin_containment_failed} -> {:cancel, :origin_containment_failed}
-      {:error, :already_present} -> {:cancel, :already_present}
-      {:error, {:validate_object, _} = reason} -> {:cancel, reason}
-      {:error, {:error, {:validate, {:error, _changeset} = reason}}} -> {:cancel, reason}
-      {:error, {:reject, _} = reason} -> {:cancel, reason}
-      {:signature, false} -> {:cancel, :invalid_signature}
-      {:error, "Object has been deleted"} = reason -> {:cancel, reason}
-      {:error, {:side_effects, {:error, :no_object_actor}} = reason} -> {:cancel, reason}
+      # User fetch failures
       {:error, :not_found} = reason -> {:cancel, reason}
+      {:error, :forbidden} = reason -> {:cancel, reason}
+      # Inactive user
+      {:error, {:user_active, false} = reason} -> {:cancel, reason}
+      # Validator will error and return a changeset error
+      # e.g., duplicate activities or if the object was deleted
+      {:error, {:validate, {:error, _changeset} = reason}} -> {:cancel, reason}
+      # Duplicate detection during Normalization
+      {:error, :already_present} -> {:cancel, :already_present}
+      # MRFs will return a reject
+      {:error, {:reject, _} = reason} -> {:cancel, reason}
+      # HTTP Sigs
+      {:signature, false} -> {:cancel, :invalid_signature}
+      # Origin / URL validation failed somewhere possibly due to spoofing
+      {:error, :origin_containment_failed} -> {:cancel, :origin_containment_failed}
+      # Unclear if this can be reached
+      {:error, {:side_effects, {:error, :no_object_actor}} = reason} -> {:cancel, reason}
+      # Catchall
       {:error, _} = e -> e
       e -> {:error, e}
     end

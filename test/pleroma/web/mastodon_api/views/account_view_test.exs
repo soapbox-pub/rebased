@@ -96,7 +96,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         hide_follows_count: false,
         relationship: %{},
         skip_thread_containment: false,
-        accepts_chat_messages: nil
+        accepts_chat_messages: nil,
+        avatar_description: "",
+        header_description: ""
       }
     }
 
@@ -340,7 +342,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         hide_follows_count: false,
         relationship: %{},
         skip_thread_containment: false,
-        accepts_chat_messages: nil
+        accepts_chat_messages: nil,
+        avatar_description: "",
+        header_description: ""
       }
     }
 
@@ -532,7 +536,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       user = insert(:user)
       other_user = insert(:user, is_locked: true)
 
-      {:ok, user, other_user, _} = CommonAPI.follow(other_user, user)
+      {:ok, other_user, user, _} = CommonAPI.follow(other_user, user)
       user = User.get_cached_by_id(user.id)
       other_user = User.get_cached_by_id(other_user.id)
 
@@ -599,8 +603,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     test "shows when follows/followers are hidden" do
       user = insert(:user, hide_followers: true, hide_follows: true)
       other_user = insert(:user)
-      {:ok, user, other_user, _activity} = CommonAPI.follow(other_user, user)
-      {:ok, _other_user, user, _activity} = CommonAPI.follow(user, other_user)
+      {:ok, other_user, user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
 
       assert %{
                followers_count: 1,
@@ -612,11 +616,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     test "shows actual follower/following count to the account owner" do
       user = insert(:user, hide_followers: true, hide_follows: true)
       other_user = insert(:user)
-      {:ok, user, other_user, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, other_user, user, _activity} = CommonAPI.follow(other_user, user)
 
       assert User.following?(user, other_user)
       assert Pleroma.FollowingRelationship.follower_count(other_user) == 1
-      {:ok, _other_user, user, _activity} = CommonAPI.follow(user, other_user)
+      {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
 
       assert %{
                followers_count: 1,
@@ -735,7 +739,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
       other_user = insert(:user)
-      {:ok, _other_user, user, _activity} = CommonAPI.follow(user, other_user)
+      {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
 
       assert %{locked: true, follow_requests_count: 1} =
                AccountView.render("show.json", %{user: user, for: user})
@@ -747,7 +751,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
       other_user = insert(:user)
-      {:ok, other_user, user, _activity} = CommonAPI.follow(user, other_user)
+      {:ok, user, other_user, _activity} = CommonAPI.follow(user, other_user)
 
       assert %{locked: true, follow_requests_count: 1} =
                AccountView.render("show.json", %{user: user, for: user})
@@ -764,7 +768,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
       other_user = insert(:user)
-      {:ok, other_user, user, _activity} = CommonAPI.follow(user, other_user)
+      {:ok, user, other_user, _activity} = CommonAPI.follow(user, other_user)
 
       assert %{locked: true, follow_requests_count: 1} =
                AccountView.render("show.json", %{user: user, for: user})
@@ -781,7 +785,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
       other_user = insert(:user)
-      {:ok, _other_user, user, _activity} = CommonAPI.follow(user, other_user)
+      {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
 
       {:ok, user} = User.update_and_set_cache(user, %{is_locked: false})
 

@@ -922,11 +922,21 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     %{id: id1} = insert(:note_activity)
     %{id: id2} = insert(:note_activity)
 
-    query_string = "ids[]=#{id1}&ids[]=#{id2}"
+    query_string = "id[]=#{id1}&id[]=#{id2}"
     conn = get(conn, "/api/v1/statuses/?#{query_string}")
 
     assert [%{"id" => ^id1}, %{"id" => ^id2}] =
              Enum.sort_by(json_response_and_validate_schema(conn, :ok), & &1["id"])
+  end
+
+  test "get statuses by IDs falls back to ids[]" do
+    %{conn: conn} = oauth_access(["read:statuses"])
+    %{id: id} = insert(:note_activity)
+
+    query_string = "ids[]=#{id}"
+    conn = get(conn, "/api/v1/statuses/?#{query_string}")
+
+    assert [%{"id" => ^id}] = json_response_and_validate_schema(conn, 200)
   end
 
   describe "getting statuses by ids with restricted unauthenticated for local and remote" do
@@ -937,7 +947,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     setup do: clear_config([:restrict_unauthenticated, :activities, :remote], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
-      res_conn = get(conn, "/api/v1/statuses?ids[]=#{local.id}&ids[]=#{remote.id}")
+      res_conn = get(conn, "/api/v1/statuses?id[]=#{local.id}&id[]=#{remote.id}")
 
       assert json_response_and_validate_schema(res_conn, 200) == []
     end
@@ -945,7 +955,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     test "if user is authenticated", %{local: local, remote: remote} do
       %{conn: conn} = oauth_access(["read"])
 
-      res_conn = get(conn, "/api/v1/statuses?ids[]=#{local.id}&ids[]=#{remote.id}")
+      res_conn = get(conn, "/api/v1/statuses?id[]=#{local.id}&id[]=#{remote.id}")
 
       assert length(json_response_and_validate_schema(res_conn, 200)) == 2
     end
@@ -957,7 +967,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     setup do: clear_config([:restrict_unauthenticated, :activities, :local], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
-      res_conn = get(conn, "/api/v1/statuses?ids[]=#{local.id}&ids[]=#{remote.id}")
+      res_conn = get(conn, "/api/v1/statuses?id[]=#{local.id}&id[]=#{remote.id}")
 
       remote_id = remote.id
       assert [%{"id" => ^remote_id}] = json_response_and_validate_schema(res_conn, 200)
@@ -966,7 +976,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     test "if user is authenticated", %{local: local, remote: remote} do
       %{conn: conn} = oauth_access(["read"])
 
-      res_conn = get(conn, "/api/v1/statuses?ids[]=#{local.id}&ids[]=#{remote.id}")
+      res_conn = get(conn, "/api/v1/statuses?id[]=#{local.id}&id[]=#{remote.id}")
 
       assert length(json_response_and_validate_schema(res_conn, 200)) == 2
     end
@@ -978,7 +988,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     setup do: clear_config([:restrict_unauthenticated, :activities, :remote], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
-      res_conn = get(conn, "/api/v1/statuses?ids[]=#{local.id}&ids[]=#{remote.id}")
+      res_conn = get(conn, "/api/v1/statuses?id[]=#{local.id}&id[]=#{remote.id}")
 
       local_id = local.id
       assert [%{"id" => ^local_id}] = json_response_and_validate_schema(res_conn, 200)
@@ -987,7 +997,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     test "if user is authenticated", %{local: local, remote: remote} do
       %{conn: conn} = oauth_access(["read"])
 
-      res_conn = get(conn, "/api/v1/statuses?ids[]=#{local.id}&ids[]=#{remote.id}")
+      res_conn = get(conn, "/api/v1/statuses?id[]=#{local.id}&id[]=#{remote.id}")
 
       assert length(json_response_and_validate_schema(res_conn, 200)) == 2
     end
@@ -2241,7 +2251,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       result =
         conn
-        |> get("/api/v1/statuses/?ids[]=#{activity.id}")
+        |> get("/api/v1/statuses/?id[]=#{activity.id}")
         |> json_response_and_validate_schema(200)
 
       assert [
@@ -2254,7 +2264,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       result =
         conn
-        |> get("/api/v1/statuses/?ids[]=#{activity.id}&with_muted=true")
+        |> get("/api/v1/statuses/?id[]=#{activity.id}&with_muted=true")
         |> json_response_and_validate_schema(200)
 
       assert [

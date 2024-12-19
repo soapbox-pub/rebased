@@ -9,7 +9,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
   import Ecto.Query
 
   import Pleroma.Search.Meilisearch,
-    only: [meili_post: 2, meili_put: 2, meili_get: 1, meili_delete: 1]
+    only: [meili_put: 2, meili_get: 1, meili_delete: 1]
 
   def run(["index"]) do
     start_pleroma()
@@ -28,7 +28,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
     end
 
     {:ok, _} =
-      meili_post(
+      meili_put(
         "/indexes/objects/settings/ranking-rules",
         [
           "published:desc",
@@ -42,7 +42,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
       )
 
     {:ok, _} =
-      meili_post(
+      meili_put(
         "/indexes/objects/settings/searchable-attributes",
         [
           "content"

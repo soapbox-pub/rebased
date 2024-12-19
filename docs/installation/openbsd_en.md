@@ -12,7 +12,7 @@ For any additional information regarding commands and configuration files mentio
 To install them, run the following command (with doas or as root):
 
 ```
-pkg_add elixir gmake git postgresql-server postgresql-contrib cmake ffmpeg ImageMagick
+pkg_add elixir gmake git postgresql-server postgresql-contrib cmake ffmpeg ImageMagick libvips
 ```
 
 Pleroma requires a reverse proxy, OpenBSD has relayd in base (and is used in this guide) and packages/ports are available for nginx (www/nginx) and apache (www/apache-httpd). Independently of the reverse proxy, [acme-client(1)](https://man.openbsd.org/acme-client) can be used to get a certificate from Let's Encrypt.

@@ -18,7 +18,7 @@ Matrix-kanava #pleroma:libera.chat ovat hyviä paikkoja löytää apua
 
 Asenna tarvittava ohjelmisto:
 
-`# pkg_add git elixir gmake postgresql-server-10.3 postgresql-contrib-10.3 cmake ffmpeg ImageMagick`
+`# pkg_add git elixir gmake postgresql-server-10.3 postgresql-contrib-10.3 cmake ffmpeg ImageMagick libvips`
 
 #### Optional software
 

@@ -311,7 +311,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       post_inbox_relayed_create(conn, params)
     else
       conn
-      |> put_status(:bad_request)
+      |> put_status(403)
       |> json("Not federating")
     end
   end
@@ -482,7 +482,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
         |> put_status(:forbidden)
         |> json(message)
 
-      {:error, message} ->
+      {:error, message} when is_binary(message) ->
         conn
         |> put_status(:bad_request)
         |> json(message)

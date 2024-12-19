@@ -1,4 +1,4 @@
-FROM elixir:1.13.4-otp-25
+FROM elixir:1.14.5-otp-25
 
 # Single RUN statement, otherwise intermediate images are created
 # https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#run

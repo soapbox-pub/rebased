@@ -18,10 +18,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
       if not User.following?(follower, followed) do
         CommonAPI.follow(followed, follower)
       else
-        {:ok, follower, followed, nil}
+        {:ok, followed, follower, nil}
       end
 
-    with {:ok, follower, _followed, _} <- result do
+    with {:ok, _followed, follower, _} <- result do
       options = cast_params(params)
       set_reblogs_visibility(options[:reblogs], result)
       set_subscription(options[:notify], result)
@@ -29,19 +29,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
     end
   end
 
-  defp set_reblogs_visibility(false, {:ok, follower, followed, _}) do
+  defp set_reblogs_visibility(false, {:ok, followed, follower, _}) do
     CommonAPI.hide_reblogs(followed, follower)
   end
 
-  defp set_reblogs_visibility(_, {:ok, follower, followed, _}) do
+  defp set_reblogs_visibility(_, {:ok, followed, follower, _}) do
     CommonAPI.show_reblogs(followed, follower)
   end
 
-  defp set_subscription(true, {:ok, follower, followed, _}) do
+  defp set_subscription(true, {:ok, followed, follower, _}) do
     User.subscribe(follower, followed)
   end
 
-  defp set_subscription(false, {:ok, follower, followed, _}) do
+  defp set_subscription(false, {:ok, followed, follower, _}) do
     User.unsubscribe(follower, followed)
   end
 

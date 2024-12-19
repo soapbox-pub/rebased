@@ -35,22 +35,30 @@ defmodule Pleroma.Web.Federator do
   end
 
   # Client API
-  def incoming_ap_doc(%{params: _params, req_headers: _req_headers} = args) do
-    job_args = Enum.into(args, %{}, fn {k, v} -> {Atom.to_string(k), v} end)
-
-    ReceiverWorker.enqueue(
-      "incoming_ap_doc",
-      Map.put(job_args, "timeout", :timer.seconds(20)),
+  def incoming_ap_doc(%{params: params, req_headers: req_headers}) do
+    ReceiverWorker.new(
+      %{
+        "op" => "incoming_ap_doc",
+        "req_headers" => req_headers,
+        "params" => params,
+        "timeout" => :timer.seconds(20)
+      },
       priority: 2
     )
+    |> Oban.insert()
   end
 
   def incoming_ap_doc(%{"type" => "Delete"} = params) do
-    ReceiverWorker.enqueue("incoming_ap_doc", %{"params" => params}, priority: 3, queue: :slow)
+    ReceiverWorker.new(%{"op" => "incoming_ap_doc", "params" => params},
+      priority: 3,
+      queue: :slow
+    )
+    |> Oban.insert()
   end
 
   def incoming_ap_doc(params) do
-    ReceiverWorker.enqueue("incoming_ap_doc", %{"params" => params})
+    ReceiverWorker.new(%{"op" => "incoming_ap_doc", "params" => params})
+    |> Oban.insert()
   end
 
   @impl true
@@ -60,9 +68,10 @@ defmodule Pleroma.Web.Federator do
 
   @impl true
   def publish(%Pleroma.Activity{data: %{"type" => type}} = activity) do
-    PublisherWorker.enqueue("publish", %{"activity_id" => activity.id},
+    PublisherWorker.new(%{"op" => "publish", "activity_id" => activity.id},
       priority: publish_priority(type)
     )
+    |> Oban.insert()
   end
 
   defp publish_priority("Delete"), do: 3
@@ -71,7 +80,10 @@ defmodule Pleroma.Web.Federator do
   # Job Worker Callbacks
 
   @spec perform(atom(), any()) :: {:ok, any()} | {:error, any()}
-  def perform(:publish_one, params), do: Publisher.publish_one(params)
+  def perform(:publish_one, params) do
+    Publisher.prepare_one(params)
+    |> Publisher.publish_one()
+  end
 
   def perform(:publish, activity) do
     Logger.debug(fn -> "Running publish for #{activity.data["id"]}" end)
@@ -90,7 +102,8 @@ defmodule Pleroma.Web.Federator do
 
     # NOTE: we use the actor ID to do the containment, this is fine because an
     # actor shouldn't be acting on objects outside their own AP server.
-    with {_, {:ok, _user}} <- {:actor, User.get_or_fetch_by_ap_id(actor)},
+    with {_, {:ok, user}} <- {:actor, User.get_or_fetch_by_ap_id(actor)},
+         {:user_active, true} <- {:user_active, match?(true, user.is_active)},
          nil <- Activity.normalize(params["id"]),
          {_, :ok} <-
            {:correct_origin?, Containment.contain_origin_from_id(actor, params)},
@@ -108,11 +121,6 @@ defmodule Pleroma.Web.Federator do
       {:actor, e} ->
         Logger.debug("Unhandled actor #{actor}, #{inspect(e)}")
         {:error, e}
-
-      {:error, {:validate_object, _}} = e ->
-        Logger.error("Incoming AP doc validation error: #{inspect(e)}")
-        Logger.debug(Jason.encode!(params, pretty: true))
-        e
 
       e ->
         # Just drop those for now

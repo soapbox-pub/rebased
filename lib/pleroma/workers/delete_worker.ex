@@ -6,10 +6,9 @@ defmodule Pleroma.Workers.DeleteWorker do
   alias Pleroma.Instances.Instance
   alias Pleroma.User
 
-  use Pleroma.Workers.WorkerHelper, queue: "slow"
+  use Oban.Worker, queue: :slow
 
-  @impl Oban.Worker
-
+  @impl true
   def perform(%Job{args: %{"op" => "delete_user", "user_id" => user_id}}) do
     user = User.get_cached_by_id(user_id)
     User.perform(:delete, user)
@@ -19,6 +18,6 @@ defmodule Pleroma.Workers.DeleteWorker do
     Instance.perform(:delete_instance, host)
   end
 
-  @impl Oban.Worker
+  @impl true
   def timeout(_job), do: :timer.seconds(900)
 end

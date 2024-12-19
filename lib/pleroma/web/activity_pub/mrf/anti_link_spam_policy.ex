@@ -29,17 +29,17 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy do
   defp contains_links?(_), do: false
 
   @impl true
-  def filter(%{"type" => "Create", "actor" => actor, "object" => object} = message) do
+  def filter(%{"type" => "Create", "actor" => actor, "object" => object} = activity) do
     with {:ok, %User{local: false} = u} <- User.get_or_fetch_by_ap_id(actor),
          {:contains_links, true} <- {:contains_links, contains_links?(object)},
          {:old_user, true} <- {:old_user, old_user?(u)} do
-      {:ok, message}
+      {:ok, activity}
     else
       {:ok, %User{local: true}} ->
-        {:ok, message}
+        {:ok, activity}
 
       {:contains_links, false} ->
-        {:ok, message}
+        {:ok, activity}
 
       {:old_user, false} ->
         {:reject, "[AntiLinkSpamPolicy] User has no posts nor followers"}
@@ -53,7 +53,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy do
   end
 
   # in all other cases, pass through
-  def filter(message), do: {:ok, message}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe, do: {:ok, %{}}

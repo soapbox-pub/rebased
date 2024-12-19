@@ -22,22 +22,27 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
   defp activity_pub, do: Config.get([:pipeline, :activity_pub], ActivityPub)
   defp config, do: Config.get([:pipeline, :config], Config)
 
-  @spec common_pipeline(map(), keyword()) ::
-          {:ok, Activity.t() | Object.t(), keyword()} | {:error | :reject, any()}
+  @type results :: {:ok, Activity.t() | Object.t(), keyword()}
+  @type errors :: {:error | :reject, any()}
+
+  # The Repo.transaction will wrap the result in an {:ok, _}
+  # and only returns an {:error, _} if the error encountered was related
+  # to the SQL transaction
+  @spec common_pipeline(map(), keyword()) :: results() | errors()
   def common_pipeline(object, meta) do
     case Repo.transaction(fn -> do_common_pipeline(object, meta) end, Utils.query_timeout()) do
       {:ok, {:ok, activity, meta}} ->
         side_effects().handle_after_transaction(meta)
         {:ok, activity, meta}
 
-      {:ok, value} ->
-        value
+      {:ok, {:error, _} = error} ->
+        error
+
+      {:ok, {:reject, _} = error} ->
+        error
 
       {:error, e} ->
         {:error, e}
-
-      {:reject, e} ->
-        {:reject, e}
     end
   end
 

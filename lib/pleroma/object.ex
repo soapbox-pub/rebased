@@ -99,27 +99,6 @@ defmodule Pleroma.Object do
   def get_by_id(nil), do: nil
   def get_by_id(id), do: Repo.get(Object, id)
 
-  @spec get_by_id_and_maybe_refetch(integer(), list()) :: Object.t() | nil
-  def get_by_id_and_maybe_refetch(id, opts \\ []) do
-    with %Object{updated_at: updated_at} = object <- get_by_id(id) do
-      if opts[:interval] &&
-           NaiveDateTime.diff(NaiveDateTime.utc_now(), updated_at) > opts[:interval] do
-        case Fetcher.refetch_object(object) do
-          {:ok, %Object{} = object} ->
-            object
-
-          e ->
-            Logger.error("Couldn't refresh #{object.data["id"]}:\n#{inspect(e)}")
-            object
-        end
-      else
-        object
-      end
-    else
-      nil -> nil
-    end
-  end
-
   def get_by_ap_id(nil), do: nil
 
   def get_by_ap_id(ap_id) do
@@ -255,7 +234,8 @@ defmodule Pleroma.Object do
   @spec cleanup_attachments(boolean(), Object.t()) ::
           {:ok, Oban.Job.t() | nil}
   def cleanup_attachments(true, %Object{} = object) do
-    AttachmentsCleanupWorker.enqueue("cleanup_attachments", %{"object" => object})
+    AttachmentsCleanupWorker.new(%{"op" => "cleanup_attachments", "object" => object})
+    |> Oban.insert()
   end
 
   def cleanup_attachments(_, _), do: {:ok, nil}

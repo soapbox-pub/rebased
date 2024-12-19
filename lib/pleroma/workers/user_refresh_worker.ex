@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.UserRefreshWorker do
-  use Oban.Worker, queue: :background, max_attempts: 1, unique: [period: 300]
+  use Oban.Worker, queue: :background, max_attempts: 1, unique: [period: :infinity]
 
   alias Pleroma.User
 
@@ -12,6 +12,6 @@ defmodule Pleroma.Workers.UserRefreshWorker do
     User.fetch_by_ap_id(ap_id)
   end
 
-  @impl Oban.Worker
+  @impl true
   def timeout(_job), do: :timer.seconds(15)
 end

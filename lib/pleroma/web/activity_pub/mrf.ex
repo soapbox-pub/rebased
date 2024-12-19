@@ -108,6 +108,14 @@ defmodule Pleroma.Web.ActivityPub.MRF do
 
   def filter(%{} = object), do: get_policies() |> filter(object)
 
+  def id_filter(policies, id) when is_binary(id) do
+    policies
+    |> Enum.filter(&function_exported?(&1, :id_filter, 1))
+    |> Enum.all?(& &1.id_filter(id))
+  end
+
+  def id_filter(id) when is_binary(id), do: get_policies() |> id_filter(id)
+
   @impl true
   def pipeline_filter(%{} = message, meta) do
     object = meta[:object_data]

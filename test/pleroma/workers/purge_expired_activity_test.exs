@@ -14,10 +14,12 @@ defmodule Pleroma.Workers.PurgeExpiredActivityTest do
     activity = insert(:note_activity)
 
     assert {:ok, _} =
-             PurgeExpiredActivity.enqueue(%{
-               activity_id: activity.id,
-               expires_at: DateTime.add(DateTime.utc_now(), 3601)
-             })
+             PurgeExpiredActivity.enqueue(
+               %{
+                 activity_id: activity.id
+               },
+               scheduled_at: DateTime.add(DateTime.utc_now(), 3601)
+             )
 
     assert_enqueued(
       worker: Pleroma.Workers.PurgeExpiredActivity,
@@ -34,10 +36,12 @@ defmodule Pleroma.Workers.PurgeExpiredActivityTest do
     activity = insert(:note_activity)
 
     assert {:ok, _} =
-             PurgeExpiredActivity.enqueue(%{
-               activity_id: activity.id,
-               expires_at: DateTime.add(DateTime.utc_now(), 3601)
-             })
+             PurgeExpiredActivity.enqueue(
+               %{
+                 activity_id: activity.id
+               },
+               scheduled_at: DateTime.add(DateTime.utc_now(), 3601)
+             )
 
     user = Pleroma.User.get_by_ap_id(activity.actor)
     Pleroma.Repo.delete(user)
@@ -48,10 +52,12 @@ defmodule Pleroma.Workers.PurgeExpiredActivityTest do
 
   test "error if actiivity was not found" do
     assert {:ok, _} =
-             PurgeExpiredActivity.enqueue(%{
-               activity_id: "some_id",
-               expires_at: DateTime.add(DateTime.utc_now(), 3601)
-             })
+             PurgeExpiredActivity.enqueue(
+               %{
+                 activity_id: "some_id"
+               },
+               scheduled_at: DateTime.add(DateTime.utc_now(), 3601)
+             )
 
     assert {:cancel, :activity_not_found} =
              perform_job(Pleroma.Workers.PurgeExpiredActivity, %{activity_id: "some_if"})
