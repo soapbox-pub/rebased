@@ -1,1 +1,0 @@
-Fix pleroma_ctl mix task calls sometimes not being found

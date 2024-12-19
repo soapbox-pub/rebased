@@ -1,1 +1,0 @@
-Poll results refreshing is handled asynchronously and will not attempt to keep fetching updates to a closed poll.

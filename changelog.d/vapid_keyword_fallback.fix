@@ -1,1 +1,0 @@
-Make vapid_config return empty array, fixing preloading for instances without push notifications configured
