@@ -327,6 +327,7 @@ amd64-musl:
 
 arm:
   stage: release
+  allow_failure: true
   artifacts: *release-artifacts
   only: *release-only
   tags:
