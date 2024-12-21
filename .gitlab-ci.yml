@@ -2,7 +2,7 @@ image: git.pleroma.social:5050/pleroma/pleroma/ci-base:elixir-1.14.5-otp-25
 
 variables: &global_variables
   # Only used for the release
-  ELIXIR_VER: 1.14.5
+  ELIXIR_VER: 1.17.3
   POSTGRES_DB: pleroma_test
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
@@ -272,7 +272,8 @@ stop_review_app:
 
 amd64:
   stage: release
-  image: elixir:$ELIXIR_VER
+  image: 
+    name: hexpm/elixir-amd64:1.17.3-erlang-26.2.5.6-ubuntu-focal-20241011
   only: &release-only
   - stable@pleroma/pleroma
   - develop@pleroma/pleroma
@@ -297,8 +298,9 @@ amd64:
   variables: &release-variables
     MIX_ENV: prod
     VIX_COMPILATION_MODE: PLATFORM_PROVIDED_LIBVIPS
+    DEBIAN_FRONTEND: noninteractive
   before_script: &before-release
-  - apt-get update && apt-get install -y cmake libmagic-dev libvips-dev erlang-dev
+  - apt-get update && apt-get install -y cmake libmagic-dev libvips-dev erlang-dev git
   - echo "import Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
@@ -313,7 +315,8 @@ amd64-musl:
   stage: release
   artifacts: *release-artifacts
   only: *release-only
-  image: elixir:$ELIXIR_VER-alpine
+  image: 
+    name: hexpm/elixir-amd64:1.17.3-erlang-26.2.5.6-alpine-3.17.9
   tags:
     - amd64
   cache: *release-cache
@@ -356,7 +359,8 @@ arm64:
   only: *release-only
   tags:
     - arm
-  image: arm64v8/elixir:$ELIXIR_VER
+  image: 
+    name: hexpm/elixir-arm64:1.17.3-erlang-26.2.5.6-ubuntu-focal-20241011
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
@@ -368,7 +372,8 @@ arm64-musl:
   only: *release-only
   tags:
     - arm
-  image: arm64v8/elixir:$ELIXIR_VER-alpine
+  image: 
+    name: hexpm/elixir-arm64:1.17.3-erlang-26.2.5.6-alpine-3.17.9
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release-musl
