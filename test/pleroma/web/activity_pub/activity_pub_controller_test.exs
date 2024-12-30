@@ -1662,6 +1662,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert json_response(conn, 403)
     end
 
+    test "it rejects update activity of object from other actor", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      note_object = Object.normalize(note_activity, fetch: false)
+      user = insert(:user)
+
+      data = %{
+        type: "Update",
+        object: %{
+          id: note_object.data["id"]
+        }
+      }
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", data)
+
+      assert json_response(conn, 400)
+      assert note_object == Object.normalize(note_activity, fetch: false)
+    end
+
     test "it increases like count when receiving a like action", %{conn: conn} do
       note_activity = insert(:note_activity)
       note_object = Object.normalize(note_activity, fetch: false)

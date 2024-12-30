@@ -180,7 +180,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
          meta = Keyword.put(meta, :object_data, object_data),
          {:ok, update_activity} <-
            update_activity
-           |> UpdateValidator.cast_and_validate()
+           |> UpdateValidator.cast_and_validate(meta)
            |> Ecto.Changeset.apply_action(:insert) do
       update_activity = stringify_keys(update_activity)
       {:ok, update_activity, meta}
@@ -188,7 +188,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
       {:local, _} ->
         with {:ok, object} <-
                update_activity
-               |> UpdateValidator.cast_and_validate()
+               |> UpdateValidator.cast_and_validate(meta)
                |> Ecto.Changeset.apply_action(:insert) do
           object = stringify_keys(object)
           {:ok, object, meta}
@@ -221,9 +221,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
         "Bite" -> BiteValidator
       end
 
+    cast_func =
+      if type == "Update" do
+        fn o -> validator.cast_and_validate(o, meta) end
+      else
+        fn o -> validator.cast_and_validate(o) end
+      end
+
     with {:ok, object} <-
            object
-           |> validator.cast_and_validate()
+           |> cast_func.()
            |> Ecto.Changeset.apply_action(:insert) do
       object = stringify_keys(object)
       {:ok, object, meta}

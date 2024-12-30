@@ -494,7 +494,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
         |> put_status(:forbidden)
         |> json(message)
 
-      {:error, message} ->
+      {:error, message} when is_binary(message) ->
         conn
         |> put_status(:bad_request)
         |> json(message)
