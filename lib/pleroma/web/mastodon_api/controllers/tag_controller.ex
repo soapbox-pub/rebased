@@ -2,9 +2,9 @@ defmodule Pleroma.Web.MastodonAPI.TagController do
   @moduledoc "Hashtag routes for mastodon API"
   use Pleroma.Web, :controller
 
-  alias Pleroma.User
   alias Pleroma.Hashtag
   alias Pleroma.Pagination
+  alias Pleroma.User
 
   import Pleroma.Web.ControllerHelper,
     only: [

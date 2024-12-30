@@ -20,7 +20,6 @@ defmodule Pleroma.User do
   alias Pleroma.FollowingRelationship
   alias Pleroma.Formatter
   alias Pleroma.Hashtag
-  alias Pleroma.User.HashtagFollow
   alias Pleroma.HTML
   alias Pleroma.Keys
   alias Pleroma.MFA
@@ -29,6 +28,7 @@ defmodule Pleroma.User do
   alias Pleroma.Registration
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.User.HashtagFollow
   alias Pleroma.UserRelationship
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder

@@ -3,9 +3,9 @@ defmodule Pleroma.User.HashtagFollow do
   import Ecto.Query
   import Ecto.Changeset
 
-  alias Pleroma.User
   alias Pleroma.Hashtag
   alias Pleroma.Repo
+  alias Pleroma.User
 
   schema "user_follows_hashtag" do
     belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
