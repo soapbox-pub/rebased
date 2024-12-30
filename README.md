@@ -8,7 +8,6 @@ Added features:
 - [Posts can have a language assigned](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3940)
 - [Machine translation providers (DeepL, LibreTranslate) are supported](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/4102)
 - [Post language can be automatically detected (with fastText)](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/4103)
-- [User avatars and headers can have image decriptions](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/4227)
 - [A single server can allow users to register accounts with different domains](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3965)
 - [Chats and chat messages get exported in account backups](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/4088)
 - [You can pin/unpin chats](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3637)
