@@ -8,5 +8,7 @@ defmodule Pleroma.Repo.Migrations.AddUserFollowsHashtag do
     end
 
     create(unique_index(:user_follows_hashtag, [:user_id, :hashtag_id]))
+
+    create_if_not_exists(index(:user_follows_hashtag, [:hashtag_id]))
   end
 end
