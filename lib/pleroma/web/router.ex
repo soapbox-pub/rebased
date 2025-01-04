@@ -602,6 +602,8 @@ defmodule Pleroma.Web.Router do
       post("/bookmark_folders", BookmarkFolderController, :create)
       patch("/bookmark_folders/:id", BookmarkFolderController, :update)
       delete("/bookmark_folders/:id", BookmarkFolderController, :delete)
+
+      get("/outgoing_follow_requests", FollowRequestController, :index)
     end
 
     scope [] do

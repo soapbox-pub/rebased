@@ -280,6 +280,7 @@ defmodule Pleroma.User do
   defdelegate following?(follower, followed), to: FollowingRelationship
   defdelegate following_ap_ids(user), to: FollowingRelationship
   defdelegate get_follow_requests(user), to: FollowingRelationship
+  defdelegate get_outgoing_follow_requests(user), to: FollowingRelationship
   defdelegate search(query, opts \\ []), to: User.Search
 
   @doc """

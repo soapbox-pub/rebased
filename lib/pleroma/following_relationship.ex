@@ -157,6 +157,16 @@ defmodule Pleroma.FollowingRelationship do
     |> Repo.all()
   end
 
+  def get_outgoing_follow_requests(%User{id: id}) do
+    __MODULE__
+    |> join(:inner, [r], f in assoc(r, :following))
+    |> where([r], r.state == ^:follow_pending)
+    |> where([r], r.follower_id == ^id)
+    |> where([r, f], f.is_active == true)
+    |> select([r, f], f)
+    |> Repo.all()
+  end
+
   def following?(%User{id: follower_id}, %User{id: followed_id}) do
     __MODULE__
     |> where(follower_id: ^follower_id, following_id: ^followed_id, state: ^:follow_accept)
