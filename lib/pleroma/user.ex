@@ -295,13 +295,13 @@ defmodule Pleroma.User do
   defdelegate following?(follower, followed), to: FollowingRelationship
   defdelegate following_ap_ids(user), to: FollowingRelationship
   defdelegate get_follow_requests_query(user), to: FollowingRelationship
+  defdelegate get_outgoing_follow_requests(user), to: FollowingRelationship
+  defdelegate search(query, opts \\ []), to: User.Search
 
   def get_follow_requests(user) do
     get_follow_requests_query(user)
     |> Repo.all()
   end
-
-  defdelegate search(query, opts \\ []), to: User.Search
 
   @doc """
   Dumps Flake Id to SQL-compatible format (16-byte UUID).
