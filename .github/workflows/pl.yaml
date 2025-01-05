@@ -40,7 +40,7 @@ jobs:
         elixir: ['1.15.8']
     steps:
     - name: Install system dependencies
-      run: sudo apt install -y imagemagick ffmpeg libimage-exiftool-perl
+      run: sudo apt install -y imagemagick ffmpeg libimage-exiftool-perl cmake libmagic-dev libvips-dev
 
     - name: Set up Elixir
       uses: erlef/setup-beam@v1
