@@ -28,9 +28,6 @@ config :pleroma, Pleroma.Repo,
   pool_size: 40,
   timeout: 30_000
 
-# Allow privileged staff
-config :pleroma, :instance, privileged_staff: true
-
 # Enable instance favicons
 config :pleroma, :instances_favicons, enabled: true
 
@@ -38,9 +35,6 @@ config :pleroma, :instances_favicons, enabled: true
 config :pleroma, :mrf_hellthread,
   delist_threshold: 15,
   reject_threshold: 100
-
-# Sane default media attachment limit
-config :pleroma, :instance, max_media_attachments: 20
 
 config :pleroma, :instance,
   account_approval_required: true,
