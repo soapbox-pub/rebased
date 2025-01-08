@@ -1,4 +1,4 @@
-# pl-fe default config overrides
+# pl default config overrides
 # This file gets loaded after config.exs
 # and before prod.secret.exs
 import Config
