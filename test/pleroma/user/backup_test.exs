@@ -185,13 +185,13 @@ defmodule Pleroma.User.BackupTest do
                %{"@language" => "und"}
              ],
              "bookmarks" => "bookmarks.json",
-             "followers" => "http://cofe.io/users/cofe/followers",
-             "following" => "http://cofe.io/users/cofe/following",
+             "followers" => "followers.json",
+             "following" => "following.json",
              "id" => "http://cofe.io/users/cofe",
              "inbox" => "http://cofe.io/users/cofe/inbox",
              "likes" => "likes.json",
              "name" => "Cofe",
-             "outbox" => "http://cofe.io/users/cofe/outbox",
+             "outbox" => "outbox.json",
              "preferredUsername" => "cofe",
              "publicKey" => %{
                "id" => "http://cofe.io/users/cofe#main-key",
