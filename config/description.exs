@@ -3302,8 +3302,7 @@ config :pleroma, :config_description, [
         suggestions: [
           Pleroma.Web.Preload.Providers.Instance,
           Pleroma.Web.Preload.Providers.User,
-          Pleroma.Web.Preload.Providers.Timelines,
-          Pleroma.Web.Preload.Providers.StatusNet
+          Pleroma.Web.Preload.Providers.Timelines
         ]
       }
     ]
