@@ -251,7 +251,13 @@ defmodule Pleroma.User.Backup do
   defp actor(dir, user) do
     with {:ok, json} <-
            UserView.render("user.json", %{user: user})
-           |> Map.merge(%{"likes" => "likes.json", "bookmarks" => "bookmarks.json"})
+           |> Map.merge(%{
+             "bookmarks" => "bookmarks.json",
+             "likes" => "likes.json",
+             "outbox" => "outbox.json",
+             "followers" => "followers.json",
+             "following" => "following.json"
+           })
            |> Jason.encode() do
       File.write(Path.join(dir, "actor.json"), json)
     end

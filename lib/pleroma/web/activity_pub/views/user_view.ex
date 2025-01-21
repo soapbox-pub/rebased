@@ -130,7 +130,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "alsoKnownAs" => user.also_known_as,
       "vcard:bday" => birthday,
       "webfinger" => "acct:#{User.full_nickname(user)}",
-      "vcard:Address" => user.location
+      "vcard:Address" => user.location,
+      "published" => Pleroma.Web.CommonAPI.Utils.to_masto_date(user.inserted_at)
     }
     |> Map.merge(
       maybe_make_image(
