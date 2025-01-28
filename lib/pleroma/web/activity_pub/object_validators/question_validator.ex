@@ -64,6 +64,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     |> CommonFixes.fix_actor()
     |> CommonFixes.fix_object_defaults()
     |> CommonFixes.fix_quote_url()
+    |> CommonFixes.fix_likes()
     |> Transmogrifier.fix_emoji()
     |> fix_closed()
   end
