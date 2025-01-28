@@ -85,6 +85,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
     |> fix_replies()
     |> fix_attachments()
     |> CommonFixes.fix_quote_url()
+    |> CommonFixes.fix_likes()
     |> Transmogrifier.fix_emoji()
     |> Transmogrifier.fix_content_map()
   end

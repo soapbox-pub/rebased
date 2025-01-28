@@ -114,6 +114,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
 
   def fix_quote_url(data), do: data
 
+  # On Mastodon, `"likes"` attribute includes an inlined `Collection` with `totalItems`,
+  # not a list of users.
+  # https://github.com/mastodon/mastodon/pull/32007
+  def fix_likes(%{"likes" => %{}} = data), do: Map.drop(data, ["likes"])
+
+  def fix_likes(data), do: data
+
   # https://codeberg.org/fediverse/fep/src/branch/main/fep/e232/fep-e232.md
   def object_link_tag?(%{
         "type" => "Link",
