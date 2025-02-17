@@ -372,6 +372,12 @@ defmodule Pleroma.Web.CommonAPI do
       {:error, :not_found} = res ->
         res
 
+      {:error, :external_joins} ->
+        {:error, dgettext("errors", "Joins are managed by external system")}
+
+      {:error, :not_an_event} ->
+        {:error, dgettext("errors", "Not an event")}
+
       {:error, e} ->
         Logger.error("Could not join #{event_id}. Error: #{inspect(e, pretty: true)}")
         {:error, dgettext("errors", "Could not join")}
@@ -393,10 +399,10 @@ defmodule Pleroma.Web.CommonAPI do
         {:error, :not_found}
 
       {:object_type, false} ->
-        {:error, dgettext("errors", "Not an event")}
+        {:error, :not_an_event}
 
       {:managed_joins, false} ->
-        {:error, dgettext("errors", "Joins are managed by external system")}
+        {:error, :external_joins}
 
       {:common_pipeline, {:error, {:validate, {:error, changeset}}}} = e ->
         if {:object, {"already joined by this actor", []}} in changeset.errors do
