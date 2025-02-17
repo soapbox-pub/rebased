@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   @moduledoc """
   A module to handle coding from internal to wire ActivityPub and back.
   """
+  alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Activity
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Maps
@@ -167,7 +168,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_quote_url_and_maybe_fetch(object, options \\ []) do
     quote_url =
-      case Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes.fix_quote_url(object) do
+      case CommonFixes.fix_quote_url(object) do
         %{"quoteUrl" => quote_url} -> quote_url
         _ -> nil
       end
@@ -720,6 +721,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> set_reply_to_uri
     |> set_quote_url
     |> set_replies
+    |> CommonFixes.maybe_add_content_map()
     |> strip_internal_fields
     |> strip_internal_tags
     |> set_type

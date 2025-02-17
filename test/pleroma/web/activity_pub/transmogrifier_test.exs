@@ -639,5 +639,14 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       processed = Transmogrifier.prepare_object(original)
       assert processed["formerRepresentations"] == original["formerRepresentations"]
     end
+
+    test "it uses contentMap to specify post language" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "Cześć", language: "pl"})
+      {:ok, modified} = Transmogrifier.prepare_object(activity.object.data)
+
+      assert %{"contentMap" => %{"pl" => "Cześć"}} = modified["object"]
+    end
   end
 end
