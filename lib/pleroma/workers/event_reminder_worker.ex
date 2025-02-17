@@ -6,7 +6,7 @@ defmodule Pleroma.Workers.EventReminderWorker do
   @moduledoc """
   Generates notifications for upcoming events.
   """
-  use Oban.Worker, queue: :event_reminders
+  use Oban.Worker, queue: :background
 
   import Ecto.Query
 
