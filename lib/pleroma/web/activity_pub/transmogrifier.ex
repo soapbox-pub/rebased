@@ -6,7 +6,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   @moduledoc """
   A module to handle coding from internal to wire ActivityPub and back.
   """
-  alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Activity
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Maps
@@ -17,6 +16,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.ObjectValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
