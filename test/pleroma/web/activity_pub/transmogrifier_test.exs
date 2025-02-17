@@ -644,9 +644,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "Cześć", language: "pl"})
-      {:ok, modified} = Transmogrifier.prepare_object(activity.object.data)
+      object = Transmogrifier.prepare_object(activity.object.data)
 
-      assert %{"contentMap" => %{"pl" => "Cześć"}} = modified["object"]
+      assert %{"contentMap" => %{"pl" => "Cześć"}} = object
     end
   end
 end
