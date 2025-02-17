@@ -344,7 +344,7 @@ config :pleroma, :manifest,
   icons: [
     %{
       src: "/static/logo.svg",
-      sizes: "144x144",
+      sizes: "512x512",
       purpose: "any",
       type: "image/svg+xml"
     }
@@ -433,6 +433,11 @@ config :pleroma, :mrf_nsfw_api,
 config :pleroma, :mrf_follow_bot, follower_nickname: nil
 
 config :pleroma, :mrf_inline_quote, template: "<bdi>RT:</bdi> {url}"
+
+config :pleroma, :mrf_remote_report,
+  reject_all: false,
+  reject_anonymous: true,
+  reject_empty_message: true
 
 config :pleroma, :mrf_force_mention,
   mention_parent: true,
@@ -597,7 +602,8 @@ config :pleroma, Oban,
   plugins: [{Oban.Plugins.Pruner, max_age: 900}],
   crontab: [
     {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
-    {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
+    {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker},
+    {"*/10 * * * *", Pleroma.Workers.Cron.AppCleanupWorker}
   ]
 
 config :pleroma, Pleroma.Formatter,
@@ -611,14 +617,17 @@ config :pleroma, Pleroma.Formatter,
 
 config :pleroma, :ldap,
   enabled: System.get_env("LDAP_ENABLED") == "true",
-  host: System.get_env("LDAP_HOST") || "localhost",
-  port: String.to_integer(System.get_env("LDAP_PORT") || "389"),
+  host: System.get_env("LDAP_HOST", "localhost"),
+  port: String.to_integer(System.get_env("LDAP_PORT", "389")),
   ssl: System.get_env("LDAP_SSL") == "true",
   sslopts: [],
   tls: System.get_env("LDAP_TLS") == "true",
   tlsopts: [],
-  base: System.get_env("LDAP_BASE") || "dc=example,dc=com",
-  uid: System.get_env("LDAP_UID") || "cn"
+  base: System.get_env("LDAP_BASE", "dc=example,dc=com"),
+  uid: System.get_env("LDAP_UID", "cn"),
+  # defaults to CAStore's Mozilla roots
+  cacertfile: System.get_env("LDAP_CACERTFILE", nil),
+  mail: System.get_env("LDAP_MAIL", "mail")
 
 oauth_consumer_strategies =
   System.get_env("OAUTH_CONSUMER_STRATEGIES")
@@ -711,6 +720,7 @@ config :pleroma, :rate_limit,
   timeline: {500, 3},
   search: [{1000, 10}, {1000, 30}],
   app_account_creation: {1_800_000, 25},
+  oauth_app_creation: {900_000, 5},
   relations_actions: {10_000, 10},
   relation_id_action: {60_000, 2},
   statuses_actions: {10_000, 15},

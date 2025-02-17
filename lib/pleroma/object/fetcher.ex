@@ -58,8 +58,12 @@ defmodule Pleroma.Object.Fetcher do
     end
   end
 
+  @typep fetcher_errors ::
+           :error | :reject | :allowed_depth | :fetch | :containment | :transmogrifier
+
   # Note: will create a Create activity, which we need internally at the moment.
-  @spec fetch_object_from_id(String.t(), list()) :: {:ok, Object.t()} | {:error | :reject, any()}
+  @spec fetch_object_from_id(String.t(), list()) ::
+          {:ok, Object.t()} | {fetcher_errors(), any()} | Pipeline.errors()
   def fetch_object_from_id(id, options \\ []) do
     with {_, nil} <- {:fetch_object, Object.get_cached_by_ap_id(id)},
          {_, true} <- {:allowed_depth, Federator.allowed_thread_distance?(options[:depth])},
@@ -141,6 +145,7 @@ defmodule Pleroma.Object.Fetcher do
     Logger.debug("Fetching object #{id} via AP")
 
     with {:scheme, true} <- {:scheme, String.starts_with?(id, "http")},
+         {_, true} <- {:mrf, MRF.id_filter(id)},
          {:ok, body} <- get_object(id),
          {:ok, data} <- safe_json_decode(body),
          :ok <- Containment.contain_origin_from_id(id, data) do
@@ -155,6 +160,9 @@ defmodule Pleroma.Object.Fetcher do
 
       {:error, e} ->
         {:error, e}
+
+      {:mrf, false} ->
+        {:error, {:reject, "Filtered by id"}}
 
       e ->
         {:error, e}

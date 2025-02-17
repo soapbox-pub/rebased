@@ -128,6 +128,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
     %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
   end
 
+  test "a Note with validated likes collection validates" do
+    insert(:user, ap_id: "https://pol.social/users/mkljczk")
+
+    %{"object" => note} =
+      "test/fixtures/mastodon-update-with-likes.json"
+      |> File.read!()
+      |> Jason.decode!()
+
+    %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
+  end
+
   test "Fedibird quote post" do
     insert(:user, ap_id: "https://fedibird.com/users/noellabo")
 

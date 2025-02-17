@@ -127,10 +127,25 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "capabilities" => capabilities,
       "alsoKnownAs" => user.also_known_as,
       "vcard:bday" => birthday,
-      "webfinger" => "acct:#{User.full_nickname(user)}"
+      "webfinger" => "acct:#{User.full_nickname(user)}",
+      "published" => Pleroma.Web.CommonAPI.Utils.to_masto_date(user.inserted_at)
     }
-    |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))
-    |> Map.merge(maybe_make_image(&User.banner_url/2, "image", user))
+    |> Map.merge(
+      maybe_make_image(
+        &User.avatar_url/2,
+        User.image_description(user.avatar, nil),
+        "icon",
+        user
+      )
+    )
+    |> Map.merge(
+      maybe_make_image(
+        &User.banner_url/2,
+        User.image_description(user.banner, nil),
+        "image",
+        user
+      )
+    )
     |> Map.merge(Utils.make_json_ld_header())
   end
 
@@ -305,16 +320,24 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     end
   end
 
-  defp maybe_make_image(func, key, user) do
+  defp maybe_make_image(func, description, key, user) do
     if image = func.(user, no_default: true) do
       %{
-        key => %{
-          "type" => "Image",
-          "url" => image
-        }
+        key =>
+          %{
+            "type" => "Image",
+            "url" => image
+          }
+          |> maybe_put_description(description)
       }
     else
       %{}
     end
   end
+
+  defp maybe_put_description(map, description) when is_binary(description) do
+    Map.put(map, "name", description)
+  end
+
+  defp maybe_put_description(map, _description), do: map
 end

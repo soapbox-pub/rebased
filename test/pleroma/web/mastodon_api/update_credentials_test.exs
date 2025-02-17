@@ -430,6 +430,75 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert :ok == File.rm(Path.absname("test/tmp/large_binary.data"))
     end
 
+    test "adds avatar description with a new avatar", %{user: user, conn: conn} do
+      new_avatar = %Plug.Upload{
+        content_type: "image/jpeg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "avatar" => new_avatar,
+          "avatar_description" => "me and pleroma tan"
+        })
+
+      assert json_response_and_validate_schema(res, 200)
+
+      user = User.get_by_id(user.id)
+      assert user.avatar["name"] == "me and pleroma tan"
+    end
+
+    test "adds avatar description to existing avatar", %{user: user, conn: conn} do
+      new_avatar = %Plug.Upload{
+        content_type: "image/jpeg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      assert user.avatar == %{}
+
+      conn
+      |> patch("/api/v1/accounts/update_credentials", %{"avatar" => new_avatar})
+
+      assert conn
+             |> assign(:user, User.get_by_id(user.id))
+             |> patch("/api/v1/accounts/update_credentials", %{
+               "avatar_description" => "me and pleroma tan"
+             })
+             |> json_response_and_validate_schema(200)
+
+      user = User.get_by_id(user.id)
+      assert user.avatar["name"] == "me and pleroma tan"
+    end
+
+    test "limit", %{user: user, conn: conn} do
+      new_header = %Plug.Upload{
+        content_type: "image/jpeg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      assert user.banner == %{}
+
+      conn
+      |> patch("/api/v1/accounts/update_credentials", %{"header" => new_header})
+
+      description_limit = Config.get([:instance, :description_limit], 100)
+
+      description = String.duplicate(".", description_limit + 1)
+
+      conn =
+        conn
+        |> assign(:user, User.get_by_id(user.id))
+        |> patch("/api/v1/accounts/update_credentials", %{
+          "header_description" => description
+        })
+
+      assert %{"error" => "Banner description is too long"} =
+               json_response_and_validate_schema(conn, 413)
+    end
+
     test "Strip / from upload files", %{user: user, conn: conn} do
       new_image = %Plug.Upload{
         content_type: "image/jpeg",

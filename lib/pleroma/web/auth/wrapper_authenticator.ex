@@ -39,4 +39,8 @@ defmodule Pleroma.Web.Auth.WrapperAuthenticator do
     implementation().oauth_consumer_template() ||
       Pleroma.Config.get([:auth, :oauth_consumer_template], "consumer.html")
   end
+
+  @impl true
+  def change_password(user, password, new_password, new_password_confirmation),
+    do: implementation().change_password(user, password, new_password, new_password_confirmation)
 end

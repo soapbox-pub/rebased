@@ -232,6 +232,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Maps.put_if_present(:is_discoverable, params[:discoverable])
       |> Maps.put_if_present(:birthday, params[:birthday])
       |> Maps.put_if_present(:language, Pleroma.Web.Gettext.normalize_locale(params[:language]))
+      |> Maps.put_if_present(:avatar_description, params[:avatar_description])
+      |> Maps.put_if_present(:header_description, params[:header_description])
 
     # What happens here:
     #
@@ -276,6 +278,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
       {:error, %Ecto.Changeset{errors: [{:name, {_, _}} | _]}} ->
         render_error(conn, :request_entity_too_large, "Name is too long")
+
+      {:error, %Ecto.Changeset{errors: [{:avatar_description, {_, _}} | _]}} ->
+        render_error(conn, :request_entity_too_large, "Avatar description is too long")
+
+      {:error, %Ecto.Changeset{errors: [{:header_description, {_, _}} | _]}} ->
+        render_error(conn, :request_entity_too_large, "Banner description is too long")
 
       {:error, %Ecto.Changeset{errors: [{:fields, {"invalid", _}} | _]}} ->
         render_error(conn, :request_entity_too_large, "One or more field entries are too long")

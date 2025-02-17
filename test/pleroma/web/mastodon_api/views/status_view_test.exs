@@ -342,7 +342,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         parent_visible: false,
         pinned_at: nil,
         quotes_count: 0,
-        bookmark_folder: nil
+        bookmark_folder: nil,
+        list_id: nil
       }
     }
 
@@ -912,6 +913,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("show.json", activity: activity)
 
     assert status.visibility == "list"
+    assert status.pleroma.list_id == nil
+
+    status = StatusView.render("show.json", activity: activity, for: user)
+
+    assert status.pleroma.list_id == list.id
   end
 
   test "has a field for parent visibility" do

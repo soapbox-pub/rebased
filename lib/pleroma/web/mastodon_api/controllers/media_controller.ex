@@ -53,9 +53,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
            ) do
       attachment_data = Map.put(object.data, "id", object.id)
 
-      conn
-      |> put_status(202)
-      |> render("attachment.json", %{attachment: attachment_data})
+      render(conn, "attachment.json", %{attachment: attachment_data})
     end
   end
 

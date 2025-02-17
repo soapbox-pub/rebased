@@ -13,6 +13,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Healthcheck
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.Auth.WrapperAuthenticator, as: Authenticator
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.WebFinger
@@ -195,19 +196,21 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
         %{assigns: %{user: user}, private: %{open_api_spex: %{body_params: body_params}}} = conn,
         _
       ) do
-    case CommonAPI.Utils.confirm_current_password(user, body_params.password) do
-      {:ok, user} ->
-        with {:ok, _user} <-
-               User.reset_password(user, %{
-                 password: body_params.new_password,
-                 password_confirmation: body_params.new_password_confirmation
-               }) do
-          json(conn, %{status: "success"})
-        else
-          {:error, changeset} ->
-            {_, {error, _}} = Enum.at(changeset.errors, 0)
-            json(conn, %{error: "New password #{error}."})
-        end
+    with {:ok, %User{}} <-
+           Authenticator.change_password(
+             user,
+             body_params.password,
+             body_params.new_password,
+             body_params.new_password_confirmation
+           ) do
+      json(conn, %{status: "success"})
+    else
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {_, {error, _}} = Enum.at(changeset.errors, 0)
+        json(conn, %{error: "New password #{error}."})
+
+      {:error, :password_confirmation} ->
+        json(conn, %{error: "New password does not match confirmation."})
 
       {:error, msg} ->
         json(conn, %{error: msg})

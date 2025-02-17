@@ -67,6 +67,9 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     end
   end
 
+  @impl Provider
+  def build_tags(_), do: []
+
   defp build_attachments(%{data: %{"attachment" => attachments}}) do
     Enum.reduce(attachments, [], fn attachment, acc ->
       rendered_tags =

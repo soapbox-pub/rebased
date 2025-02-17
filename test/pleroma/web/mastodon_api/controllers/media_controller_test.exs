@@ -56,7 +56,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
         conn
         |> put_req_header("content-type", "multipart/form-data")
         |> post("/api/v2/media", %{"file" => image, "description" => desc})
-        |> json_response_and_validate_schema(202)
+        |> json_response_and_validate_schema(200)
 
       assert media_id = response["id"]
 
@@ -111,7 +111,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
                  "file" => large_binary,
                  "description" => desc
                })
-               |> json_response_and_validate_schema(202)
+               |> json_response_and_validate_schema(200)
 
       assert media_id = response["id"]
 

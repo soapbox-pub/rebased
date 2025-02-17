@@ -20,15 +20,13 @@ defmodule Pleroma.Maps do
   end
 
   def filter_empty_values(data) do
-    # TODO: Change to Map.filter in Elixir 1.13+
     data
-    |> Enum.filter(fn
+    |> Map.filter(fn
       {_k, nil} -> false
       {_k, ""} -> false
       {_k, []} -> false
       {_k, %{} = v} -> Map.keys(v) != []
       {_k, _v} -> true
     end)
-    |> Map.new()
   end
 end

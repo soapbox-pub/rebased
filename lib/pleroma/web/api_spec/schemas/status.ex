@@ -249,6 +249,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             nullable: true,
             description:
               "A datetime (ISO 8601) that states when the post was pinned or `null` if the post is not pinned"
+          },
+          list_id: %Schema{
+            type: :integer,
+            nullable: true,
+            description:
+              "The ID of the list the post is addressed to (if any, only returned to author)"
           }
         }
       },

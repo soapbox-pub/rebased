@@ -26,7 +26,7 @@ defmodule Pleroma.Web.CommonAPI do
   require Pleroma.Constants
   require Logger
 
-  @spec block(User.t(), User.t()) :: {:ok, Activity.t()} | {:error, any()}
+  @spec block(User.t(), User.t()) :: {:ok, Activity.t()} | Pipeline.errors()
   def block(blocked, blocker) do
     with {:ok, block_data, _} <- Builder.block(blocker, blocked),
          {:ok, block, _} <- Pipeline.common_pipeline(block_data, local: true) do
@@ -35,7 +35,7 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   @spec post_chat_message(User.t(), User.t(), String.t(), list()) ::
-          {:ok, Activity.t()} | {:error, any()}
+          {:ok, Activity.t()} | Pipeline.errors()
   def post_chat_message(%User{} = user, %User{} = recipient, content, opts \\ []) do
     with maybe_attachment <- opts[:media_id] && Object.get_by_id(opts[:media_id]),
          :ok <- validate_chat_attachment_attribution(maybe_attachment, user),
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.CommonAPI do
             )} do
       {:ok, activity}
     else
-      {:common_pipeline, {:reject, _} = e} -> e
+      {:common_pipeline, e} -> e
       e -> e
     end
   end
@@ -99,7 +99,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec unblock(User.t(), User.t()) :: {:ok, Activity.t()} | {:error, any()}
+  @spec unblock(User.t(), User.t()) ::
+          {:ok, Activity.t()} | {:ok, :no_activity} | Pipeline.errors() | {:error, :not_blocking}
   def unblock(blocked, blocker) do
     with {_, %Activity{} = block} <- {:fetch_block, Utils.fetch_latest_block(blocker, blocked)},
          {:ok, unblock_data, _} <- Builder.undo(blocker, block),
@@ -120,7 +121,9 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   @spec follow(User.t(), User.t()) ::
-          {:ok, User.t(), User.t(), Activity.t() | Object.t()} | {:error, :rejected}
+          {:ok, User.t(), User.t(), Activity.t() | Object.t()}
+          | {:error, :rejected}
+          | Pipeline.errors()
   def follow(followed, follower) do
     timeout = Pleroma.Config.get([:activitypub, :follow_handshake_timeout])
 
@@ -145,7 +148,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec accept_follow_request(User.t(), User.t()) :: {:ok, User.t()} | {:error, any()}
+  @spec accept_follow_request(User.t(), User.t()) :: {:ok, User.t()} | Pipeline.errors()
   def accept_follow_request(follower, followed) do
     with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
          {:ok, accept_data, _} <- Builder.accept(followed, follow_activity),
@@ -154,7 +157,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec reject_follow_request(User.t(), User.t()) :: {:ok, User.t()} | {:error, any()} | nil
+  @spec reject_follow_request(User.t(), User.t()) :: {:ok, User.t()} | Pipeline.errors() | nil
   def reject_follow_request(follower, followed) do
     with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
          {:ok, reject_data, _} <- Builder.reject(followed, follow_activity),
@@ -163,7 +166,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec delete(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, any()}
+  @spec delete(String.t(), User.t()) ::
+          {:ok, Activity.t()} | Pipeline.errors() | {:error, :not_found | String.t()}
   def delete(activity_id, user) do
     with {_, %Activity{data: %{"object" => _, "type" => "Create"}} = activity} <-
            {:find_activity, Activity.get_by_id(activity_id, filter: [])},
@@ -213,7 +217,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec repeat(String.t(), User.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
+  @spec repeat(String.t(), User.t(), map()) :: {:ok, Activity.t()} | {:error, :not_found}
   def repeat(id, user, params \\ %{}) do
     with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id),
          object = %Object{} <- Object.normalize(activity, fetch: false),
@@ -231,7 +235,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec unrepeat(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, any()}
+  @spec unrepeat(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, :not_found | String.t()}
   def unrepeat(id, user) do
     with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
            {:find_activity, Activity.get_by_id(id)},
@@ -247,7 +251,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec favorite(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, any()}
+  @spec favorite(String.t(), User.t()) ::
+          {:ok, Activity.t()} | {:ok, :already_liked} | {:error, :not_found | String.t()}
   def favorite(id, %User{} = user) do
     case favorite_helper(user, id) do
       {:ok, _} = res ->
@@ -285,7 +290,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec unfavorite(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, any()}
+  @spec unfavorite(String.t(), User.t()) ::
+          {:ok, Activity.t()} | {:error, :not_found | String.t()}
   def unfavorite(id, user) do
     with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
            {:find_activity, Activity.get_by_id(id)},
@@ -302,7 +308,7 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   @spec react_with_emoji(String.t(), User.t(), String.t()) ::
-          {:ok, Activity.t()} | {:error, any()}
+          {:ok, Activity.t()} | {:error, String.t()}
   def react_with_emoji(id, user, emoji) do
     with %Activity{} = activity <- Activity.get_by_id(id),
          object <- Object.normalize(activity, fetch: false),
@@ -316,7 +322,7 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   @spec unreact_with_emoji(String.t(), User.t(), String.t()) ::
-          {:ok, Activity.t()} | {:error, any()}
+          {:ok, Activity.t()} | {:error, String.t()}
   def unreact_with_emoji(id, user, emoji) do
     with %Activity{} = reaction_activity <- Utils.get_latest_reaction(id, user, emoji),
          {_, {:ok, _}} <- {:cancel_jobs, maybe_cancel_jobs(reaction_activity)},
@@ -329,7 +335,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec vote(Object.t(), User.t(), list()) :: {:ok, list(), Object.t()} | {:error, any()}
+  @spec vote(Object.t(), User.t(), list()) :: {:ok, list(), Object.t()} | Pipeline.errors()
   def vote(%Object{data: %{"type" => "Question"}} = object, %User{} = user, choices) do
     with :ok <- validate_not_author(object, user),
          :ok <- validate_existing_votes(user, object),
@@ -461,7 +467,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec update(Activity.t(), User.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
+  @spec update(Activity.t(), User.t(), map()) :: {:ok, Activity.t()} | {:error, nil}
   def update(orig_activity, %User{} = user, changes) do
     with orig_object <- Object.normalize(orig_activity),
          {:ok, new_object} <- make_update_data(user, orig_object, changes),
@@ -497,7 +503,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec pin(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, term()}
+  @spec pin(String.t(), User.t()) :: {:ok, Activity.t()} | Pipeline.errors()
   def pin(id, %User{} = user) do
     with %Activity{} = activity <- create_activity_by_id(id),
          true <- activity_belongs_to_actor(activity, user.ap_id),
@@ -537,7 +543,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec unpin(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, term()}
+  @spec unpin(String.t(), User.t()) :: {:ok, Activity.t()} | Pipeline.errors()
   def unpin(id, user) do
     with %Activity{} = activity <- create_activity_by_id(id),
          {:ok, unpin_data, _} <- Builder.unpin(user, activity.object),
@@ -552,7 +558,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec add_mute(Activity.t(), User.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
+  @spec add_mute(Activity.t(), User.t(), map()) :: {:ok, Activity.t()} | {:error, String.t()}
   def add_mute(activity, user, params \\ %{}) do
     expires_in = Map.get(params, :expires_in, 0)
 

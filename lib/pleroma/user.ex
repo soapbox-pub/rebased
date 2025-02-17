@@ -419,6 +419,11 @@ defmodule Pleroma.User do
     end
   end
 
+  def image_description(image, default \\ "")
+
+  def image_description(%{"name" => name}, _default), do: name
+  def image_description(_, default), do: default
+
   # Should probably be renamed or removed
   @spec ap_id(User.t()) :: String.t()
   def ap_id(%User{nickname: nickname}), do: "#{Endpoint.url()}/users/#{nickname}"
@@ -586,16 +591,26 @@ defmodule Pleroma.User do
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
     |> validate_inclusion(:actor_type, Pleroma.Constants.allowed_user_actor_types())
+    |> validate_image_description(:avatar_description, params)
+    |> validate_image_description(:header_description, params)
     |> put_fields()
     |> put_emoji()
     |> put_change_if_present(:bio, &{:ok, parse_bio(&1, struct)})
-    |> put_change_if_present(:avatar, &put_upload(&1, :avatar))
-    |> put_change_if_present(:banner, &put_upload(&1, :banner))
+    |> put_change_if_present(
+      :avatar,
+      &put_upload(&1, :avatar, Map.get(params, :avatar_description))
+    )
+    |> put_change_if_present(
+      :banner,
+      &put_upload(&1, :banner, Map.get(params, :header_description))
+    )
     |> put_change_if_present(:background, &put_upload(&1, :background))
     |> put_change_if_present(
       :pleroma_settings_store,
       &{:ok, Map.merge(struct.pleroma_settings_store, &1)}
     )
+    |> maybe_update_image_description(:avatar, Map.get(params, :avatar_description))
+    |> maybe_update_image_description(:banner, Map.get(params, :header_description))
     |> validate_fields(false)
   end
 
@@ -674,12 +689,40 @@ defmodule Pleroma.User do
     end
   end
 
-  defp put_upload(value, type) do
+  defp put_upload(value, type, description \\ nil) do
     with %Plug.Upload{} <- value,
-         {:ok, object} <- ActivityPub.upload(value, type: type) do
+         {:ok, object} <- ActivityPub.upload(value, type: type, description: description) do
       {:ok, object.data}
     end
   end
+
+  defp validate_image_description(changeset, key, params) do
+    description_limit = Config.get([:instance, :description_limit], 5_000)
+    description = Map.get(params, key)
+
+    if is_binary(description) and String.length(description) > description_limit do
+      changeset
+      |> add_error(key, "#{key} is too long")
+    else
+      changeset
+    end
+  end
+
+  defp maybe_update_image_description(changeset, image_field, description)
+       when is_binary(description) do
+    with {:image_missing, true} <- {:image_missing, not changed?(changeset, image_field)},
+         {:existing_image, %{"id" => id}} <-
+           {:existing_image, Map.get(changeset.data, image_field)},
+         {:object, %Object{} = object} <- {:object, Object.get_by_ap_id(id)},
+         {:ok, object} <- Object.update_data(object, %{"name" => description}) do
+      put_change(changeset, image_field, object.data)
+    else
+      {:description_too_long, true} -> {:error}
+      _ -> changeset
+    end
+  end
+
+  defp maybe_update_image_description(changeset, _, _), do: changeset
 
   def update_as_admin_changeset(struct, params) do
     struct

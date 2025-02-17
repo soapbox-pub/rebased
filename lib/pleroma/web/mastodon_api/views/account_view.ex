@@ -92,14 +92,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         User.get_follow_state(reading_user, target)
       end
 
-    followed_by =
-      if following_relationships do
-        case FollowingRelationship.find(following_relationships, target, reading_user) do
-          %{state: :follow_accept} -> true
-          _ -> false
-        end
-      else
-        User.following?(target, reading_user)
+    followed_by = FollowingRelationship.following?(target, reading_user)
+    following = FollowingRelationship.following?(reading_user, target)
+
+    requested =
+      cond do
+        following -> false
+        true -> match?(:follow_pending, follow_state)
       end
 
     subscribing =
@@ -114,7 +113,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     # NOTE: adjust UserRelationship.view_relationships_option/2 on new relation-related flags
     %{
       id: to_string(target.id),
-      following: follow_state == :follow_accept,
+      following: following,
       followed_by: followed_by,
       blocking:
         UserRelationship.exists?(
@@ -150,7 +149,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         ),
       subscribing: subscribing,
       notifying: subscribing,
-      requested: follow_state == :follow_pending,
+      requested: requested,
       domain_blocking: User.blocks_domain?(reading_user, target),
       showing_reblogs:
         not UserRelationship.exists?(
@@ -220,8 +219,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
     avatar = User.avatar_url(user) |> MediaProxy.url()
     avatar_static = User.avatar_url(user) |> MediaProxy.preview_url(static: true)
+    avatar_description = User.image_description(user.avatar)
     header = User.banner_url(user) |> MediaProxy.url()
     header_static = User.banner_url(user) |> MediaProxy.preview_url(static: true)
+    header_description = User.image_description(user.banner)
 
     following_count =
       if !user.hide_follows_count or !user.hide_follows or self,
@@ -322,7 +323,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         skip_thread_containment: user.skip_thread_containment,
         background_image: image_url(user.background) |> MediaProxy.url(),
         accepts_chat_messages: user.accepts_chat_messages,
-        favicon: favicon
+        favicon: favicon,
+        avatar_description: avatar_description,
+        header_description: header_description
       }
     }
     |> maybe_put_role(user, opts[:for])

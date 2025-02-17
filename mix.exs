@@ -4,8 +4,8 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.7.0"),
-      elixir: "~> 1.13",
+      version: version("2.8.0"),
+      elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: Mix.compilers(),
       elixirc_options: [warnings_as_errors: warnings_as_errors(), prune_code_paths: false],
@@ -132,7 +132,8 @@ defmodule Pleroma.Mixfile do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.7.3"},
+      {:phoenix,
+       git: "https://github.com/feld/phoenix", branch: "v1.7.14-websocket-headers", override: true},
       {:phoenix_ecto, "~> 4.4"},
       {:ecto_sql, "~> 3.10"},
       {:ecto_enum, "~> 1.4"},
@@ -153,7 +154,7 @@ defmodule Pleroma.Mixfile do
       {:calendar, "~> 1.0"},
       {:cachex, "~> 3.2"},
       {:tesla, "~> 1.11"},
-      {:castore, "~> 0.1"},
+      {:castore, "~> 1.0"},
       {:cowlib, "~> 2.9", override: true},
       {:gun, "~> 2.0.0-rc.1", override: true},
       {:finch, "~> 0.15"},
@@ -169,6 +170,8 @@ defmodule Pleroma.Mixfile do
       {:swoosh, "~> 1.16.9"},
       {:phoenix_swoosh, "~> 1.1"},
       {:gen_smtp, "~> 0.13"},
+      {:mua, "~> 0.2.0"},
+      {:mail, "~> 0.3.0"},
       {:ex_syslogger, "~> 1.4"},
       {:floki, "~> 0.35"},
       {:timex, "~> 3.6"},
@@ -203,6 +206,7 @@ defmodule Pleroma.Mixfile do
       {:websock_adapter, "~> 0.5.6"},
       {:oban_live_dashboard, "~> 0.1.1"},
       {:multipart, "~> 0.4.0", optional: true},
+      {:argon2_elixir, "~> 4.0"},
 
       ## dev & test
       {:phoenix_live_reload, "~> 1.3.3", only: :dev},

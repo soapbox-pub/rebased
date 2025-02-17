@@ -1,1 +1,0 @@
-Improve the FollowValidator to successfully incoming activities with an errant cc field.

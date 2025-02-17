@@ -5,7 +5,7 @@
 defmodule Pleroma.Workers.RemoteFetcherWorker do
   alias Pleroma.Object.Fetcher
 
-  use Oban.Worker, queue: :background
+  use Oban.Worker, queue: :background, unique: [period: :infinity]
 
   @impl true
   def perform(%Job{args: %{"op" => "fetch_remote", "id" => id} = args}) do

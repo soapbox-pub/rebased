@@ -38,8 +38,8 @@ defmodule Pleroma.Web.PleromaAPI.UserImportController do
       |> Enum.map(&(&1 |> String.trim() |> String.trim_leading("@")))
       |> Enum.reject(&(&1 == ""))
 
-    User.Import.follow_import(follower, identifiers)
-    json(conn, "job started")
+    User.Import.follows_import(follower, identifiers)
+    json(conn, "jobs started")
   end
 
   def blocks(
@@ -55,7 +55,7 @@ defmodule Pleroma.Web.PleromaAPI.UserImportController do
 
   defp do_block(%{assigns: %{user: blocker}} = conn, list) do
     User.Import.blocks_import(blocker, prepare_user_identifiers(list))
-    json(conn, "job started")
+    json(conn, "jobs started")
   end
 
   def mutes(
@@ -71,7 +71,7 @@ defmodule Pleroma.Web.PleromaAPI.UserImportController do
 
   defp do_mute(%{assigns: %{user: user}} = conn, list) do
     User.Import.mutes_import(user, prepare_user_identifiers(list))
-    json(conn, "job started")
+    json(conn, "jobs started")
   end
 
   defp prepare_user_identifiers(list) do
