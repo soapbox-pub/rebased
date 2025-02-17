@@ -1642,7 +1642,24 @@ defmodule HttpRequestMock do
        body:
          File.read!(
            "test/fixtures/tesla_mock/mitra.social_01830912-1357-d4c5-e4a2-76eab347e749.json"
-         ),
+         )
+     }}
+  end
+
+  def get("https://wp-test.event-federation.eu/event/test-event/", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/wordpress-event.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://wp-test.event-federation.eu/@test", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/wordpress-user.json"),
        headers: activitypub_object_headers()
      }}
   end
@@ -1672,6 +1689,23 @@ defmodule HttpRequestMock do
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/nominatim_single_result.json"),
        headers: [{"content-type", "application/json"}]
+     }}
+  end
+
+  def get(
+        "https://wp-test.event-federation.eu/wp-json/activitypub/1.0/actors/0/collections/featured",
+        _,
+        _,
+        _
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!("test/fixtures/users_mock/masto_featured.json")
+         |> String.replace("{{domain}}", "wp-test.event-federation.eu")
+         |> String.replace("{{nickname}}", "test"),
+       headers: [{"content-type", "application/activity+json"}]
      }}
   end
 

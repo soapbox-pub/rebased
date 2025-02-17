@@ -380,6 +380,8 @@ defmodule Pleroma.Web.CommonAPI do
 
   defp join_helper(user, id, participation_message) do
     with {_, %Activity{object: object}} <- {:find_object, Activity.get_by_id_with_object(id)},
+         {_, true} <- {:object_type, object.data["type"] == "Event"},
+         {_, true} <- {:managed_joins, object.data["joinMode"] != "external"},
          {_, {:ok, join_object, meta}} <-
            {:build_object, Builder.join(user, object, participation_message)},
          {_, {:ok, %Activity{} = activity, _meta}} <-
@@ -389,6 +391,12 @@ defmodule Pleroma.Web.CommonAPI do
     else
       {:find_object, _} ->
         {:error, :not_found}
+
+      {:object_type, false} ->
+        {:error, dgettext("errors", "Not an event")}
+
+      {:managed_joins, false} ->
+        {:error, dgettext("errors", "Joins are managed by external system")}
 
       {:common_pipeline, {:error, {:validate, {:error, changeset}}}} = e ->
         if {:object, {"already joined by this actor", []}} in changeset.errors do

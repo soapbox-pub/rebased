@@ -214,6 +214,25 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
                "error" => "Can't join your own event"
              }
     end
+
+    test "can't join externally managed event", %{conn: conn} do
+      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+
+      {:ok, object} =
+        Pleroma.Object.Fetcher.fetch_object_from_id(
+          "https://wp-test.event-federation.eu/event/test-event/"
+        )
+
+      activity = Pleroma.Activity.get_create_by_object_ap_id(object.data["id"])
+
+      conn =
+        conn
+        |> post("/api/v1/pleroma/events/#{activity.id}/join")
+
+      assert json_response_and_validate_schema(conn, :bad_request) == %{
+               "error" => "Joins are managed by external system"
+             }
+    end
   end
 
   describe "POST /api/v1/pleroma/events/:id/leave" do
