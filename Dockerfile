@@ -24,14 +24,14 @@ FROM alpine:${ALPINE_VER}
 ARG BUILD_DATE
 ARG VCS_REF
 
-LABEL maintainer="ops@pleroma.social" \
-    org.opencontainers.image.title="pleroma" \
-    org.opencontainers.image.description="Pleroma for Docker" \
-    org.opencontainers.image.authors="ops@pleroma.social" \
-    org.opencontainers.image.vendor="pleroma.social" \
-    org.opencontainers.image.documentation="https://git.pleroma.social/pleroma/pleroma" \
+LABEL maintainer="git@mkljczk.pl" \
+    org.opencontainers.image.title="pl" \
+    org.opencontainers.image.description="pl for Docker" \
+    org.opencontainers.image.authors="git@mkljczk.pl" \
+    org.opencontainers.image.vendor="pl.mkljczk.pl" \
+    org.opencontainers.image.documentation="https://github.com/mkljczk/pl" \
     org.opencontainers.image.licenses="AGPL-3.0" \
-    org.opencontainers.image.url="https://pleroma.social" \
+    org.opencontainers.image.url="https://pl.mkljczk.pl" \
     org.opencontainers.image.revision=$VCS_REF \
     org.opencontainers.image.created=$BUILD_DATE
 
