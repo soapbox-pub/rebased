@@ -55,8 +55,11 @@ USER pleroma
 COPY --from=build --chown=pleroma:0 /release ${HOME}
 
 COPY --chown=pleroma --chmod=640 ./config/docker.exs /etc/pleroma/config.exs
-COPY ./docker-entrypoint.sh ${HOME}
+COPY --chmod=755 ./docker-entrypoint.sh ${HOME}
+
+RUN mix local.hex --force &&\
+    mix local.rebar --force
 
 EXPOSE 4000
 
-ENTRYPOINT ["/opt/pleroma/docker-entrypoint.sh"]
+CMD ["/opt/pleroma/docker-entrypoint.sh"]
