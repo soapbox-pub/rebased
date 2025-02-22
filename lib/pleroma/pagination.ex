@@ -89,9 +89,9 @@ defmodule Pleroma.Pagination do
 
   defp cast_params(params) do
     param_types = %{
-      min_id: :string,
-      since_id: :string,
-      max_id: :string,
+      min_id: params[:id_type] || :string,
+      since_id: params[:id_type] || :string,
+      max_id: params[:id_type] || :string,
       offset: :integer,
       limit: :integer,
       skip_extra_order: :boolean,
