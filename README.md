@@ -5,7 +5,6 @@ Added features:
 - You can bite users
 - `$INSTANCE$host$` gets replaced by domain name of instance viewing your posts
 - [Mobilizon-compatible events](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3955)
-- [Posts can have a language assigned](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3940)
 - [Machine translation providers (DeepL, LibreTranslate) are supported](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/4102)
 - [Post language can be automatically detected (with fastText)](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/4103)
 - [A single server can allow users to register accounts with different domains](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3965)
@@ -17,11 +16,10 @@ Added features:
 - UI is restyled to match pl-fe visuals
 - Improved compatibility with akkoma-fe (profiles saving is still missing)
 
-Features not authored by me:
+Features ported from other projects:
 - [Chat deletion](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3029)
 - [AntiDuplicationPolicy and AntiMentionSpamPolicy MRFs](https://gitlab.com/soapbox-pub/rebased/-/merge_requests/249)
 - [Bubble timeline](https://akkoma.dev/AkkomaGang/akkoma/pulls/100)
-- [Hashtag following](https://akkoma.dev/AkkomaGang/akkoma/pulls/341)
 - [Ability to auto-approve followbacks](https://akkoma.dev/AkkomaGang/akkoma/pulls/674)
 
 There might be more, it's hard to keep track of it. I'm trying to keep the fork as close to upstream and I hope the list will eventually get much shorter.
@@ -35,7 +33,7 @@ It should be possible to migrate from Pleroma or Rebased to Pleroma by mkljczk w
 
 <img src="https://git.pleroma.social/pleroma/pleroma/uploads/8cec84f5a084d887339f57deeb8a293e/pleroma-banner-vector-nopad-notext.svg" width="300px" />
 
-## About 
+## About
 
 Pleroma is a microblogging server software that can federate (= exchange messages with) other servers that support ActivityPub. What that means is that you can host a server for yourself or your friends and stay in control of your online identity, but still exchange messages with people on larger servers. Pleroma will federate with all servers that implement ActivityPub, like Friendica, GNU Social, Hubzilla, Mastodon, Misskey, Peertube, and Pixelfed.
 
@@ -65,7 +63,7 @@ If your platform is not supported, or you just want to be able to edit the sourc
 - [OpenBSD (fi)](https://docs-develop.pleroma.social/backend/installation/openbsd_fi/)
 
 ### OS/Distro packages
-Currently Pleroma is packaged for [YunoHost](https://yunohost.org), [NixOS](https://nixos.org), [Gentoo through GURU](https://gentoo.org/) and [Archlinux through AUR](https://aur.archlinux.org/packages/pleroma). You may find more at <https://repology.org/project/pleroma/versions>.  
+Currently Pleroma is packaged for [YunoHost](https://yunohost.org), [NixOS](https://nixos.org), [Gentoo through GURU](https://gentoo.org/) and [Archlinux through AUR](https://aur.archlinux.org/packages/pleroma). You may find more at <https://repology.org/project/pleroma/versions>.
 If you want to package Pleroma for any OS/Distros, we can guide you through the process on our [community channels](#community-channels). If you want to change default options in your Pleroma package, please **discuss it with us first**.
 
 ### Docker
