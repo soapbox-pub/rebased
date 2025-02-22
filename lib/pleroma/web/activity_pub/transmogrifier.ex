@@ -1055,7 +1055,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     object
     |> update_if_exists("source", &replace_instance_host(&1, host))
     |> update_if_exists("content", &replace_instance_host(&1, host))
-    |> patch_content_map(host)
+    |> update_if_exists("contentMap", &patch_content_map(&1, host))
   end
 
   defp replace_instance_host(value, _), do: value
@@ -1068,7 +1068,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  defp patch_content_map(%{"contentMap" => %{} = content_map}, host) do
+  defp patch_content_map(%{} = content_map, host) do
     content_map
     |> Enum.map(fn {key, value} -> {key, replace_instance_host(value, host)} end)
     |> Map.new()
