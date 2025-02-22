@@ -899,6 +899,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     Utils.get_content_type(nil)
   end
 
+  defp get_language(%{data: %{"language" => "und"}}), do: nil
+
+  defp get_language(object), do: object.data["language"]
+
   defp proxied_url(url, page_url_data) do
     if is_binary(url) do
       build_image_url(URI.parse(url), page_url_data) |> MediaProxy.url()

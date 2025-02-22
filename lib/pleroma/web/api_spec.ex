@@ -150,7 +150,8 @@ defmodule Pleroma.Web.ApiSpec do
               "Status actions",
               "Media attachments",
               "Event actions",
-              "Bookmark folders"
+              "Bookmark folders",
+              "Tags"
             ]
           },
           %{

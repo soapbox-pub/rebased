@@ -20,6 +20,7 @@ defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.LanguageCodeTest do
   test "errors for invalid language code" do
     assert {:error, :invalid_language} = LanguageCode.cast("ru_RU")
     assert {:error, :invalid_language} = LanguageCode.cast(" ")
+    assert {:error, :invalid_language} = LanguageCode.cast("en-US\n")
   end
 
   test "errors for non-text" do
