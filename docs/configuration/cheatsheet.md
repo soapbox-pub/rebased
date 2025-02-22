@@ -98,7 +98,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `moderator_privileges`: A list of privileges a moderator has (e.g. delete messages, manage reports...)
     * Possible values are the same as for `admin_privileges`
 
-## :database
+## :features
 * `improved_hashtag_timeline`: Setting to force toggle / force disable improved hashtags timeline. `:enabled` forces hashtags to be fetched from `hashtags` table for hashtags timeline. `:disabled` forces object-embedded hashtags to be used (slower). Keep it `:auto` for automatic behaviour (it is auto-set to `:enabled` [unless overridden] when HashtagsTableMigrator completes).
 
 ## Background migrations
