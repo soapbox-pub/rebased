@@ -26,6 +26,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.AudioImageVideoValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.BlockValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator
@@ -115,7 +116,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
         meta
       )
       when objtype in ~w[Question Answer Audio Video Image Event Article Note Page] do
-    with {:ok, object_data} <- cast_and_apply_and_stringify_with_history(object),
+    with {:ok, object_data} <-
+           object
+           |> CommonFixes.maybe_add_language_from_activity(create_activity)
+           |> cast_and_apply_and_stringify_with_history(),
          meta = Keyword.put(meta, :object_data, object_data),
          {:ok, create_activity} <-
            create_activity
@@ -165,7 +169,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
       )
       when objtype in ~w[Question Answer Audio Video Event Article Note Page] do
     with {_, false} <- {:local, Access.get(meta, :local, false)},
-         {_, {:ok, object_data, _}} <- {:object_validation, validate(object, meta)},
+         {_, {:ok, object_data, _}} <-
+           {:object_validation,
+            object
+            |> CommonFixes.maybe_add_language_from_activity(update_activity)
+            |> validate(meta)},
          meta = Keyword.put(meta, :object_data, object_data),
          {:ok, update_activity} <-
            update_activity

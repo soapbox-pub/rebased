@@ -16,12 +16,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.ObjectValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator
 
   import Ecto.Query
+  import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   require Pleroma.Constants
 
@@ -166,7 +168,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_quote_url_and_maybe_fetch(object, options \\ []) do
     quote_url =
-      case Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes.fix_quote_url(object) do
+      case CommonFixes.fix_quote_url(object) do
         %{"quoteUrl" => quote_url} -> quote_url
         _ -> nil
       end
@@ -335,6 +337,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_tag(object), do: object
+
+  # prefer content over contentMap
+  def fix_content_map(%{"content" => content} = object) when not_empty_string(content), do: object
 
   # content map usually only has one language so this will do for now.
   def fix_content_map(%{"contentMap" => content_map} = object) do
@@ -716,6 +721,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> set_reply_to_uri
     |> set_quote_url
     |> set_replies
+    |> CommonFixes.maybe_add_content_map()
     |> strip_internal_fields
     |> strip_internal_tags
     |> set_type
@@ -750,12 +756,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       object_id
       |> Object.normalize(fetch: false)
       |> Map.get(:data)
-      |> prepare_object
 
     data =
       data
-      |> Map.put("object", object)
-      |> Map.merge(Utils.make_json_ld_header())
+      |> Map.put("object", prepare_object(object))
+      |> Map.merge(Utils.make_json_ld_header(object))
       |> Map.delete("bcc")
 
     {:ok, data}
@@ -763,14 +768,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def prepare_outgoing(%{"type" => "Update", "object" => %{"type" => objtype} = object} = data)
       when objtype in Pleroma.Constants.updatable_object_types() do
-    object =
-      object
-      |> prepare_object
-
     data =
       data
-      |> Map.put("object", object)
-      |> Map.merge(Utils.make_json_ld_header())
+      |> Map.put("object", prepare_object(object))
+      |> Map.merge(Utils.make_json_ld_header(object))
       |> Map.delete("bcc")
 
     {:ok, data}
@@ -840,7 +841,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       data
       |> strip_internal_fields
       |> maybe_fix_object_url
-      |> Map.merge(Utils.make_json_ld_header())
+      |> Map.merge(Utils.make_json_ld_header(data))
 
     {:ok, data}
   end
