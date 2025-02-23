@@ -26,7 +26,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   require Pleroma.Constants
 
   setup do
-    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Test.StaticConfig)
     :ok
   end
 
