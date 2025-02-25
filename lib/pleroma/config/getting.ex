@@ -5,9 +5,12 @@
 defmodule Pleroma.Config.Getting do
   @callback get(any()) :: any()
   @callback get(any(), any()) :: any()
+  @callback get!(any()) :: any()
 
   def get(key), do: get(key, nil)
   def get(key, default), do: impl().get(key, default)
+
+  def get!(key), do: impl().get!(key)
 
   def impl do
     Application.get_env(:pleroma, :config_impl, Pleroma.Config)

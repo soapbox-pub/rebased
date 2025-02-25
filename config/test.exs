@@ -162,6 +162,9 @@ config :pleroma, Pleroma.Web.Plugs.HTTPSignaturePlug, config_impl: Pleroma.Stati
 config :pleroma, Pleroma.Upload.Filter.AnonymizeFilename,
   config_impl: Pleroma.StaticStubbedConfigMock
 
+config :pleroma, Pleroma.Upload.Filter.Mogrify, config_impl: Pleroma.StaticStubbedConfigMock
+config :pleroma, Pleroma.Upload.Filter.Mogrify, mogrify_impl: Pleroma.MogrifyMock
+
 config :pleroma, Pleroma.Signature, http_signatures_impl: Pleroma.StubbedHTTPSignaturesMock
 
 peer_module =
