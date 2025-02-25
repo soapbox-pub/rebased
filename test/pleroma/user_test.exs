@@ -2919,4 +2919,74 @@ defmodule Pleroma.UserTest do
 
     assert [%{"verified_at" => ^verified_at}] = user.fields
   end
+
+  describe "follow_hashtag/2" do
+    test "should follow a hashtag" do
+      user = insert(:user)
+      hashtag = insert(:hashtag)
+
+      assert {:ok, _} = user |> User.follow_hashtag(hashtag)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert user.followed_hashtags |> Enum.count() == 1
+      assert hashtag.name in Enum.map(user.followed_hashtags, fn %{name: name} -> name end)
+    end
+
+    test "should not follow a hashtag twice" do
+      user = insert(:user)
+      hashtag = insert(:hashtag)
+
+      assert {:ok, _} = user |> User.follow_hashtag(hashtag)
+
+      assert {:ok, _} = user |> User.follow_hashtag(hashtag)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert user.followed_hashtags |> Enum.count() == 1
+      assert hashtag.name in Enum.map(user.followed_hashtags, fn %{name: name} -> name end)
+    end
+
+    test "can follow multiple hashtags" do
+      user = insert(:user)
+      hashtag = insert(:hashtag)
+      other_hashtag = insert(:hashtag)
+
+      assert {:ok, _} = user |> User.follow_hashtag(hashtag)
+      assert {:ok, _} = user |> User.follow_hashtag(other_hashtag)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert user.followed_hashtags |> Enum.count() == 2
+      assert hashtag.name in Enum.map(user.followed_hashtags, fn %{name: name} -> name end)
+      assert other_hashtag.name in Enum.map(user.followed_hashtags, fn %{name: name} -> name end)
+    end
+  end
+
+  describe "unfollow_hashtag/2" do
+    test "should unfollow a hashtag" do
+      user = insert(:user)
+      hashtag = insert(:hashtag)
+
+      assert {:ok, _} = user |> User.follow_hashtag(hashtag)
+      assert {:ok, _} = user |> User.unfollow_hashtag(hashtag)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert user.followed_hashtags |> Enum.count() == 0
+    end
+
+    test "should not error when trying to unfollow a hashtag twice" do
+      user = insert(:user)
+      hashtag = insert(:hashtag)
+
+      assert {:ok, _} = user |> User.follow_hashtag(hashtag)
+      assert {:ok, _} = user |> User.unfollow_hashtag(hashtag)
+      assert {:ok, _} = user |> User.unfollow_hashtag(hashtag)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert user.followed_hashtags |> Enum.count() == 0
+    end
+  end
 end

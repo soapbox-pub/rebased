@@ -951,6 +951,26 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert status.edited_at
   end
 
+  test "it shows post language" do
+    user = insert(:user)
+
+    {:ok, post} = CommonAPI.post(user, %{status: "Szczęść Boże", language: "pl"})
+
+    status = StatusView.render("show.json", activity: post)
+
+    assert status.language == "pl"
+  end
+
+  test "doesn't show post language if it's 'und'" do
+    user = insert(:user)
+
+    {:ok, post} = CommonAPI.post(user, %{status: "sdifjogijodfg", language: "und"})
+
+    status = StatusView.render("show.json", activity: post)
+
+    assert status.language == nil
+  end
+
   test "with a source object" do
     note =
       insert(:note,

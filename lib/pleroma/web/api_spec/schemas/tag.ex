@@ -17,11 +17,22 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Tag do
         type: :string,
         format: :uri,
         description: "A link to the hashtag on the instance"
+      },
+      following: %Schema{
+        type: :boolean,
+        description: "Whether the authenticated user is following the hashtag"
+      },
+      history: %Schema{
+        type: :array,
+        items: %Schema{type: :string},
+        description:
+          "A list of historical uses of the hashtag (not implemented, for compatibility only)"
       }
     },
     example: %{
       name: "cofe",
-      url: "https://lain.com/tag/cofe"
+      url: "https://lain.com/tag/cofe",
+      following: false
     }
   })
 end

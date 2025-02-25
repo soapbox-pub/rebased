@@ -28,7 +28,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
 
   def cast_and_apply(data) do
     data
-    |> cast_data
+    |> cast_data()
     |> apply_action(:insert)
   end
 
@@ -38,6 +38,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
     |> validate_data()
   end
 
+  @spec cast_data(map()) :: map()
   def cast_data(data) do
     %__MODULE__{}
     |> changeset(data)
@@ -49,6 +50,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
     |> CommonFixes.fix_object_defaults()
     |> CommonFixes.fix_likes()
     |> Transmogrifier.fix_emoji()
+    |> CommonFixes.maybe_add_language()
+    |> CommonFixes.maybe_add_content_map()
   end
 
   def changeset(struct, data) do
