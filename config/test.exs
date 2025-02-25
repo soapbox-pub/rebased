@@ -159,6 +159,9 @@ config :pleroma, Pleroma.Uploaders.IPFS, config_impl: Pleroma.UnstubbedConfigMoc
 config :pleroma, Pleroma.Web.Plugs.HTTPSecurityPlug, config_impl: Pleroma.StaticStubbedConfigMock
 config :pleroma, Pleroma.Web.Plugs.HTTPSignaturePlug, config_impl: Pleroma.StaticStubbedConfigMock
 
+config :pleroma, Pleroma.Upload.Filter.AnonymizeFilename,
+  config_impl: Pleroma.StaticStubbedConfigMock
+
 config :pleroma, Pleroma.Signature, http_signatures_impl: Pleroma.StubbedHTTPSignaturesMock
 
 peer_module =
