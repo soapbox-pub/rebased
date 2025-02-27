@@ -22,6 +22,8 @@ defmodule Pleroma.User.Backup do
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Workers.BackupWorker
+  alias Pleroma.SafeZip
+  alias Pleroma.Upload
 
   @type t :: %__MODULE__{}
 
@@ -179,12 +181,12 @@ defmodule Pleroma.User.Backup do
   end
 
   @files [
-    ~c"actor.json",
-    ~c"outbox.json",
-    ~c"likes.json",
-    ~c"bookmarks.json",
-    ~c"followers.json",
-    ~c"following.json"
+    "actor.json",
+    "outbox.json",
+    "likes.json",
+    "bookmarks.json",
+    "followers.json",
+    "following.json"
   ]
 
   @spec run(t()) :: {:ok, t()} | {:error, :failed}
@@ -200,7 +202,7 @@ defmodule Pleroma.User.Backup do
          {_, :ok} <- {:followers, followers(backup.tempdir, backup.user)},
          {_, :ok} <- {:following, following(backup.tempdir, backup.user)},
          {_, {:ok, _zip_path}} <-
-           {:zip, :zip.create(to_charlist(tempfile), @files, cwd: to_charlist(backup.tempdir))},
+           {:zip, SafeZip.zip(tempfile, @files, backup.tempdir)},
          {_, {:ok, %File.Stat{size: zip_size}}} <- {:filestat, File.stat(tempfile)},
          {:ok, updated_backup} <- update_record(backup, %{file_size: zip_size}) do
       {:ok, updated_backup}

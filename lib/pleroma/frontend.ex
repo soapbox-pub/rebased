@@ -65,24 +65,12 @@ defmodule Pleroma.Frontend do
   end
 
   def unzip(zip, dest) do
-    with {:ok, unzipped} <- :zip.unzip(zip, [:memory]) do
-      File.rm_rf!(dest)
-      File.mkdir_p!(dest)
+    File.rm_rf!(dest)
+    File.mkdir_p!(dest)
 
-      Enum.each(unzipped, fn {filename, data} ->
-        path = filename
-
-        new_file_path = Path.join(dest, path)
-
-        path
-        |> Path.dirname()
-        |> then(&Path.join(dest, &1))
-        |> File.mkdir_p!()
-
-        if not File.dir?(new_file_path) do
-          File.write!(new_file_path, data)
-        end
-      end)
+    case Pleroma.SafeZip.unzip_data(zip, dest) do
+      {:ok, _} -> :ok
+      error -> error
     end
   end
 
