@@ -1,36 +1,10 @@
 services:
-  db:
-    image: pleroma-db:latest
-    build: ./docker-resources/database
-    shm_size: 4gb
-    restart: unless-stopped
-    user: ${DOCKER_USER}
-    environment: {
-      # This might seem insecure but is usually not a problem.
-      # You should leave this at the "pleroma" default.
-      # The DB is only reachable by containers in the same docker network,
-      # and is not exposed to the open internet.
-      #
-      # If you do change this, remember to update "config.exs".
-      POSTGRES_DB: pleroma,
-      POSTGRES_USER: pleroma,
-      POSTGRES_PASSWORD: pleroma,
-    }
-    env_file:
-      - .env
-    volumes:
-      - type: bind
-        source: ./pgdata
-        target: /var/lib/postgresql/data
-
   pleroma:
     image: pleroma:latest
     build: .
     restart: unless-stopped
     env_file:
       - .env
-    links:
-      - db
     ports: [
       # Uncomment/Change port mappings below as needed.
       # The left side is your host machine, the right one is the pleroma container.
@@ -43,3 +17,4 @@ services:
     ]
     volumes:
       - .:/opt/pleroma
+    network_mode: "host"

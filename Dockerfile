@@ -1,65 +1,40 @@
 # https://hub.docker.com/r/hexpm/elixir/tags
-ARG ELIXIR_IMG=hexpm/elixir
-ARG ELIXIR_VER=1.17.3
-ARG ERLANG_VER=27.1.3
-ARG ALPINE_VER=3.21.3
-
-FROM ${ELIXIR_IMG}:${ELIXIR_VER}-erlang-${ERLANG_VER}-alpine-${ALPINE_VER} AS build
-
-COPY . .
+FROM hexpm/elixir:1.17.3-erlang-27.1.3-alpine-3.21.3 AS build
 
 ENV MIX_ENV=prod
+ENV ERL_EPMD_ADDRESS=127.0.0.1
 ENV VIX_COMPILATION_MODE=PLATFORM_PROVIDED_LIBVIPS
 
-RUN apk add git gcc g++ musl-dev make cmake file-dev vips-dev &&\
-    echo "import Config" > config/prod.secret.exs &&\
-    mix local.hex --force &&\
-    mix local.rebar --force &&\
-    mix deps.get --only prod &&\
-    mkdir release &&\
-    mix release --path release
+ARG HOME=/opt/pleroma
 
-FROM alpine:${ALPINE_VER}
-
-ARG BUILD_DATE
-ARG VCS_REF
-
-LABEL maintainer="git@mkljczk.pl" \
-    org.opencontainers.image.title="pl" \
-    org.opencontainers.image.description="pl for Docker" \
-    org.opencontainers.image.authors="git@mkljczk.pl" \
-    org.opencontainers.image.vendor="pl.mkljczk.pl" \
-    org.opencontainers.image.documentation="https://github.com/mkljczk/pl" \
+LABEL org.opencontainers.image.title="pleroma" \
+    org.opencontainers.image.description="pleroma for Docker" \
+    org.opencontainers.image.vendor="pleroma.dev" \
+    org.opencontainers.image.documentation="https://docs.pleroma.dev/stable/" \
     org.opencontainers.image.licenses="AGPL-3.0" \
-    org.opencontainers.image.url="https://pl.mkljczk.pl" \
+    org.opencontainers.image.url="https://pleroma.dev" \
     org.opencontainers.image.revision=$VCS_REF \
     org.opencontainers.image.created=$BUILD_DATE
 
-ARG HOME=/opt/pleroma
-ARG DATA=/var/lib/pleroma
+RUN apk add git gcc g++ musl-dev make cmake file-dev curl exiftool ffmpeg libmagic ncurses postgresql-client vips-dev fasttext
 
-RUN apk update &&\
-    apk add exiftool ffmpeg vips libmagic ncurses postgresql-client curl fasttext &&\
-    adduser --system --shell /bin/false --home ${HOME} pleroma &&\
-    mkdir -p ${DATA}/uploads &&\
-    mkdir -p ${DATA}/static &&\
-    chown -R pleroma ${DATA} &&\
-    mkdir -p /etc/pleroma &&\
-    chown -R pleroma /etc/pleroma &&\
-    mkdir -p /usr/share/fasttext &&\
-    curl -L https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.ftz -o /usr/share/fasttext/lid.176.ftz &&\
-    chmod 0644 /usr/share/fasttext/lid.176.ftz
+EXPOSE 4000
 
-USER pleroma
+ARG UID=1000
+ARG GID=1000
+ARG UNAME=pleroma
 
-COPY --from=build --chown=pleroma:0 /release ${HOME}
+RUN addgroup -g $GID $UNAME
+RUN adduser -u $UID -G $UNAME -D -h $HOME $UNAME
 
-COPY --chown=pleroma --chmod=640 ./config/docker.exs /etc/pleroma/config.exs
-COPY --chmod=755 ./docker-entrypoint.sh ${HOME}
+WORKDIR /opt/pleroma
 
+USER $UNAME
 RUN mix local.hex --force &&\
     mix local.rebar --force
 
-EXPOSE 4000
+RUN mkdir -p fasttext &&\
+    curl -L https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.ftz -o fasttext/lid.176.ftz &&\
+    chmod 0644 fasttext/lid.176.ftz
 
 CMD ["/opt/pleroma/docker-entrypoint.sh"]

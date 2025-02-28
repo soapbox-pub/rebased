@@ -32,7 +32,7 @@ config :pleroma, Pleroma.Language.LanguageDetector,
   provider: Pleroma.Language.LanguageDetector.Fasttext
 
 config :pleroma, Pleroma.Language.LanguageDetector.Fasttext,
-  model: "/usr/share/fasttext/lid.176.ftz"
+  model: "/opt/pleroma/fasttext/lid.176.ftz"
 
 # We can't store the secrets in this file, since this is baked into the docker image
 if not File.exists?("/var/lib/pleroma/secret.exs") do
