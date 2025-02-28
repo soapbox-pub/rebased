@@ -44,7 +44,7 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
                "description" =>
                  "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
                "image" =>
-                 "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-videoSixteenByNineJumbo1600.jpg",
+                 "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-facebookJumbo.jpg",
                "image:alt" => "",
                "title" =>
                  "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
@@ -68,7 +68,7 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
                "description" =>
                  "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
                "image" =>
-                 "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-videoSixteenByNineJumbo1600.jpg",
+                 "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-facebookJumbo.jpg",
                "image:alt" => "",
                "site" => nil,
                "title" =>
