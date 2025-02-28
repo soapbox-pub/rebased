@@ -899,9 +899,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     Utils.get_content_type(nil)
   end
 
-  defp get_language(%{data: %{"language" => "und"}}), do: nil
+  defp get_language(%{"language" => "und"}), do: nil
 
-  defp get_language(object), do: object.data["language"]
+  defp get_language(data), do: data["language"]
 
   defp proxied_url(url, page_url_data) do
     if is_binary(url) do
@@ -922,10 +922,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def build_source_location(_), do: nil
-
-  defp get_language(%{data: %{"language" => "und"}}), do: nil
-
-  defp get_language(object), do: object.data["language"]
 
   defp get_list_id(object, client_posted_this_activity) do
     with true <- client_posted_this_activity,
