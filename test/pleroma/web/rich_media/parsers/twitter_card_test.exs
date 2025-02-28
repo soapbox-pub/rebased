@@ -124,4 +124,25 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
                  "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html"
              }
   end
+
+  test "takes first image if multiple are specified" do
+    html =
+      File.read!("test/fixtures/fulmo.html")
+      |> Floki.parse_document!()
+
+    assert TwitterCard.parse(html, %{}) ==
+             %{
+               "description" => "Pri feoj, kiuj devis ordigi falintan arbon.",
+               "image" => "https://tirifto.xwx.moe/r/ilustrajhoj/pinglordigado.png",
+               "title" => "Fulmo",
+               "type" => "website",
+               "url" => "https://tirifto.xwx.moe/eo/rakontoj/fulmo.html",
+               "image:alt" =>
+                 "Meze de arbaro kuŝas falinta trunko, sen pingloj kaj kun branĉoj derompitaj. Post ĝi videblas du feoj: florofeo maldekstre kaj nubofeo dekstre. La florofeo iom kaŝas sin post la trunko. La nubofeo staras kaj tenas amason da pigloj. Ili iom rigardas al si.",
+               "image:height" => "630",
+               "image:width" => "1200",
+               "locale" => "eo",
+               "site_name" => "Tiriftejo"
+             }
+  end
 end

@@ -9,7 +9,7 @@ defmodule Pleroma.Web.RichMedia.Parsers.MetaTagsParser do
     |> Enum.reduce(data, fn el, acc ->
       attributes = normalize_attributes(el, prefix, key_name, value_name)
 
-      Map.merge(acc, attributes)
+      Map.merge(attributes, acc)
     end)
     |> maybe_put_title(html)
   end
