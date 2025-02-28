@@ -23,7 +23,6 @@ defmodule Pleroma.User.Backup do
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Workers.BackupWorker
   alias Pleroma.SafeZip
-  alias Pleroma.Upload
 
   @type t :: %__MODULE__{}
 
