@@ -15,7 +15,7 @@ defmodule Pleroma.SafeZip do
 
   @type text() :: String.t() | [char()]
 
-  defp is_safe_path?(path) do
+  defp safe_path?(path) do
     # Path accepts elixir’s chardata()
     case Path.safe_relative(path) do
       {:ok, _} -> true
@@ -23,7 +23,7 @@ defmodule Pleroma.SafeZip do
     end
   end
 
-  defp is_safe_type?(file_type) do
+  defp safe_type?(file_type) do
     if file_type in [:regular, :directory] do
       true
     else
@@ -52,8 +52,8 @@ defmodule Pleroma.SafeZip do
         # File entry
         {:zip_file, path, info, _comment, _offset, _comp_size}, {:ok, fl} ->
           with {_, type} <- {:get_type, elem(info, 2)},
-               {_, true} <- {:type, is_safe_type?(type)},
-               {_, true} <- {:safe_path, is_safe_path?(path)} do
+               {_, true} <- {:type, safe_type?(type)},
+               {_, true} <- {:safe_path, safe_path?(path)} do
             {:cont, {:ok, maybe_add_file(type, path, fl)}}
           else
             {:get_type, e} ->
@@ -92,9 +92,9 @@ defmodule Pleroma.SafeZip do
   defp check_safe_file_list([], _), do: :ok
 
   defp check_safe_file_list([path | tail], cwd) do
-    with {_, true} <- {:path, is_safe_path?(path)},
+    with {_, true} <- {:path, safe_path?(path)},
          {_, {:ok, fstat}} <- {:stat, File.stat(Path.expand(path, cwd))},
-         {_, true} <- {:type, is_safe_type?(fstat.type)} do
+         {_, true} <- {:type, safe_type?(fstat.type)} do
       check_safe_file_list(tail, cwd)
     else
       {:path, _} ->
