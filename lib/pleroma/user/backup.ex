@@ -17,6 +17,7 @@ defmodule Pleroma.User.Backup do
   alias Pleroma.Chat
   alias Pleroma.Config
   alias Pleroma.Repo
+  alias Pleroma.SafeZip
   alias Pleroma.Uploaders.Uploader
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -180,15 +181,15 @@ defmodule Pleroma.User.Backup do
   end
 
   @files [
-    ~c"actor.json",
-    ~c"outbox.json",
-    ~c"likes.json",
-    ~c"bookmarks.json",
-    ~c"followers.json",
-    ~c"following.json",
-    ~c"chats.json",
-    ~c"chat_messages.json"
-  ]
+    "actor.json",
+    "outbox.json",
+    "likes.json",
+    "bookmarks.json",
+    "followers.json",
+    "following.json",
+    "chats.json",
+    "chat_messages.json",
+>>>>>>> origin/develop]
 
   @spec run(t()) :: {:ok, t()} | {:error, :failed}
   def run(%__MODULE__{} = backup) do
@@ -205,7 +206,7 @@ defmodule Pleroma.User.Backup do
          {_, :ok} <- {:chats, chats(backup.tempdir, backup.user)},
          {_, :ok} <- {:chat_messages, chat_messages(backup.tempdir, backup.user)},
          {_, {:ok, _zip_path}} <-
-           {:zip, :zip.create(to_charlist(tempfile), @files, cwd: to_charlist(backup.tempdir))},
+           {:zip, SafeZip.zip(tempfile, @files, backup.tempdir)},
          {_, {:ok, %File.Stat{size: zip_size}}} <- {:filestat, File.stat(tempfile)},
          {:ok, updated_backup} <- update_record(backup, %{file_size: zip_size}) do
       {:ok, updated_backup}
