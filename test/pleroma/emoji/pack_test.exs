@@ -4,8 +4,8 @@
 
 defmodule Pleroma.Emoji.PackTest do
   use Pleroma.DataCase
-  alias Pleroma.Emoji.Pack
   alias Pleroma.Emoji
+  alias Pleroma.Emoji.Pack
 
   @emoji_path Path.join(
                 Pleroma.Config.get!([:instance, :static_dir]),

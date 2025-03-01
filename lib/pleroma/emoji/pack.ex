@@ -24,8 +24,8 @@ defmodule Pleroma.Emoji.Pack do
 
   alias Pleroma.Emoji
   alias Pleroma.Emoji.Pack
-  alias Pleroma.Utils
   alias Pleroma.SafeZip
+  alias Pleroma.Utils
 
   @spec create(String.t()) :: {:ok, t()} | {:error, File.posix()} | {:error, :empty_values}
   def create(name) do

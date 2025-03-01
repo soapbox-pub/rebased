@@ -16,13 +16,13 @@ defmodule Pleroma.User.Backup do
   alias Pleroma.Bookmark
   alias Pleroma.Config
   alias Pleroma.Repo
+  alias Pleroma.SafeZip
   alias Pleroma.Uploaders.Uploader
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Workers.BackupWorker
-  alias Pleroma.SafeZip
 
   @type t :: %__MODULE__{}
 
