@@ -1051,8 +1051,6 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname/inbox", ActivityPubController, :read_inbox)
 
     get("/users/:nickname/outbox", ActivityPubController, :outbox)
-    post("/users/:nickname/outbox", ActivityPubController, :update_outbox)
-    post("/api/ap/upload_media", ActivityPubController, :upload_media)
 
     # The following two are S2S as well, see `ActivityPub.fetch_follow_information_for_user/1`:
     get("/users/:nickname/followers", ActivityPubController, :followers)
