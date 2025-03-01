@@ -17,10 +17,6 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
 
     assert TwitterCard.parse(html, %{}) ==
              %{
-               "app:id:googleplay" => "com.nytimes.android",
-               "app:name:googleplay" => "NYTimes",
-               "app:url:googleplay" => "nytimes://reader/id/100000006583622",
-               "site" => nil,
                "description" =>
                  "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
                "image" =>
@@ -61,16 +57,12 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
 
     assert TwitterCard.parse(html, %{}) ==
              %{
-               "app:id:googleplay" => "com.nytimes.android",
-               "app:name:googleplay" => "NYTimes",
-               "app:url:googleplay" => "nytimes://reader/id/100000006583622",
                "card" => "summary_large_image",
                "description" =>
                  "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
                "image" =>
                  "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-facebookJumbo.jpg",
                "image:alt" => "",
-               "site" => nil,
                "title" =>
                  "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
                "url" =>
@@ -90,13 +82,11 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
 
     assert TwitterCard.parse(html, %{}) ==
              %{
-               "site" => "@atlasobscura",
                "title" => "The Missing Grave of Margaret Corbin, Revolutionary War Veteran",
                "card" => "summary_large_image",
                "image" => image_path,
                "description" =>
                  "She's the only woman veteran honored with a monument at West Point. But where was she buried?",
-               "site_name" => "Atlas Obscura",
                "type" => "article",
                "url" => "http://www.atlasobscura.com/articles/margaret-corbin-grave-west-point"
              }
@@ -109,12 +99,8 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
 
     assert TwitterCard.parse(html, %{}) ==
              %{
-               "site" => nil,
                "title" =>
                  "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
-               "app:id:googleplay" => "com.nytimes.android",
-               "app:name:googleplay" => "NYTimes",
-               "app:url:googleplay" => "nytimes://reader/id/100000006583622",
                "description" =>
                  "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
                "image" =>
@@ -140,9 +126,7 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
                "image:alt" =>
                  "Meze de arbaro kuŝas falinta trunko, sen pingloj kaj kun branĉoj derompitaj. Post ĝi videblas du feoj: florofeo maldekstre kaj nubofeo dekstre. La florofeo iom kaŝas sin post la trunko. La nubofeo staras kaj tenas amason da pigloj. Ili iom rigardas al si.",
                "image:height" => "630",
-               "image:width" => "1200",
-               "locale" => "eo",
-               "site_name" => "Tiriftejo"
+               "image:width" => "1200"
              }
   end
 end

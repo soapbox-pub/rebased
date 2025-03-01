@@ -54,7 +54,6 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
              {:ok,
               %{
                 "card" => "summary",
-                "site" => "@flickr",
                 "image" => "https://farm6.staticflickr.com/5510/14338202952_93595258ff_z.jpg",
                 "title" => "Small Island Developing States Photo Submission",
                 "description" => "View the album on Flickr.",

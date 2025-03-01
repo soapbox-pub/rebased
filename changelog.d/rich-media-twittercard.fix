@@ -1,0 +1,1 @@
+Fix Rich Media parsing of TwitterCards/OpenGraph to adhere to the spec and always choose the first image if multiple are provided.
