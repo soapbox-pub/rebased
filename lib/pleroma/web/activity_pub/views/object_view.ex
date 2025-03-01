@@ -9,7 +9,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectView do
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
   def render("object.json", %{object: %Object{} = object}) do
-    base = Pleroma.Web.ActivityPub.Utils.make_json_ld_header()
+    base = Pleroma.Web.ActivityPub.Utils.make_json_ld_header(object.data)
 
     additional = Transmogrifier.prepare_object(object.data)
     Map.merge(base, additional)
@@ -17,7 +17,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectView do
 
   def render("object.json", %{object: %Activity{data: %{"type" => activity_type}} = activity})
       when activity_type in ["Create", "Listen"] do
-    base = Pleroma.Web.ActivityPub.Utils.make_json_ld_header()
+    base = Pleroma.Web.ActivityPub.Utils.make_json_ld_header(activity.data)
     object = Object.normalize(activity, fetch: false)
 
     additional =
@@ -28,7 +28,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectView do
   end
 
   def render("object.json", %{object: %Activity{} = activity}) do
-    base = Pleroma.Web.ActivityPub.Utils.make_json_ld_header()
+    base = Pleroma.Web.ActivityPub.Utils.make_json_ld_header(activity.data)
     object_id = Object.normalize(activity, id_only: true)
 
     additional =

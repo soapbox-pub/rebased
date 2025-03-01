@@ -128,6 +128,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
     %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
   end
 
+  test "a Note with validated likes collection validates" do
+    insert(:user, ap_id: "https://pol.social/users/mkljczk")
+
+    %{"object" => note} =
+      "test/fixtures/mastodon-update-with-likes.json"
+      |> File.read!()
+      |> Jason.decode!()
+
+    %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
+  end
+
   test "Fedibird quote post" do
     insert(:user, ap_id: "https://fedibird.com/users/noellabo")
 
@@ -175,5 +186,72 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
              href: "https://server.example/objects/123",
              name: "RE: https://server.example/objects/123"
            }
+  end
+
+  describe "Note language" do
+    test "it detects language from JSON-LD context" do
+      user = insert(:user)
+
+      note_activity = %{
+        "@context" => ["https://www.w3.org/ns/activitystreams", %{"@language" => "pl"}],
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "cc" => [],
+        "type" => "Create",
+        "object" => %{
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "cc" => [],
+          "id" => Utils.generate_object_id(),
+          "type" => "Note",
+          "content" => "Szczęść Boże",
+          "attributedTo" => user.ap_id
+        },
+        "actor" => user.ap_id
+      }
+
+      {:ok, _create_activity, meta} = ObjectValidator.validate(note_activity, [])
+
+      assert meta[:object_data]["language"] == "pl"
+    end
+
+    test "it detects language from contentMap" do
+      user = insert(:user)
+
+      note = %{
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "cc" => [],
+        "id" => Utils.generate_object_id(),
+        "type" => "Note",
+        "content" => "Szczęść Boże",
+        "contentMap" => %{
+          "de" => "Gott segne",
+          "pl" => "Szczęść Boże"
+        },
+        "attributedTo" => user.ap_id
+      }
+
+      {:ok, object} = ArticleNotePageValidator.cast_and_apply(note)
+
+      assert object.language == "pl"
+    end
+
+    test "it adds contentMap if language is specified" do
+      user = insert(:user)
+
+      note = %{
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "cc" => [],
+        "id" => Utils.generate_object_id(),
+        "type" => "Note",
+        "content" => "тест",
+        "language" => "uk",
+        "attributedTo" => user.ap_id
+      }
+
+      {:ok, object} = ArticleNotePageValidator.cast_and_apply(note)
+
+      assert object.contentMap == %{
+               "uk" => "тест"
+             }
+    end
   end
 end

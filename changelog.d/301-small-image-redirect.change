@@ -1,0 +1,1 @@
+Performance: Use 301 (permanent) redirect instead of 302 (temporary) when redirecting small images in media proxy. This allows browsers to cache the redirect response. 

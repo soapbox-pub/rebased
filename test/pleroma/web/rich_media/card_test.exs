@@ -83,4 +83,23 @@ defmodule Pleroma.Web.RichMedia.CardTest do
              Card.get_by_activity(activity)
            )
   end
+
+  test "refuses to crawl URL in activity from ignored host/domain" do
+    clear_config([:rich_media, :ignore_hosts], ["example.com"])
+
+    user = insert(:user)
+
+    url = "https://example.com/ogp"
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        status: "[test](#{url})",
+        content_type: "text/markdown"
+      })
+
+    refute_enqueued(
+      worker: RichMediaWorker,
+      args: %{"url" => url, "activity_id" => activity.id}
+    )
+  end
 end

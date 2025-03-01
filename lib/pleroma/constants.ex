@@ -20,7 +20,8 @@ defmodule Pleroma.Constants do
       "deleted_activity_id",
       "pleroma_internal",
       "generator",
-      "rules"
+      "rules",
+      "language"
     ]
   )
 
@@ -36,10 +37,12 @@ defmodule Pleroma.Constants do
       "updated",
       "emoji",
       "content",
+      "contentMap",
       "summary",
       "sensitive",
       "attachment",
-      "generator"
+      "generator",
+      "language"
     ]
   )
 
@@ -100,7 +103,8 @@ defmodule Pleroma.Constants do
       "Announce",
       "Undo",
       "Flag",
-      "EmojiReact"
+      "EmojiReact",
+      "Listen"
     ]
   )
 

@@ -16,6 +16,7 @@ defmodule Pleroma.User.Backup do
   alias Pleroma.Bookmark
   alias Pleroma.Config
   alias Pleroma.Repo
+  alias Pleroma.SafeZip
   alias Pleroma.Uploaders.Uploader
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -179,12 +180,12 @@ defmodule Pleroma.User.Backup do
   end
 
   @files [
-    ~c"actor.json",
-    ~c"outbox.json",
-    ~c"likes.json",
-    ~c"bookmarks.json",
-    ~c"followers.json",
-    ~c"following.json"
+    "actor.json",
+    "outbox.json",
+    "likes.json",
+    "bookmarks.json",
+    "followers.json",
+    "following.json"
   ]
 
   @spec run(t()) :: {:ok, t()} | {:error, :failed}
@@ -200,7 +201,7 @@ defmodule Pleroma.User.Backup do
          {_, :ok} <- {:followers, followers(backup.tempdir, backup.user)},
          {_, :ok} <- {:following, following(backup.tempdir, backup.user)},
          {_, {:ok, _zip_path}} <-
-           {:zip, :zip.create(to_charlist(tempfile), @files, cwd: to_charlist(backup.tempdir))},
+           {:zip, SafeZip.zip(tempfile, @files, backup.tempdir)},
          {_, {:ok, %File.Stat{size: zip_size}}} <- {:filestat, File.stat(tempfile)},
          {:ok, updated_backup} <- update_record(backup, %{file_size: zip_size}) do
       {:ok, updated_backup}
@@ -246,7 +247,13 @@ defmodule Pleroma.User.Backup do
   defp actor(dir, user) do
     with {:ok, json} <-
            UserView.render("user.json", %{user: user})
-           |> Map.merge(%{"likes" => "likes.json", "bookmarks" => "bookmarks.json"})
+           |> Map.merge(%{
+             "bookmarks" => "bookmarks.json",
+             "likes" => "likes.json",
+             "outbox" => "outbox.json",
+             "followers" => "followers.json",
+             "following" => "following.json"
+           })
            |> Jason.encode() do
       File.write(Path.join(dir, "actor.json"), json)
     end

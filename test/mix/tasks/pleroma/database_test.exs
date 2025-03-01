@@ -411,7 +411,7 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
                ["scheduled_activities"],
                ["schema_migrations"],
                ["thread_mutes"],
-               # ["user_follows_hashtag"],                  # not in pleroma
+               ["user_follows_hashtag"],
                # ["user_frontend_setting_profiles"],        # not in pleroma
                ["user_invite_tokens"],
                ["user_notes"],

@@ -1772,6 +1772,11 @@ config :pleroma, :config_description, [
         type: :integer,
         description: "Following handshake timeout",
         suggestions: [500]
+      },
+      %{
+        key: :client_api_enabled,
+        type: :boolean,
+        description: "Allow client to server ActivityPub interactions"
       }
     ]
   },
@@ -3302,8 +3307,7 @@ config :pleroma, :config_description, [
         suggestions: [
           Pleroma.Web.Preload.Providers.Instance,
           Pleroma.Web.Preload.Providers.User,
-          Pleroma.Web.Preload.Providers.Timelines,
-          Pleroma.Web.Preload.Providers.StatusNet
+          Pleroma.Web.Preload.Providers.Timelines
         ]
       }
     ]
