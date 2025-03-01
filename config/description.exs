@@ -1772,6 +1772,11 @@ config :pleroma, :config_description, [
         type: :integer,
         description: "Following handshake timeout",
         suggestions: [500]
+      },
+      %{
+        key: :client_api_enabled,
+        type: :boolean,
+        description: "Allow client to server ActivityPub interactions"
       }
     ]
   },

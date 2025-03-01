@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 2.9.0
+
+### Security
+- Require HTTP signatures (if enabled) for routes used by both C2S and S2S AP API
+- Fix several spoofing vectors
+
+### Changed
+- Performance: Use 301 (permanent) redirect instead of 302 (temporary) when redirecting small images in media proxy. This allows browsers to cache the redirect response. 
+
+### Added
+- Include "published" in actor view
+- Link to exported outbox/followers/following collections in backup actor.json
+- Hashtag following
+- Allow to specify post language
+
+### Fixed
+- Verify a local Update sent through AP C2S so users can only update their own objects
+- Fix Mastodon incoming edits with inlined "likes"
+- Allow incoming "Listen" activities
+- Fix missing check for domain presence in rich media ignore_host configuration
+- Fix Rich Media parsing of TwitterCards/OpenGraph to adhere to the spec and always choose the first image if multiple are provided.
+- Fix OpenGraph/TwitterCard meta tag ordering for posts with multiple attachments
+- Fix blurhash generation crashes
+
+### Removed
+- Retire MRFs DNSRBL, FODirectReply, and QuietReply
+
 ## 2.8.0
 
 ### Changed
