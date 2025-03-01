@@ -873,6 +873,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = insert(:user)
       other_user = insert(:user)
 
+      {:ok, other_user} = User.follow_hashtag(other_user, hashtag)
+
       {:ok, normally_visible} =
         CommonAPI.post(other_user, %{status: "hello :)", visibility: "public"})
 
@@ -883,7 +885,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       activities =
         ActivityPub.fetch_activities([other_user.follower_address], %{
-          followed_hashtags: [hashtag.id]
+          user: other_user,
+          with_followed_hashtags: true
         })
 
       assert length(activities) == 3

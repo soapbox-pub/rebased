@@ -149,31 +149,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
              |> get("/api/v1/timelines/home?remote=true&local=true")
              |> json_response_and_validate_schema(200) == []
     end
-
-    test "includes followed hashtags", %{conn: conn, user: user} do
-      hashtag = insert(:hashtag, %{name: "tenshi"})
-      other_user = insert(:user)
-      {:ok, user} = User.follow_hashtag(user, hashtag)
-
-      {:ok, _} = CommonAPI.post(other_user, %{status: "hey #tenshi"})
-      {:ok, _} = CommonAPI.post(other_user, %{status: "hey #anotherhashtag"})
-
-      result =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/timelines/home")
-        |> json_response_and_validate_schema(200)
-
-      assert [
-               %{
-                 "tags" => [
-                   %{
-                     "name" => "tenshi"
-                   }
-                 ]
-               }
-             ] = result
-    end
   end
 
   describe "public" do
