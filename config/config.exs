@@ -360,7 +360,7 @@ config :pleroma, :activitypub,
   note_replies_output_limit: 5,
   sign_object_fetches: true,
   authorized_fetch_mode: false,
-  client_api_enabled: true
+  client_api_enabled: false
 
 config :pleroma, :streamer,
   workers: 3,
