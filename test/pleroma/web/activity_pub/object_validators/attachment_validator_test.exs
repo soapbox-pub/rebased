@@ -13,6 +13,23 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
   import Pleroma.Factory
 
   describe "attachments" do
+    test "works with apng" do
+      attachment =
+        %{
+          "mediaType" => "image/apng",
+          "name" => "",
+          "type" => "Document",
+          "url" =>
+            "https://media.misskeyusercontent.com/io/2859c26e-cd43-4550-848b-b6243bc3fe28.apng"
+        }
+
+      assert {:ok, attachment} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+
+      assert attachment.mediaType == "image/apng"
+    end
+
     test "fails without url" do
       attachment = %{
         "mediaType" => "",
