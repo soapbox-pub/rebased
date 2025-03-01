@@ -19,8 +19,16 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
     options
   end
 
-  def call(%{assigns: %{valid_signature: true}} = conn, _opts) do
-    conn
+  def call(%{assigns: %{valid_signature: true}} = conn, _opts), do: conn
+
+  # skip for C2S requests from authenticated users
+  def call(%{assigns: %{user: %Pleroma.User{}}} = conn, _opts) do
+    if get_format(conn) in ["json", "activity+json"] do
+      # ensure access token is provided for 2FA
+      Pleroma.Web.Plugs.EnsureAuthenticatedPlug.call(conn, %{})
+    else
+      conn
+    end
   end
 
   def call(conn, _opts) do

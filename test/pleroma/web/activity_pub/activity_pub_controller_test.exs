@@ -1344,6 +1344,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "GET /users/:nickname/outbox" do
+    setup do
+      Mox.stub_with(Pleroma.StaticStubbedConfigMock, Pleroma.Config)
+      :ok
+    end
+
     test "it paginates correctly", %{conn: conn} do
       user = insert(:user)
       conn = assign(conn, :user, user)
@@ -1432,6 +1437,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert %{"orderedItems" => []} = resp
     end
 
+    test "it does not return a local note activity when C2S API is disabled", %{conn: conn} do
+      clear_config([:activitypub, :client_api_enabled], false)
+      user = insert(:user)
+      reader = insert(:user)
+      {:ok, _note_activity} = CommonAPI.post(user, %{status: "mew mew", visibility: "local"})
+
+      resp =
+        conn
+        |> assign(:user, reader)
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}/outbox?page=true")
+        |> json_response(200)
+
+      assert %{"orderedItems" => []} = resp
+    end
+
     test "it returns a note activity in a collection", %{conn: conn} do
       note_activity = insert(:note_activity)
       note_object = Object.normalize(note_activity, fetch: false)
@@ -1482,6 +1503,35 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert [answer_outbox] = outbox_get["orderedItems"]
       assert answer_outbox["id"] == activity.data["id"]
+    end
+
+    test "it works with authorized fetch forced when authenticated" do
+      clear_config([:activitypub, :authorized_fetch_mode], true)
+
+      user = insert(:user)
+      outbox_endpoint = user.ap_id <> "/outbox"
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> put_req_header("accept", "application/activity+json")
+        |> get(outbox_endpoint)
+
+      assert json_response(conn, 200)
+    end
+
+    test "it fails with authorized fetch forced when unauthenticated", %{conn: conn} do
+      clear_config([:activitypub, :authorized_fetch_mode], true)
+
+      user = insert(:user)
+      outbox_endpoint = user.ap_id <> "/outbox"
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get(outbox_endpoint)
+
+      assert response(conn, 401)
     end
   end
 
@@ -2152,6 +2202,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       conn
       |> post("/api/ap/upload_media", %{"file" => image, "description" => desc})
       |> json_response(403)
+    end
+
+    test "they don't work when C2S API is disabled", %{conn: conn} do
+      clear_config([:activitypub, :client_api_enabled], false)
+
+      user = insert(:user)
+
+      assert conn
+             |> assign(:user, user)
+             |> get("/api/ap/whoami")
+             |> response(403)
+
+      desc = "Description of the image"
+
+      image = %Plug.Upload{
+        content_type: "image/jpeg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      assert conn
+             |> assign(:user, user)
+             |> post("/api/ap/upload_media", %{"file" => image, "description" => desc})
+             |> response(403)
     end
   end
 

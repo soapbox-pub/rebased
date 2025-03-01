@@ -359,7 +359,8 @@ config :pleroma, :activitypub,
   follow_handshake_timeout: 500,
   note_replies_output_limit: 5,
   sign_object_fetches: true,
-  authorized_fetch_mode: false
+  authorized_fetch_mode: false,
+  client_api_enabled: true
 
 config :pleroma, :streamer,
   workers: 3,
