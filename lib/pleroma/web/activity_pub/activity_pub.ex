@@ -953,15 +953,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   # that reference a hashtag that the user follows
   # Firstly, two fallbacks in case there's no hashtag constraint, or the user doesn't
   # follow any
-  defp restrict_recipients_or_hashtags(query, recipients, user, nil) do
-    restrict_recipients(query, recipients, user)
-  end
+  defp restrict_recipients_or_hashtags(query, recipients, user, true) do
+    followed_hashtag_ids = Ecto.assoc(user, :followed_hashtags) |> select([h], h.id)
 
-  defp restrict_recipients_or_hashtags(query, recipients, user, []) do
-    restrict_recipients(query, recipients, user)
-  end
-
-  defp restrict_recipients_or_hashtags(query, recipients, _user, hashtag_ids) do
     from([activity, object] in query)
     |> join(:left, [activity, object], hto in "hashtags_objects",
       on: hto.object_id == object.id,
@@ -969,9 +963,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     )
     |> where(
       [activity, object, hto: hto],
-      (hto.hashtag_id in ^hashtag_ids and ^Constants.as_public() in activity.recipients) or
+      (hto.hashtag_id in subquery(followed_hashtag_ids) and
+         ^Constants.as_public() in activity.recipients) or
         fragment("? && ?", ^recipients, activity.recipients)
     )
+  end
+
+  defp restrict_recipients_or_hashtags(query, recipients, user, _) do
+    restrict_recipients(query, recipients, user)
   end
 
   defp restrict_local(query, %{local_only: true}) do
@@ -1526,7 +1525,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> maybe_preload_report_notes(opts)
       |> maybe_set_thread_muted_field(opts)
       |> maybe_order(opts)
-      |> restrict_recipients_or_hashtags(recipients, opts[:user], opts[:followed_hashtags])
+      |> restrict_recipients_or_hashtags(recipients, opts[:user], opts[:with_followed_hashtags])
       |> restrict_replies(opts)
       |> restrict_since(opts)
       |> restrict_local(opts)
