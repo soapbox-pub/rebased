@@ -413,11 +413,6 @@ config :pleroma, :mrf_vocabulary,
   accept: [],
   reject: []
 
-config :pleroma, :mrf_dnsrbl,
-  nameserver: "127.0.0.1",
-  port: 53,
-  zone: "bl.pleroma.com"
-
 # threshold of 7 days
 config :pleroma, :mrf_object_age,
   threshold: 604_800,
