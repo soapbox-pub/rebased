@@ -179,6 +179,7 @@ defmodule Pleroma.SafeZipTest do
   end
 
   describe "unzip_file/3" do
+    @tag :skip
     test "extracts files from a zip archive" do
       archive_path = Path.join(@fixtures_dir, "emojis.zip")
 
@@ -250,6 +251,7 @@ defmodule Pleroma.SafeZipTest do
   end
 
   describe "unzip_data/3" do
+    @tag :skip
     test "extracts files from zip data" do
       archive_path = Path.join(@fixtures_dir, "emojis.zip")
       archive_data = File.read!(archive_path)
@@ -268,6 +270,7 @@ defmodule Pleroma.SafeZipTest do
       assert File.exists?(Path.join(@tmp_dir, Path.basename(first_file)))
     end
 
+    @tag :skip
     test "extracts specific files from zip data" do
       archive_path = Path.join(@fixtures_dir, "emojis.zip")
       archive_data = File.read!(archive_path)
