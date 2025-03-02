@@ -539,9 +539,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   defp handle_incoming_normalized(
-        %{"type" => "Bite", "target" => target_id} = data,
-        _options
-      ) do
+         %{"type" => "Bite", "target" => target_id} = data,
+         _options
+       ) do
     target_id =
       cond do
         %User{ap_id: actor_id} = User.get_by_ap_id(target_id) ->
