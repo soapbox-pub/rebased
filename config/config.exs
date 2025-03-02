@@ -806,6 +806,13 @@ config :pleroma, :frontends,
         "https://lily-is.land/infra/glitch-lily/-/jobs/artifacts/${ref}/download?job=build",
       "ref" => "servant",
       "build_dir" => "public"
+    },
+    "pl-fe" => %{
+      "name" => "pl-fe",
+      "git" => "https://github.com/mkljczk/pl-fe",
+      "build_url" => "https://pl.mkljczk.pl/pl-fe.zip",
+      "ref" => "develop",
+      "build_dir" => "."
     }
   }
 
