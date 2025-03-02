@@ -24,8 +24,8 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
     %{
       version: "2.0",
       software: %{
-        name: Pleroma.Application.compat_name() |> String.downcase(),
-        version: Pleroma.Application.version()
+        name: "$INSTANCE$softwareName$",
+        version: "$INSTANCE$softwareVersion$"
       },
       protocols: Publisher.gather_nodeinfo_protocol_names(),
       services: %{
@@ -42,8 +42,8 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
         localPosts: Map.get(stats, :status_count, 0)
       },
       metadata: %{
-        nodeName: Config.get([:instance, :name]),
-        nodeDescription: Config.get([:instance, :description]),
+        nodeName: "$INSTANCE$name$",
+        nodeDescription: "$INSTANCE$description$",
         private: !Config.get([:instance, :public], true),
         suggestions: %{
           enabled: false
