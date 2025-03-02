@@ -189,7 +189,7 @@ defmodule Pleroma.User.Backup do
     "following.json",
     "chats.json",
     "chat_messages.json",
->>>>>>> origin/develop]
+]
 
   @spec run(t()) :: {:ok, t()} | {:error, :failed}
   def run(%__MODULE__{} = backup) do
