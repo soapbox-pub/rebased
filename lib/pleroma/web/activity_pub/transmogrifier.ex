@@ -538,7 +538,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def handle_incoming_normalized(
+  defp handle_incoming_normalized(
         %{"type" => "Bite", "target" => target_id} = data,
         _options
       ) do
