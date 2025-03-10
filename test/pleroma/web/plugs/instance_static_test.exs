@@ -62,4 +62,47 @@ defmodule Pleroma.Web.Plugs.InstanceStaticTest do
     index = get(build_conn(), "/static/kaniini.html")
     assert html_response(index, 200) == "<h1>rabbit hugs as a service</h1>"
   end
+
+  test "sanitizes content-types for potentially dangerous file extensions" do
+    # Create a file with a potentially dangerous extension (.json)
+    # This mimics an attacker trying to serve ActivityPub JSON with a static file
+    File.mkdir!(@dir <> "/static")
+    File.write!(@dir <> "/static/malicious.json", "{\"type\": \"ActivityPub\"}")
+
+    # Request the malicious file
+    conn = get(build_conn(), "/static/malicious.json")
+
+    # Verify the file was served (status 200)
+    assert conn.status == 200
+
+    # The content should be served, but with a sanitized content-type
+    content_type =
+      Enum.find_value(conn.resp_headers, fn
+        {"content-type", value} -> value
+        _ -> nil
+      end)
+
+    # It should have been sanitized to application/octet-stream because "application" 
+    # is not in the allowed_mime_types list
+    assert content_type == "application/octet-stream"
+
+    # Create a file with an allowed extension (.jpg)
+    File.write!(@dir <> "/static/safe.jpg", "fake image data")
+
+    # Request the safe file
+    conn = get(build_conn(), "/static/safe.jpg")
+
+    # Verify the file was served (status 200)
+    assert conn.status == 200
+
+    # Get the content-type
+    content_type =
+      Enum.find_value(conn.resp_headers, fn
+        {"content-type", value} -> value
+        _ -> nil
+      end)
+
+    # It should be preserved because "image" is in the allowed_mime_types list
+    assert content_type == "image/jpeg"
+  end
 end
