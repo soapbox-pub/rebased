@@ -83,7 +83,7 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
       Map.get(opts, :static_plug_opts)
       |> Map.put(:at, [@path])
       |> Map.put(:from, directory)
-      |> Map.put(:content_type, false)
+      |> Map.put(:content_types, false)
 
     conn =
       conn

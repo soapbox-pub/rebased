@@ -3,16 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.UploadedMediaTest do
-  use Pleroma.Web.ConnCase, async: false
+  use ExUnit.Case, async: true
 
-  alias Pleroma.StaticStubbedConfigMock
   alias Pleroma.Web.Plugs.Utils
-
-  setup do
-    Mox.stub_with(StaticStubbedConfigMock, Pleroma.Test.StaticConfig)
-
-    {:ok, %{}}
-  end
 
   describe "content-type sanitization with Utils.get_safe_mime_type/2" do
     test "it allows safe MIME types" do
@@ -33,6 +26,28 @@ defmodule Pleroma.Web.Plugs.UploadedMediaTest do
 
       assert Utils.get_safe_mime_type(opts, "application/javascript") ==
                "application/octet-stream"
+    end
+
+    test "it sanitizes ActivityPub content types" do
+      opts = %{allowed_mime_types: ["image", "audio", "video"]}
+
+      assert Utils.get_safe_mime_type(opts, "application/activity+json") ==
+               "application/octet-stream"
+
+      assert Utils.get_safe_mime_type(opts, "application/ld+json") == "application/octet-stream"
+      assert Utils.get_safe_mime_type(opts, "application/jrd+json") == "application/octet-stream"
+    end
+
+    test "it sanitizes other potentially dangerous types" do
+      opts = %{allowed_mime_types: ["image", "audio", "video"]}
+
+      assert Utils.get_safe_mime_type(opts, "text/html") == "application/octet-stream"
+
+      assert Utils.get_safe_mime_type(opts, "application/javascript") ==
+               "application/octet-stream"
+
+      assert Utils.get_safe_mime_type(opts, "text/javascript") == "application/octet-stream"
+      assert Utils.get_safe_mime_type(opts, "application/xhtml+xml") == "application/octet-stream"
     end
   end
 end
