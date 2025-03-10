@@ -55,9 +55,13 @@ defmodule Pleroma.UserRelationship do
 
   def user_relationship_mappings, do: Pleroma.UserRelationship.Type.__enum_map__()
 
+  def datetime_impl do
+    Application.get_env(:pleroma, :datetime_impl, Pleroma.DateTime.Impl)
+  end
+
   def changeset(%UserRelationship{} = user_relationship, params \\ %{}) do
     user_relationship
-    |> cast(params, [:relationship_type, :source_id, :target_id, :expires_at])
+    |> cast(params, [:relationship_type, :source_id, :target_id, :expires_at, :inserted_at])
     |> validate_required([:relationship_type, :source_id, :target_id])
     |> unique_constraint(:relationship_type,
       name: :user_relationships_source_id_relationship_type_target_id_index
@@ -65,6 +69,7 @@ defmodule Pleroma.UserRelationship do
     |> validate_not_self_relationship()
   end
 
+  @spec exists?(any(), Pleroma.User.t(), Pleroma.User.t()) :: boolean()
   def exists?(relationship_type, %User{} = source, %User{} = target) do
     UserRelationship
     |> where(relationship_type: ^relationship_type, source_id: ^source.id, target_id: ^target.id)
@@ -90,7 +95,8 @@ defmodule Pleroma.UserRelationship do
       relationship_type: relationship_type,
       source_id: source.id,
       target_id: target.id,
-      expires_at: expires_at
+      expires_at: expires_at,
+      inserted_at: datetime_impl().utc_now()
     })
     |> Repo.insert(
       on_conflict: {:replace_all_except, [:id, :inserted_at]},

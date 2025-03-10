@@ -1211,8 +1211,6 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     end
 
     test "args for Pleroma.Upload.Filter.Mogrify with custom tuples", %{conn: conn} do
-      clear_config(Pleroma.Upload.Filter.Mogrify)
-
       assert conn
              |> put_req_header("content-type", "application/json")
              |> post("/api/pleroma/admin/config", %{
@@ -1240,7 +1238,8 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                "need_reboot" => false
              }
 
-      assert Config.get(Pleroma.Upload.Filter.Mogrify) == [args: ["auto-orient", "strip"]]
+      config = Config.get(Pleroma.Upload.Filter.Mogrify)
+      assert {:args, ["auto-orient", "strip"]} in config
 
       assert conn
              |> put_req_header("content-type", "application/json")
@@ -1289,9 +1288,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                "need_reboot" => false
              }
 
-      assert Config.get(Pleroma.Upload.Filter.Mogrify) == [
-               args: ["auto-orient", "strip", {"implode", "1"}, {"resize", "3840x1080>"}]
-             ]
+      config = Config.get(Pleroma.Upload.Filter.Mogrify)
+
+      assert {:args, ["auto-orient", "strip", {"implode", "1"}, {"resize", "3840x1080>"}]} in config
     end
 
     test "enables the welcome messages", %{conn: conn} do

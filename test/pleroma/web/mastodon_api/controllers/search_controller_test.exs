@@ -14,7 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
   import Mock
 
   setup do
-    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Test.StaticConfig)
     :ok
   end
 
