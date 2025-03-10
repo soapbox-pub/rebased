@@ -51,25 +51,25 @@ defmodule Pleroma.Web.Plugs.InstanceStatic do
       |> Map.put(:from, from)
       |> Map.put(:content_types, false)
 
-    # Get sanitized content type before calling Plug.Static
-    # Include "text" to allow HTML files and other text-based content
-    allowed_mime_types =
-      Pleroma.Config.get([Pleroma.Upload, :allowed_mime_types], [
-        "image",
-        "audio",
-        "video",
-        "text"
-      ])
-
-    conn = set_content_type(conn, %{allowed_mime_types: allowed_mime_types}, conn.request_path)
+    conn = set_content_type(conn, conn.request_path)
 
     # Call Plug.Static with our sanitized content-type
     Plug.Static.call(conn, opts)
   end
 
-  defp set_content_type(conn, opts, filepath) do
+  defp set_content_type(conn, "/emoji/" <> filepath) do
     real_mime = MIME.from_path(filepath)
-    clean_mime = Pleroma.Web.Plugs.Utils.get_safe_mime_type(opts, real_mime)
+
+    clean_mime =
+      Pleroma.Web.Plugs.Utils.get_safe_mime_type(%{allowed_mime_types: ["image"]}, real_mime)
+
     put_resp_header(conn, "content-type", clean_mime)
   end
+
+  defp set_content_type(conn, filepath) do
+    real_mime = MIME.from_path(filepath)
+    put_resp_header(conn, "content-type", real_mime)
+  end
 end
+
+# I think this needs to be uncleaned except for emoji.
