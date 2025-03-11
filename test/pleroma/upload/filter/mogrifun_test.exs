@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Upload.Filter.MogrifunTest do
-  use Pleroma.DataCase
-  import Mock
+  use Pleroma.DataCase, async: true
+  import Mox
 
+  alias Pleroma.MogrifyMock
   alias Pleroma.Upload
   alias Pleroma.Upload.Filter
 
@@ -22,23 +23,12 @@ defmodule Pleroma.Upload.Filter.MogrifunTest do
       tempfile: Path.absname("test/fixtures/image_tmp.jpg")
     }
 
-    task =
-      Task.async(fn ->
-        assert_receive {:apply_filter, {}}, 4_000
-      end)
+    MogrifyMock
+    |> stub(:open, fn _file -> %{} end)
+    |> stub(:custom, fn _image, _action -> %{} end)
+    |> stub(:custom, fn _image, _action, _options -> %{} end)
+    |> stub(:save, fn _image, [in_place: true] -> :ok end)
 
-    with_mocks([
-      {Mogrify, [],
-       [
-         open: fn _f -> %Mogrify.Image{} end,
-         custom: fn _m, _a -> send(task.pid, {:apply_filter, {}}) end,
-         custom: fn _m, _a, _o -> send(task.pid, {:apply_filter, {}}) end,
-         save: fn _f, _o -> :ok end
-       ]}
-    ]) do
-      assert Filter.Mogrifun.filter(upload) == {:ok, :filtered}
-    end
-
-    Task.await(task)
+    assert Filter.Mogrifun.filter(upload) == {:ok, :filtered}
   end
 end

@@ -11,7 +11,7 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorkerTest do
   alias Pleroma.Workers.Cron.NewUsersDigestWorker
 
   setup do
-    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Test.StaticConfig)
     :ok
   end
 

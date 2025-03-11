@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 2.9.1
+
+### Security
+- Fix authorization checks for C2S Update activities to prevent unauthorized modifications of other users' content.
+- Fix content-type spoofing vulnerability that could allow users to upload ActivityPub objects as attachments
+- Reject cross-domain redirects when fetching ActivityPub objects to prevent bypassing domain-based security controls.
+- Limit emoji shortcodes to alphanumeric, dash, or underscore characters to prevent potential abuse.
+- Block attempts to fetch activities from the local instance to prevent spoofing.
+- Sanitize Content-Type headers in media proxy to prevent serving malicious ActivityPub content through proxied media.
+- Validate Content-Type headers when fetching remote ActivityPub objects to prevent spoofing attacks.
+
+### Changed
+- Include `pl-fe` in available frontends
+
+### Fixed
+- Remove trailing ` from end of line 75 which caused issues copy-pasting
+
 ## 2.9.0
 
 ### Security

@@ -65,7 +65,8 @@ config :pleroma, Pleroma.Upload,
   proxy_remote: false,
   filename_display_max_length: 30,
   default_description: nil,
-  base_url: nil
+  base_url: nil,
+  allowed_mime_types: ["image", "audio", "video"]
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
@@ -781,13 +782,6 @@ config :pleroma, :static_fe, enabled: false
 
 config :pleroma, :frontends,
   available: %{
-    "pl-fe" => %{
-      "name" => "pl-fe",
-      "git" => "https://github.com/mkljczk/pl-fe",
-      "build_url" => "https://pl.mkljczk.pl/pl-fe.zip",
-      "ref" => "develop",
-      "build_dir" => "."
-    },
     "kenoma" => %{
       "name" => "kenoma",
       "git" => "https://git.pleroma.social/lambadalambda/kenoma",
@@ -848,6 +842,13 @@ config :pleroma, :frontends,
       "build_url" =>
         "https://akkoma-updates.s3-website.fr-par.scw.cloud/frontend/${ref}/admin-fe.zip",
       "ref" => "stable"
+    },
+    "pl-fe" => %{
+      "name" => "pl-fe",
+      "git" => "https://github.com/mkljczk/pl-fe",
+      "build_url" => "https://pl.mkljczk.pl/pl-fe.zip",
+      "ref" => "develop",
+      "build_dir" => "."
     }
   }
 

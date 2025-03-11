@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.Plugs.InstanceStatic do
   require Pleroma.Constants
+  import Plug.Conn, only: [put_resp_header: 3]
 
   @moduledoc """
   This is a shim to call `Plug.Static` but with runtime `from` configuration.
@@ -44,10 +45,31 @@ defmodule Pleroma.Web.Plugs.InstanceStatic do
   end
 
   defp call_static(conn, opts, from) do
+    # Prevent content-type spoofing by setting content_types: false
     opts =
       opts
       |> Map.put(:from, from)
+      |> Map.put(:content_types, false)
 
+    conn = set_content_type(conn, conn.request_path)
+
+    # Call Plug.Static with our sanitized content-type
     Plug.Static.call(conn, opts)
   end
+
+  defp set_content_type(conn, "/emoji/" <> filepath) do
+    real_mime = MIME.from_path(filepath)
+
+    clean_mime =
+      Pleroma.Web.Plugs.Utils.get_safe_mime_type(%{allowed_mime_types: ["image"]}, real_mime)
+
+    put_resp_header(conn, "content-type", clean_mime)
+  end
+
+  defp set_content_type(conn, filepath) do
+    real_mime = MIME.from_path(filepath)
+    put_resp_header(conn, "content-type", real_mime)
+  end
 end
+
+# I think this needs to be uncleaned except for emoji.
