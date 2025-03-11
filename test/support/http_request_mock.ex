@@ -955,7 +955,7 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}}
   end
 
-  def get("http://localhost:4001/users/masto_closed/followers", _, _, _) do
+  def get("https://remote.org/users/masto_closed/followers", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -964,7 +964,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://localhost:4001/users/masto_closed/followers?page=1", _, _, _) do
+  def get("https://remote.org/users/masto_closed/followers?page=1", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -973,7 +973,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://localhost:4001/users/masto_closed/following", _, _, _) do
+  def get("https://remote.org/users/masto_closed/following", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -982,7 +982,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://localhost:4001/users/masto_closed/following?page=1", _, _, _) do
+  def get("https://remote.org/users/masto_closed/following?page=1", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -991,7 +991,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://localhost:8080/followers/fuser3", _, _, _) do
+  def get("https://remote.org/followers/fuser3", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -1000,7 +1000,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://localhost:8080/following/fuser3", _, _, _) do
+  def get("https://remote.org/following/fuser3", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -1009,7 +1009,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://localhost:4001/users/fuser2/followers", _, _, _) do
+  def get("https://remote.org/users/fuser2/followers", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -1018,7 +1018,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://localhost:4001/users/fuser2/following", _, _, _) do
+  def get("https://remote.org/users/fuser2/following", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,

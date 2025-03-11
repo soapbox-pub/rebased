@@ -2405,8 +2405,8 @@ defmodule Pleroma.UserTest do
       other_user =
         insert(:user,
           local: false,
-          follower_address: "http://localhost:4001/users/masto_closed/followers",
-          following_address: "http://localhost:4001/users/masto_closed/following"
+          follower_address: "https://remote.org/users/masto_closed/followers",
+          following_address: "https://remote.org/users/masto_closed/following"
         )
 
       assert other_user.following_count == 0
@@ -2426,8 +2426,8 @@ defmodule Pleroma.UserTest do
       other_user =
         insert(:user,
           local: false,
-          follower_address: "http://localhost:4001/users/masto_closed/followers",
-          following_address: "http://localhost:4001/users/masto_closed/following"
+          follower_address: "https://remote.org/users/masto_closed/followers",
+          following_address: "https://remote.org/users/masto_closed/following"
         )
 
       assert other_user.following_count == 0
@@ -2447,8 +2447,8 @@ defmodule Pleroma.UserTest do
       other_user =
         insert(:user,
           local: false,
-          follower_address: "http://localhost:4001/users/masto_closed/followers",
-          following_address: "http://localhost:4001/users/masto_closed/following"
+          follower_address: "https://remote.org/users/masto_closed/followers",
+          following_address: "https://remote.org/users/masto_closed/following"
         )
 
       assert other_user.following_count == 0

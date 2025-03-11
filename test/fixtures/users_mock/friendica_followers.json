@@ -13,7 +13,7 @@
       "directMessage": "litepub:directMessage"
     }
   ],
-  "id": "http://localhost:8080/followers/fuser3",
+  "id": "https://remote.org/followers/fuser3",
   "type": "OrderedCollection",
   "totalItems": 296
 }
