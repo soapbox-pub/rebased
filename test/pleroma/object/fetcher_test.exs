@@ -166,6 +166,13 @@ defmodule Pleroma.Object.FetcherTest do
                )
     end
 
+    test "it does not fetch from local instance" do
+      local_url = Pleroma.Web.Endpoint.url() <> "/objects/local_resource"
+
+      assert {:fetch, {:error, "Trying to fetch local resource"}} =
+               Fetcher.fetch_object_from_id(local_url)
+    end
+
     test "it validates content-type headers according to ActivityPub spec" do
       # Setup a mock for an object with invalid content-type
       mock(fn

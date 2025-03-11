@@ -148,6 +148,7 @@ defmodule Pleroma.Object.Fetcher do
 
     with {:scheme, true} <- {:scheme, String.starts_with?(id, "http")},
          {_, true} <- {:mrf, MRF.id_filter(id)},
+         {_, :ok} <- {:local_fetch, Containment.contain_local_fetch(id)},
          {:ok, body} <- get_object(id),
          {:ok, data} <- safe_json_decode(body),
          :ok <- Containment.contain_origin_from_id(id, data) do
@@ -159,6 +160,9 @@ defmodule Pleroma.Object.Fetcher do
     else
       {:scheme, _} ->
         {:error, "Unsupported URI scheme"}
+
+      {:local_fetch, _} ->
+        {:error, "Trying to fetch local resource"}
 
       {:error, e} ->
         {:error, e}

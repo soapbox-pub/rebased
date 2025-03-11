@@ -48,6 +48,19 @@ defmodule Pleroma.Object.Containment do
   defp compare_uris(_id_uri, _other_uri), do: :error
 
   @doc """
+  Checks whether an URL to fetch from is from the local server.
+
+  We never want to fetch from ourselves; if it's not in the database
+  it can't be authentic and must be a counterfeit.
+  """
+  def contain_local_fetch(id) do
+    case compare_uris(URI.parse(id), Pleroma.Web.Endpoint.struct_url()) do
+      :ok -> :error
+      _ -> :ok
+    end
+  end
+
+  @doc """
   Checks that an imported AP object's actor matches the host it came from.
   """
   def contain_origin(_id, %{"actor" => nil}), do: :error
