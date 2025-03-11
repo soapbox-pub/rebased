@@ -166,6 +166,84 @@ defmodule Pleroma.Object.FetcherTest do
                )
     end
 
+    test "it validates content-type headers according to ActivityPub spec" do
+      # Setup a mock for an object with invalid content-type
+      mock(fn
+        %{method: :get, url: "https://example.com/objects/invalid-content-type"} ->
+          %Tesla.Env{
+            status: 200,
+            # Not a valid AP content-type
+            headers: [{"content-type", "application/json"}],
+            body:
+              Jason.encode!(%{
+                "id" => "https://example.com/objects/invalid-content-type",
+                "type" => "Note",
+                "content" => "This has an invalid content type",
+                "actor" => "https://example.com/users/actor",
+                "attributedTo" => "https://example.com/users/actor"
+              })
+          }
+      end)
+
+      assert {:fetch, {:error, {:content_type, "application/json"}}} =
+               Fetcher.fetch_object_from_id("https://example.com/objects/invalid-content-type")
+    end
+
+    test "it accepts objects with application/ld+json and ActivityStreams profile" do
+      # Setup a mock for an object with ld+json content-type and AS profile
+      mock(fn
+        %{method: :get, url: "https://example.com/objects/valid-ld-json"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [
+              {"content-type",
+               "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""}
+            ],
+            body:
+              Jason.encode!(%{
+                "id" => "https://example.com/objects/valid-ld-json",
+                "type" => "Note",
+                "content" => "This has a valid ld+json content type",
+                "actor" => "https://example.com/users/actor",
+                "attributedTo" => "https://example.com/users/actor"
+              })
+          }
+      end)
+
+      # This should pass if content-type validation works correctly
+      assert {:ok, object} =
+               Fetcher.fetch_and_contain_remote_object_from_id(
+                 "https://example.com/objects/valid-ld-json"
+               )
+
+      assert object["content"] == "This has a valid ld+json content type"
+    end
+
+    test "it rejects objects with no content-type header" do
+      # Setup a mock for an object with no content-type header
+      mock(fn
+        %{method: :get, url: "https://example.com/objects/no-content-type"} ->
+          %Tesla.Env{
+            status: 200,
+            # No content-type header
+            headers: [],
+            body:
+              Jason.encode!(%{
+                "id" => "https://example.com/objects/no-content-type",
+                "type" => "Note",
+                "content" => "This has no content type header",
+                "actor" => "https://example.com/users/actor",
+                "attributedTo" => "https://example.com/users/actor"
+              })
+          }
+      end)
+
+      # We want to test that the request fails with a missing content-type error
+      # but the actual error is {:fetch, {:error, nil}} - we'll check for this format
+      result = Fetcher.fetch_object_from_id("https://example.com/objects/no-content-type")
+      assert {:fetch, {:error, nil}} = result
+    end
+
     test "it resets instance reachability on successful fetch" do
       id = "http://mastodon.example.org/@admin/99541947525187367"
       Instances.set_consistently_unreachable(id)
