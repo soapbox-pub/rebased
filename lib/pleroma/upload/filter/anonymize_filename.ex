@@ -10,7 +10,7 @@ defmodule Pleroma.Upload.Filter.AnonymizeFilename do
   """
   @behaviour Pleroma.Upload.Filter
 
-  alias Pleroma.Config
+  @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
   alias Pleroma.Upload
 
   def filter(%Upload{name: name} = upload) do
@@ -23,7 +23,7 @@ defmodule Pleroma.Upload.Filter.AnonymizeFilename do
 
   @spec predefined_name(String.t()) :: String.t() | nil
   defp predefined_name(extension) do
-    with name when not is_nil(name) <- Config.get([__MODULE__, :text]),
+    with name when not is_nil(name) <- @config_impl.get([__MODULE__, :text]),
          do: String.replace(name, "{extension}", extension)
   end
 

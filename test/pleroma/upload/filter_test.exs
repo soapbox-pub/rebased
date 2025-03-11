@@ -5,12 +5,13 @@
 defmodule Pleroma.Upload.FilterTest do
   use Pleroma.DataCase
 
+  import Mox
+  alias Pleroma.StaticStubbedConfigMock, as: ConfigMock
   alias Pleroma.Upload.Filter
 
-  setup do: clear_config([Pleroma.Upload.Filter.AnonymizeFilename, :text])
-
   test "applies filters" do
-    clear_config([Pleroma.Upload.Filter.AnonymizeFilename, :text], "custom-file.png")
+    ConfigMock
+    |> stub(:get, fn [Pleroma.Upload.Filter.AnonymizeFilename, :text] -> "custom-file.png" end)
 
     File.cp!(
       "test/fixtures/image.jpg",

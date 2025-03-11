@@ -147,6 +147,7 @@ config :pleroma, Pleroma.Search.Meilisearch, url: "http://127.0.0.1:7700/", priv
 config :phoenix, :plug_init_mode, :runtime
 
 config :pleroma, :config_impl, Pleroma.UnstubbedConfigMock
+config :pleroma, :datetime_impl, Pleroma.DateTimeMock
 
 config :pleroma, Pleroma.PromEx, disabled: true
 
@@ -160,6 +161,12 @@ config :pleroma, Pleroma.Web.RichMedia.Helpers, config_impl: Pleroma.StaticStubb
 config :pleroma, Pleroma.Uploaders.IPFS, config_impl: Pleroma.UnstubbedConfigMock
 config :pleroma, Pleroma.Web.Plugs.HTTPSecurityPlug, config_impl: Pleroma.StaticStubbedConfigMock
 config :pleroma, Pleroma.Web.Plugs.HTTPSignaturePlug, config_impl: Pleroma.StaticStubbedConfigMock
+
+config :pleroma, Pleroma.Upload.Filter.AnonymizeFilename,
+  config_impl: Pleroma.StaticStubbedConfigMock
+
+config :pleroma, Pleroma.Upload.Filter.Mogrify, config_impl: Pleroma.StaticStubbedConfigMock
+config :pleroma, Pleroma.Upload.Filter.Mogrify, mogrify_impl: Pleroma.MogrifyMock
 
 config :pleroma, Pleroma.Signature, http_signatures_impl: Pleroma.StubbedHTTPSignaturesMock
 

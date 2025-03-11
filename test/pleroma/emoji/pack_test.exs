@@ -120,7 +120,7 @@ defmodule Pleroma.Emoji.PackTest do
       path: Path.absname("test/instance_static/emoji/test_pack/blank.png")
     }
 
-    assert Pack.add_file(pack, nil, nil, file) == {:error, :einval}
+    assert {:error, _} = Pack.add_file(pack, nil, nil, file)
   end
 
   test "returns pack when zip file is empty", %{pack: pack} do

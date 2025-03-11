@@ -3,8 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Upload.Filter.AnonymizeFilenameTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
+  import Mox
+  alias Pleroma.StaticStubbedConfigMock, as: ConfigMock
   alias Pleroma.Upload
 
   setup do
@@ -19,21 +21,26 @@ defmodule Pleroma.Upload.Filter.AnonymizeFilenameTest do
     %{upload_file: upload_file}
   end
 
-  setup do: clear_config([Pleroma.Upload.Filter.AnonymizeFilename, :text])
-
   test "it replaces filename on pre-defined text", %{upload_file: upload_file} do
-    clear_config([Upload.Filter.AnonymizeFilename, :text], "custom-file.png")
+    ConfigMock
+    |> stub(:get, fn [Upload.Filter.AnonymizeFilename, :text] -> "custom-file.png" end)
+
     {:ok, :filtered, %Upload{name: name}} = Upload.Filter.AnonymizeFilename.filter(upload_file)
     assert name == "custom-file.png"
   end
 
   test "it replaces filename on pre-defined text expression", %{upload_file: upload_file} do
-    clear_config([Upload.Filter.AnonymizeFilename, :text], "custom-file.{extension}")
+    ConfigMock
+    |> stub(:get, fn [Upload.Filter.AnonymizeFilename, :text] -> "custom-file.{extension}" end)
+
     {:ok, :filtered, %Upload{name: name}} = Upload.Filter.AnonymizeFilename.filter(upload_file)
     assert name == "custom-file.jpg"
   end
 
   test "it replaces filename on random text", %{upload_file: upload_file} do
+    ConfigMock
+    |> stub(:get, fn [Upload.Filter.AnonymizeFilename, :text] -> nil end)
+
     {:ok, :filtered, %Upload{name: name}} = Upload.Filter.AnonymizeFilename.filter(upload_file)
     assert <<_::bytes-size(14)>> <> ".jpg" = name
     refute name == "an… image.jpg"
