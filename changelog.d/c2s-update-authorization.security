@@ -1,0 +1,1 @@
+Fix authorization checks for C2S Update activities to prevent unauthorized modifications of other users' content.

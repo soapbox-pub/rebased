@@ -1,0 +1,1 @@
+Sanitize Content-Type headers in media proxy to prevent serving malicious ActivityPub content through proxied media.

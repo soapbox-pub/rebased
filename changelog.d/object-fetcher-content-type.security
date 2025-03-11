@@ -1,0 +1,1 @@
+Validate Content-Type headers when fetching remote ActivityPub objects to prevent spoofing attacks.

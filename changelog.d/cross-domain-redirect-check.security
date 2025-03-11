@@ -1,0 +1,1 @@
+Reject cross-domain redirects when fetching ActivityPub objects to prevent bypassing domain-based security controls.
