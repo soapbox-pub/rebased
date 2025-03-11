@@ -34,7 +34,13 @@ defmodule Pleroma.Test.StaticConfig do
   @behaviour Pleroma.Config.Getting
   @config Application.get_all_env(:pleroma)
 
+  @impl true
   def get(path, default \\ nil) do
     get_in(@config, path) || default
+  end
+
+  @impl true
+  def get!(path) do
+    get_in(@config, path)
   end
 end

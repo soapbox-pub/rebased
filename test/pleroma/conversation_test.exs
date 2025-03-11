@@ -14,7 +14,7 @@ defmodule Pleroma.ConversationTest do
   setup_all do: clear_config([:instance, :federating], true)
 
   setup do
-    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Test.StaticConfig)
     :ok
   end
 

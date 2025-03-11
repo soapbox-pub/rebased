@@ -65,7 +65,8 @@ config :pleroma, Pleroma.Upload,
   proxy_remote: false,
   filename_display_max_length: 30,
   default_description: nil,
-  base_url: nil
+  base_url: nil,
+  allowed_mime_types: ["image", "audio", "video"]
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
@@ -806,6 +807,13 @@ config :pleroma, :frontends,
         "https://lily-is.land/infra/glitch-lily/-/jobs/artifacts/${ref}/download?job=build",
       "ref" => "servant",
       "build_dir" => "public"
+    },
+    "pl-fe" => %{
+      "name" => "pl-fe",
+      "git" => "https://github.com/mkljczk/pl-fe",
+      "build_url" => "https://pl.mkljczk.pl/pl-fe.zip",
+      "ref" => "develop",
+      "build_dir" => "."
     }
   }
 

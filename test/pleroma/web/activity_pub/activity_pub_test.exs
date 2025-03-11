@@ -1785,8 +1785,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user =
         insert(:user,
           local: false,
-          follower_address: "http://localhost:4001/users/fuser2/followers",
-          following_address: "http://localhost:4001/users/fuser2/following"
+          follower_address: "https://remote.org/users/fuser2/followers",
+          following_address: "https://remote.org/users/fuser2/following"
         )
 
       {:ok, info} = ActivityPub.fetch_follow_information_for_user(user)
@@ -1797,7 +1797,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "detects hidden followers" do
       mock(fn env ->
         case env.url do
-          "http://localhost:4001/users/masto_closed/followers?page=1" ->
+          "https://remote.org/users/masto_closed/followers?page=1" ->
             %Tesla.Env{status: 403, body: ""}
 
           _ ->
@@ -1808,8 +1808,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user =
         insert(:user,
           local: false,
-          follower_address: "http://localhost:4001/users/masto_closed/followers",
-          following_address: "http://localhost:4001/users/masto_closed/following"
+          follower_address: "https://remote.org/users/masto_closed/followers",
+          following_address: "https://remote.org/users/masto_closed/following"
         )
 
       {:ok, follow_info} = ActivityPub.fetch_follow_information_for_user(user)
@@ -1820,7 +1820,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "detects hidden follows" do
       mock(fn env ->
         case env.url do
-          "http://localhost:4001/users/masto_closed/following?page=1" ->
+          "https://remote.org/users/masto_closed/following?page=1" ->
             %Tesla.Env{status: 403, body: ""}
 
           _ ->
@@ -1831,8 +1831,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user =
         insert(:user,
           local: false,
-          follower_address: "http://localhost:4001/users/masto_closed/followers",
-          following_address: "http://localhost:4001/users/masto_closed/following"
+          follower_address: "https://remote.org/users/masto_closed/followers",
+          following_address: "https://remote.org/users/masto_closed/following"
         )
 
       {:ok, follow_info} = ActivityPub.fetch_follow_information_for_user(user)
@@ -1844,8 +1844,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user =
         insert(:user,
           local: false,
-          follower_address: "http://localhost:8080/followers/fuser3",
-          following_address: "http://localhost:8080/following/fuser3"
+          follower_address: "https://remote.org/followers/fuser3",
+          following_address: "https://remote.org/following/fuser3"
         )
 
       {:ok, follow_info} = ActivityPub.fetch_follow_information_for_user(user)
@@ -1858,28 +1858,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "doesn't crash when follower and following counters are hidden" do
       mock(fn env ->
         case env.url do
-          "http://localhost:4001/users/masto_hidden_counters/following" ->
+          "https://remote.org/users/masto_hidden_counters/following" ->
             json(
               %{
                 "@context" => "https://www.w3.org/ns/activitystreams",
-                "id" => "http://localhost:4001/users/masto_hidden_counters/followers"
+                "id" => "https://remote.org/users/masto_hidden_counters/followers"
               },
               headers: HttpRequestMock.activitypub_object_headers()
             )
 
-          "http://localhost:4001/users/masto_hidden_counters/following?page=1" ->
+          "https://remote.org/users/masto_hidden_counters/following?page=1" ->
             %Tesla.Env{status: 403, body: ""}
 
-          "http://localhost:4001/users/masto_hidden_counters/followers" ->
+          "https://remote.org/users/masto_hidden_counters/followers" ->
             json(
               %{
                 "@context" => "https://www.w3.org/ns/activitystreams",
-                "id" => "http://localhost:4001/users/masto_hidden_counters/following"
+                "id" => "https://remote.org/users/masto_hidden_counters/following"
               },
               headers: HttpRequestMock.activitypub_object_headers()
             )
 
-          "http://localhost:4001/users/masto_hidden_counters/followers?page=1" ->
+          "https://remote.org/users/masto_hidden_counters/followers?page=1" ->
             %Tesla.Env{status: 403, body: ""}
         end
       end)
@@ -1887,8 +1887,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user =
         insert(:user,
           local: false,
-          follower_address: "http://localhost:4001/users/masto_hidden_counters/followers",
-          following_address: "http://localhost:4001/users/masto_hidden_counters/following"
+          follower_address: "https://remote.org/users/masto_hidden_counters/followers",
+          following_address: "https://remote.org/users/masto_hidden_counters/following"
         )
 
       {:ok, follow_info} = ActivityPub.fetch_follow_information_for_user(user)

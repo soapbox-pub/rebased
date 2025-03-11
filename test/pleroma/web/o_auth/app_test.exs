@@ -58,16 +58,28 @@ defmodule Pleroma.Web.OAuth.AppTest do
     attrs = %{client_name: "Mastodon-Local", redirect_uris: "."}
     {:ok, %App{} = old_app} = App.get_or_make(attrs, ["write"])
 
+    # backdate the old app so it's within the threshold for being cleaned up
+    one_hour_ago = DateTime.add(DateTime.utc_now(), -3600)
+
+    {:ok, _} =
+      "UPDATE apps SET inserted_at = $1, updated_at = $1 WHERE id = $2"
+      |> Pleroma.Repo.query([one_hour_ago, old_app.id])
+
+    # Create the new app after backdating the old one
     attrs = %{client_name: "PleromaFE", redirect_uris: "."}
     {:ok, %App{} = app} = App.get_or_make(attrs, ["write"])
 
-    # backdate the old app so it's within the threshold for being cleaned up
+    # Ensure the new app has a recent timestamp
+    now = DateTime.utc_now()
+
     {:ok, _} =
-      "UPDATE apps SET inserted_at = now() - interval '1 hour' WHERE id = #{old_app.id}"
-      |> Pleroma.Repo.query()
+      "UPDATE apps SET inserted_at = $1, updated_at = $1 WHERE id = $2"
+      |> Pleroma.Repo.query([now, app.id])
 
     App.remove_orphans()
 
-    assert [app] == Pleroma.Repo.all(App)
+    assert [returned_app] = Pleroma.Repo.all(App)
+    assert returned_app.client_name == "PleromaFE"
+    assert returned_app.id == app.id
   end
 end

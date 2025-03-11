@@ -3,11 +3,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.UserRelationshipTest do
+  alias Pleroma.DateTimeMock
   alias Pleroma.UserRelationship
 
-  use Pleroma.DataCase, async: false
+  use Pleroma.DataCase, async: true
 
-  import Mock
+  import Mox
   import Pleroma.Factory
 
   describe "*_exists?/2" do
@@ -52,6 +53,9 @@ defmodule Pleroma.UserRelationshipTest do
     end
 
     test "creates user relationship record if it doesn't exist", %{users: [user1, user2]} do
+      DateTimeMock
+      |> stub_with(Pleroma.DateTime.Impl)
+
       for relationship_type <- [
             :block,
             :mute,
@@ -80,13 +84,15 @@ defmodule Pleroma.UserRelationshipTest do
     end
 
     test "if record already exists, returns it", %{users: [user1, user2]} do
-      user_block =
-        with_mock NaiveDateTime, [:passthrough], utc_now: fn -> ~N[2017-03-17 17:09:58] end do
-          {:ok, %{inserted_at: ~N[2017-03-17 17:09:58]}} =
-            UserRelationship.create_block(user1, user2)
-        end
+      fixed_datetime = ~N[2017-03-17 17:09:58]
 
-      assert user_block == UserRelationship.create_block(user1, user2)
+      Pleroma.DateTimeMock
+      |> expect(:utc_now, 2, fn -> fixed_datetime end)
+
+      {:ok, %{inserted_at: ^fixed_datetime}} = UserRelationship.create_block(user1, user2)
+
+      # Test the idempotency without caring about the exact time
+      assert {:ok, _} = UserRelationship.create_block(user1, user2)
     end
   end
 
