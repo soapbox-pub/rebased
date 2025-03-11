@@ -534,6 +534,110 @@ defmodule Pleroma.Object.FetcherTest do
     end
   end
 
+  describe "cross-domain redirect handling" do
+    setup do
+      mock(fn
+        # Cross-domain redirect with original domain in id
+        %{method: :get, url: "https://original.test/objects/123"} ->
+          %Tesla.Env{
+            status: 200,
+            url: "https://media.test/objects/123",
+            headers: [{"content-type", "application/activity+json"}],
+            body:
+              Jason.encode!(%{
+                "id" => "https://original.test/objects/123",
+                "type" => "Note",
+                "content" => "This is redirected content",
+                "actor" => "https://original.test/users/actor",
+                "attributedTo" => "https://original.test/users/actor"
+              })
+          }
+
+        # Cross-domain redirect with final domain in id
+        %{method: :get, url: "https://original.test/objects/final-domain-id"} ->
+          %Tesla.Env{
+            status: 200,
+            url: "https://media.test/objects/final-domain-id",
+            headers: [{"content-type", "application/activity+json"}],
+            body:
+              Jason.encode!(%{
+                "id" => "https://media.test/objects/final-domain-id",
+                "type" => "Note",
+                "content" => "This has final domain in id",
+                "actor" => "https://original.test/users/actor",
+                "attributedTo" => "https://original.test/users/actor"
+              })
+          }
+
+        # No redirect - same domain
+        %{method: :get, url: "https://original.test/objects/same-domain-redirect"} ->
+          %Tesla.Env{
+            status: 200,
+            url: "https://original.test/objects/different-path",
+            headers: [{"content-type", "application/activity+json"}],
+            body:
+              Jason.encode!(%{
+                "id" => "https://original.test/objects/same-domain-redirect",
+                "type" => "Note",
+                "content" => "This has a same-domain redirect",
+                "actor" => "https://original.test/users/actor",
+                "attributedTo" => "https://original.test/users/actor"
+              })
+          }
+
+        # Test case with missing url field in response (common in tests)
+        %{method: :get, url: "https://original.test/objects/missing-url"} ->
+          %Tesla.Env{
+            status: 200,
+            # No url field
+            headers: [{"content-type", "application/activity+json"}],
+            body:
+              Jason.encode!(%{
+                "id" => "https://original.test/objects/missing-url",
+                "type" => "Note",
+                "content" => "This has no URL field in response",
+                "actor" => "https://original.test/users/actor",
+                "attributedTo" => "https://original.test/users/actor"
+              })
+          }
+      end)
+
+      :ok
+    end
+
+    test "it rejects objects from cross-domain redirects with original domain in id" do
+      assert {:error, {:cross_domain_redirect, true}} =
+               Fetcher.fetch_and_contain_remote_object_from_id(
+                 "https://original.test/objects/123"
+               )
+    end
+
+    test "it rejects objects from cross-domain redirects with final domain in id" do
+      assert {:error, {:cross_domain_redirect, true}} =
+               Fetcher.fetch_and_contain_remote_object_from_id(
+                 "https://original.test/objects/final-domain-id"
+               )
+    end
+
+    test "it accepts objects with same-domain redirects" do
+      assert {:ok, data} =
+               Fetcher.fetch_and_contain_remote_object_from_id(
+                 "https://original.test/objects/same-domain-redirect"
+               )
+
+      assert data["content"] == "This has a same-domain redirect"
+    end
+
+    test "it handles responses without URL field (common in tests)" do
+      assert {:ok, data} =
+               Fetcher.fetch_and_contain_remote_object_from_id(
+                 "https://original.test/objects/missing-url"
+               )
+
+      assert data["content"] == "This has no URL field in response"
+    end
+  end
+
   describe "fetch with history" do
     setup do
       object2 = %{
