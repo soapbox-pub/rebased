@@ -6,9 +6,9 @@ defmodule Pleroma.Upload.Filter.MogrifunTest do
   use Pleroma.DataCase, async: true
   import Mox
 
+  alias Pleroma.MogrifyMock
   alias Pleroma.Upload
   alias Pleroma.Upload.Filter
-  alias Pleroma.MogrifyMock
 
   test "apply mogrify filter" do
     File.cp!(

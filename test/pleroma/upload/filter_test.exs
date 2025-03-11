@@ -6,8 +6,8 @@ defmodule Pleroma.Upload.FilterTest do
   use Pleroma.DataCase
 
   import Mox
-  alias Pleroma.Upload.Filter
   alias Pleroma.StaticStubbedConfigMock, as: ConfigMock
+  alias Pleroma.Upload.Filter
 
   test "applies filters" do
     ConfigMock

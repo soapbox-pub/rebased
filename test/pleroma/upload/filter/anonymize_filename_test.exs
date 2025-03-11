@@ -6,8 +6,8 @@ defmodule Pleroma.Upload.Filter.AnonymizeFilenameTest do
   use Pleroma.DataCase, async: true
 
   import Mox
-  alias Pleroma.Upload
   alias Pleroma.StaticStubbedConfigMock, as: ConfigMock
+  alias Pleroma.Upload
 
   setup do
     File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")

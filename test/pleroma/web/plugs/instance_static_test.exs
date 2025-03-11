@@ -114,7 +114,7 @@ defmodule Pleroma.Web.Plugs.InstanceStaticTest do
         _ -> nil
       end)
 
-    # It should have been sanitized to application/octet-stream because "application" 
+    # It should have been sanitized to application/octet-stream because "application"
     # is not in the allowed_mime_types list
     assert content_type == "application/octet-stream"
 

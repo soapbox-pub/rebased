@@ -6,9 +6,9 @@ defmodule Pleroma.Upload.Filter.MogrifyTest do
   use Pleroma.DataCase, async: true
   import Mox
 
-  alias Pleroma.Upload.Filter
-  alias Pleroma.StaticStubbedConfigMock, as: ConfigMock
   alias Pleroma.MogrifyMock
+  alias Pleroma.StaticStubbedConfigMock, as: ConfigMock
+  alias Pleroma.Upload.Filter
 
   setup :verify_on_exit!
 
