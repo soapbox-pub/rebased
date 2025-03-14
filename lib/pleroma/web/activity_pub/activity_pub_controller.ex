@@ -41,7 +41,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   # Note: :following and :followers must be served even without authentication (as via :api)
   plug(
     EnsureAuthenticatedPlug
-    when action in [:read_inbox, :update_outbox, :whoami]
+    when action in [:read_inbox, :whoami]
   )
 
   plug(
@@ -451,55 +451,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   defp fix_user_message(%User{}, activity) do
     {:ok, activity}
-  end
-
-  def update_outbox(
-        %{assigns: %{user: %User{nickname: nickname, ap_id: actor} = user}} = conn,
-        %{"nickname" => nickname} = params
-      ) do
-    params =
-      params
-      |> Map.drop(["nickname"])
-      |> Map.put("id", Utils.generate_activity_id())
-      |> Map.put("actor", actor)
-
-    with {:ok, params} <- fix_user_message(user, params),
-         {:ok, activity, _} <- Pipeline.common_pipeline(params, local: true),
-         %Activity{data: activity_data} <- Activity.normalize(activity) do
-      conn
-      |> put_status(:created)
-      |> put_resp_header("location", activity_data["id"])
-      |> json(activity_data)
-    else
-      {:forbidden, message} ->
-        conn
-        |> put_status(:forbidden)
-        |> json(message)
-
-      {:error, message} ->
-        conn
-        |> put_status(:bad_request)
-        |> json(message)
-
-      e ->
-        Logger.warning(fn -> "AP C2S: #{inspect(e)}" end)
-
-        conn
-        |> put_status(:bad_request)
-        |> json("Bad Request")
-    end
-  end
-
-  def update_outbox(%{assigns: %{user: %User{} = user}} = conn, %{"nickname" => nickname}) do
-    err =
-      dgettext("errors", "can't update outbox of %{nickname} as %{as_nickname}",
-        nickname: nickname,
-        as_nickname: user.nickname
-      )
-
-    conn
-    |> put_status(:forbidden)
-    |> json(err)
   end
 
   defp errors(conn, {:error, :not_found}) do
