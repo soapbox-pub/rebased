@@ -1,6 +1,6 @@
 image: registry.gitlab.com/soapbox-pub/rebased/ci
 
-variables: &global_variables
+variables:
   POSTGRES_DB: pleroma_test
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
@@ -11,48 +11,22 @@ variables: &global_variables
   # https://github.com/dokku/dokku/issues/2514#issuecomment-616775470
   GIT_DEPTH: 0
 
-cache: &cache
-  key:
-    files:
-      - mix.lock
-  paths:
-    - deps
-    - _build
-  policy: pull
-
 stages:
-  - deps
   - test
-  - deploy
-
-deps:
-  stage: deps
-  script:
-    - mix deps.get
-    - mix deps.compile
-  cache:
-    <<: *cache
-    policy: pull-push
-  only:
-    changes:
-      - mix.lock
 
 test:
   stage: test
-  only:
-    changes: &elixir-changes
-      - ".gitlab-ci.yml"
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
-  services: &db-services
+  services:
     - name: postgres:13-alpine
       alias: postgres
       command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-  before_script: &db-setup
+  before_script:
+    - mix deps.get
+    - mix deps.compile
     - mix ecto.create
     - mix ecto.migrate
   script:
+    - mix format --check-formatted
     - mix test --cover --preload-modules
   coverage: '/^Line total: ([^ ]*%)$/'
   artifacts:
@@ -60,27 +34,3 @@ test:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
-
-lint:
-  stage: test
-  only:
-    changes: *elixir-changes
-  script:
-    - mix format --check-formatted
-
-docker:
-  stage: deploy
-  image: docker:20.10.17
-  cache: {}
-  services:
-    - docker:20.10.17-dind
-  tags:
-    - dind
-  # https://medium.com/devops-with-valentine/how-to-build-a-docker-image-and-push-it-to-the-gitlab-container-registry-from-a-gitlab-ci-pipeline-acac0d1f26df
-  script:
-    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
-    - docker build -t $CI_REGISTRY_IMAGE .
-    - docker push $CI_REGISTRY_IMAGE
-  only:
-    refs:
-      - main
