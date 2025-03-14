@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 2.6.1
+### Changed
+- - Document maximum supported version of Erlang & Elixir
+
+### Added
+- [docs] add frontends management documentation
+
+### Fixed
+- TwitterAPI: Return proper error when healthcheck is disabled
+- Fix eblurhash and elixir-captcha not using system cflags
+
 ## 2.6.0
 ### Security
 - Preload: Make generated JSON html-safe. It already was html safe because it only consists of config data that is base64 encoded, but this will keep it safe it that ever changes.
