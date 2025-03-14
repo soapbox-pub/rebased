@@ -13,9 +13,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.ActivityPub.ObjectView
-  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Relay
-  alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
@@ -41,10 +39,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   # Note: :following and :followers must be served even without authentication (as via :api)
   plug(
     EnsureAuthenticatedPlug
-    when action in [:read_inbox, :update_outbox, :whoami, :upload_media]
+    when action in [:read_inbox, :whoami]
   )
-
-  plug(Majic.Plug, [pool: Pleroma.MajicPool] when action in [:upload_media])
 
   plug(
     Pleroma.Web.Plugs.Cache,
@@ -405,105 +401,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     |> json(err)
   end
 
-  defp fix_user_message(%User{ap_id: actor}, %{"type" => "Create", "object" => object} = activity)
-       when is_map(object) do
-    length =
-      [object["content"], object["summary"], object["name"]]
-      |> Enum.filter(&is_binary(&1))
-      |> Enum.join("")
-      |> String.length()
-
-    limit = Pleroma.Config.get([:instance, :limit])
-
-    if length < limit do
-      object =
-        object
-        |> Transmogrifier.strip_internal_fields()
-        |> Map.put("attributedTo", actor)
-        |> Map.put("actor", actor)
-        |> Map.put("id", Utils.generate_object_id())
-
-      {:ok, Map.put(activity, "object", object)}
-    else
-      {:error,
-       dgettext(
-         "errors",
-         "Character limit (%{limit} characters) exceeded, contains %{length} characters",
-         limit: limit,
-         length: length
-       )}
-    end
-  end
-
-  defp fix_user_message(
-         %User{ap_id: actor} = user,
-         %{"type" => "Delete", "object" => object} = activity
-       ) do
-    with {_, %Object{data: object_data}} <- {:normalize, Object.normalize(object, fetch: false)},
-         {_, true} <- {:permission, user.is_moderator || actor == object_data["actor"]} do
-      {:ok, activity}
-    else
-      {:normalize, _} ->
-        {:error, "No such object found"}
-
-      {:permission, _} ->
-        {:forbidden, "You can't delete this object"}
-    end
-  end
-
-  defp fix_user_message(%User{}, activity) do
-    {:ok, activity}
-  end
-
-  def update_outbox(
-        %{assigns: %{user: %User{nickname: nickname, ap_id: actor} = user}} = conn,
-        %{"nickname" => nickname} = params
-      ) do
-    params =
-      params
-      |> Map.drop(["nickname"])
-      |> Map.put("id", Utils.generate_activity_id())
-      |> Map.put("actor", actor)
-
-    with {:ok, params} <- fix_user_message(user, params),
-         {:ok, activity, _} <- Pipeline.common_pipeline(params, local: true),
-         %Activity{data: activity_data} <- Activity.normalize(activity) do
-      conn
-      |> put_status(:created)
-      |> put_resp_header("location", activity_data["id"])
-      |> json(activity_data)
-    else
-      {:forbidden, message} ->
-        conn
-        |> put_status(:forbidden)
-        |> json(message)
-
-      {:error, message} ->
-        conn
-        |> put_status(:bad_request)
-        |> json(message)
-
-      e ->
-        Logger.warning(fn -> "AP C2S: #{inspect(e)}" end)
-
-        conn
-        |> put_status(:bad_request)
-        |> json("Bad Request")
-    end
-  end
-
-  def update_outbox(%{assigns: %{user: %User{} = user}} = conn, %{"nickname" => nickname}) do
-    err =
-      dgettext("errors", "can't update outbox of %{nickname} as %{as_nickname}",
-        nickname: nickname,
-        as_nickname: user.nickname
-      )
-
-    conn
-    |> put_status(:forbidden)
-    |> json(err)
-  end
-
   defp errors(conn, {:error, :not_found}) do
     conn
     |> put_status(:not_found)
@@ -523,21 +420,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
 
     conn
-  end
-
-  def upload_media(%{assigns: %{user: %User{} = user}} = conn, %{"file" => file} = data) do
-    with {:ok, object} <-
-           ActivityPub.upload(
-             file,
-             actor: User.ap_id(user),
-             description: Map.get(data, "description")
-           ) do
-      Logger.debug(inspect(object))
-
-      conn
-      |> put_status(:created)
-      |> json(object.data)
-    end
   end
 
   def pinned(conn, %{"nickname" => nickname}) do

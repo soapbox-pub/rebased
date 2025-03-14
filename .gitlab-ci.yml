@@ -105,25 +105,6 @@ cycles:
   script:
     - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
 
-# Deploy with Dokku
-# https://github.com/dokku/gitlab-ci
-# https://github.com/dokku/ci-docker-image
-review:
-  image: dokku/ci-docker-image
-  stage: test
-  environment:
-    name: review/$CI_COMMIT_REF_NAME
-    url: https://rebased-$CI_COMMIT_REF_SLUG.dokku.soapbox.pub
-  only:
-    - branches
-  except:
-    - main
-  variables:
-    GIT_REMOTE_URL: ssh://dokku@$DOKKU_HOST/rebased-$CI_COMMIT_REF_SLUG
-    GIT_PUSH_FLAGS: --force
-  script: dokku-deploy
-  allow_failure: true
-
 release:
   stage: deploy
   variables:
