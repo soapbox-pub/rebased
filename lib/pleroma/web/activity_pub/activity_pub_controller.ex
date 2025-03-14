@@ -13,9 +13,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.ActivityPub.ObjectView
-  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Relay
-  alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
@@ -401,56 +399,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     conn
     |> put_status(:forbidden)
     |> json(err)
-  end
-
-  defp fix_user_message(%User{ap_id: actor}, %{"type" => "Create", "object" => object} = activity)
-       when is_map(object) do
-    length =
-      [object["content"], object["summary"], object["name"]]
-      |> Enum.filter(&is_binary(&1))
-      |> Enum.join("")
-      |> String.length()
-
-    limit = Pleroma.Config.get([:instance, :limit])
-
-    if length < limit do
-      object =
-        object
-        |> Transmogrifier.strip_internal_fields()
-        |> Map.put("attributedTo", actor)
-        |> Map.put("actor", actor)
-        |> Map.put("id", Utils.generate_object_id())
-
-      {:ok, Map.put(activity, "object", object)}
-    else
-      {:error,
-       dgettext(
-         "errors",
-         "Character limit (%{limit} characters) exceeded, contains %{length} characters",
-         limit: limit,
-         length: length
-       )}
-    end
-  end
-
-  defp fix_user_message(
-         %User{ap_id: actor} = user,
-         %{"type" => "Delete", "object" => object} = activity
-       ) do
-    with {_, %Object{data: object_data}} <- {:normalize, Object.normalize(object, fetch: false)},
-         {_, true} <- {:permission, user.is_moderator || actor == object_data["actor"]} do
-      {:ok, activity}
-    else
-      {:normalize, _} ->
-        {:error, "No such object found"}
-
-      {:permission, _} ->
-        {:forbidden, "You can't delete this object"}
-    end
-  end
-
-  defp fix_user_message(%User{}, activity) do
-    {:ok, activity}
   end
 
   defp errors(conn, {:error, :not_found}) do
