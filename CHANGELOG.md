@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 2.6.2
+
+### Security
+- MRF StealEmojiPolicy: Sanitize shortcodes (thanks to Hazel K for the report
+
 ## 2.6.1
 ### Changed
 - - Document maximum supported version of Erlang & Elixir
