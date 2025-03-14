@@ -41,10 +41,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   # Note: :following and :followers must be served even without authentication (as via :api)
   plug(
     EnsureAuthenticatedPlug
-    when action in [:read_inbox, :update_outbox, :whoami, :upload_media]
+    when action in [:read_inbox, :update_outbox, :whoami]
   )
-
-  plug(Majic.Plug, [pool: Pleroma.MajicPool] when action in [:upload_media])
 
   plug(
     Pleroma.Web.Plugs.Cache,
@@ -523,21 +521,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
 
     conn
-  end
-
-  def upload_media(%{assigns: %{user: %User{} = user}} = conn, %{"file" => file} = data) do
-    with {:ok, object} <-
-           ActivityPub.upload(
-             file,
-             actor: User.ap_id(user),
-             description: Map.get(data, "description")
-           ) do
-      Logger.debug(inspect(object))
-
-      conn
-      |> put_status(:created)
-      |> json(object.data)
-    end
   end
 
   def pinned(conn, %{"nickname" => nickname}) do
