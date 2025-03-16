@@ -6,23 +6,20 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
   @moduledoc """
   Worker which purges expired activity.
   """
-
-  use Oban.Worker, queue: :activity_expiration, max_attempts: 1, unique: [period: :infinity]
+  @queue :background
+  use Oban.Worker, queue: @queue, max_attempts: 1, unique: [period: :infinity]
 
   import Ecto.Query
 
   alias Pleroma.Activity
 
-  @spec enqueue(map()) ::
+  @spec enqueue(map(), list()) ::
           {:ok, Oban.Job.t()}
           | {:error, :expired_activities_disabled}
           | {:error, :expiration_too_close}
-  def enqueue(args) do
+  def enqueue(params, worker_args) do
     with true <- enabled?() do
-      {scheduled_at, args} = Map.pop(args, :expires_at)
-
-      args
-      |> new(scheduled_at: scheduled_at)
+      new(params, worker_args)
       |> Oban.insert()
     end
   end
@@ -35,7 +32,7 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
     end
   end
 
-  @impl Oban.Worker
+  @impl true
   def timeout(_job), do: :timer.seconds(5)
 
   defp enabled? do
@@ -46,20 +43,22 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
 
   defp find_activity(id) do
     with nil <- Activity.get_by_id_with_object(id) do
-      {:error, :activity_not_found}
+      {:cancel, :activity_not_found}
     end
   end
 
   defp find_user(ap_id) do
     with nil <- Pleroma.User.get_by_ap_id(ap_id) do
-      {:error, :user_not_found}
+      {:cancel, :user_not_found}
     end
   end
 
   def get_expiration(id) do
+    queue = Atom.to_string(@queue)
+
     from(j in Oban.Job,
       where: j.state == "scheduled",
-      where: j.queue == "activity_expiration",
+      where: j.queue == ^queue,
       where: fragment("?->>'activity_id' = ?", j.args, ^id)
     )
     |> Pleroma.Repo.one()

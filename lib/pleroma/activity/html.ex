@@ -28,7 +28,7 @@ defmodule Pleroma.Activity.HTML do
     end
   end
 
-  defp add_cache_key_for(activity_id, additional_key) do
+  def add_cache_key_for(activity_id, additional_key) do
     current = get_cache_keys_for(activity_id)
 
     unless additional_key in current do

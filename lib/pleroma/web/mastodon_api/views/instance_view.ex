@@ -6,9 +6,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
   use Pleroma.Web, :view
 
   alias Pleroma.Config
-  alias Pleroma.User
+  alias Pleroma.Domain
   alias Pleroma.Web.ActivityPub.MRF
-  alias Pleroma.Web.MastodonAPI
+  alias Pleroma.Web.AdminAPI.DomainView
 
   @mastodon_api_level "2.7.2"
 
@@ -20,12 +20,11 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
   def render("show.json", _) do
     instance = Config.get(:instance)
 
-    %{
-      uri: Pleroma.Web.WebFinger.domain(),
-      title: Keyword.get(instance, :name),
+    common_information(instance)
+    |> Map.merge(%{
+      uri: Pleroma.Web.WebFinger.host(),
       description: Keyword.get(instance, :description),
       short_description: Keyword.get(instance, :short_description),
-      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.compat_version()})",
       email: Keyword.get(instance, :email),
       urls: %{
         streaming_api: Pleroma.Web.Endpoint.websocket_url()
@@ -34,11 +33,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       thumbnail:
         URI.merge(Pleroma.Web.Endpoint.url(), Keyword.get(instance, :instance_thumbnail))
         |> to_string,
-      languages: Keyword.get(instance, :languages, ["en"]),
       registrations: Keyword.get(instance, :registrations_open),
       approval_required: Keyword.get(instance, :account_approval_required),
-      configuration: configuration(),
       contact_account: contact_account(Keyword.get(instance, :contact_username)),
+      configuration: configuration(),
       rules: render(__MODULE__, "rules.json"),
       # Extra (not present in Mastodon):
       max_toot_chars: Keyword.get(instance, :limit),
@@ -50,20 +48,17 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
       background_image: Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
       description_limit: Keyword.get(instance, :description_limit),
-      pleroma: pleroma_configuration(instance),
-      soapbox: %{
-        version: Soapbox.version()
-      }
-    }
+      chat_limit: Keyword.get(instance, :chat_limit),
+      pleroma: pleroma_configuration(instance)
+    })
   end
 
   def render("show2.json", _) do
     instance = Config.get(:instance)
 
-    %{
-      domain: Pleroma.Web.WebFinger.domain(),
-      title: Keyword.get(instance, :name),
-      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.compat_version()})",
+    common_information(instance)
+    |> Map.merge(%{
+      domain: Pleroma.Web.WebFinger.host(),
       source_url: Pleroma.Application.repository(),
       description: Keyword.get(instance, :short_description),
       usage: %{users: %{active_month: Pleroma.User.active_user_count()}},
@@ -72,24 +67,24 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           URI.merge(Pleroma.Web.Endpoint.url(), Keyword.get(instance, :instance_thumbnail))
           |> to_string
       },
-      languages: Keyword.get(instance, :languages, ["en"]),
       configuration: configuration2(),
       registrations: %{
         enabled: Keyword.get(instance, :registrations_open),
         approval_required: Keyword.get(instance, :account_approval_required),
-        message: nil
+        message: nil,
+        url: nil
       },
       contact: %{
         email: Keyword.get(instance, :email),
         account: contact_account(Keyword.get(instance, :contact_username))
       },
-      rules: render(__MODULE__, "rules.json"),
+      api_versions: %{
+        "mastodon" => 0,
+        "pl.mkljczk.pl" => 1
+      },
       # Extra (not present in Mastodon):
-      pleroma: pleroma_configuration2(instance),
-      soapbox: %{
-        version: Soapbox.version()
-      }
-    }
+      pleroma: pleroma_configuration2(instance)
+    })
   end
 
   def render("rules.json", _) do
@@ -100,8 +95,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
   def render("rule.json", %{rule: rule}) do
     %{
-      id: rule.id,
-      text: rule.text
+      id: to_string(rule.id),
+      text: rule.text,
+      hint: rule.hint || ""
     }
   end
 
@@ -153,8 +149,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "shareable_emoji_packs",
       "multifetch",
       "pleroma:api/v1/notifications:include_types_filter",
-      "quote_posting",
       "editing",
+      "quote_posting",
       if Config.get([:activitypub, :blockers_visible]) do
         "blockers_visible"
       end,
@@ -173,7 +169,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "pleroma_emoji_reactions",
       "pleroma_custom_emoji_reactions",
       "pleroma_chat_messages",
-      "email_list",
       if Config.get([:instance, :show_reactions]) do
         "exposable_reactions"
       end,
@@ -181,16 +176,40 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         "profile_directory"
       end,
       "pleroma:get:main/ostatus",
+      "pleroma:group_actors",
+      "pleroma:bookmark_folders",
       if Pleroma.Language.Translation.configured?() do
         "translation"
       end,
-      "events"
+      if Pleroma.Language.LanguageDetector.configured?() do
+        "language_detection"
+      end,
+      "events",
+      "multitenancy",
+      "pleroma:bites",
+      if !Enum.empty?(Config.get([:instance, :local_bubble], [])) do
+        "bubble_timeline"
+      end,
+      # Akkoma compatibility
+      if Pleroma.Language.Translation.configured?() do
+        "akkoma:machine_translation"
+      end
     ]
     |> Enum.filter(& &1)
   end
 
+  defp common_information(instance) do
+    %{
+      languages: Keyword.get(instance, :languages, ["en"]),
+      rules: render(__MODULE__, "rules.json"),
+      title: Keyword.get(instance, :name),
+      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.compat_version()})"
+    }
+  end
+
   def federation do
     quarantined = Config.get([:instance, :quarantined_instances], [])
+    rejected = Config.get([:instance, :rejected_instances], [])
 
     if Config.get([:mrf, :transparency]) do
       {:ok, data} = MRF.describe()
@@ -210,6 +229,12 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           |> Enum.map(fn {instance, reason} -> {instance, %{"reason" => reason}} end)
           |> Map.new()
       })
+      |> Map.put(
+        :rejected_instances,
+        rejected
+        |> Enum.map(fn {instance, reason} -> {instance, %{"reason" => reason}} end)
+        |> Map.new()
+      )
     else
       %{}
     end
@@ -225,15 +250,35 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     }
   end
 
+  defp contact_account(nil), do: nil
+
+  defp contact_account("@" <> username) do
+    contact_account(username)
+  end
+
+  defp contact_account(username) do
+    user = Pleroma.User.get_cached_by_nickname(username)
+
+    if user do
+      Pleroma.Web.MastodonAPI.AccountView.render("show.json", %{user: user, for: nil})
+    else
+      nil
+    end
+  end
+
   defp configuration do
     %{
+      accounts: %{
+        max_featured_tags: 0
+      },
       statuses: %{
         max_characters: Config.get([:instance, :limit]),
         max_media_attachments: Config.get([:instance, :max_media_attachments])
       },
       media_attachments: %{
         image_size_limit: Config.get([:instance, :upload_limit]),
-        video_size_limit: Config.get([:instance, :upload_limit])
+        video_size_limit: Config.get([:instance, :upload_limit]),
+        supported_mime_types: ["application/octet-stream"]
       },
       polls: %{
         max_options: Config.get([:instance, :poll_limits, :max_options]),
@@ -246,10 +291,17 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
   defp configuration2 do
     configuration()
+    |> put_in([:accounts, :max_pinned_statuses], Config.get([:instance, :max_pinned_statuses], 0))
+    |> put_in([:statuses, :characters_reserved_per_url], 0)
     |> Map.merge(%{
-      urls: %{streaming: Pleroma.Web.Endpoint.websocket_url()},
       translation: %{enabled: Pleroma.Language.Translation.configured?()},
-      vapid: %{public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)}
+      urls: %{
+        streaming: Pleroma.Web.Endpoint.websocket_url(),
+        status: Config.get([:instance, :status_page])
+      },
+      vapid: %{
+        public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
+      }
     })
   end
 
@@ -282,7 +334,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         migration_cooldown_period: Config.get([:instance, :migration_cooldown_period]),
         restrict_unauthenticated: restrict_unauthenticated(),
         translation: translation_configuration(),
-        markup: markup()
+        markup: markup(),
+        multitenancy: multitenancy()
       },
       stats: %{mau: Pleroma.User.active_user_count()},
       vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key),
@@ -306,6 +359,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
           background_image:
             Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
+          chat_limit: Keyword.get(instance, :chat_limit),
           description_limit: Keyword.get(instance, :description_limit)
         })
     })
@@ -338,27 +392,28 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     }
   end
 
-  defp contact_account(nil), do: nil
-
-  defp contact_account("@" <> username) do
-    contact_account(username)
-  end
-
-  defp contact_account(username) do
-    user = User.get_cached_by_nickname(username)
-
-    if user do
-      MastodonAPI.AccountView.render("show.json", %{user: user, for: nil})
-    else
-      nil
-    end
-  end
-
   defp markup do
     %{
       allow_inline_images: Config.get([:markup, :allow_inline_images]),
       allow_headings: Config.get([:markup, :allow_headings]),
       allow_tables: Config.get([:markup, :allow_tables])
     }
+  end
+
+  defp multitenancy do
+    enabled = Config.get([:instance, :multitenancy, :enabled])
+
+    if enabled do
+      domains =
+        [%Domain{id: "", domain: Pleroma.Web.WebFinger.host(), public: true}] ++
+          Domain.cached_list()
+
+      %{
+        enabled: true,
+        domains: DomainView.render("index.json", domains: domains, admin: false)
+      }
+    else
+      nil
+    end
   end
 end

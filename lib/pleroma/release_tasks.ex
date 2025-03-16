@@ -16,17 +16,24 @@ defmodule Pleroma.ReleaseTasks do
     end
   end
 
+  def find_module(task) do
+    module_name =
+      task
+      |> String.split(".")
+      |> Enum.map(&String.capitalize/1)
+      |> then(fn x -> [Mix, Tasks, Pleroma] ++ x end)
+      |> Module.concat()
+
+    case Code.ensure_loaded(module_name) do
+      {:module, _} -> module_name
+      _ -> nil
+    end
+  end
+
   defp mix_task(task, args) do
     Application.load(:pleroma)
-    {:ok, modules} = :application.get_key(:pleroma, :modules)
 
-    module =
-      Enum.find(modules, fn module ->
-        module = Module.split(module)
-
-        match?(["Mix", "Tasks", "Pleroma" | _], module) and
-          String.downcase(List.last(module)) == task
-      end)
+    module = find_module(task)
 
     if module do
       module.run(args)
@@ -55,12 +62,6 @@ defmodule Pleroma.ReleaseTasks do
 
       {:error, term} when is_binary(term) ->
         IO.puts(:stderr, "The database for #{inspect(@repo)} couldn't be created: #{term}")
-
-      {:error, term} ->
-        IO.puts(
-          :stderr,
-          "The database for #{inspect(@repo)} couldn't be created: #{inspect(term)}"
-        )
     end
   end
 end

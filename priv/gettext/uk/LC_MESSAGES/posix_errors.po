@@ -1,0 +1,166 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-06-22 06:26+0300\n"
+"PO-Revision-Date: 2024-06-23 04:02+0000\n"
+"Last-Translator: Pleroma User <keine@partyheld.de>\n"
+"Language-Team: Ukrainian <https://translate.pleroma.social/projects/pleroma/"
+"pleroma-backend-domain-posix_errors/uk/>\n"
+"Language: uk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 4.13.1\n"
+
+## This file is a PO Template file.
+##
+## `msgid`s here are often extracted from source code.
+## Add new translations manually only if they're dynamic
+## translations that can't be statically extracted.
+##
+## Run `mix gettext.extract` to bring this file up to
+## date. Leave `msgstr`s empty as changing them here as no
+## effect: edit them in PO (`.po`) files instead.
+msgid "eperm"
+msgstr "Операцію не дозволено"
+
+msgid "eacces"
+msgstr "Доступ заборонено"
+
+msgid "eagain"
+msgstr "Ресурс тимчасово недоступний"
+
+msgid "ebadf"
+msgstr "Поганий дескриптор файлу"
+
+msgid "ebadmsg"
+msgstr ""
+
+msgid "ebusy"
+msgstr "Пристрій або ресурс зайняті"
+
+msgid "edeadlk"
+msgstr ""
+
+msgid "edeadlock"
+msgstr ""
+
+msgid "edquot"
+msgstr "Дискову квоту перевищено"
+
+msgid "eexist"
+msgstr "Такий файл вже існує"
+
+msgid "efault"
+msgstr ""
+
+msgid "efbig"
+msgstr "Файл занадто великий"
+
+msgid "eftype"
+msgstr "Недопустимий тип або формат файлу"
+
+msgid "eintr"
+msgstr "Перерваний системний виклик"
+
+msgid "einval"
+msgstr "Невірний аргумент"
+
+msgid "eio"
+msgstr "Помилка вводу/виводу"
+
+msgid "eisdir"
+msgstr ""
+
+msgid "eloop"
+msgstr "Забагато вкладень символічних посилань"
+
+msgid "emfile"
+msgstr "Забагато відкритих файлів"
+
+msgid "emlink"
+msgstr "Забагато посилань"
+
+msgid "emultihop"
+msgstr ""
+
+msgid "enametoolong"
+msgstr "Занадто довге ім'я файлу"
+
+msgid "enfile"
+msgstr "Забагато відкритих файлів у системі"
+
+msgid "enobufs"
+msgstr "Немає місця в буфері"
+
+msgid "enodev"
+msgstr "Немає такого пристрою"
+
+msgid "enolck"
+msgstr ""
+
+msgid "enolink"
+msgstr "З'єднання було порушено"
+
+msgid "enoent"
+msgstr "Немає такого файла або директорії"
+
+msgid "enomem"
+msgstr "Неможливо виділити пам'ять"
+
+msgid "enospc"
+msgstr "На пристрої не залишилось вільного місця"
+
+msgid "enosr"
+msgstr ""
+
+msgid "enostr"
+msgstr ""
+
+msgid "enosys"
+msgstr "Функцію не імплементовано"
+
+msgid "enotblk"
+msgstr ""
+
+msgid "enotdir"
+msgstr "Не є директорією"
+
+msgid "enotsup"
+msgstr "Операція не підтримується"
+
+msgid "enxio"
+msgstr "Немає такого пристрою або адреси"
+
+msgid "eopnotsupp"
+msgstr "Операція не підтримується"
+
+msgid "eoverflow"
+msgstr "Значення завелике для обраного типу даних"
+
+msgid "epipe"
+msgstr ""
+
+msgid "erange"
+msgstr ""
+
+msgid "erofs"
+msgstr "Файлова система тільки для читання"
+
+msgid "espipe"
+msgstr ""
+
+msgid "esrch"
+msgstr "Немає такого процесу"
+
+msgid "estale"
+msgstr ""
+
+msgid "etxtbsy"
+msgstr ""
+
+msgid "exdev"
+msgstr ""

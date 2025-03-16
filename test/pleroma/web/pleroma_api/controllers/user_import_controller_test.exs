@@ -22,7 +22,7 @@ defmodule Pleroma.Web.PleromaAPI.UserImportControllerTest do
     test "it returns HTTP 200", %{conn: conn} do
       user2 = insert(:user)
 
-      assert "job started" ==
+      assert "jobs started" ==
                conn
                |> put_req_header("content-type", "application/json")
                |> post("/api/pleroma/follow_import", %{"list" => "#{user2.ap_id}"})
@@ -38,7 +38,7 @@ defmodule Pleroma.Web.PleromaAPI.UserImportControllerTest do
            "Account address,Show boosts\n#{user2.ap_id},true"
          end}
       ]) do
-        assert "job started" ==
+        assert "jobs started" ==
                  conn
                  |> put_req_header("content-type", "application/json")
                  |> post("/api/pleroma/follow_import", %{
@@ -46,9 +46,9 @@ defmodule Pleroma.Web.PleromaAPI.UserImportControllerTest do
                  })
                  |> json_response_and_validate_schema(200)
 
-        assert [{:ok, job_result}] = ObanHelpers.perform_all()
-        assert job_result == [refresh_record(user2)]
-        assert [%Pleroma.User{follower_count: 1}] = job_result
+        assert [{:ok, updated_user}] = ObanHelpers.perform_all()
+        assert updated_user.id == user2.id
+        assert updated_user.follower_count == 1
       end
     end
 
@@ -63,7 +63,7 @@ defmodule Pleroma.Web.PleromaAPI.UserImportControllerTest do
         })
         |> json_response_and_validate_schema(200)
 
-      assert response == "job started"
+      assert response == "jobs started"
     end
 
     test "requires 'follow' or 'write:follows' permissions" do
@@ -102,14 +102,20 @@ defmodule Pleroma.Web.PleromaAPI.UserImportControllerTest do
         ]
         |> Enum.join("\n")
 
-      assert "job started" ==
+      assert "jobs started" ==
                conn
                |> put_req_header("content-type", "application/json")
                |> post("/api/pleroma/follow_import", %{"list" => identifiers})
                |> json_response_and_validate_schema(200)
 
-      assert [{:ok, job_result}] = ObanHelpers.perform_all()
-      assert job_result == Enum.map(users, &refresh_record/1)
+      results = ObanHelpers.perform_all()
+
+      returned_users =
+        for {_, returned_user} <- results do
+          returned_user
+        end
+
+      assert returned_users == Enum.map(users, &refresh_record/1)
     end
   end
 
@@ -120,7 +126,7 @@ defmodule Pleroma.Web.PleromaAPI.UserImportControllerTest do
     test "it returns HTTP 200", %{conn: conn} do
       user2 = insert(:user)
 
-      assert "job started" ==
+      assert "jobs started" ==
                conn
                |> put_req_header("content-type", "application/json")
                |> post("/api/pleroma/blocks_import", %{"list" => "#{user2.ap_id}"})
@@ -133,7 +139,7 @@ defmodule Pleroma.Web.PleromaAPI.UserImportControllerTest do
       with_mocks([
         {File, [], read!: fn "blocks_list.txt" -> "#{user2.ap_id} #{user3.ap_id}" end}
       ]) do
-        assert "job started" ==
+        assert "jobs started" ==
                  conn
                  |> put_req_header("content-type", "application/json")
                  |> post("/api/pleroma/blocks_import", %{
@@ -141,8 +147,14 @@ defmodule Pleroma.Web.PleromaAPI.UserImportControllerTest do
                  })
                  |> json_response_and_validate_schema(200)
 
-        assert [{:ok, job_result}] = ObanHelpers.perform_all()
-        assert job_result == users
+        results = ObanHelpers.perform_all()
+
+        returned_users =
+          for {_, returned_user} <- results do
+            returned_user
+          end
+
+        assert returned_users == users
       end
     end
 
@@ -159,14 +171,25 @@ defmodule Pleroma.Web.PleromaAPI.UserImportControllerTest do
         ]
         |> Enum.join(" ")
 
-      assert "job started" ==
+      assert "jobs started" ==
                conn
                |> put_req_header("content-type", "application/json")
                |> post("/api/pleroma/blocks_import", %{"list" => identifiers})
                |> json_response_and_validate_schema(200)
 
-      assert [{:ok, job_result}] = ObanHelpers.perform_all()
-      assert job_result == users
+      results = ObanHelpers.perform_all()
+
+      returned_user_ids =
+        for {_, user} <- results do
+          user.id
+        end
+
+      original_user_ids =
+        for user <- users do
+          user.id
+        end
+
+      assert match?(^original_user_ids, returned_user_ids)
     end
   end
 
@@ -177,24 +200,25 @@ defmodule Pleroma.Web.PleromaAPI.UserImportControllerTest do
     test "it returns HTTP 200", %{user: user, conn: conn} do
       user2 = insert(:user)
 
-      assert "job started" ==
+      assert "jobs started" ==
                conn
                |> put_req_header("content-type", "application/json")
                |> post("/api/pleroma/mutes_import", %{"list" => "#{user2.ap_id}"})
                |> json_response_and_validate_schema(200)
 
-      assert [{:ok, job_result}] = ObanHelpers.perform_all()
-      assert job_result == [user2]
+      [{:ok, result_user}] = ObanHelpers.perform_all()
+
+      assert result_user == refresh_record(user2)
       assert Pleroma.User.mutes?(user, user2)
     end
 
     test "it imports mutes users from file", %{user: user, conn: conn} do
-      users = [user2, user3] = insert_list(2, :user)
+      [user2, user3] = insert_list(2, :user)
 
       with_mocks([
         {File, [], read!: fn "mutes_list.txt" -> "#{user2.ap_id} #{user3.ap_id}" end}
       ]) do
-        assert "job started" ==
+        assert "jobs started" ==
                  conn
                  |> put_req_header("content-type", "application/json")
                  |> post("/api/pleroma/mutes_import", %{
@@ -202,14 +226,19 @@ defmodule Pleroma.Web.PleromaAPI.UserImportControllerTest do
                  })
                  |> json_response_and_validate_schema(200)
 
-        assert [{:ok, job_result}] = ObanHelpers.perform_all()
-        assert job_result == users
-        assert Enum.all?(users, &Pleroma.User.mutes?(user, &1))
+        results = ObanHelpers.perform_all()
+
+        returned_users =
+          for {_, returned_user} <- results do
+            returned_user
+          end
+
+        assert Enum.all?(returned_users, &Pleroma.User.mutes?(user, &1))
       end
     end
 
     test "it imports mutes with different nickname variations", %{user: user, conn: conn} do
-      users = [user2, user3, user4, user5, user6] = insert_list(5, :user)
+      [user2, user3, user4, user5, user6] = insert_list(5, :user)
 
       identifiers =
         [
@@ -221,15 +250,20 @@ defmodule Pleroma.Web.PleromaAPI.UserImportControllerTest do
         ]
         |> Enum.join(" ")
 
-      assert "job started" ==
+      assert "jobs started" ==
                conn
                |> put_req_header("content-type", "application/json")
                |> post("/api/pleroma/mutes_import", %{"list" => identifiers})
                |> json_response_and_validate_schema(200)
 
-      assert [{:ok, job_result}] = ObanHelpers.perform_all()
-      assert job_result == users
-      assert Enum.all?(users, &Pleroma.User.mutes?(user, &1))
+      results = ObanHelpers.perform_all()
+
+      returned_users =
+        for {_, returned_user} <- results do
+          returned_user
+        end
+
+      assert Enum.all?(returned_users, &Pleroma.User.mutes?(user, &1))
     end
   end
 end

@@ -59,6 +59,10 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             format: :uri,
             description: "Preview thumbnail"
           },
+          image_description: %Schema{
+            type: :string,
+            description: "Alternate text that describes what is in the thumbnail"
+          },
           title: %Schema{type: :string, description: "Title of linked resource"},
           description: %Schema{type: :string, description: "Description of preview"}
         }
@@ -256,6 +260,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             nullable: true,
             description:
               "A datetime (ISO 8601) that states when the post was pinned or `null` if the post is not pinned"
+          },
+          list_id: %Schema{
+            type: :integer,
+            nullable: true,
+            description:
+              "The ID of the list the post is addressed to (if any, only returned to author)"
           }
         }
       },

@@ -39,7 +39,7 @@ defmodule Pleroma.Telemetry.Logger do
         _,
         _
       ) do
-    Logger.error(fn ->
+    Logger.debug(fn ->
       "Connection pool failed to reclaim any connections due to all of them being in use. It will have to drop requests for opening connections to new hosts"
     end)
   end
@@ -59,7 +59,7 @@ defmodule Pleroma.Telemetry.Logger do
         _,
         _
       ) do
-    Logger.error(fn ->
+    Logger.debug(fn ->
       "Connection pool had to refuse opening a connection to #{key} due to connection limit exhaustion"
     end)
   end
@@ -70,7 +70,7 @@ defmodule Pleroma.Telemetry.Logger do
         %{key: key},
         _
       ) do
-    Logger.warning(fn ->
+    Logger.debug(fn ->
       "Pool worker for #{key}: Client #{inspect(client_pid)} died before releasing the connection with #{inspect(reason)}"
     end)
   end
@@ -81,7 +81,7 @@ defmodule Pleroma.Telemetry.Logger do
         %{key: key, protocol: :http},
         _
       ) do
-    Logger.info(fn ->
+    Logger.debug(fn ->
       "Pool worker for #{key}: #{length(clients)} clients are using an HTTP1 connection at the same time, head-of-line blocking might occur."
     end)
   end

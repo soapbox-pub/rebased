@@ -46,7 +46,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RemoteReportPolicyTest do
     assert {:ok, _} = RemoteReportPolicy.filter(activity)
   end
 
-  test "rejects report on third-party if `reject_third_party: true`" do
+  test "rejects report on third party if `reject_third_party: true`" do
     clear_config([:mrf_remote_report, :reject_third_party], true)
     clear_config([:mrf_remote_report, :reject_empty_message], false)
 
@@ -57,6 +57,19 @@ defmodule Pleroma.Web.ActivityPub.MRF.RemoteReportPolicyTest do
     }
 
     assert {:reject, _} = RemoteReportPolicy.filter(activity)
+  end
+
+  test "preserves report on first party if `reject_third_party: true`" do
+    clear_config([:mrf_remote_report, :reject_third_party], true)
+    clear_config([:mrf_remote_report, :reject_empty_message], false)
+
+    activity = %{
+      "type" => "Flag",
+      "actor" => "https://mastodon.social/users/Gargron",
+      "object" => ["http://localhost:4001/actor"]
+    }
+
+    assert {:ok, _} = RemoteReportPolicy.filter(activity)
   end
 
   test "preserves report on third party if `reject_third_party: false`" do

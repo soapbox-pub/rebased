@@ -12,6 +12,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   alias Pleroma.MFA.TOTP
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.OAuthController
   alias Pleroma.Web.OAuth.Token
@@ -770,6 +771,9 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       {:ok, auth} = Authorization.create_authorization(app, user, ["write"])
 
+      # Verify app has no associated user yet
+      assert %Pleroma.Web.OAuth.App{user_id: nil} = Repo.get_by(App, %{id: app.id})
+
       conn =
         build_conn()
         |> post("/oauth/token", %{
@@ -786,6 +790,10 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       assert token
       assert token.scopes == auth.scopes
       assert user.ap_id == ap_id
+
+      # Verify app has an associated user now
+      user_id = user.id
+      assert %Pleroma.Web.OAuth.App{user_id: ^user_id} = Repo.get_by(App, %{id: app.id})
     end
 
     test "issues a token for `password` grant_type with valid credentials, with full permissions by default" do

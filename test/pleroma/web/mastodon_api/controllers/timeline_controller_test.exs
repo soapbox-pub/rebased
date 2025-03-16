@@ -152,7 +152,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   end
 
   describe "public" do
-    @tag capture_log: true
     test "the public timeline", %{conn: conn} do
       user = insert(:user)
 
@@ -407,6 +406,62 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert [] = result
+    end
+
+    test "filtering local posts basing on domain", %{conn: conn} do
+      clear_config([:instance, :multitenancy], %{enabled: true, separate_timelines: false})
+
+      {:ok, domain} = Pleroma.Domain.create(%{domain: "pleroma.example.org"})
+
+      user1 = insert(:user)
+      user2 = insert(:user, %{domain_id: domain.id})
+
+      %{id: note1} = insert(:note_activity, user: user1)
+      %{id: note2} = insert(:note_activity, user: user2)
+
+      assert [
+               %{"id" => ^note2},
+               %{"id" => ^note1}
+             ] =
+               conn
+               |> get("/api/v1/timelines/public?local=true")
+               |> json_response_and_validate_schema(200)
+
+      clear_config([:instance, :multitenancy, :separate_timelines], true)
+
+      assert [%{"id" => ^note1}] =
+               conn
+               |> get("/api/v1/timelines/public?local=true")
+               |> json_response_and_validate_schema(200)
+
+      assert [%{"id" => ^note1}] =
+               conn
+               |> get("/api/v1/timelines/public?local=true")
+               |> json_response_and_validate_schema(200)
+
+      assert [%{"id" => ^note2}] =
+               conn
+               |> get("http://pleroma.example.org/api/v1/timelines/public?local=true")
+               |> json_response_and_validate_schema(200)
+    end
+
+    test "should return 404 if disabled" do
+      clear_config([:instance, :federated_timeline_available], false)
+
+      result =
+        build_conn()
+        |> get("/api/v1/timelines/public")
+        |> json_response_and_validate_schema(404)
+
+      assert %{"error" => "Federated timeline is disabled"} = result
+    end
+
+    test "should not return 404 if local is specified" do
+      clear_config([:instance, :federated_timeline_available], false)
+
+      build_conn()
+      |> get("/api/v1/timelines/public?local=true")
+      |> json_response_and_validate_schema(200)
     end
   end
 
@@ -791,7 +846,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   describe "hashtag" do
     setup do: oauth_access(["n/a"])
 
-    @tag capture_log: true
     test "hashtag timeline", %{conn: conn} do
       following = insert(:user)
 
@@ -1032,6 +1086,59 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       assert length(json_response_and_validate_schema(res_conn, 200)) == 2
 
       ensure_authenticated_access(base_uri)
+    end
+  end
+
+  describe "bubble" do
+    test "filtering" do
+      %{conn: conn, user: user} = oauth_access(["read:statuses"])
+
+      clear_config([:instance, :local_bubble], [])
+      # our endpoint host has a port in it so let's set the AP ID
+      local_user = insert(:user, %{ap_id: "https://localhost/users/user"})
+      remote_user = insert(:user, %{ap_id: "https://example.com/users/remote_user"})
+      {:ok, user, local_user} = User.follow(user, local_user)
+      {:ok, _user, remote_user} = User.follow(user, remote_user)
+
+      {:ok, local_activity} = CommonAPI.post(local_user, %{status: "Status"})
+      remote_activity = create_remote_activity(remote_user)
+
+      # If nothing, only include ours
+      clear_config([:instance, :local_bubble], [])
+
+      one_instance =
+        conn
+        |> get("/api/v1/timelines/bubble")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
+
+      assert local_activity.id in one_instance
+
+      # If we have others, also include theirs
+      clear_config([:instance, :local_bubble], ["example.com"])
+
+      two_instances =
+        conn
+        |> get("/api/v1/timelines/bubble")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
+
+      assert local_activity.id in two_instances
+      assert remote_activity.id in two_instances
+    end
+
+    test "restrict_unauthenticated with bubble timeline", %{conn: conn} do
+      clear_config([:restrict_unauthenticated, :timelines, :bubble], true)
+
+      conn
+      |> get("/api/v1/timelines/bubble")
+      |> json_response_and_validate_schema(:unauthorized)
+
+      clear_config([:restrict_unauthenticated, :timelines, :bubble], false)
+
+      conn
+      |> get("/api/v1/timelines/bubble")
+      |> json_response_and_validate_schema(200)
     end
   end
 

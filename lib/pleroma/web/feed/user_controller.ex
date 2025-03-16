@@ -12,14 +12,16 @@ defmodule Pleroma.Web.Feed.UserController do
   alias Pleroma.Web.Feed.FeedView
 
   plug(Pleroma.Web.Plugs.SetFormatPlug when action in [:feed_redirect])
+  plug(Pleroma.Web.Plugs.SetDomainPlug when action in [:feed_redirect, :feed])
+  plug(Pleroma.Web.Plugs.SetNicknameWithDomainPlug when action in [:feed_redirect, :feed])
 
   action_fallback(:errors)
 
-  def feed_redirect(%{assigns: %{format: "html"}} = conn, %{"nickname" => nickname}) do
+  def feed_redirect(%{assigns: %{format: "html"}} = conn, %{"nickname" => nickname} = params) do
     with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname_or_id(nickname)} do
       Pleroma.Web.Fallback.RedirectController.redirector_with_meta(conn, %{user: user})
     else
-      _ -> Pleroma.Web.Fallback.RedirectController.redirector(conn, nil)
+      _ -> Pleroma.Web.Fallback.RedirectController.redirector_with_meta(conn, params)
     end
   end
 

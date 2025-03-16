@@ -5,8 +5,6 @@
 defmodule Pleroma.Repo.Migrations.RenameInstanceChat do
   use Ecto.Migration
 
-  alias Pleroma.ConfigDB
-
   def up, do: :noop
   def down, do: :noop
 end

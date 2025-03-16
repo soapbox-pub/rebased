@@ -95,6 +95,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
 
     response = %{
       id: to_string(notification.id),
+      group_key: "ungrouped-" <> to_string(notification.id),
       type: notification.type,
       created_at: CommonAPI.Utils.to_masto_date(notification.inserted_at),
       account: account,
@@ -106,6 +107,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
 
     case notification.type do
       type when type in ["mention", "status", "poll", "pleroma:event_reminder"] ->
+        put_status(response, activity, reading_user, status_render_opts)
+
+      "status" ->
         put_status(response, activity, reading_user, status_render_opts)
 
       "favourite" ->
@@ -128,7 +132,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       "pleroma:chat_mention" ->
         put_chat_message(response, activity, reading_user, status_render_opts)
 
-      "pleroma:report" ->
+      "admin.report" ->
         put_report(response, activity)
 
       "pleroma:participation_accepted" ->
@@ -146,7 +150,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
         |> put_status(create_activity, reading_user, status_render_opts)
         |> put_participation_request(activity)
 
-      type when type in ["follow", "follow_request"] ->
+      type when type in ["follow", "follow_request", "bite"] ->
         response
     end
   end

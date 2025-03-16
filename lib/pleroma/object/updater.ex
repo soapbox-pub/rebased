@@ -5,6 +5,7 @@
 defmodule Pleroma.Object.Updater do
   require Pleroma.Constants
 
+  alias Pleroma.Maps
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Workers.EventReminderWorker
@@ -116,6 +117,7 @@ defmodule Pleroma.Object.Updater do
       # Choices are the same, but counts are different
       to_be_updated
       |> Map.put(key, updated_object[key])
+      |> Maps.put_if_present("votersCount", updated_object["votersCount"])
     else
       # Choices (or vote type) have changed, do not allow this
       _ -> to_be_updated
@@ -135,7 +137,10 @@ defmodule Pleroma.Object.Updater do
     else
       %{updated_object: updated_data} =
         updated_data
-        |> maybe_update_history(original_data, updated: updated, use_history_in_new_object?: false)
+        |> maybe_update_history(original_data,
+          updated: updated,
+          use_history_in_new_object?: false
+        )
 
       updated_data
       |> Map.put("updated", date)

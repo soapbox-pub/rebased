@@ -15,8 +15,8 @@ defmodule Pleroma.HTTP.AdapterHelper do
   require Logger
 
   @type proxy ::
-          {Connection.host(), pos_integer()}
-          | {Connection.proxy_type(), Connection.host(), pos_integer()}
+          {host(), pos_integer()}
+          | {proxy_type(), host(), pos_integer()}
 
   @callback options(keyword(), URI.t()) :: keyword()
 
@@ -52,6 +52,7 @@ defmodule Pleroma.HTTP.AdapterHelper do
     case adapter() do
       Tesla.Adapter.Gun -> AdapterHelper.Gun
       Tesla.Adapter.Hackney -> AdapterHelper.Hackney
+      {Tesla.Adapter.Finch, _} -> AdapterHelper.Finch
       _ -> AdapterHelper.Default
     end
   end
@@ -116,6 +117,15 @@ defmodule Pleroma.HTTP.AdapterHelper do
 
       {:ok, _ip} ->
         host_charlist
+    end
+  end
+
+  @spec can_stream? :: bool()
+  def can_stream? do
+    case Application.get_env(:tesla, :adapter) do
+      Tesla.Adapter.Gun -> true
+      {Tesla.Adapter.Finch, _} -> true
+      _ -> false
     end
   end
 end

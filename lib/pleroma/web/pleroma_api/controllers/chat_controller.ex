@@ -40,11 +40,23 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     %{scopes: ["read:chats"]} when action in [:messages, :index, :index2, :show]
   )
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.ChatOperation
 
-  def delete(%{assigns: %{user: user}} = conn, %{id: chat_id}) do
+  def delete(
+        %{
+          assigns: %{user: user},
+          private: %{
+            open_api_spex: %{
+              params: %{
+                id: chat_id
+              }
+            }
+          }
+        } = conn,
+        _
+      ) do
     with {:ok, chat} <- Chat.get_by_user_and_id(user, chat_id),
          {:ok, chat} <- Pleroma.Repo.delete(chat) do
       conn
@@ -56,10 +68,20 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     end
   end
 
-  def delete_message(%{assigns: %{user: %{id: user_id} = user}} = conn, %{
-        message_id: message_id,
-        id: chat_id
-      }) do
+  def delete_message(
+        %{
+          assigns: %{user: %{id: user_id} = user},
+          private: %{
+            open_api_spex: %{
+              params: %{
+                message_id: message_id,
+                id: chat_id
+              }
+            }
+          }
+        } = conn,
+        _
+      ) do
     with %MessageReference{} = cm_ref <-
            MessageReference.get_by_id(message_id),
          ^chat_id <- to_string(cm_ref.chat_id),
@@ -86,11 +108,14 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   defp remove_or_delete(cm_ref, _), do: MessageReference.delete(cm_ref)
 
   def post_chat_message(
-        %{body_params: params, assigns: %{user: user}} = conn,
-        %{id: id}
+        %{
+          private: %{open_api_spex: %{body_params: params, params: %{id: id}}},
+          assigns: %{user: user}
+        } = conn,
+        _
       ) do
     with {:ok, chat} <- Chat.get_by_user_and_id(user, id),
-         %User{} = recipient <- User.get_cached_by_ap_id(chat.recipient),
+         {_, %User{} = recipient} <- {:user, User.get_cached_by_ap_id(chat.recipient)},
          {:ok, activity} <-
            CommonAPI.post_chat_message(user, recipient, params[:content],
              media_id: params[:media_id],
@@ -111,12 +136,20 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
         conn
         |> put_status(:bad_request)
         |> json(%{error: message})
+
+      {:user, nil} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: "Recipient does not exist"})
     end
   end
 
   def mark_message_as_read(
-        %{assigns: %{user: %{id: user_id}}} = conn,
-        %{id: chat_id, message_id: message_id}
+        %{
+          assigns: %{user: %{id: user_id}},
+          private: %{open_api_spex: %{params: %{id: chat_id, message_id: message_id}}}
+        } = conn,
+        _
       ) do
     with %MessageReference{} = cm_ref <- MessageReference.get_by_id(message_id),
          ^chat_id <- to_string(cm_ref.chat_id),
@@ -129,8 +162,16 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   end
 
   def mark_as_read(
-        %{body_params: %{last_read_id: last_read_id}, assigns: %{user: user}} = conn,
-        %{id: id}
+        %{
+          assigns: %{user: user},
+          private: %{
+            open_api_spex: %{
+              body_params: %{last_read_id: last_read_id},
+              params: %{id: id}
+            }
+          }
+        } = conn,
+        _
       ) do
     with {:ok, chat} <- Chat.get_by_user_and_id(user, id),
          {_n, _} <- MessageReference.set_all_seen_for_chat(chat, last_read_id) do
@@ -138,7 +179,13 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     end
   end
 
-  def messages(%{assigns: %{user: user}} = conn, %{id: id} = params) do
+  def messages(
+        %{
+          assigns: %{user: user},
+          private: %{open_api_spex: %{params: %{id: id} = params}}
+        } = conn,
+        _
+      ) do
     with {:ok, chat} <- Chat.get_by_user_and_id(user, id) do
       chat_message_refs =
         chat
@@ -152,7 +199,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     end
   end
 
-  def index(%{assigns: %{user: user}} = conn, params) do
+  def index(%{assigns: %{user: user}, private: %{open_api_spex: %{params: params}}} = conn, _) do
     chats =
       index_query(user, params)
       |> Repo.all()
@@ -160,7 +207,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     render(conn, "index.json", chats: chats)
   end
 
-  def index2(%{assigns: %{user: user}} = conn, params) do
+  def index2(%{assigns: %{user: user}, private: %{open_api_spex: %{params: params}}} = conn, _) do
     chats =
       index_query(user, params)
       |> Pagination.fetch_paginated(params)
@@ -180,14 +227,14 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     |> where([c], c.recipient not in ^exclude_users)
   end
 
-  def create(%{assigns: %{user: user}} = conn, %{id: id}) do
+  def create(%{assigns: %{user: user}, private: %{open_api_spex: %{params: %{id: id}}}} = conn, _) do
     with %User{ap_id: recipient} <- User.get_cached_by_id(id),
          {:ok, %Chat{} = chat} <- Chat.get_or_create(user.id, recipient) do
       render(conn, "show.json", chat: chat)
     end
   end
 
-  def show(%{assigns: %{user: user}} = conn, %{id: id}) do
+  def show(%{assigns: %{user: user}, private: %{open_api_spex: %{params: %{id: id}}}} = conn, _) do
     with {:ok, chat} <- Chat.get_by_user_and_id(user, id) do
       render(conn, "show.json", chat: chat)
     end

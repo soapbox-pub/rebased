@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ActivityPub.Relay do
   def follow(target_instance) do
     with %User{} = local_user <- get_actor(),
          {:ok, %User{} = target_user} <- User.get_or_fetch_by_ap_id(target_instance),
-         {:ok, _, _, activity} <- CommonAPI.follow(local_user, target_user) do
+         {:ok, _, _, activity} <- CommonAPI.follow(target_user, local_user) do
       Logger.info("relay: followed instance: #{target_instance}; id=#{activity.data["id"]}")
       {:ok, activity}
     else
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.ActivityPub.Relay do
   @spec publish(any()) :: {:ok, Activity.t()} | {:error, any()}
   def publish(%Activity{data: %{"type" => "Create"}} = activity) do
     with %User{} = user <- get_actor(),
-         true <- Visibility.is_public?(activity) do
+         true <- Visibility.public?(activity) do
       CommonAPI.repeat(activity.id, user)
     else
       error -> format_error(error)

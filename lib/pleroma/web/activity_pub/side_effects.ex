@@ -21,7 +21,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
   alias Pleroma.Workers.EventReminderWorker
   alias Pleroma.Workers.PollWorker
@@ -102,7 +101,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
          %User{} = followed <- User.get_cached_by_ap_id(followed_user),
          {_, {:ok, _, _}, _, _} <-
            {:following, User.follow(follower, followed, :follow_pending), follower, followed} do
-      if followed.local && !followed.is_locked do
+      if followed.local && User.can_direct_follow_local(follower, followed) do
         {:ok, accept_data, _} = Builder.accept(followed, object)
         {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
       end
@@ -115,7 +114,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         nil
     end
 
-    {:ok, notifications} = Notification.create_notifications(object, do_send: false)
+    {:ok, notifications} = Notification.create_notifications(object)
 
     meta =
       meta
@@ -174,7 +173,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     liked_object = Object.get_by_ap_id(object.data["object"])
     Utils.add_like_to_object(object, liked_object)
 
-    Notification.create_notifications(object)
+    {:ok, notifications} = Notification.create_notifications(object)
+
+    meta =
+      meta
+      |> add_notifications(notifications)
 
     {:ok, object, meta}
   end
@@ -192,7 +195,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   def handle(%{data: %{"type" => "Create"}} = activity, meta) do
     with {:ok, object, meta} <- handle_object_creation(meta[:object_data], activity, meta),
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
-      {:ok, notifications} = Notification.create_notifications(activity, do_send: false)
+      {:ok, notifications} = Notification.create_notifications(activity)
       {:ok, _user} = ActivityPub.increase_note_count_if_public(user, object)
       {:ok, _user} = ActivityPub.update_last_status_at_if_public(user, object)
 
@@ -210,18 +213,20 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       if Pleroma.Web.Federator.allowed_thread_distance?(reply_depth) and
            object.data["replies"] != nil do
         for reply_id <- object.data["replies"] do
-          Pleroma.Workers.RemoteFetcherWorker.enqueue("fetch_remote", %{
+          Pleroma.Workers.RemoteFetcherWorker.new(%{
+            "op" => "fetch_remote",
             "id" => reply_id,
             "depth" => reply_depth
           })
+          |> Oban.insert()
         end
       end
 
-      ConcurrentLimiter.limit(Pleroma.Web.RichMedia.Helpers, fn ->
-        Task.start(fn -> Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) end)
-      end)
+      Pleroma.Web.RichMedia.Card.get_by_activity(activity)
 
       Pleroma.Search.add_to_index(Map.put(activity, :object, object))
+
+      Utils.maybe_handle_group_posts(activity)
 
       meta =
         meta
@@ -250,11 +255,13 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
     Utils.add_announce_to_object(object, announced_object)
 
-    if !User.is_internal_user?(user) do
-      Notification.create_notifications(object)
+    {:ok, notifications} = Notification.create_notifications(object)
 
-      ap_streamer().stream_out(object)
-    end
+    if !User.internal?(user), do: ap_streamer().stream_out(object)
+
+    meta =
+      meta
+      |> add_notifications(notifications)
 
     {:ok, object, meta}
   end
@@ -275,7 +282,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     reacted_object = Object.get_by_ap_id(object.data["object"])
     Utils.add_emoji_reaction_to_object(object, reacted_object)
 
-    Notification.create_notifications(object)
+    {:ok, notifications} = Notification.create_notifications(object)
+
+    meta =
+      meta
+      |> add_notifications(notifications)
 
     {:ok, object, meta}
   end
@@ -296,9 +307,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     result =
       case deleted_object do
         %Object{} ->
-          with {:ok, deleted_object, _activity} <- Object.delete(deleted_object),
+          with {_, {:ok, deleted_object, _activity}} <- {:object, Object.delete(deleted_object)},
                {_, actor} when is_binary(actor) <- {:actor, deleted_object.data["actor"]},
-               %User{} = user <- User.get_cached_by_ap_id(actor) do
+               {_, %User{} = user} <- {:user, User.get_cached_by_ap_id(actor)} do
             User.remove_pinned_object_id(user, deleted_object.data["id"])
 
             {:ok, user} = ActivityPub.decrease_note_count_if_public(user, deleted_object)
@@ -320,6 +331,17 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
             {:actor, _} ->
               @logger.error("The object doesn't have an actor: #{inspect(deleted_object)}")
               :no_object_actor
+
+            {:user, _} ->
+              @logger.error(
+                "The object's actor could not be resolved to a user: #{inspect(deleted_object)}"
+              )
+
+              :no_object_user
+
+            {:object, _} ->
+              @logger.error("The object could not be deleted: #{inspect(deleted_object)}")
+              {:error, object}
           end
 
         %User{} ->
@@ -384,10 +406,12 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         {:ok, expires_at} =
           Pleroma.EctoType.ActivityPub.ObjectValidators.DateTime.cast(meta[:expires_at])
 
-        Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
-          activity_id: meta[:activity_id],
-          expires_at: expires_at
-        })
+        Pleroma.Workers.PurgeExpiredActivity.enqueue(
+          %{
+            activity_id: meta[:activity_id]
+          },
+          scheduled_at: expires_at
+        )
       end
 
       {:ok, object, meta}
@@ -434,6 +458,57 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
+  # Task this handles
+  # - Bites
+  # - Sends a notification
+  @impl true
+  def handle(
+        %{
+          data: %{
+            "id" => bite_id,
+            "type" => "Bite",
+            "target" => bitten_user,
+            "actor" => biting_user
+          }
+        } = object,
+        meta
+      ) do
+    meta =
+      with %User{} = biting <- User.get_cached_by_ap_id(biting_user),
+           %User{} = bitten <- User.get_cached_by_ap_id(bitten_user),
+           {:previous_bite, previous_bite} <-
+             {:previous_bite, Utils.fetch_latest_bite(biting, bitten, object)},
+           {:reverse_bite, reverse_bite} <-
+             {:reverse_bite, Utils.fetch_latest_bite(bitten, biting)},
+           {:can_bite, true, _} <- {:can_bite, can_bite?(previous_bite, reverse_bite), bitten} do
+        if bitten.local do
+          {:ok, accept_data, _} = Builder.accept(bitten, object)
+          {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
+        end
+
+        if reverse_bite do
+          Notification.dismiss(reverse_bite)
+        end
+
+        {:ok, notifications} = Notification.create_notifications(object)
+
+        meta
+        |> add_notifications(notifications)
+      else
+        {:can_bite, false, bitten} ->
+          {:ok, reject_data, _} = Builder.reject(bitten, object)
+          {:ok, _activity, _} = Pipeline.common_pipeline(reject_data, local: true)
+          meta
+
+        _ ->
+          meta
+      end
+
+    updated_object = Activity.get_by_ap_id(bite_id)
+
+    {:ok, updated_object, meta}
+  end
+
   # Nothing to do
   @impl true
   def handle(object, meta) do
@@ -463,6 +538,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
+  defp handle_accepted(_, _), do: nil
+
   defp handle_rejected(
          %Activity{actor: follower_id, data: %{"type" => "Follow"}} = follow_activity,
          actor
@@ -484,6 +561,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       Utils.remove_participation_from_object(join_activity, joined_event)
       Notification.dismiss(join_activity)
     end
+  end
+
+  defp handle_rejected(%Activity{data: %{"type" => "Bite"}} = bite_activity, _actor) do
+    Notification.dismiss(bite_activity)
   end
 
   defp handle_update_user(
@@ -510,7 +591,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
        ) do
     orig_object_ap_id = updated_object["id"]
     orig_object = Object.get_by_ap_id(orig_object_ap_id)
-    orig_object_data = orig_object.data
+    orig_object_data = Map.get(orig_object, :data)
 
     updated_object =
       if meta[:local] do
@@ -661,17 +742,14 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
   def handle_undoing(object), do: {:error, ["don't know how to handle", object]}
 
-  @spec delete_object(Object.t()) :: :ok | {:error, Ecto.Changeset.t()}
+  @spec delete_object(Activity.t()) :: :ok | {:error, Ecto.Changeset.t()}
   defp delete_object(object) do
     with {:ok, _} <- Repo.delete(object), do: :ok
   end
 
-  defp send_notifications(meta) do
+  defp stream_notifications(meta) do
     Keyword.get(meta, :notifications, [])
-    |> Enum.each(fn notification ->
-      Streamer.stream(["user", "user:notification"], notification)
-      Push.send(notification)
-    end)
+    |> Notification.stream()
 
     meta
   end
@@ -702,7 +780,15 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   @impl true
   def handle_after_transaction(meta) do
     meta
-    |> send_notifications()
+    |> stream_notifications()
     |> send_streamables()
+  end
+
+  defp can_bite?(nil, _), do: true
+
+  defp can_bite?(_, nil), do: false
+
+  defp can_bite?(previous_bite, reverse_bite) do
+    NaiveDateTime.diff(previous_bite.inserted_at, reverse_bite.inserted_at) < 0
   end
 end

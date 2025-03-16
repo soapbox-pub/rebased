@@ -20,8 +20,8 @@ defmodule Pleroma.Web.Streamer do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.StreamerView
+  require Pleroma.Constants
 
-  @mix_env Mix.env()
   @registry Pleroma.Web.StreamerRegistry
 
   def registry, do: @registry
@@ -35,7 +35,7 @@ defmodule Pleroma.Web.Streamer do
           stream :: String.t(),
           User.t() | nil,
           Token.t() | nil,
-          Map.t() | nil
+          map() | nil
         ) ::
           {:ok, topic :: String.t()} | {:error, :bad_topic} | {:error, :unauthorized}
   def get_topic_and_add_socket(stream, user, oauth_token, params \\ %{}) do
@@ -61,7 +61,7 @@ defmodule Pleroma.Web.Streamer do
   end
 
   @doc "Expand and authorizes a stream"
-  @spec get_topic(stream :: String.t() | nil, User.t() | nil, Token.t() | nil, Map.t()) ::
+  @spec get_topic(stream :: String.t() | nil, User.t() | nil, Token.t() | nil, map()) ::
           {:ok, topic :: String.t() | nil} | {:error, :bad_topic}
   def get_topic(stream, user, oauth_token, params \\ %{})
 
@@ -174,7 +174,13 @@ defmodule Pleroma.Web.Streamer do
   def stream(topics, items) do
     if should_env_send?() do
       for topic <- List.wrap(topics), item <- List.wrap(items) do
-        spawn(fn -> do_stream(topic, item) end)
+        fun = fn -> do_stream(topic, item) end
+
+        if Config.get([__MODULE__, :sync_streaming], false) do
+          fun.()
+        else
+          spawn(fun)
+        end
       end
     end
   end
@@ -202,7 +208,7 @@ defmodule Pleroma.Web.Streamer do
          false <- Pleroma.Web.ActivityPub.MRF.subdomain_match?(domain_blocks, item_host),
          false <- Pleroma.Web.ActivityPub.MRF.subdomain_match?(domain_blocks, parent_host),
          true <- thread_containment(item, user),
-         false <- CommonAPI.thread_muted?(user, parent) do
+         false <- CommonAPI.thread_muted?(parent, user) do
       false
     else
       _ -> true
@@ -247,7 +253,7 @@ defmodule Pleroma.Web.Streamer do
   defp do_stream("list", item) do
     # filter the recipient list if the activity is not public, see #270.
     recipient_lists =
-      case Visibility.is_public?(item) do
+      case Visibility.public?(item) do
         true ->
           Pleroma.List.get_lists_from_activity(item)
 
@@ -311,7 +317,17 @@ defmodule Pleroma.Web.Streamer do
       User.get_recipients_from_activity(item)
       |> Enum.map(fn %{id: id} -> "user:#{id}" end)
 
-    Enum.each(recipient_topics, fn topic ->
+    hashtag_recipients =
+      if Pleroma.Constants.as_public() in item.recipients do
+        Pleroma.Hashtag.get_recipients_for_activity(item)
+        |> Enum.map(fn id -> "user:#{id}" end)
+      else
+        []
+      end
+
+    all_recipients = Enum.uniq(recipient_topics ++ hashtag_recipients)
+
+    Enum.each(all_recipients, fn topic ->
       push_to_socket(topic, item)
     end)
   end
@@ -407,25 +423,20 @@ defmodule Pleroma.Web.Streamer do
     end
   end
 
-  # In test environement, only return true if the registry is started.
-  # In benchmark environment, returns false.
-  # In any other environment, always returns true.
-  cond do
-    @mix_env == :test ->
-      def should_env_send? do
-        case Process.whereis(@registry) do
-          nil ->
-            false
+  # In dev/prod the streamer registry is expected to be started, so return true
+  # In test it is possible to have the registry started for a test so it will check
+  # In benchmark it will never find the process alive and return false
+  def should_env_send? do
+    if Application.get_env(:pleroma, Pleroma.Application)[:streamer_registry] do
+      true
+    else
+      case Process.whereis(@registry) do
+        nil ->
+          false
 
-          pid ->
-            Process.alive?(pid)
-        end
+        pid ->
+          Process.alive?(pid)
       end
-
-    @mix_env == :benchmark ->
-      def should_env_send?, do: false
-
-    true ->
-      def should_env_send?, do: true
+    end
   end
 end

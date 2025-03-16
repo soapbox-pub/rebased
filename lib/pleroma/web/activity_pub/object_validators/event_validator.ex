@@ -5,8 +5,10 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
   use Ecto.Schema
 
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
+  alias Pleroma.Web.ActivityPub.ObjectValidators.PlaceValidator
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
   import Ecto.Changeset
@@ -22,14 +24,24 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
         message_fields()
         object_fields()
         status_object_fields()
-        event_object_fields()
       end
     end
+
+    field(:startTime, ObjectValidators.DateTime)
+    field(:endTime, ObjectValidators.DateTime)
+
+    field(:joinMode, :string, default: "free")
+
+    embeds_one(:location, PlaceValidator)
+
+    field(:participation_count, :integer, default: 0)
+    field(:participations, {:array, ObjectValidators.ObjectID}, default: [])
+    field(:participation_request_count, :integer, default: 0)
   end
 
   def cast_and_apply(data) do
     data
-    |> cast_data
+    |> cast_data()
     |> apply_action(:insert)
   end
 
@@ -39,6 +51,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
     |> validate_data()
   end
 
+  @spec cast_data(map()) :: map()
   def cast_data(data) do
     %__MODULE__{}
     |> changeset(data)
@@ -48,7 +61,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
     data
     |> CommonFixes.fix_actor()
     |> CommonFixes.fix_object_defaults()
+    |> CommonFixes.fix_likes()
     |> Transmogrifier.fix_emoji()
+    |> CommonFixes.maybe_add_language()
+    |> CommonFixes.maybe_add_content_map()
   end
 
   def changeset(struct, data) do
@@ -64,7 +80,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
   defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Event"])
-    |> validate_inclusion(:joinMode, ~w[free restricted invite])
+    |> validate_inclusion(:joinMode, ~w[free restricted invite external])
     |> validate_required([:id, :actor, :attributedTo, :type, :context])
     |> CommonValidations.validate_any_presence([:cc, :to])
     |> CommonValidations.validate_fields_match([:actor, :attributedTo])

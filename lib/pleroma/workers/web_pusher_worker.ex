@@ -5,19 +5,21 @@
 defmodule Pleroma.Workers.WebPusherWorker do
   alias Pleroma.Notification
   alias Pleroma.Repo
+  alias Pleroma.Web.Push.Impl
 
-  use Pleroma.Workers.WorkerHelper, queue: "web_push"
+  use Oban.Worker, queue: :web_push, unique: [period: :infinity]
 
-  @impl Oban.Worker
+  @impl true
   def perform(%Job{args: %{"op" => "web_push", "notification_id" => notification_id}}) do
     notification =
       Notification
       |> Repo.get(notification_id)
       |> Repo.preload([:activity, :user])
 
-    Pleroma.Web.Push.Impl.perform(notification)
+    Impl.build(notification)
+    |> Enum.each(&Impl.deliver(&1))
   end
 
-  @impl Oban.Worker
+  @impl true
   def timeout(_job), do: :timer.seconds(5)
 end

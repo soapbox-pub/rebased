@@ -46,7 +46,7 @@ defmodule Pleroma.Language.Translation.Libretranslate do
          %{
            content: content,
            detected_source_language: source_language,
-           provider: "LibreTranslate"
+           provider: @name
          }}
 
       _ ->

@@ -20,26 +20,9 @@ config :pleroma, Pleroma.Web.Endpoint,
 config :phoenix, serve_endpoints: true
 
 # Do not print debug messages in production
+config :logger, Logger.Backends.Console, level: :info
 config :logger, :console, level: :info
 config :logger, :ex_syslogger, level: :info
-
-# PromEx set up
-config :pleroma, Pleroma.Web.Plugs.MetricsPredicate,
-  auth_token: System.get_env("PROMETHEUS_AUTH_TOKEN", "supersecret")
-
-config :pleroma, Pleroma.PromEx,
-  prometheus_data_source_id:
-    System.get_env(
-      "PROMETHEUS_DATASOURCE_ID",
-      "Prometheus"
-    ),
-  grafana: [
-    host: System.get_env("GRAFANA_HOST", "http://localhost:3000"),
-    auth_token: System.get_env("GRAFANA_AUTH_TOKEN", "LOLNO"),
-    upload_dashboards_on_start: true,
-    folder_name: "Pleroma - PromEx",
-    annotate_app_lifecycle: true
-  ]
 
 # ## SSL Support
 #
@@ -81,16 +64,11 @@ config :pleroma, Pleroma.PromEx,
 
 # Finally import the config/prod.secret.exs
 # which should be versioned separately.
-cond do
-  File.exists?("./config/prod.secret.exs") ->
-    import_config "prod.secret.exs"
-
-  System.get_env("CI") == "true" ->
-    nil
-
-  true ->
-    "`config/prod.secret.exs` not found. You may want to create one by running `mix pleroma.instance gen`"
-    |> IO.warn([])
+if File.exists?("./config/prod.secret.exs") do
+  import_config "prod.secret.exs"
+else
+  "`config/prod.secret.exs` not found. You may want to create one by running `mix pleroma.instance gen`"
+  |> IO.warn([])
 end
 
 if File.exists?("./config/prod.exported_from_db.secret.exs"),

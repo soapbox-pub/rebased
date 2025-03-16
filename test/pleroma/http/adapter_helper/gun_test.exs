@@ -36,7 +36,7 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
       assert opts[:certificates_verification]
     end
 
-    test "https url with non standart port" do
+    test "https url with non-standard port" do
       uri = URI.parse("https://example.com:115")
 
       opts = Gun.options([receive_conn: false], uri)
@@ -44,7 +44,7 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
       assert opts[:certificates_verification]
     end
 
-    test "merges with defaul http adapter config" do
+    test "merges with default http adapter config" do
       defaults = Gun.options([receive_conn: false], URI.parse("https://example.com"))
       assert Keyword.has_key?(defaults, :a)
       assert Keyword.has_key?(defaults, :b)
@@ -55,23 +55,23 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
 
       uri = URI.parse("https://some-domain.com")
       opts = Gun.options([receive_conn: false], uri)
-      assert opts[:proxy] == {'localhost', 8123}
+      assert opts[:proxy] == {~c"localhost", 8123}
     end
 
     test "parses tuple proxy scheme host and port" do
-      clear_config([:http, :proxy_url], {:socks, 'localhost', 1234})
+      clear_config([:http, :proxy_url], {:socks, ~c"localhost", 1234})
 
       uri = URI.parse("https://some-domain.com")
       opts = Gun.options([receive_conn: false], uri)
-      assert opts[:proxy] == {:socks, 'localhost', 1234}
+      assert opts[:proxy] == {:socks, ~c"localhost", 1234}
     end
 
     test "passed opts have more weight than defaults" do
-      clear_config([:http, :proxy_url], {:socks5, 'localhost', 1234})
+      clear_config([:http, :proxy_url], {:socks5, ~c"localhost", 1234})
       uri = URI.parse("https://some-domain.com")
-      opts = Gun.options([receive_conn: false, proxy: {'example.com', 4321}], uri)
+      opts = Gun.options([receive_conn: false, proxy: {~c"example.com", 4321}], uri)
 
-      assert opts[:proxy] == {'example.com', 4321}
+      assert opts[:proxy] == {~c"example.com", 4321}
     end
   end
 end

@@ -1,7 +1,7 @@
 defmodule Pleroma.Workers.SearchIndexingWorker do
-  use Pleroma.Workers.WorkerHelper, queue: "search_indexing"
+  use Oban.Worker, queue: :search_indexing, max_attempts: 2
 
-  @impl Oban.Worker
+  @impl true
 
   alias Pleroma.Config.Getting, as: Config
 
@@ -20,4 +20,7 @@ defmodule Pleroma.Workers.SearchIndexingWorker do
 
     search_module.remove_from_index(object)
   end
+
+  @impl true
+  def timeout(_job), do: :timer.seconds(5)
 end

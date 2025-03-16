@@ -25,15 +25,15 @@ defmodule Pleroma.Web.Utils.ColorsTest do
              } == Colors.get_shades(@base_color)
     end
 
-    test "uses soapbox blue if invalid color provided" do
+    test "uses pl-fe default color if invalid color provided" do
       assert %{
-               500 => "4, 130, 216"
+               500 => "216, 4, 130"
              } = Colors.get_shades("255, 255, 127")
     end
   end
 
   test "shades_to_css/2" do
     result = Colors.shades_to_css("primary")
-    assert String.contains?(result, "--color-primary-500: 4, 130, 216;")
+    assert String.contains?(result, "--color-primary-500: 216, 4, 130;")
   end
 end

@@ -10,6 +10,30 @@ To use built-in search that has no external dependencies, set the search module 
 
 While it has no external dependencies, it has problems with performance and relevancy.
 
+## QdrantSearch
+
+This uses the vector search engine [Qdrant](https://qdrant.tech) to search the posts in a vector space. This needs a way to generate embeddings and uses the [OpenAI API](https://platform.openai.com/docs/guides/embeddings/what-are-embeddings). This is implemented by several project besides OpenAI itself, including the python-based fastembed-server found in `supplemental/search/fastembed-api`.
+
+The default settings will support a setup where both the fastembed server and Qdrant run on the same system as pleroma. To use it, set the search provider and run the fastembed server, see the README in `supplemental/search/fastembed-api`:
+
+> config :pleroma, Pleroma.Search, module: Pleroma.Search.QdrantSearch
+
+Then, start the Qdrant server, see [here](https://qdrant.tech/documentation/quick-start/) for instructions.
+
+You will also need to create the Qdrant index once by running `mix pleroma.search.indexer create_index`. Running `mix pleroma.search.indexer index` will retroactively index the last 100_000 activities.
+
+### Indexing and model options
+
+To see the available configuration options, check out the QdrantSearch section in `config/config.exs`.
+
+The default indexing option work for the default model (`snowflake-arctic-embed-xs`). To optimize for a low memory footprint, adjust the index configuration as described in the [Qdrant docs](https://qdrant.tech/documentation/guides/optimize/). See also [this blog post](https://qdrant.tech/articles/memory-consumption/) that goes into detail.
+
+Different embedding models will need different vector size settings. You can see a list of the models supported by the fastembed server [here](https://qdrant.github.io/fastembed/examples/Supported_Models), including their vector dimensions. These vector dimensions need to be set in the `qdrant_index_configuration`. 
+
+E.g, If you want to use `sentence-transformers/all-MiniLM-L6-v2` as a model, you will not need to adjust things, because it and `snowflake-arctic-embed-xs` are both 384 dimensional models. If you want to use `snowflake/snowflake-arctic-embed-l`, you will need to adjust the `size` parameter in the `qdrant_index_configuration` to 1024, as it has a dimension of 1024.
+
+When using a different model, you will need do drop the index and recreate it (`mix pleroma.search.indexer drop_index` and `mix pleroma.search.indexer create_index`), as the different embeddings are not compatible with each other.
+
 ## Meilisearch
 
 Note that it's quite a bit more memory hungry than PostgreSQL (around 4-5G for ~1.2 million
@@ -38,7 +62,7 @@ indexes faster when it can process many posts in a single batch.
 Information about setting up meilisearch can be found in the
 [official documentation](https://docs.meilisearch.com/learn/getting_started/installation.html).
 You probably want to start it with `MEILI_NO_ANALYTICS=true` environment variable to disable analytics.
-At least version 0.25.0 is required, but you are strongly adviced to use at least 0.26.0, as it introduces
+At least version 0.25.0 is required, but you are strongly advised to use at least 0.26.0, as it introduces
 the `--enable-auto-batching` option which drastically improves performance. Without this option, the search
 is hardly usable on a somewhat big instance.
 
@@ -61,7 +85,7 @@ You will see a "Default Admin API Key", this is the key you actually put into yo
 
 ### Initial indexing
 
-After setting up the configuration, you'll want to index all of your already existsing posts. Only public posts are indexed.  You'll only
+After setting up the configuration, you'll want to index all of your already existing posts. Only public posts are indexed.  You'll only
 have to do it one time, but it might take a while, depending on the amount of posts your instance has seen. This is also a fairly RAM
 consuming process for `meilisearch`, and it will take a lot of RAM when running if you have a lot of posts (seems to be around 5G for ~1.2
 million posts while idle and up to 7G while indexing initially, but your experience may be different).

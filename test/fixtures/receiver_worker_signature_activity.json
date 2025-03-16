@@ -1,0 +1,109 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    {
+      "claim": {
+        "@id": "toot:claim",
+        "@type": "@id"
+      },
+      "memorial": "toot:memorial",
+      "atomUri": "ostatus:atomUri",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "blurhash": "toot:blurhash",
+      "ostatus": "http://ostatus.org#",
+      "discoverable": "toot:discoverable",
+      "focalPoint": {
+        "@container": "@list",
+        "@id": "toot:focalPoint"
+      },
+      "votersCount": "toot:votersCount",
+      "Hashtag": "as:Hashtag",
+      "Emoji": "toot:Emoji",
+      "alsoKnownAs": {
+        "@id": "as:alsoKnownAs",
+        "@type": "@id"
+      },
+      "sensitive": "as:sensitive",
+      "movedTo": {
+        "@id": "as:movedTo",
+        "@type": "@id"
+      },
+      "inReplyToAtomUri": "ostatus:inReplyToAtomUri",
+      "conversation": "ostatus:conversation",
+      "Device": "toot:Device",
+      "schema": "http://schema.org#",
+      "toot": "http://joinmastodon.org/ns#",
+      "cipherText": "toot:cipherText",
+      "suspended": "toot:suspended",
+      "messageType": "toot:messageType",
+      "featuredTags": {
+        "@id": "toot:featuredTags",
+        "@type": "@id"
+      },
+      "Curve25519Key": "toot:Curve25519Key",
+      "deviceId": "toot:deviceId",
+      "Ed25519Signature": "toot:Ed25519Signature",
+      "featured": {
+        "@id": "toot:featured",
+        "@type": "@id"
+      },
+      "devices": {
+        "@id": "toot:devices",
+        "@type": "@id"
+      },
+      "value": "schema:value",
+      "PropertyValue": "schema:PropertyValue",
+      "messageFranking": "toot:messageFranking",
+      "publicKeyBase64": "toot:publicKeyBase64",
+      "identityKey": {
+        "@id": "toot:identityKey",
+        "@type": "@id"
+      },
+      "Ed25519Key": "toot:Ed25519Key",
+      "indexable": "toot:indexable",
+      "EncryptedMessage": "toot:EncryptedMessage",
+      "fingerprintKey": {
+        "@id": "toot:fingerprintKey",
+        "@type": "@id"
+      }
+    }
+  ],
+  "actor": "https://phpc.social/users/denniskoch",
+  "cc": [],
+  "id": "https://phpc.social/users/denniskoch/statuses/112847382711461301/activity",
+  "inReplyTo": null,
+  "inReplyToAtomUri": null,
+  "object": {
+    "atomUri": "https://phpc.social/users/denniskoch/statuses/112847382711461301",
+    "attachment": [],
+    "attributedTo": "https://phpc.social/users/denniskoch",
+    "cc": [],
+    "content": "<p><span class=\"h-card\" translate=\"no\"><a href=\"https://mastodon.social/@bastianallgeier\" class=\"u-url mention\">@<span>bastianallgeier</span></a></span> <span class=\"h-card\" translate=\"no\"><a href=\"https://chaos.social/@distantnative\" class=\"u-url mention\">@<span>distantnative</span></a></span> <span class=\"h-card\" translate=\"no\"><a href=\"https://fosstodon.org/@kev\" class=\"u-url mention\">@<span>kev</span></a></span> Another main argument: Discord is popular. Many people have an account, so you can just join an server quickly. Also you know the app and how to get around.</p>",
+    "contentMap": {
+      "en": "<p><span class=\"h-card\" translate=\"no\"><a href=\"https://mastodon.social/@bastianallgeier\" class=\"u-url mention\">@<span>bastianallgeier</span></a></span> <span class=\"h-card\" translate=\"no\"><a href=\"https://chaos.social/@distantnative\" class=\"u-url mention\">@<span>distantnative</span></a></span> <span class=\"h-card\" translate=\"no\"><a href=\"https://fosstodon.org/@kev\" class=\"u-url mention\">@<span>kev</span></a></span> Another main argument: Discord is popular. Many people have an account, so you can just join an server quickly. Also you know the app and how to get around.</p>"
+    },
+    "conversation": "tag:mastodon.social,2024-07-25:objectId=760068442:objectType=Conversation",
+    "id": "https://phpc.social/users/denniskoch/statuses/112847382711461301",
+    "published": "2024-07-25T13:33:29Z",
+    "replies": null,
+    "sensitive": false,
+    "tag": [],
+    "to": [
+      "https://www.w3.org/ns/activitystreams#Public"
+    ],
+    "type": "Note",
+    "url": "https://phpc.social/@denniskoch/112847382711461301"
+  },
+  "published": "2024-07-25T13:33:29Z",
+  "signature": {
+    "created": "2024-07-25T13:33:29Z",
+    "creator": "https://phpc.social/users/denniskoch#main-key",
+    "signatureValue": "slz9BKJzd2n1S44wdXGOU+bV/wsskdgAaUpwxj8R16mYOL8+DTpE6VnfSKoZGsBBJT8uG5gnVfVEz1YsTUYtymeUgLMh7cvd8VnJnZPS+oixbmBRVky/Myf91TEgQQE7G4vDmTdB4ii54hZrHcOOYYf5FKPNRSkMXboKA6LMqNtekhbI+JTUJYIB02WBBK6PUyo15f6B1RJ6HGWVgud9NE0y1EZXfrkqUt682p8/9D49ORf7AwjXUJibKic2RbPvhEBj70qUGfBm4vvgdWhSUn1IG46xh+U0+NrTSUED82j1ZVOeua/2k/igkGs8cSBkY35quXTkPz6gbqCCH66CuA==",
+    "type": "RsaSignature2017"
+  },
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "type": "Create"
+}

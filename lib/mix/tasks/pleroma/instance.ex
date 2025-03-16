@@ -60,7 +60,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
           get_option(
             options,
             :domain,
-            "What domain will your instance use? (e.g mysite.com)"
+            "What domain will your instance use? (e.g pleroma.soykaf.com)"
           ),
           ":"
         ) ++ [443]
@@ -69,7 +69,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
         get_option(
           options,
           :instance_name,
-          "What is the name of your instance? (e.g. Our Wonderful Community)",
+          "What is the name of your instance? (e.g. The Corndog Emporium)",
           domain
         )
 
@@ -235,7 +235,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
 
       if db_configurable? do
         shell_info(
-          " Please transfer your config to the database after running database migrations. Refer to \"Transfering the config to/from the database\" section of the docs for more information."
+          " Please transfer your config to the database after running database migrations. Refer to \"Transferring the config to/from the database\" section of the docs for more information."
         )
       end
     else
@@ -295,6 +295,4 @@ defmodule Mix.Tasks.Pleroma.Instance do
 
     enabled_filters
   end
-
-  defp upload_filters(_), do: []
 end

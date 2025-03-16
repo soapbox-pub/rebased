@@ -43,7 +43,7 @@ defmodule Pleroma.Web.ApiSpec do
         - [Mastodon API documentation](https://docs.joinmastodon.org/client/intro/)
         - [Differences in Mastodon API responses from vanilla Mastodon](https://docs-develop.pleroma.social/backend/development/API/differences_in_mastoapi_responses/)
 
-        Please report such occurences on our [issue tracker](https://git.pleroma.social/pleroma/pleroma/-/issues). Feel free to submit API questions or proposals there too!
+        Please report such occurrences on our [issue tracker](https://git.pleroma.social/pleroma/pleroma/-/issues). Feel free to submit API questions or proposals there too!
         """,
         # Strip environment from the version
         version: Application.spec(:pleroma, :vsn) |> to_string() |> String.replace(~r/\+.*$/, ""),
@@ -87,33 +87,35 @@ defmodule Pleroma.Web.ApiSpec do
         "x-tagGroups": [
           %{
             "name" => "Accounts",
-            "tags" => ["Account actions", "Retrieve account information", "Scrobbles"]
+            "tags" => ["Account actions", "Bites", "Retrieve account information", "Scrobbles"]
           },
           %{
             "name" => "Administration",
             "tags" => [
               "Chat administration",
               "Emoji pack administration",
-              "Frontend managment",
+              "Frontend management",
               "Instance configuration",
               "Instance documents",
+              "Instance rule management",
               "Invites",
               "MediaProxy cache",
-              "OAuth application managment",
+              "OAuth application management",
               "Relays",
-              "Report managment",
+              "Report management",
               "Status administration",
               "User administration",
               "Announcement management",
-              "Instance rule managment",
-              "Webhooks"
+              "Instance rule management",
+              "Webhooks",
+              "Domain management"
             ]
           },
           %{
-            "name" => "Administration (MastoAPI)",
+            "name" => "Administration (Mastodon API)",
             "tags" => [
-              "User administration",
-              "Report methods"
+              "User administration (Mastodon API)",
+              "Report management (Mastodon API)"
             ]
           },
           %{"name" => "Applications", "tags" => ["Applications", "Push subscriptions"]},
@@ -147,7 +149,9 @@ defmodule Pleroma.Web.ApiSpec do
               "Search",
               "Status actions",
               "Media attachments",
-              "Event actions"
+              "Event actions",
+              "Bookmark folders",
+              "Tags"
             ]
           },
           %{

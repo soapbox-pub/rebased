@@ -20,10 +20,11 @@ defmodule Pleroma.Constants do
       "deleted_activity_id",
       "pleroma_internal",
       "generator",
+      "rules",
+      "language",
       "assigned_account",
       "rules",
       "content_type",
-      "language",
       "participations",
       "participation_count",
       "participation_request_count",
@@ -43,6 +44,7 @@ defmodule Pleroma.Constants do
       "updated",
       "emoji",
       "content",
+      "contentMap",
       "summary",
       "sensitive",
       "attachment",
@@ -89,6 +91,53 @@ defmodule Pleroma.Constants do
       "Person",
       "Service"
     ]
+  )
+
+  const(allowed_user_actor_types,
+    do: [
+      "Person",
+      "Service",
+      "Group"
+    ]
+  )
+
+  const(activity_types,
+    do: [
+      "Block",
+      "Create",
+      "Update",
+      "Delete",
+      "Follow",
+      "Accept",
+      "Reject",
+      "Add",
+      "Remove",
+      "Like",
+      "Announce",
+      "Undo",
+      "Flag",
+      "EmojiReact",
+      "Listen",
+      "Bite",
+      "Join",
+      "Leave"
+    ]
+  )
+
+  const(allowed_activity_types_from_strangers,
+    do: [
+      "Block",
+      "Create",
+      "Flag",
+      "Follow",
+      "Like",
+      "EmojiReact",
+      "Announce"
+    ]
+  )
+
+  const(object_types,
+    do: ~w[Event Question Answer Audio Video Image Article Note Page ChatMessage]
   )
 
   # basic regex, just there to weed out potential mistakes

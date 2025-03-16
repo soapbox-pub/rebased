@@ -7,54 +7,54 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
 
   require Pleroma.Constants
 
-  @moduledoc "Block messages with too much mentions (configurable)"
+  @moduledoc "Block activities with too much mentions (configurable)"
 
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
-  defp delist_message(message, threshold) when threshold > 0 do
-    follower_collection = User.get_cached_by_ap_id(message["actor"]).follower_address
-    to = message["to"] || []
-    cc = message["cc"] || []
+  defp delist_activity(activity, threshold) when threshold > 0 do
+    follower_collection = User.get_cached_by_ap_id(activity["actor"]).follower_address
+    to = activity["to"] || []
+    cc = activity["cc"] || []
 
     follower_collection? = Enum.member?(to ++ cc, follower_collection)
 
-    message =
-      case get_recipient_count(message) do
+    activity =
+      case get_recipient_count(activity) do
         {:public, recipients}
         when follower_collection? and recipients > threshold ->
-          message
+          activity
           |> Map.put("to", [follower_collection])
           |> Map.put("cc", [Pleroma.Constants.as_public()])
 
         {:public, recipients} when recipients > threshold ->
-          message
+          activity
           |> Map.put("to", [])
           |> Map.put("cc", [Pleroma.Constants.as_public()])
 
         _ ->
-          message
+          activity
       end
 
-    {:ok, message}
+    {:ok, activity}
   end
 
-  defp delist_message(message, _threshold), do: {:ok, message}
+  defp delist_activity(activity, _threshold), do: {:ok, activity}
 
-  defp reject_message(message, threshold) when threshold > 0 do
-    with {_, recipients} <- get_recipient_count(message) do
+  defp reject_activity(activity, threshold) when threshold > 0 do
+    with {_, recipients} <- get_recipient_count(activity) do
       if recipients > threshold do
         {:reject, "[HellthreadPolicy] #{recipients} recipients is over the limit of #{threshold}"}
       else
-        {:ok, message}
+        {:ok, activity}
       end
     end
   end
 
-  defp reject_message(message, _threshold), do: {:ok, message}
+  defp reject_activity(activity, _threshold), do: {:ok, activity}
 
-  defp get_recipient_count(message) do
-    recipients = (message["to"] || []) ++ (message["cc"] || [])
-    follower_collection = User.get_cached_by_ap_id(message["actor"]).follower_address
+  defp get_recipient_count(activity) do
+    recipients = (activity["to"] || []) ++ (activity["cc"] || [])
+    follower_collection = User.get_cached_by_ap_id(activity["actor"]).follower_address
 
     if Enum.member?(recipients, Pleroma.Constants.as_public()) do
       recipients =
@@ -73,7 +73,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
   end
 
   @impl true
-  def filter(%{"type" => "Create", "object" => %{"type" => object_type}} = message)
+  def filter(%{"type" => "Create", "object" => %{"type" => object_type}} = activity)
       when object_type in ~w{Note Article} do
     reject_threshold =
       Pleroma.Config.get(
@@ -83,16 +83,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
 
     delist_threshold = Pleroma.Config.get([:mrf_hellthread, :delist_threshold])
 
-    with {:ok, message} <- reject_message(message, reject_threshold),
-         {:ok, message} <- delist_message(message, delist_threshold) do
-      {:ok, message}
+    with {:ok, activity} <- reject_activity(activity, reject_threshold),
+         {:ok, activity} <- delist_activity(activity, delist_threshold) do
+      {:ok, activity}
     else
       e -> e
     end
   end
 
   @impl true
-  def filter(message), do: {:ok, message}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe,
@@ -104,13 +104,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
       key: :mrf_hellthread,
       related_policy: "Pleroma.Web.ActivityPub.MRF.HellthreadPolicy",
       label: "MRF Hellthread",
-      description: "Block messages with excessive user mentions",
+      description: "Block activities with excessive user mentions",
       children: [
         %{
           key: :delist_threshold,
           type: :integer,
           description:
-            "Number of mentioned users after which the message gets removed from timelines and" <>
+            "Number of mentioned users after which the activity gets removed from timelines and" <>
               "disables notifications. Set to 0 to disable.",
           suggestions: [10]
         },
@@ -118,7 +118,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
           key: :reject_threshold,
           type: :integer,
           description:
-            "Number of mentioned users after which the messaged gets rejected. Set to 0 to disable.",
+            "Number of mentioned users after which the activity gets rejected. Set to 0 to disable.",
           suggestions: [20]
         }
       ]

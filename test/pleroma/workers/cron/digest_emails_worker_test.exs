@@ -12,9 +12,7 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorkerTest do
   alias Pleroma.Web.CommonAPI
 
   setup do
-    clear_config([:email_notifications, :digest])
-
-    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Test.StaticConfig)
     :ok
   end
 

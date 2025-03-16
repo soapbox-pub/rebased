@@ -111,7 +111,10 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
             format: :uri,
             nullable: true,
             description: "Favicon image of the user's instance"
-          }
+          },
+          avatar_description: %Schema{type: :string},
+          header_description: %Schema{type: :string},
+          permit_followback: %Schema{type: :boolean}
         }
       },
       source: %Schema{
@@ -152,6 +155,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
     example: %{
       "acct" => "foobar",
       "avatar" => "https://mypleroma.com/images/avi.png",
+      "avatar_description" => "",
       "avatar_static" => "https://mypleroma.com/images/avi.png",
       "bot" => false,
       "created_at" => "2020-03-24T13:05:58.000Z",
@@ -162,6 +166,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
       "followers_count" => 0,
       "following_count" => 1,
       "header" => "https://mypleroma.com/images/banner.png",
+      "header_description" => "",
       "header_static" => "https://mypleroma.com/images/banner.png",
       "id" => "9tKi3esbG7OQgZ2920",
       "locked" => false,
@@ -204,7 +209,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
         "settings_store" => %{
           "pleroma-fe" => %{}
         },
-        "birthday" => "2001-02-12"
+        "birthday" => "2001-02-12",
+        "permit_followback" => true
       },
       "source" => %{
         "fields" => [],

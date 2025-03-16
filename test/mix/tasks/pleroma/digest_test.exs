@@ -24,7 +24,7 @@ defmodule Mix.Tasks.Pleroma.DigestTest do
   setup do: clear_config([Pleroma.Emails.Mailer, :enabled], true)
 
   setup do
-    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Test.StaticConfig)
     :ok
   end
 

@@ -6,7 +6,6 @@ defmodule Pleroma.ScheduledActivity do
   use Ecto.Schema
 
   alias Ecto.Multi
-  alias Pleroma.Config
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
   alias Pleroma.User
@@ -19,6 +18,8 @@ defmodule Pleroma.ScheduledActivity do
   @type t :: %__MODULE__{}
 
   @min_offset :timer.minutes(5)
+
+  @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
 
   schema "scheduled_activities" do
     belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
@@ -87,7 +88,7 @@ defmodule Pleroma.ScheduledActivity do
     |> where([sa], type(sa.scheduled_at, :date) == type(^scheduled_at, :date))
     |> select([sa], count(sa.id))
     |> Repo.one()
-    |> Kernel.>=(Config.get([ScheduledActivity, :daily_user_limit]))
+    |> Kernel.>=(@config_impl.get([ScheduledActivity, :daily_user_limit]))
   end
 
   def exceeds_total_user_limit?(user_id) do
@@ -95,7 +96,7 @@ defmodule Pleroma.ScheduledActivity do
     |> where(user_id: ^user_id)
     |> select([sa], count(sa.id))
     |> Repo.one()
-    |> Kernel.>=(Config.get([ScheduledActivity, :total_user_limit]))
+    |> Kernel.>=(@config_impl.get([ScheduledActivity, :total_user_limit]))
   end
 
   def far_enough?(scheduled_at) when is_binary(scheduled_at) do
@@ -123,7 +124,7 @@ defmodule Pleroma.ScheduledActivity do
   def create(%User{} = user, attrs) do
     Multi.new()
     |> Multi.insert(:scheduled_activity, new(user, attrs))
-    |> maybe_add_jobs(Config.get([ScheduledActivity, :enabled]))
+    |> maybe_add_jobs(@config_impl.get([ScheduledActivity, :enabled]))
     |> Repo.transaction()
     |> transaction_response
   end
@@ -203,7 +204,7 @@ defmodule Pleroma.ScheduledActivity do
 
   def job_query(scheduled_activity_id) do
     from(j in Oban.Job,
-      where: j.queue == "scheduled_activities",
+      where: j.queue == "federator_outgoing",
       where: fragment("args ->> 'activity_id' = ?::text", ^to_string(scheduled_activity_id))
     )
   end

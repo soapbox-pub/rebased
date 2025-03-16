@@ -93,6 +93,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
         )
 
         files = fetch_and_decode!(files_loc)
+        files_to_unzip = for({_, f} <- files, do: f)
 
         IO.puts(IO.ANSI.format(["Unpacking ", :bright, pack_name]))
 
@@ -103,17 +104,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
             pack_name
           ])
 
-        files_to_unzip =
-          Enum.map(
-            files,
-            fn {_, f} -> to_charlist(f) end
-          )
-
-        {:ok, _} =
-          :zip.unzip(binary_archive,
-            cwd: pack_path,
-            file_list: files_to_unzip
-          )
+        {:ok, _} = Pleroma.SafeZip.unzip_data(binary_archive, pack_path, files_to_unzip)
 
         IO.puts(IO.ANSI.format(["Writing pack.json for ", :bright, pack_name]))
 
@@ -201,7 +192,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
     tmp_pack_dir = Path.join(System.tmp_dir!(), "emoji-pack-#{name}")
 
-    {:ok, _} = :zip.unzip(binary_archive, cwd: String.to_charlist(tmp_pack_dir))
+    {:ok, _} = Pleroma.SafeZip.unzip_data(binary_archive, tmp_pack_dir)
 
     emoji_map = Pleroma.Emoji.Loader.make_shortcode_to_file_map(tmp_pack_dir, exts)
 

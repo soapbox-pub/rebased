@@ -13,12 +13,14 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Healthcheck
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.Auth.WrapperAuthenticator, as: Authenticator
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.WebFinger
 
   plug(
-    Pleroma.Web.ApiSpec.CastAndValidate
+    Pleroma.Web.ApiSpec.CastAndValidate,
+    [replace_params: false]
     when action != :remote_subscribe and action != :show_subscribe_form
   )
 
@@ -35,7 +37,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
            :change_email,
            :change_password,
            :delete_account,
-           :update_notificaton_settings,
+           :update_notification_settings,
            :disable_account,
            :move_account,
            :add_alias,
@@ -150,7 +152,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
-  def remote_interaction(%{body_params: %{ap_id: ap_id, profile: profile}} = conn, _params) do
+  def remote_interaction(
+        %{private: %{open_api_spex: %{body_params: %{ap_id: ap_id, profile: profile}}}} = conn,
+        _params
+      ) do
     with {:ok, %{"subscribe_address" => template}} <- WebFinger.finger(profile) do
       conn
       |> json(%{url: String.replace(template, "{uri}", ap_id)})
@@ -181,36 +186,41 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     json(conn, emoji)
   end
 
-  def update_notificaton_settings(%{assigns: %{user: user}} = conn, params) do
+  def update_notification_settings(%{assigns: %{user: user}} = conn, params) do
     with {:ok, _} <- User.update_notification_settings(user, params) do
       json(conn, %{status: "success"})
     end
   end
 
-  def change_password(%{assigns: %{user: user}, body_params: body_params} = conn, %{}) do
-    case CommonAPI.Utils.confirm_current_password(user, body_params.password) do
-      {:ok, user} ->
-        with {:ok, _user} <-
-               User.reset_password(user, %{
-                 password: body_params.new_password,
-                 password_confirmation: body_params.new_password_confirmation
-               }) do
-          json(conn, %{status: "success"})
-        else
-          {:error, changeset} ->
-            {_, {error, _}} = Enum.at(changeset.errors, 0)
-            json(conn, %{error: "New password #{error}."})
+  def change_password(
+        %{assigns: %{user: user}, private: %{open_api_spex: %{body_params: body_params}}} = conn,
+        _
+      ) do
+    with {:ok, %User{}} <-
+           Authenticator.change_password(
+             user,
+             body_params.password,
+             body_params.new_password,
+             body_params.new_password_confirmation
+           ) do
+      json(conn, %{status: "success"})
+    else
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {_, {error, _}} = Enum.at(changeset.errors, 0)
+        json(conn, %{error: "New password #{error}."})
 
-          _ ->
-            json(conn, %{error: "Unable to change password."})
-        end
+      {:error, :password_confirmation} ->
+        json(conn, %{error: "New password does not match confirmation."})
 
       {:error, msg} ->
         json(conn, %{error: msg})
     end
   end
 
-  def change_email(%{assigns: %{user: user}, body_params: body_params} = conn, %{}) do
+  def change_email(
+        %{assigns: %{user: user}, private: %{open_api_spex: %{body_params: body_params}}} = conn,
+        _
+      ) do
     case CommonAPI.Utils.confirm_current_password(user, body_params.password) do
       {:ok, user} ->
         with {:ok, _user} <- User.change_email(user, body_params.email) do
@@ -229,7 +239,13 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
-  def delete_account(%{assigns: %{user: user}, body_params: body_params} = conn, params) do
+  def delete_account(
+        %{
+          assigns: %{user: user},
+          private: %{open_api_spex: %{body_params: body_params, params: params}}
+        } = conn,
+        _
+      ) do
     # This endpoint can accept a query param or JSON body for backwards-compatibility.
     # Submitting a JSON body is recommended, so passwords don't end up in server logs.
     password = body_params[:password] || params[:password] || ""
@@ -244,7 +260,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
-  def disable_account(%{assigns: %{user: user}} = conn, params) do
+  def disable_account(
+        %{assigns: %{user: user}, private: %{open_api_spex: %{params: params}}} = conn,
+        _
+      ) do
     case CommonAPI.Utils.confirm_current_password(user, params[:password]) do
       {:ok, user} ->
         User.set_activation_async(user, false)
@@ -255,7 +274,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
-  def move_account(%{assigns: %{user: user}, body_params: body_params} = conn, %{}) do
+  def move_account(
+        %{assigns: %{user: user}, private: %{open_api_spex: %{body_params: body_params}}} = conn,
+        _
+      ) do
     case CommonAPI.Utils.confirm_current_password(user, body_params.password) do
       {:ok, user} ->
         with {:ok, target_user} <- find_or_fetch_user_by_nickname(body_params.target_account),
@@ -295,7 +317,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     difference < cooldown_period
   end
 
-  def add_alias(%{assigns: %{user: user}, body_params: body_params} = conn, _) do
+  def add_alias(
+        %{assigns: %{user: user}, private: %{open_api_spex: %{body_params: body_params}}} = conn,
+        _
+      ) do
     with {:ok, alias_user} <- find_user_by_nickname(body_params.alias),
          {:ok, _user} <- user |> User.add_alias(alias_user) do
       json(conn, %{status: "success"})
@@ -310,7 +335,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
-  def delete_alias(%{assigns: %{user: user}, body_params: body_params} = conn, _) do
+  def delete_alias(
+        %{assigns: %{user: user}, private: %{open_api_spex: %{body_params: body_params}}} = conn,
+        _
+      ) do
     with {:ok, alias_user} <- find_user_by_nickname(body_params.alias),
          {:ok, _user} <- user |> User.delete_alias(alias_user) do
       json(conn, %{status: "success"})
@@ -325,7 +353,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
-  def list_aliases(%{assigns: %{user: user}} = conn, %{}) do
+  def list_aliases(%{assigns: %{user: user}} = conn, _) do
     alias_nicks =
       user
       |> User.alias_users()
@@ -338,7 +366,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     user = User.get_cached_by_nickname(nickname)
 
     if user == nil do
-      {:not_found, nil}
+      {:error, :not_found}
     else
       {:ok, user}
     end

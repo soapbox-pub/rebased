@@ -1,29 +1,29 @@
 defmodule Pleroma.Mixfile do
   use Mix.Project
 
-  @build_name "soapbox"
+  @build_name "pl"
 
   def project do
     [
       app: :pleroma,
       name: "Rebased",
       compat_name: "Pleroma",
-      version: version("2.6.50"),
-      elixir: "~> 1.11",
+      version: version("2.9.1"),
+      elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: Mix.compilers(),
-      elixirc_options: [warnings_as_errors: warnings_as_errors()],
+      elixirc_options: [warnings_as_errors: warnings_as_errors(), prune_code_paths: false],
       xref: [exclude: [:eldap]],
+      dialyzer: [plt_add_apps: [:mix, :eldap]],
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
       test_coverage: [tool: :covertool, summary: true],
       # Docs
-      homepage_url: "https://soapbox.pub/",
-      source_url: "https://gitlab.com/soapbox-pub/rebased",
+      homepage_url: "https://github.com/mkljczk/pl",
+      source_url: "https://github.com/mkljczk/pl",
       docs: [
-        source_url_pattern:
-          "https://gitlab.com/soapbox-pub/rebased/blob/develop/%{path}#L%{line}",
+        source_url_pattern: "https://github.com/mkljczk/pl/blob/develop/%{path}#L%{line}",
         logo: "priv/static/images/logo.png",
         extras: ["README.md", "CHANGELOG.md"] ++ Path.wildcard("docs/**/*.md"),
         groups_for_extras: [
@@ -75,14 +75,16 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [
-        :logger,
-        :runtime_tools,
-        :comeonin,
-        :fast_sanitize,
-        :os_mon,
-        :ssl
-      ],
+      extra_applications:
+        [
+          :logger,
+          :runtime_tools,
+          :comeonin,
+          :fast_sanitize,
+          :os_mon,
+          :ssl,
+          :eldap
+        ] ++ logger_application(),
       included_applications: [:ex_syslogger]
     ]
   end
@@ -111,75 +113,77 @@ defmodule Pleroma.Mixfile do
     for s <- oauth_strategy_packages, do: {String.to_atom(s), ">= 0.0.0"}
   end
 
+  defp logger_application do
+    if Version.match?(System.version(), "<1.15.0-rc.0") do
+      []
+    else
+      [:logger_backends]
+    end
+  end
+
+  defp logger_deps do
+    if Version.match?(System.version(), "<1.15.0-rc.0") do
+      []
+    else
+      [{:logger_backends, "~> 1.0"}]
+    end
+  end
+
   # Specifies your project dependencies.
   #
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.7.3"},
-      {:tzdata, "~> 1.0.3"},
-      {:plug_cowboy, "~> 2.6.1"},
-      {:phoenix_pubsub, "~> 2.0"},
-      {:phoenix_ecto, "~> 4.4.0"},
-      {:ecto_enum, "~> 1.4"},
+      {:phoenix,
+       git: "https://github.com/feld/phoenix", branch: "v1.7.14-websocket-headers", override: true},
+      {:phoenix_ecto, "~> 4.4"},
       {:ecto_sql, "~> 3.10"},
+      {:phoenix_pubsub, "~> 2.0"},
+      {:ecto_enum, "~> 1.4"},
       {:postgrex, ">= 0.15.5"},
       {:phoenix_html, "~> 3.3"},
-      {:phoenix_live_reload, "~> 1.3.3", only: :dev},
       {:phoenix_live_view, "~> 0.19.0"},
       {:phoenix_live_dashboard, "~> 0.8.0"},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"},
-      # oban 2.14 requires Elixir 1.12+
-      {:oban, "~> 2.13.4"},
+      {:tzdata, "~> 1.0.3"},
+      {:plug_cowboy, "~> 2.5"},
+      {:oban, "~> 2.18.0"},
       {:gettext, "~> 0.20"},
       {:bcrypt_elixir, "~> 2.2"},
-      {:trailing_format_plug, "~> 0.0.7"},
       {:fast_sanitize, "~> 0.2.0"},
       {:html_entities, "~> 0.5", override: true},
       {:calendar, "~> 1.0"},
       {:cachex, "~> 3.2"},
       {:csv, "~> 2.4"},
-      {:poison, "~> 3.0", override: true},
-      {:tesla, "~> 1.4.4", override: true},
-      {:castore, "~> 0.1"},
+      {:tesla, "~> 1.11"},
+      {:castore, "~> 1.0"},
       {:cowlib, "~> 2.9", override: true},
       {:gun, "~> 2.0.0-rc.1", override: true},
       {:finch, "~> 0.15"},
       {:jason, "~> 1.2"},
-      {:mogrify, "~> 0.9.1"},
+      {:mogrify, "~> 0.9.0", override: "true"},
       {:ex_aws, "~> 2.1.6"},
       {:ex_aws_s3, "~> 2.0"},
       {:sweet_xml, "~> 0.7.2"},
-      # earmark 1.4.23 requires Elixir 1.12+
-      {:earmark, "1.4.22"},
+      {:earmark, "1.4.46"},
       {:bbcode_pleroma, "~> 0.2.0"},
       {:cors_plug, "~> 2.0"},
       {:web_push_encryption, "~> 0.3.1"},
-      # swoosh 1.11.2+ requires Elixir 1.12+
-      {:swoosh, "~> 1.10.0"},
+      {:swoosh, "~> 1.16.9"},
       {:phoenix_swoosh, "~> 1.1"},
       {:gen_smtp, "~> 0.13"},
+      {:mua, "~> 0.2.0"},
+      {:mail, "~> 0.3.0"},
       {:ex_syslogger, "~> 1.4"},
-      {:floki, "~> 0.27"},
+      {:floki, "~> 0.35"},
       {:timex, "~> 3.6"},
       {:ueberauth, "~> 0.4"},
       {:linkify, "~> 0.5.3"},
-      {:http_signatures, "~> 0.1.1"},
-      {:telemetry, "~> 1.0", override: true},
+      {:http_signatures, "~> 0.1.2"},
+      {:telemetry, "~> 1.0.0", override: true},
       {:poolboy, "~> 1.5"},
-      {:prometheus, "~> 4.6"},
-      {:prometheus_ex,
-       git: "https://gitlab.com/soapbox-pub/elixir-libraries/prometheus.ex.git",
-       branch: "fix/elixir-1.14",
-       override: true},
-      {:prometheus_plugs, "~> 1.1"},
-      {:prometheus_phoenix, "~> 1.3"},
-      # Note: once `prometheus_phx` is integrated into `prometheus_phoenix`, remove the former:
-      {:prometheus_phx,
-       git: "https://gitlab.com/soapbox-pub/elixir-libraries/prometheus-phx.git",
-       branch: "no-logging"},
-      {:prometheus_ecto, "~> 1.4"},
+      {:prom_ex, "~> 1.9"},
       {:recon, "~> 2.5"},
       {:joken, "~> 2.0"},
       {:pot, "~> 1.0"},
@@ -192,21 +196,26 @@ defmodule Pleroma.Mixfile do
        ref: "b647d0deecaa3acb140854fe4bda5b7e1dc6d1c8"},
       {:captcha,
        git: "https://gitlab.com/soapbox-pub/elixir-libraries/elixir-captcha.git",
-       ref: "90f6ce7672f70f56708792a98d98bd05176c9176"},
+       ref: "6630c42aaaab124e697b4e513190c89d8b64e410"},
       {:restarter, path: "./restarter"},
       {:majic, "~> 1.0"},
-      {:eblurhash,
-       git: "https://github.com/zotonic/eblurhash.git",
-       ref: "bc37ceb426ef021ee9927fb249bb93f7059194ab"},
-      {:oembed_providers, "~> 0.1.0"},
       {:open_api_spex, "~> 3.16"},
       {:ecto_psql_extras, "~> 0.6"},
+      {:vix, "~> 0.26.0"},
+      {:elixir_make, "~> 0.7.7", override: true},
+      {:blurhash, "~> 0.1.0", hex: :rinpatch_blurhash},
+      {:exile, "~> 0.10.0"},
+      {:bandit, "~> 1.5.2"},
+      {:websock_adapter, "~> 0.5.6"},
+      {:oban_live_dashboard, "~> 0.1.1"},
+      {:multipart, "~> 0.4.0", optional: true},
       {:icalendar, "~> 1.1"},
-      {:geospatial, "~> 0.2.0"},
-      {:prom_ex, "~> 1.8.0"},
-      {:unplug, "~> 1.0"},
+      {:geospatial, "~> 0.3.1"},
+      {:argon2_elixir, "~> 4.0"},
 
       ## dev & test
+      {:phoenix_live_reload, "~> 1.3.3", only: :dev},
+      {:poison, "~> 3.0", only: :test},
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
       {:ex_machina, "~> 2.4", only: :test},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
@@ -215,8 +224,9 @@ defmodule Pleroma.Mixfile do
       {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
       {:websockex, "~> 0.4.3", only: :test},
-      {:benchee, "~> 1.0", only: :benchmark}
-    ] ++ oauth_deps()
+      {:benchee, "~> 1.0", only: :benchmark},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
+    ] ++ oauth_deps() ++ logger_deps()
   end
 
   # Aliases are shortcuts or tasks specific to the current project.

@@ -202,4 +202,58 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
              {:meta, [name: "twitter:player:stream:content_type", content: "video/webm"], []}
            ] == result
   end
+
+  test "meta tag ordering matches attachment order" do
+    user = insert(:user, name: "Jimmy Hendriks", bio: "born 19 March 1994")
+
+    note =
+      insert(:note, %{
+        data: %{
+          "actor" => user.ap_id,
+          "tag" => [],
+          "id" => "https://pleroma.gov/objects/whatever",
+          "summary" => "",
+          "content" => "pleroma in a nutshell",
+          "attachment" => [
+            %{
+              "url" => [
+                %{
+                  "mediaType" => "image/png",
+                  "href" => "https://example.com/first.png",
+                  "height" => 1024,
+                  "width" => 1280
+                }
+              ]
+            },
+            %{
+              "url" => [
+                %{
+                  "mediaType" => "image/png",
+                  "href" => "https://example.com/second.png",
+                  "height" => 1024,
+                  "width" => 1280
+                }
+              ]
+            }
+          ]
+        }
+      })
+
+    result = TwitterCard.build_tags(%{object: note, activity_id: note.data["id"], user: user})
+
+    assert [
+             {:meta, [name: "twitter:title", content: Utils.user_name_string(user)], []},
+             {:meta, [name: "twitter:description", content: "pleroma in a nutshell"], []},
+             {:meta, [name: "twitter:card", content: "summary_large_image"], []},
+             {:meta, [name: "twitter:image", content: "https://example.com/first.png"], []},
+             {:meta, [name: "twitter:image:alt", content: ""], []},
+             {:meta, [name: "twitter:player:width", content: "1280"], []},
+             {:meta, [name: "twitter:player:height", content: "1024"], []},
+             {:meta, [name: "twitter:card", content: "summary_large_image"], []},
+             {:meta, [name: "twitter:image", content: "https://example.com/second.png"], []},
+             {:meta, [name: "twitter:image:alt", content: ""], []},
+             {:meta, [name: "twitter:player:width", content: "1280"], []},
+             {:meta, [name: "twitter:player:height", content: "1024"], []}
+           ] == result
+  end
 end

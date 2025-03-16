@@ -4,12 +4,21 @@
 
 defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
   alias Pleroma.Repo
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
 
   use Pleroma.Web.ConnCase
 
   import Mock
+  import Mox
   import Pleroma.Factory
+
+  setup do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
+    :ok
+  end
 
   describe "updating credentials" do
     setup do: oauth_access(["write:accounts"])
@@ -145,13 +154,6 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
 
       assert user_data = json_response_and_validate_schema(conn, 200)
       assert user_data["pleroma"]["accepts_chat_messages"] == false
-    end
-
-    test "updates the user's newsletter preference", %{user: user, conn: conn} do
-      conn = patch(conn, "/api/v1/accounts/update_credentials", %{accepts_email_list: "true"})
-
-      assert json_response_and_validate_schema(conn, 200)
-      assert %User{accepts_email_list: true} = User.get_by_id(user.id)
     end
 
     test "updates the user's allow_following_move", %{user: user, conn: conn} do
@@ -305,6 +307,8 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
     test "updates the user's avatar, upload_limit, returns a HTTP 413", %{conn: conn, user: user} do
       upload_limit = Config.get([:instance, :upload_limit]) * 8 + 8
 
+      File.mkdir_p!(Path.absname("test/tmp"))
+
       assert :ok ==
                File.write(Path.absname("test/tmp/large_binary.data"), <<0::size(upload_limit)>>)
 
@@ -351,6 +355,8 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
 
     test "updates the user's banner, upload_limit, returns a HTTP 413", %{conn: conn, user: user} do
       upload_limit = Config.get([:instance, :upload_limit]) * 8 + 8
+
+      File.mkdir_p!(Path.absname("test/tmp"))
 
       assert :ok ==
                File.write(Path.absname("test/tmp/large_binary.data"), <<0::size(upload_limit)>>)
@@ -404,6 +410,8 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
     } do
       upload_limit = Config.get([:instance, :upload_limit]) * 8 + 8
 
+      File.mkdir_p!(Path.absname("test/tmp"))
+
       assert :ok ==
                File.write(Path.absname("test/tmp/large_binary.data"), <<0::size(upload_limit)>>)
 
@@ -426,6 +434,75 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       clear_config([:instance, :upload_limit], upload_limit)
 
       assert :ok == File.rm(Path.absname("test/tmp/large_binary.data"))
+    end
+
+    test "adds avatar description with a new avatar", %{user: user, conn: conn} do
+      new_avatar = %Plug.Upload{
+        content_type: "image/jpeg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "avatar" => new_avatar,
+          "avatar_description" => "me and pleroma tan"
+        })
+
+      assert json_response_and_validate_schema(res, 200)
+
+      user = User.get_by_id(user.id)
+      assert user.avatar["name"] == "me and pleroma tan"
+    end
+
+    test "adds avatar description to existing avatar", %{user: user, conn: conn} do
+      new_avatar = %Plug.Upload{
+        content_type: "image/jpeg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      assert user.avatar == %{}
+
+      conn
+      |> patch("/api/v1/accounts/update_credentials", %{"avatar" => new_avatar})
+
+      assert conn
+             |> assign(:user, User.get_by_id(user.id))
+             |> patch("/api/v1/accounts/update_credentials", %{
+               "avatar_description" => "me and pleroma tan"
+             })
+             |> json_response_and_validate_schema(200)
+
+      user = User.get_by_id(user.id)
+      assert user.avatar["name"] == "me and pleroma tan"
+    end
+
+    test "limit", %{user: user, conn: conn} do
+      new_header = %Plug.Upload{
+        content_type: "image/jpeg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      assert user.banner == %{}
+
+      conn
+      |> patch("/api/v1/accounts/update_credentials", %{"header" => new_header})
+
+      description_limit = Config.get([:instance, :description_limit], 100)
+
+      description = String.duplicate(".", description_limit + 1)
+
+      conn =
+        conn
+        |> assign(:user, User.get_by_id(user.id))
+        |> patch("/api/v1/accounts/update_credentials", %{
+          "header_description" => description
+        })
+
+      assert %{"error" => "Banner description is too long"} =
+               json_response_and_validate_schema(conn, 413)
     end
 
     test "Strip / from upload files", %{user: user, conn: conn} do
@@ -748,6 +825,22 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
 
       refute account["bot"]
       assert account["source"]["pleroma"]["actor_type"] == "Person"
+    end
+  end
+
+  describe "Mark account as group" do
+    setup do: oauth_access(["write:accounts"])
+    setup :request_content_type
+
+    test "changing actor_type to Group makes account a Group and enables bot indicator for backward compatibility",
+         %{conn: conn} do
+      account =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{actor_type: "Group"})
+        |> json_response_and_validate_schema(200)
+
+      assert account["bot"]
+      assert account["source"]["pleroma"]["actor_type"] == "Group"
     end
   end
 end

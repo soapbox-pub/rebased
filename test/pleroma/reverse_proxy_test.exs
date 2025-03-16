@@ -63,7 +63,11 @@ defmodule Pleroma.ReverseProxyTest do
       |> Plug.Conn.put_req_header("user-agent", "fake/1.0")
       |> ReverseProxy.call("/user-agent")
 
-    assert json_response(conn, 200) == %{"user-agent" => Pleroma.Application.user_agent()}
+    # Convert the response to a map without relying on json_response
+    body = conn.resp_body
+    assert conn.status == 200
+    response = Jason.decode!(body)
+    assert response == %{"user-agent" => Pleroma.Application.user_agent()}
   end
 
   test "closed connection", %{conn: conn} do
@@ -138,11 +142,14 @@ defmodule Pleroma.ReverseProxyTest do
     test "common", %{conn: conn} do
       ClientMock
       |> expect(:request, fn :head, "/head", _, _, _ ->
-        {:ok, 200, [{"content-type", "text/html; charset=utf-8"}]}
+        {:ok, 200, [{"content-type", "image/png"}]}
       end)
 
       conn = ReverseProxy.call(Map.put(conn, :method, "HEAD"), "/head")
-      assert html_response(conn, 200) == ""
+
+      assert conn.status == 200
+      assert Conn.get_resp_header(conn, "content-type") == ["image/png"]
+      assert conn.resp_body == ""
     end
   end
 
@@ -249,7 +256,10 @@ defmodule Pleroma.ReverseProxyTest do
         )
         |> ReverseProxy.call("/headers")
 
-      %{"headers" => headers} = json_response(conn, 200)
+      body = conn.resp_body
+      assert conn.status == 200
+      response = Jason.decode!(body)
+      headers = response["headers"]
       assert headers["Accept"] == "text/html"
     end
 
@@ -262,7 +272,10 @@ defmodule Pleroma.ReverseProxyTest do
         )
         |> ReverseProxy.call("/headers")
 
-      %{"headers" => headers} = json_response(conn, 200)
+      body = conn.resp_body
+      assert conn.status == 200
+      response = Jason.decode!(body)
+      headers = response["headers"]
       refute headers["Accept-Language"]
     end
   end
@@ -306,7 +319,7 @@ defmodule Pleroma.ReverseProxyTest do
   end
 
   describe "response content disposition header" do
-    test "not atachment", %{conn: conn} do
+    test "not attachment", %{conn: conn} do
       disposition_headers_mock([
         {"content-type", "image/gif"},
         {"content-length", "0"}
@@ -326,6 +339,60 @@ defmodule Pleroma.ReverseProxyTest do
       conn = ReverseProxy.call(conn, "/disposition")
 
       assert {"content-disposition", "attachment; filename=\"filename.jpg\""} in conn.resp_headers
+    end
+  end
+
+  describe "content-type sanitisation" do
+    test "preserves allowed image type", %{conn: conn} do
+      ClientMock
+      |> expect(:request, fn :get, "/content", _, _, _ ->
+        {:ok, 200, [{"content-type", "image/png"}], %{url: "/content"}}
+      end)
+      |> expect(:stream_body, fn _ -> :done end)
+
+      conn = ReverseProxy.call(conn, "/content")
+
+      assert conn.status == 200
+      assert Conn.get_resp_header(conn, "content-type") == ["image/png"]
+    end
+
+    test "preserves allowed video type", %{conn: conn} do
+      ClientMock
+      |> expect(:request, fn :get, "/content", _, _, _ ->
+        {:ok, 200, [{"content-type", "video/mp4"}], %{url: "/content"}}
+      end)
+      |> expect(:stream_body, fn _ -> :done end)
+
+      conn = ReverseProxy.call(conn, "/content")
+
+      assert conn.status == 200
+      assert Conn.get_resp_header(conn, "content-type") == ["video/mp4"]
+    end
+
+    test "sanitizes ActivityPub content type", %{conn: conn} do
+      ClientMock
+      |> expect(:request, fn :get, "/content", _, _, _ ->
+        {:ok, 200, [{"content-type", "application/activity+json"}], %{url: "/content"}}
+      end)
+      |> expect(:stream_body, fn _ -> :done end)
+
+      conn = ReverseProxy.call(conn, "/content")
+
+      assert conn.status == 200
+      assert Conn.get_resp_header(conn, "content-type") == ["application/octet-stream"]
+    end
+
+    test "sanitizes LD-JSON content type", %{conn: conn} do
+      ClientMock
+      |> expect(:request, fn :get, "/content", _, _, _ ->
+        {:ok, 200, [{"content-type", "application/ld+json"}], %{url: "/content"}}
+      end)
+      |> expect(:stream_body, fn _ -> :done end)
+
+      conn = ReverseProxy.call(conn, "/content")
+
+      assert conn.status == 200
+      assert Conn.get_resp_header(conn, "content-type") == ["application/octet-stream"]
     end
   end
 end

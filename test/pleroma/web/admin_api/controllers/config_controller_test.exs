@@ -194,7 +194,6 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
     setup do: clear_config(:configurable_from_database, true)
 
-    @tag capture_log: true
     test "create new config setting in db", %{conn: conn} do
       ueberauth = Application.get_env(:ueberauth, Ueberauth)
       on_exit(fn -> Application.put_env(:ueberauth, Ueberauth, ueberauth) end)
@@ -316,7 +315,6 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       assert Application.get_env(:idna, :key5) == {"string", Pleroma.Captcha.NotReal, []}
     end
 
-    @tag capture_log: true
     test "save configs setting without explicit key", %{conn: conn} do
       adapter = Application.get_env(:http, :adapter)
       send_user_agent = Application.get_env(:http, :send_user_agent)
@@ -611,52 +609,6 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
              ]
     end
 
-    test "saving full setting if value is in full_key_update list", %{conn: conn} do
-      backends = Application.get_env(:logger, :backends)
-      on_exit(fn -> Application.put_env(:logger, :backends, backends) end)
-
-      insert(:config,
-        group: :logger,
-        key: :backends,
-        value: []
-      )
-
-      Pleroma.Config.TransferTask.load_and_update_env([], false)
-
-      assert Application.get_env(:logger, :backends) == []
-
-      conn =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/pleroma/admin/config", %{
-          configs: [
-            %{
-              group: ":logger",
-              key: ":backends",
-              value: [":console"]
-            }
-          ]
-        })
-
-      assert json_response_and_validate_schema(conn, 200) == %{
-               "configs" => [
-                 %{
-                   "group" => ":logger",
-                   "key" => ":backends",
-                   "value" => [
-                     ":console"
-                   ],
-                   "db" => [":backends"]
-                 }
-               ],
-               "need_reboot" => false
-             }
-
-      assert Application.get_env(:logger, :backends) == [
-               :console
-             ]
-    end
-
     test "saving full setting if value is not keyword", %{conn: conn} do
       insert(:config,
         group: :tesla,
@@ -873,7 +825,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                                   %{
                                     "tuple" => [
                                       ":_",
-                                      "Phoenix.Endpoint.Cowboy2Handler",
+                                      "Plug.Cowboy.Handler",
                                       %{"tuple" => ["Pleroma.Web.Endpoint", []]}
                                     ]
                                   }
@@ -937,7 +889,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                                        %{
                                          "tuple" => [
                                            ":_",
-                                           "Phoenix.Endpoint.Cowboy2Handler",
+                                           "Plug.Cowboy.Handler",
                                            %{"tuple" => ["Pleroma.Web.Endpoint", []]}
                                          ]
                                        }
@@ -1229,7 +1181,6 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       assert ":proxy_url" in db
     end
 
-    @tag capture_log: true
     test "doesn't set keys not in the whitelist", %{conn: conn} do
       clear_config(:database_config_whitelist, [
         {:pleroma, :key1},
@@ -1260,8 +1211,6 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     end
 
     test "args for Pleroma.Upload.Filter.Mogrify with custom tuples", %{conn: conn} do
-      clear_config(Pleroma.Upload.Filter.Mogrify)
-
       assert conn
              |> put_req_header("content-type", "application/json")
              |> post("/api/pleroma/admin/config", %{
@@ -1289,7 +1238,8 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                "need_reboot" => false
              }
 
-      assert Config.get(Pleroma.Upload.Filter.Mogrify) == [args: ["auto-orient", "strip"]]
+      config = Config.get(Pleroma.Upload.Filter.Mogrify)
+      assert {:args, ["auto-orient", "strip"]} in config
 
       assert conn
              |> put_req_header("content-type", "application/json")
@@ -1338,9 +1288,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                "need_reboot" => false
              }
 
-      assert Config.get(Pleroma.Upload.Filter.Mogrify) == [
-               args: ["auto-orient", "strip", {"implode", "1"}, {"resize", "3840x1080>"}]
-             ]
+      config = Config.get(Pleroma.Upload.Filter.Mogrify)
+
+      assert {:args, ["auto-orient", "strip", {"implode", "1"}, {"resize", "3840x1080>"}]} in config
     end
 
     test "enables the welcome messages", %{conn: conn} do

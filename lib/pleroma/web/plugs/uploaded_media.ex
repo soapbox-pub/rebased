@@ -11,6 +11,7 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
   require Logger
 
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.Web.Plugs.Utils
 
   @behaviour Plug
   # no slashes
@@ -28,7 +29,9 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
       |> Keyword.put(:at, "/__unconfigured_media_plug")
       |> Plug.Static.init()
 
-    %{static_plug_opts: static_plug_opts}
+    allowed_mime_types = Pleroma.Config.get([Pleroma.Upload, :allowed_mime_types])
+
+    %{static_plug_opts: static_plug_opts, allowed_mime_types: allowed_mime_types}
   end
 
   def call(%{request_path: <<"/", @path, "/", file::binary>>} = conn, opts) do
@@ -69,14 +72,24 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
 
   defp media_is_banned(_, _), do: false
 
+  defp set_content_type(conn, opts, filepath) do
+    real_mime = MIME.from_path(filepath)
+    clean_mime = Utils.get_safe_mime_type(opts, real_mime)
+    put_resp_header(conn, "content-type", clean_mime)
+  end
+
   defp get_media(conn, {:static_dir, directory}, _, opts) do
     static_opts =
       Map.get(opts, :static_plug_opts)
       |> Map.put(:at, [@path])
       |> Map.put(:from, directory)
       |> Map.put(:headers, {__MODULE__, :scrub_mime, []})
+      |> Map.put(:content_types, false)
 
-    conn = Plug.Static.call(conn, static_opts)
+    conn =
+      conn
+      |> set_content_type(opts, conn.request_path)
+      |> Plug.Static.call(static_opts)
 
     if conn.halted do
       conn
@@ -106,7 +119,7 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
   end
 
   defp get_media(conn, unknown, _, _) do
-    Logger.error("#{__MODULE__}: Unknown get startegy: #{inspect(unknown)}")
+    Logger.error("#{__MODULE__}: Unknown get strategy: #{inspect(unknown)}")
 
     conn
     |> send_resp(:internal_server_error, dgettext("errors", "Internal Error"))
@@ -125,7 +138,7 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
     end
   end
 
-  defp plaintext_header() do
+  defp plaintext_header do
     [{"content-type", "text/plain"}]
   end
 end

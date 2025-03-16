@@ -18,7 +18,7 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorker do
 
   require Logger
 
-  @impl Oban.Worker
+  @impl true
   def perform(_job) do
     config = Config.get([:email_notifications, :digest])
 
@@ -58,4 +58,7 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorker do
 
     User.touch_last_digest_emailed_at(user)
   end
+
+  @impl true
+  def timeout(_job), do: :timer.seconds(5)
 end

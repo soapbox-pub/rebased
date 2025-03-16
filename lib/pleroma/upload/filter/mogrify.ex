@@ -8,10 +8,16 @@ defmodule Pleroma.Upload.Filter.Mogrify do
   @type conversion :: action :: String.t() | {action :: String.t(), opts :: String.t()}
   @type conversions :: conversion() | [conversion()]
 
-  @spec filter(Pleroma.Upload.t()) :: {:ok, :atom} | {:error, String.t()}
+  @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
+  @mogrify_impl Application.compile_env(
+                  :pleroma,
+                  [__MODULE__, :mogrify_impl],
+                  Pleroma.MogrifyWrapper
+                )
+
   def filter(%Pleroma.Upload{tempfile: file, content_type: "image" <> _}) do
     try do
-      do_filter(file, Pleroma.Config.get!([__MODULE__, :args]))
+      do_filter(file, @config_impl.get!([__MODULE__, :args]))
       {:ok, :filtered}
     rescue
       e in ErlangError ->
@@ -23,9 +29,9 @@ defmodule Pleroma.Upload.Filter.Mogrify do
 
   def do_filter(file, filters) do
     file
-    |> Mogrify.open()
+    |> @mogrify_impl.open()
     |> mogrify_filter(filters)
-    |> Mogrify.save(in_place: true)
+    |> @mogrify_impl.save(in_place: true)
   end
 
   defp mogrify_filter(mogrify, nil), do: mogrify
@@ -39,10 +45,10 @@ defmodule Pleroma.Upload.Filter.Mogrify do
   defp mogrify_filter(mogrify, []), do: mogrify
 
   defp mogrify_filter(mogrify, {action, options}) do
-    Mogrify.custom(mogrify, action, options)
+    @mogrify_impl.custom(mogrify, action, options)
   end
 
   defp mogrify_filter(mogrify, action) when is_binary(action) do
-    Mogrify.custom(mogrify, action)
+    @mogrify_impl.custom(mogrify, action)
   end
 end

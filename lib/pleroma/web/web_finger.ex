@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.WebFinger do
   alias Pleroma.HTTP
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Publisher
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Web.XML
   alias Pleroma.XmlBuilder
   require Jason
@@ -33,15 +33,13 @@ defmodule Pleroma.Web.WebFinger do
   def webfinger(resource, fmt) when fmt in ["XML", "JSON"] do
     host = Pleroma.Web.Endpoint.host()
 
-    regex =
-      if webfinger_domain = Pleroma.Config.get([__MODULE__, :domain]) do
-        ~r/(acct:)?(?<username>[a-z0-9A-Z_\.-]+)@(#{host}|#{webfinger_domain})/
-      else
-        ~r/(acct:)?(?<username>[a-z0-9A-Z_\.-]+)@#{host}/
-      end
+    regex = ~r/(acct:)?(?<username>[a-z0-9A-Z_\.-]+)@(?<domain>[a-z0-9A-Z_\.-]+)/
+    webfinger_domain = Pleroma.Config.get([__MODULE__, :domain])
 
-    with %{"username" => username} <- Regex.named_captures(regex, resource),
-         %User{} = user <- User.get_cached_by_nickname(username) do
+    with %{"username" => username, "domain" => domain} <- Regex.named_captures(regex, resource),
+         nickname <-
+           if(domain in [host, webfinger_domain], do: username, else: username <> "@" <> domain),
+         %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
       {:ok, represent_user(user, fmt)}
     else
       _e ->
@@ -70,7 +68,7 @@ defmodule Pleroma.Web.WebFinger do
 
   def represent_user(user, "JSON") do
     %{
-      "subject" => "acct:#{user.nickname}@#{domain()}",
+      "subject" => get_subject(user),
       "aliases" => gather_aliases(user),
       "links" => gather_links(user)
     }
@@ -90,13 +88,21 @@ defmodule Pleroma.Web.WebFinger do
       :XRD,
       %{xmlns: "http://docs.oasis-open.org/ns/xri/xrd-1.0"},
       [
-        {:Subject, "acct:#{user.nickname}@#{domain()}"}
+        {:Subject, get_subject(user)}
       ] ++ aliases ++ links
     }
     |> XmlBuilder.to_doc()
   end
 
-  def domain do
+  defp get_subject(%User{nickname: nickname}) do
+    if String.contains?(nickname, "@") do
+      "acct:#{nickname}"
+    else
+      "acct:#{nickname}@#{host()}"
+    end
+  end
+
+  def host do
     Pleroma.Config.get([__MODULE__, :domain]) || Pleroma.Web.Endpoint.host()
   end
 
@@ -150,7 +156,8 @@ defmodule Pleroma.Web.WebFinger do
     xpath = "//Link[@rel='lrdd']/@template"
 
     with {_, {:ok, doc}} <- {:xml_parse, XML.parse_document(body)},
-         {_, template} when template != nil <- {:find_template, XML.string_from_xpath(xpath, doc)} do
+         {_, template} when template != nil <-
+           {:find_template, XML.string_from_xpath(xpath, doc)} do
       {:ok, template}
     else
       error -> {:error, error}

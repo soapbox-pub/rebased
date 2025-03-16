@@ -116,7 +116,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
         %{method: :get, url: "https://example.com/nodeinfo/2.1.json"} ->
           json(%{metadata: %{features: ["shareable_emoji_packs"]}})
 
-        %{method: :get, url: "https://example.com/api/pleroma/emoji/packs?page=2&page_size=1"} ->
+        %{method: :get, url: "https://example.com/api/v1/pleroma/emoji/packs?page=2&page_size=1"} ->
           json(resp)
       end)
 
@@ -159,8 +159,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
       {:ok, arch} = :zip.unzip(resp, [:memory])
 
-      assert Enum.find(arch, fn {n, _} -> n == 'pack.json' end)
-      assert Enum.find(arch, fn {n, _} -> n == 'blank.png' end)
+      assert Enum.find(arch, fn {n, _} -> n == ~c"pack.json" end)
+      assert Enum.find(arch, fn {n, _} -> n == ~c"blank.png" end)
     end
 
     test "non existing pack", %{conn: conn} do
@@ -199,7 +199,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
         %{
           method: :get,
-          url: "https://example.com/api/pleroma/emoji/pack?name=test_pack"
+          url: "https://example.com/api/v1/pleroma/emoji/pack?name=test_pack&page_size=" <> _n
         } ->
           conn
           |> get("/api/pleroma/emoji/pack?name=test_pack")
@@ -208,7 +208,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
         %{
           method: :get,
-          url: "https://example.com/api/pleroma/emoji/packs/archive?name=test_pack"
+          url: "https://example.com/api/v1/pleroma/emoji/packs/archive?name=test_pack"
         } ->
           conn
           |> get("/api/pleroma/emoji/packs/archive?name=test_pack")
@@ -217,7 +217,9 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
         %{
           method: :get,
-          url: "https://example.com/api/pleroma/emoji/pack?name=test_pack_nonshared"
+          url:
+            "https://example.com/api/v1/pleroma/emoji/pack?name=test_pack_nonshared&page_size=" <>
+                _n
         } ->
           conn
           |> get("/api/pleroma/emoji/pack?name=test_pack_nonshared")
@@ -305,14 +307,14 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
         %{
           method: :get,
-          url: "https://example.com/api/pleroma/emoji/pack?name=pack_bad_sha"
+          url: "https://example.com/api/v1/pleroma/emoji/pack?name=pack_bad_sha&page_size=" <> _n
         } ->
           {:ok, pack} = Pleroma.Emoji.Pack.load_pack("pack_bad_sha")
           %Tesla.Env{status: 200, body: Jason.encode!(pack)}
 
         %{
           method: :get,
-          url: "https://example.com/api/pleroma/emoji/packs/archive?name=pack_bad_sha"
+          url: "https://example.com/api/v1/pleroma/emoji/packs/archive?name=pack_bad_sha"
         } ->
           %Tesla.Env{
             status: 200,
@@ -342,7 +344,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
         %{
           method: :get,
-          url: "https://example.com/api/pleroma/emoji/pack?name=test_pack"
+          url: "https://example.com/api/v1/pleroma/emoji/pack?name=test_pack&page_size=" <> _n
         } ->
           {:ok, pack} = Pleroma.Emoji.Pack.load_pack("test_pack")
           %Tesla.Env{status: 200, body: Jason.encode!(pack)}
@@ -452,7 +454,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
           method: :get,
           url: "https://nonshared-pack"
         } ->
-          {:ok, {'empty.zip', empty_arch}} = :zip.zip('empty.zip', [], [:memory])
+          {:ok, {~c"empty.zip", empty_arch}} = :zip.zip(~c"empty.zip", [], [:memory])
           text(empty_arch)
       end)
 

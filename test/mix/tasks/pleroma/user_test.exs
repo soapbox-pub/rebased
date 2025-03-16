@@ -21,7 +21,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
   import Pleroma.Factory
 
   setup do
-    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Test.StaticConfig)
     :ok
   end
 

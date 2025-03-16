@@ -28,7 +28,7 @@ defmodule Pleroma.Password.Pbkdf2 do
 
     iterations = String.to_integer(iterations)
 
-    digest = String.to_atom(digest)
+    digest = String.to_existing_atom(digest)
 
     binary_hash =
       KeyGenerator.generate(password, salt, digest: digest, iterations: iterations, length: 64)

@@ -16,6 +16,41 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
   require Pleroma.Constants
 
+  describe "strip_report_status_data/1" do
+    test "does not break on issues with the reported activities" do
+      reporter = insert(:user)
+      target_account = insert(:user)
+      {:ok, activity} = CommonAPI.post(target_account, %{status: "foobar"})
+      context = Utils.generate_context_id()
+      content = "foobar"
+      post_id = activity.data["id"]
+
+      res =
+        Utils.make_flag_data(
+          %{
+            actor: reporter,
+            context: context,
+            account: target_account,
+            statuses: [%{"id" => post_id}],
+            content: content
+          },
+          %{}
+        )
+
+      res =
+        res
+        |> Map.put("object", res["object"] ++ [nil, 1, 5, "123"])
+
+      {:ok, activity} = Pleroma.Web.ActivityPub.ActivityPub.insert(res)
+
+      [user_id, object | _] = activity.data["object"]
+
+      {:ok, stripped} = Utils.strip_report_status_data(activity)
+
+      assert stripped.data["object"] == [user_id, object["id"]]
+    end
+  end
+
   describe "fetch the latest Follow" do
     test "fetches the latest Follow activity" do
       %Activity{data: %{"type" => "Follow"}} = activity = insert(:follow_activity)
@@ -118,7 +153,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       assert Enum.sort(cc) == expected_cc
     end
 
-    test "does not adress actor's follower address if the activity is not public", %{
+    test "does not address actor's follower address if the activity is not public", %{
       user: user,
       other_user: other_user,
       third_user: third_user
@@ -180,7 +215,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
         })
 
       object = Object.normalize(activity, fetch: false)
-      {:ok, votes, object} = CommonAPI.vote(other_user, object, [0, 1])
+      {:ok, votes, object} = CommonAPI.vote(object, other_user, [0, 1])
       assert Enum.sort(Utils.get_existing_votes(other_user.ap_id, object)) == Enum.sort(votes)
     end
 
@@ -198,8 +233,8 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
         })
 
       object = Object.normalize(activity, fetch: false)
-      {:ok, [vote], object} = CommonAPI.vote(other_user, object, [0])
-      {:ok, _activity} = CommonAPI.favorite(user, activity.id)
+      {:ok, [vote], object} = CommonAPI.vote(object, other_user, [0])
+      {:ok, _activity} = CommonAPI.favorite(activity.id, user)
       [fetched_vote] = Utils.get_existing_votes(other_user.ap_id, object)
       assert fetched_vote.id == vote.id
     end
@@ -210,8 +245,8 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       user = insert(:user, is_locked: true)
       follower = insert(:user)
 
-      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
-      {:ok, _, _, follow_activity_two} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(user, follower)
+      {:ok, _, _, follow_activity_two} = CommonAPI.follow(user, follower)
 
       data =
         follow_activity_two.data
@@ -232,8 +267,8 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       user = insert(:user)
       follower = insert(:user)
 
-      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
-      {:ok, _, _, follow_activity_two} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(user, follower)
+      {:ok, _, _, follow_activity_two} = CommonAPI.follow(user, follower)
 
       {:ok, follow_activity_two} =
         Utils.update_follow_state_for_all(follow_activity_two, "reject")
@@ -248,8 +283,8 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       user = insert(:user, is_locked: true)
       follower = insert(:user)
 
-      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
-      {:ok, _, _, follow_activity_two} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(user, follower)
+      {:ok, _, _, follow_activity_two} = CommonAPI.follow(user, follower)
 
       data =
         follow_activity_two.data
@@ -334,7 +369,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
       user = insert(:user)
       refute Utils.get_existing_like(user.ap_id, object)
-      {:ok, like_activity} = CommonAPI.favorite(user, note_activity.id)
+      {:ok, like_activity} = CommonAPI.favorite(note_activity.id, user)
 
       assert ^like_activity = Utils.get_existing_like(user.ap_id, object)
     end
@@ -361,9 +396,9 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       user1 = insert(:user)
       user2 = insert(:user)
 
-      assert {:ok, %Activity{} = _} = CommonAPI.block(user1, user2)
-      assert {:ok, %Activity{} = _} = CommonAPI.block(user1, user2)
-      assert {:ok, %Activity{} = activity} = CommonAPI.block(user1, user2)
+      assert {:ok, %Activity{} = _} = CommonAPI.block(user2, user1)
+      assert {:ok, %Activity{} = _} = CommonAPI.block(user2, user1)
+      assert {:ok, %Activity{} = activity} = CommonAPI.block(user2, user1)
 
       assert Utils.fetch_latest_block(user1, user2) == activity
     end
@@ -525,7 +560,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       target_account = insert(:user)
 
       {:ok, activity} = CommonAPI.post(posting_account, %{status: "foobar"})
-      {:ok, like} = CommonAPI.favorite(target_account, activity.id)
+      {:ok, like} = CommonAPI.favorite(activity.id, target_account)
       context = Utils.generate_context_id()
       content = "foobar"
 
@@ -601,7 +636,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
   end
 
   describe "get_cached_emoji_reactions/1" do
-    test "returns the normalized data or an emtpy list" do
+    test "returns the normalized data or an empty list" do
       object = insert(:note)
       assert Utils.get_cached_emoji_reactions(object) == []
 

@@ -25,7 +25,8 @@ defmodule Pleroma.Emails.Mailer do
       |> :erlang.term_to_binary()
       |> Base.encode64()
 
-    MailerWorker.enqueue("email", %{"encoded_email" => encoded_email, "config" => config})
+    MailerWorker.new(%{"op" => "email", "encoded_email" => encoded_email, "config" => config})
+    |> Oban.insert()
   end
 
   @doc "callback to perform send email from queue"

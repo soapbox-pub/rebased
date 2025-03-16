@@ -27,6 +27,7 @@ defmodule Pleroma.Config do
     Application.get_env(:pleroma, key, default)
   end
 
+  @impl true
   def get!(key) do
     value = get(key, nil)
 

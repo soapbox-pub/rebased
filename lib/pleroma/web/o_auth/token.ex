@@ -56,7 +56,8 @@ defmodule Pleroma.Web.OAuth.Token do
     |> Repo.find_resource()
   end
 
-  @spec exchange_token(App.t(), Authorization.t()) :: {:ok, Token.t()} | {:error, Changeset.t()}
+  @spec exchange_token(App.t(), Authorization.t()) ::
+          {:ok, Token.t()} | {:error, Ecto.Changeset.t()}
   def exchange_token(app, auth) do
     with {:ok, auth} <- Authorization.use_token(auth),
          true <- auth.app_id == app.id do
@@ -95,15 +96,14 @@ defmodule Pleroma.Web.OAuth.Token do
     |> validate_required([:valid_until])
   end
 
-  @spec create(App.t(), User.t(), map()) :: {:ok, Token} | {:error, Changeset.t()}
+  @spec create(App.t(), User.t(), map()) :: {:ok, Token.t()} | {:error, Ecto.Changeset.t()}
   def create(%App{} = app, %User{} = user, attrs \\ %{}) do
     with {:ok, token} <- do_create(app, user, attrs) do
       if Pleroma.Config.get([:oauth2, :clean_expired_tokens]) do
-        Pleroma.Workers.PurgeExpiredToken.enqueue(%{
-          token_id: token.id,
-          valid_until: DateTime.from_naive!(token.valid_until, "Etc/UTC"),
-          mod: __MODULE__
-        })
+        Pleroma.Workers.PurgeExpiredToken.new(%{token_id: token.id, mod: __MODULE__},
+          scheduled_at: DateTime.from_naive!(token.valid_until, "Etc/UTC")
+        )
+        |> Oban.insert()
       end
 
       {:ok, token}
@@ -137,9 +137,9 @@ defmodule Pleroma.Web.OAuth.Token do
     |> Repo.all()
   end
 
-  def is_expired?(%__MODULE__{valid_until: valid_until}) do
+  def expired?(%__MODULE__{valid_until: valid_until}) do
     NaiveDateTime.diff(NaiveDateTime.utc_now(), valid_until) > 0
   end
 
-  def is_expired?(_), do: false
+  def expired?(_), do: false
 end

@@ -9,6 +9,7 @@ defmodule Pleroma.Web.PleromaAPI.Chat.MessageReferenceView do
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.RichMedia.Card
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
 
@@ -23,6 +24,12 @@ defmodule Pleroma.Web.PleromaAPI.Chat.MessageReferenceView do
           }
         }
       ) do
+    card =
+      case Card.get_by_object(object) do
+        %Card{} = card_data -> StatusView.render("card.json", card_data)
+        _ -> nil
+      end
+
     %{
       id: id |> to_string(),
       content: chat_message["content"],
@@ -34,11 +41,7 @@ defmodule Pleroma.Web.PleromaAPI.Chat.MessageReferenceView do
         chat_message["attachment"] &&
           StatusView.render("attachment.json", attachment: chat_message["attachment"]),
       unread: unread,
-      card:
-        StatusView.render(
-          "card.json",
-          %{embed: Pleroma.Web.RichMedia.Helpers.fetch_data_for_object(object)}
-        )
+      card: card
     }
     |> put_idempotency_key()
   end

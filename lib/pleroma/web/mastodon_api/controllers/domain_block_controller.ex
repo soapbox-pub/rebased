@@ -8,7 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.DomainBlockController do
   alias Pleroma.User
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.DomainBlockOperation
 
   plug(
@@ -27,23 +27,31 @@ defmodule Pleroma.Web.MastodonAPI.DomainBlockController do
   end
 
   @doc "POST /api/v1/domain_blocks"
-  def create(%{assigns: %{user: blocker}, body_params: %{domain: domain}} = conn, _params) do
+  def create(
+        %{assigns: %{user: blocker}, private: %{open_api_spex: %{body_params: %{domain: domain}}}} =
+          conn,
+        _params
+      ) do
     User.block_domain(blocker, domain)
     json(conn, %{})
   end
 
-  def create(%{assigns: %{user: blocker}} = conn, %{domain: domain}) do
+  def create(%{assigns: %{user: blocker}} = conn, %{"domain" => domain}) do
     User.block_domain(blocker, domain)
     json(conn, %{})
   end
 
   @doc "DELETE /api/v1/domain_blocks"
-  def delete(%{assigns: %{user: blocker}, body_params: %{domain: domain}} = conn, _params) do
+  def delete(
+        %{assigns: %{user: blocker}, private: %{open_api_spex: %{body_params: %{domain: domain}}}} =
+          conn,
+        _params
+      ) do
     User.unblock_domain(blocker, domain)
     json(conn, %{})
   end
 
-  def delete(%{assigns: %{user: blocker}} = conn, %{domain: domain}) do
+  def delete(%{assigns: %{user: blocker}} = conn, %{"domain" => domain}) do
     User.unblock_domain(blocker, domain)
     json(conn, %{})
   end

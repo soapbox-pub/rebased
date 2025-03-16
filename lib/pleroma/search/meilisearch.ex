@@ -10,6 +10,12 @@ defmodule Pleroma.Search.Meilisearch do
 
   @behaviour Pleroma.Search.SearchBackend
 
+  @impl true
+  def create_index, do: :ok
+
+  @impl true
+  def drop_index, do: :ok
+
   defp meili_headers do
     private_key = Config.get([Pleroma.Search.Meilisearch, :private_key])
 
@@ -116,6 +122,7 @@ defmodule Pleroma.Search.Meilisearch do
     # Only index public or unlisted Notes
     if not is_nil(object) and object.data["type"] == "Note" and
          not is_nil(object.data["content"]) and
+         not is_nil(object.data["published"]) and
          (Pleroma.Constants.as_public() in object.data["to"] or
             Pleroma.Constants.as_public() in object.data["cc"]) and
          object.data["content"] not in ["", "."] do
@@ -177,5 +184,16 @@ defmodule Pleroma.Search.Meilisearch do
   @impl true
   def remove_from_index(object) do
     meili_delete("/indexes/objects/documents/#{object.id}")
+  end
+
+  @impl true
+  def healthcheck_endpoints do
+    endpoint =
+      Config.get([Pleroma.Search.Meilisearch, :url])
+      |> URI.parse()
+      |> Map.put(:path, "/health")
+      |> URI.to_string()
+
+    [endpoint]
   end
 end

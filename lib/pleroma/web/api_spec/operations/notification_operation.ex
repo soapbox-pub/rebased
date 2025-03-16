@@ -61,7 +61,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
           Operation.parameter(
             :with_muted,
             :query,
-            BooleanLike,
+            BooleanLike.schema(),
             "Include the notifications from muted users"
           )
         ] ++ pagination_params(),
@@ -157,6 +157,10 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
       type: :object,
       properties: %{
         id: %Schema{type: :string},
+        group_key: %Schema{
+          type: :string,
+          description: "Group key shared by similar notifications"
+        },
         type: notification_type(),
         created_at: %Schema{type: :string, format: :"date-time"},
         account: %Schema{
@@ -184,6 +188,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
       },
       example: %{
         "id" => "34975861",
+        "group-key" => "ungrouped-34975861",
         "type" => "mention",
         "created_at" => "2019-11-23T07:49:02.064Z",
         "account" => Account.schema().example,
@@ -203,15 +208,18 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
         "mention",
         "pleroma:emoji_reaction",
         "pleroma:chat_mention",
-        "pleroma:report",
         "move",
         "follow_request",
         "poll",
         "status",
+        "update",
         "pleroma:participation_accepted",
         "pleroma:participation_request",
         "pleroma:event_reminder",
-        "pleroma:event_update"
+        "pleroma:event_update",
+        "admin.sign_up",
+        "admin.report",
+        "bite"
       ],
       description: """
       The type of event that resulted in the notification.
@@ -225,12 +233,15 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
       - `move` - Someone moved their account
       - `pleroma:emoji_reaction` - Someone reacted with emoji to your status
       - `pleroma:chat_mention` - Someone mentioned you in a chat message
-      - `pleroma:report` - Someone was reported
       - `status` - Someone you are subscribed to created a status
+      - `update` - A status you boosted has been edited
       - `pleroma:event_reminder` – An event you are participating in or created is taking place soon
       - `pleroma:event_update` – An event you are participating in was edited
       - `pleroma:participation_request - Someone wants to participate in your event
       - `pleroma:participation_accepted - Your event participation request was accepted
+      - `admin.sign_up` - Someone signed up (optionally sent to admins)
+      - `admin.report` - A new report has been filed
+      - `bite` - Someone bit you
       """
     }
   end

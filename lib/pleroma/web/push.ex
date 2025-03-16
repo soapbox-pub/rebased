@@ -23,15 +23,12 @@ defmodule Pleroma.Web.Push do
     Application.get_env(:web_push_encryption, :vapid_details, [])
   end
 
-  def enabled do
-    case vapid_config() do
-      [] -> false
-      list when is_list(list) -> true
-      _ -> false
-    end
-  end
+  def enabled, do: match?([subject: _, public_key: _, private_key: _], vapid_config())
 
+  @spec send(Pleroma.Notification.t()) ::
+          {:ok, Oban.Job.t()} | {:error, Oban.Job.changeset() | term()}
   def send(notification) do
-    WebPusherWorker.enqueue("web_push", %{"notification_id" => notification.id})
+    WebPusherWorker.new(%{"op" => "web_push", "notification_id" => notification.id})
+    |> Oban.insert()
   end
 end

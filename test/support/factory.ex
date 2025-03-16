@@ -53,6 +53,13 @@ defmodule Pleroma.Factory do
       keys: pem
     }
 
+    user
+    |> Map.put(:raw_bio, user.bio)
+    |> merge_attributes(Map.delete(attrs, :domain))
+    |> make_user_urls(attrs)
+  end
+
+  defp make_user_urls(user, attrs) do
     urls =
       if attrs[:local] == false do
         base_domain = attrs[:domain] || Enum.random(["domain1.com", "domain2.com", "domain3.com"])
@@ -60,26 +67,22 @@ defmodule Pleroma.Factory do
         ap_id = "https://#{base_domain}/users/#{user.nickname}"
 
         %{
-          ap_id: ap_id,
-          follower_address: ap_id <> "/followers",
-          following_address: ap_id <> "/following",
-          featured_address: ap_id <> "/collections/featured"
+          ap_id: attrs[:ap_id] || ap_id,
+          follower_address: attrs[:follower_address] || ap_id <> "/followers",
+          following_address: attrs[:following_address] || ap_id <> "/following",
+          featured_address: attrs[:featured_address] || ap_id <> "/collections/featured",
+          inbox: attrs[:inbox] || "https://#{base_domain}/inbox"
         }
       else
         %{
-          ap_id: User.ap_id(user),
-          follower_address: User.ap_followers(user),
-          following_address: User.ap_following(user),
-          featured_address: User.ap_featured_collection(user)
+          ap_id: attrs[:ap_id] || User.ap_id(user),
+          follower_address: attrs[:follower_address] || User.ap_followers(user),
+          following_address: attrs[:following_address] || User.ap_following(user),
+          featured_address: attrs[:featured_address] || User.ap_featured_collection(user)
         }
       end
 
-    attrs = Map.delete(attrs, :domain)
-
-    user
-    |> Map.put(:raw_bio, user.bio)
-    |> Map.merge(urls)
-    |> merge_attributes(attrs)
+    Map.merge(user, urls)
   end
 
   def user_relationship_factory(attrs \\ %{}) do
@@ -212,7 +215,7 @@ defmodule Pleroma.Factory do
   end
 
   def direct_note_factory do
-    user2 = insert(:user)
+    user2 = insert(:user, local: false, inbox: "http://example.com/inbox")
 
     %Pleroma.Object{data: data} = note_factory()
     %Pleroma.Object{data: Map.merge(data, %{"to" => [user2.ap_id]})}
@@ -238,6 +241,7 @@ defmodule Pleroma.Factory do
 
   def question_factory(attrs \\ %{}) do
     user = attrs[:user] || insert(:user)
+    closed = attrs[:closed] || DateTime.utc_now() |> DateTime.add(86_400) |> DateTime.to_iso8601()
 
     data = %{
       "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
@@ -248,7 +252,8 @@ defmodule Pleroma.Factory do
       "to" => ["https://www.w3.org/ns/activitystreams#Public"],
       "cc" => [user.follower_address],
       "context" => Pleroma.Web.ActivityPub.Utils.generate_context_id(),
-      "closed" => DateTime.utc_now() |> DateTime.add(86_400) |> DateTime.to_iso8601(),
+      "closed" => closed,
+      "content" => "Which flavor of ice cream do you prefer?",
       "oneOf" => [
         %{
           "type" => "Note",
@@ -505,7 +510,8 @@ defmodule Pleroma.Factory do
     %Pleroma.Activity{
       data: data,
       actor: data["actor"],
-      recipients: data["to"]
+      recipients: data["to"],
+      local: user.local
     }
     |> Map.merge(attrs)
   end
@@ -712,5 +718,12 @@ defmodule Pleroma.Factory do
       recipients: data["to"]
     }
     |> Map.merge(attrs)
+  end
+
+  def hashtag_factory(params \\ %{}) do
+    %Pleroma.Hashtag{
+      name: "test #{sequence(:hashtag_name, & &1)}"
+    }
+    |> Map.merge(params)
   end
 end

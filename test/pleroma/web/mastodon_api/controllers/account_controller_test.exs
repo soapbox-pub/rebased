@@ -19,7 +19,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   import Pleroma.Factory
 
   setup do
-    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Test.StaticConfig)
     :ok
   end
 
@@ -1120,7 +1120,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
              |> json_response_and_validate_schema(200)
 
     # Follow the user, then the pinned status can be seen
-    CommonAPI.follow(reader, user)
+    CommonAPI.follow(user, reader)
     ObanHelpers.perform_all()
 
     assert [%{"id" => ^activity_id, "pinned" => true}] =
@@ -1235,7 +1235,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert user
       assert user.is_confirmed
       assert user.is_approved
-      refute user.accepts_email_list
     end
 
     test "registers but does not log in with :account_activation_required", %{conn: conn} do
@@ -1361,7 +1360,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert user.registration_reason == "I'm a cool dude, bro"
     end
 
-    test "returns error when user already registred", %{conn: conn, valid_params: valid_params} do
+    test "returns error when user already registered", %{conn: conn, valid_params: valid_params} do
       _user = insert(:user, email: "lain@example.org")
       app_token = insert(:oauth_token, user: nil)
 
@@ -1467,20 +1466,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert json_response_and_validate_schema(res, 200)
     end
 
-    test "registration with accepts_email_list", %{conn: conn, valid_params: valid_params} do
-      app_token = insert(:oauth_token, user: nil)
-      conn = put_req_header(conn, "authorization", "Bearer " <> app_token.token)
-
-      res =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> Map.put(:remote_ip, {127, 0, 0, 9})
-        |> post("/api/v1/accounts", Map.put(valid_params, :accepts_email_list, true))
-
-      assert json_response_and_validate_schema(res, 200)
-      assert %User{accepts_email_list: true} = Repo.get_by(User, email: "lain@example.org")
-    end
-
     test "returns forbidden if token is invalid", %{conn: conn, valid_params: valid_params} do
       res =
         conn
@@ -1510,7 +1495,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         |> Plug.Conn.put_req_header("authorization", "Bearer " <> token)
         |> put_req_header("content-type", "multipart/form-data")
         |> post("/api/v1/accounts", %{
-          nickname: "nickanme",
+          nickname: "nickname",
           agreement: true,
           email: "email@example.com",
           fullname: "Lain",
@@ -1796,7 +1781,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert %{language: "ru_RU"} = Pleroma.User.get_by_nickname("foo")
     end
 
-    test "createing an account without language parameter should fallback to cookie/header language",
+    test "creating an account without language parameter should fallback to cookie/header language",
          %{conn: conn} do
       params = %{
         username: "foo2",
@@ -2176,7 +2161,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "pin account", %{user: user, conn: conn} do
       %{id: id1} = other_user1 = insert(:user)
 
-      CommonAPI.follow(user, other_user1)
+      CommonAPI.follow(other_user1, user)
 
       assert %{"id" => ^id1, "endorsed" => true} =
                conn
@@ -2194,7 +2179,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "unpin account", %{user: user, conn: conn} do
       %{id: id1} = other_user1 = insert(:user)
 
-      CommonAPI.follow(user, other_user1)
+      CommonAPI.follow(other_user1, user)
       User.endorse(user, other_user1)
 
       assert %{"id" => ^id1, "endorsed" => false} =
@@ -2214,8 +2199,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       %{id: id1} = other_user1 = insert(:user)
       %{id: id2} = other_user2 = insert(:user)
 
-      CommonAPI.follow(user, other_user1)
-      CommonAPI.follow(user, other_user2)
+      CommonAPI.follow(other_user1, user)
+      CommonAPI.follow(other_user2, user)
 
       conn
       |> put_req_header("content-type", "application/json")
@@ -2285,7 +2270,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "removing user from followers", %{conn: conn, user: user} do
       %{id: other_user_id} = other_user = insert(:user)
 
-      CommonAPI.follow(other_user, user)
+      CommonAPI.follow(user, other_user)
 
       assert %{"id" => ^other_user_id, "followed_by" => false} =
                conn
@@ -2298,7 +2283,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "removing remote user from followers", %{conn: conn, user: user} do
       %{id: other_user_id} = other_user = insert(:user, local: false)
 
-      CommonAPI.follow(other_user, user)
+      CommonAPI.follow(user, other_user)
 
       assert User.following?(other_user, user)
 

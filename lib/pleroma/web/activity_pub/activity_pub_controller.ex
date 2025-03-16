@@ -48,6 +48,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     when action in [:activity, :object]
   )
 
+  plug(
+    Pleroma.Web.Plugs.SetDomainPlug
+    when action in [:following, :followers, :pinned, :inbox, :outbox]
+  )
+
+  plug(
+    Pleroma.Web.Plugs.SetNicknameWithDomainPlug
+    when action in [:following, :followers, :pinned, :inbox, :outbox]
+  )
+
+  plug(:log_inbox_metadata when action in [:inbox])
   plug(:set_requester_reachable when action in [:inbox])
   plug(:relay_active? when action in [:relay])
 
@@ -77,14 +88,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     with ap_id <- Endpoint.url() <> conn.request_path,
          %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
          user <- Map.get(assigns, :user, nil),
-         {_, true} <- {:visible?, Visibility.visible_for_user?(object, user)} do
+         {_, true} <- {:visible?, Visibility.visible_for_user?(object, user)},
+         host <- maybe_get_host(Map.get(assigns, :actor_id, nil)) do
       conn
       |> maybe_skip_cache(user)
       |> assign(:tracking_fun_data, object.id)
       |> set_cache_ttl_for(object)
       |> put_resp_content_type("application/activity+json")
       |> put_view(ObjectView)
-      |> render("object.json", object: object)
+      |> render("object.json", object: object, host: host)
     else
       {:visible?, false} -> {:error, :not_found}
       nil -> {:error, :not_found}
@@ -106,14 +118,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          %Activity{} = activity <- Activity.normalize(ap_id),
          {_, true} <- {:local?, activity.local},
          user <- Map.get(assigns, :user, nil),
-         {_, true} <- {:visible?, Visibility.visible_for_user?(activity, user)} do
+         {_, true} <- {:visible?, Visibility.visible_for_user?(activity, user)},
+         host <- maybe_get_host(Map.get(assigns, :actor_id, nil)) do
       conn
       |> maybe_skip_cache(user)
       |> maybe_set_tracking_data(activity)
       |> set_cache_ttl_for(activity)
       |> put_resp_content_type("application/activity+json")
       |> put_view(ObjectView)
-      |> render("object.json", object: activity)
+      |> render("object.json", object: activity, host: host)
     else
       {:visible?, false} -> {:error, :not_found}
       {:local?, false} -> {:error, :not_found}
@@ -269,12 +282,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   def inbox(%{assigns: %{valid_signature: true}} = conn, %{"nickname" => nickname} = params) do
-    with %User{} = recipient <- User.get_cached_by_nickname(nickname),
-         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(params["actor"]),
+    with %User{is_active: true} = recipient <- User.get_cached_by_nickname(nickname),
+         {:ok, %User{is_active: true} = actor} <- User.get_or_fetch_by_ap_id(params["actor"]),
          true <- Utils.recipient_in_message(recipient, actor, params),
          params <- Utils.maybe_splice_recipient(recipient.ap_id, params) do
       Federator.incoming_ap_doc(params)
       json(conn, "ok")
+    else
+      _ ->
+        conn
+        |> put_status(:bad_request)
+        |> json("Invalid request.")
     end
   end
 
@@ -283,10 +301,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     json(conn, "ok")
   end
 
-  def inbox(%{assigns: %{valid_signature: false}} = conn, _params) do
-    conn
-    |> put_status(:bad_request)
-    |> json("Invalid HTTP Signature")
+  def inbox(%{assigns: %{valid_signature: false}} = conn, params) do
+    Federator.incoming_ap_doc(%{
+      method: conn.method,
+      req_headers: conn.req_headers,
+      request_path: conn.request_path,
+      params: params,
+      query_string: conn.query_string
+    })
+
+    json(conn, "ok")
   end
 
   # POST /relay/inbox -or- POST /internal/fetch/inbox
@@ -295,7 +319,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       post_inbox_relayed_create(conn, params)
     else
       conn
-      |> put_status(:bad_request)
+      |> put_status(403)
       |> json("Not federating")
     end
   end
@@ -330,16 +354,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     |> represent_service_actor(conn)
   end
 
-  def internal_fetch(%Plug.Conn{host: host} = conn, _params) do
-    with fetch_actor_origin when is_binary(fetch_actor_origin) <-
-           Pleroma.Config.get([:activitypub, :fetch_actor_origin]),
-         %URI{host: fetch_actor_host} <- URI.parse(fetch_actor_origin),
-         true <- host == fetch_actor_host do
-      fetch_actor_origin
-    else
-      _ -> Pleroma.Web.Endpoint.url()
-    end
-    |> InternalFetchActor.get_actor()
+  def internal_fetch(conn, _params) do
+    InternalFetchActor.get_actor()
     |> represent_service_actor(conn)
   end
 
@@ -422,11 +438,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     conn
   end
 
+  defp log_inbox_metadata(%{params: %{"actor" => actor, "type" => type}} = conn, _) do
+    Logger.metadata(actor: actor, type: type)
+    conn
+  end
+
+  defp log_inbox_metadata(conn, _), do: conn
+
   def pinned(conn, %{"nickname" => nickname}) do
-    with %User{} = user <- User.get_cached_by_nickname(nickname) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname),
+         host <- maybe_get_host(Map.get(conn.assigns, :actor_id, nil)) do
       conn
       |> put_resp_header("content-type", "application/activity+json")
-      |> json(UserView.render("featured.json", %{user: user}))
+      |> json(UserView.render("featured.json", %{user: user, host: host}))
     end
   end
+
+  defp maybe_get_host(actor_id) when is_binary(actor_id) do
+    %{host: host} = URI.parse(actor_id)
+
+    host
+  end
+
+  defp maybe_get_host(_), do: nil
 end

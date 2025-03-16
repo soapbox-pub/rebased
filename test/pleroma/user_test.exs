@@ -22,7 +22,7 @@ defmodule Pleroma.UserTest do
   import Swoosh.TestAssertions
 
   setup do
-    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Test.StaticConfig)
     :ok
   end
 
@@ -184,8 +184,8 @@ defmodule Pleroma.UserTest do
     locked = insert(:user, is_locked: true)
     follower = insert(:user)
 
-    CommonAPI.follow(follower, unlocked)
-    CommonAPI.follow(follower, locked)
+    CommonAPI.follow(unlocked, follower)
+    CommonAPI.follow(locked, follower)
 
     assert [] = User.get_follow_requests(unlocked)
     assert [activity] = User.get_follow_requests(locked)
@@ -198,9 +198,9 @@ defmodule Pleroma.UserTest do
     pending_follower = insert(:user)
     accepted_follower = insert(:user)
 
-    CommonAPI.follow(pending_follower, locked)
-    CommonAPI.follow(pending_follower, locked)
-    CommonAPI.follow(accepted_follower, locked)
+    CommonAPI.follow(locked, pending_follower)
+    CommonAPI.follow(locked, pending_follower)
+    CommonAPI.follow(locked, accepted_follower)
 
     Pleroma.FollowingRelationship.update(accepted_follower, locked, :follow_accept)
 
@@ -211,7 +211,7 @@ defmodule Pleroma.UserTest do
     locked = insert(:user, is_locked: true)
     pending_follower = insert(:user, %{is_active: false})
 
-    CommonAPI.follow(pending_follower, locked)
+    CommonAPI.follow(locked, pending_follower)
 
     refute pending_follower.is_active
     assert [] = User.get_follow_requests(locked)
@@ -221,14 +221,14 @@ defmodule Pleroma.UserTest do
     followed = insert(:user, is_locked: true)
     follower = insert(:user)
 
-    CommonAPI.follow(follower, followed)
+    CommonAPI.follow(followed, follower)
     assert [_activity] = User.get_follow_requests(followed)
 
     {:ok, _user_relationship} = User.block(followed, follower)
     assert [] = User.get_follow_requests(followed)
   end
 
-  test "follow_all follows mutliple users" do
+  test "follow_all follows multiple users" do
     user = insert(:user)
     followed_zero = insert(:user)
     followed_one = insert(:user)
@@ -252,7 +252,7 @@ defmodule Pleroma.UserTest do
     refute User.following?(user, reverse_blocked)
   end
 
-  test "follow_all follows mutliple users without duplicating" do
+  test "follow_all follows multiple users without duplicating" do
     user = insert(:user)
     followed_zero = insert(:user)
     followed_one = insert(:user)
@@ -722,16 +722,6 @@ defmodule Pleroma.UserTest do
       assert user.is_confirmed
     end
 
-    test "it sets 'accepts_email_list'" do
-      params = Map.put_new(@full_user_data, :accepts_email_list, true)
-      changeset = User.register_changeset(%User{}, params)
-      assert changeset.valid?
-
-      {:ok, user} = Repo.insert(changeset)
-
-      assert user.accepts_email_list
-    end
-
     test_with_mock "triggers webhooks", Notify, trigger_webhooks: fn _, _ -> nil end do
       cng = User.register_changeset(%User{}, @full_user_data)
 
@@ -813,17 +803,6 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "update_changeset/2" do
-    test "it sets :accepts_email_list" do
-      changeset =
-        %User{accepts_email_list: false}
-        |> User.update_changeset(%{accepts_email_list: true})
-
-      assert changeset.valid?
-      assert %User{accepts_email_list: true} = Ecto.Changeset.apply_changes(changeset)
-    end
-  end
-
   describe "user registration, with :birthday_required and :birthday_min_age" do
     @full_user_data %{
       bio: "A guy",
@@ -872,6 +851,55 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "user registration, with custom domain" do
+    @full_user_data %{
+      bio: "A guy",
+      name: "my name",
+      nickname: "nick",
+      password: "test",
+      password_confirmation: "test",
+      email: "email@example.com"
+    }
+
+    setup do
+      clear_config([:instance, :multitenancy], %{enabled: true})
+    end
+
+    test "it registers on a given domain" do
+      {:ok, %{id: domain_id}} =
+        Pleroma.Domain.create(%{
+          domain: "pleroma.example.org",
+          public: true
+        })
+
+      params =
+        @full_user_data
+        |> Map.put(:domain_id, to_string(domain_id))
+
+      changeset = User.register_changeset(%User{}, params)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      assert user.nickname == "nick@pleroma.example.org"
+    end
+
+    test "it fails when domain is private" do
+      {:ok, %{id: domain_id}} =
+        Pleroma.Domain.create(%{
+          domain: "private.example.org",
+          public: false
+        })
+
+      params =
+        @full_user_data
+        |> Map.put(:domain_id, to_string(domain_id))
+
+      changeset = User.register_changeset(%User{}, params)
+      refute changeset.valid?
+    end
+  end
+
   describe "get_or_fetch/1" do
     test "gets an existing user by nickname" do
       user = insert(:user)
@@ -904,7 +932,7 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "get_or_fetch/1 remote users with tld, while BE is ran on subdomain" do
+  describe "get_or_fetch/1 remote users with tld, while BE is running on a subdomain" do
     setup do: clear_config([Pleroma.Web.WebFinger, :update_nickname_on_user_fetch], true)
 
     test "for mastodon" do
@@ -957,15 +985,14 @@ defmodule Pleroma.UserTest do
       assert user == fetched_user
     end
 
-    @tag capture_log: true
     test "returns nil if no user could be fetched" do
-      {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistant@social.heldscal.la")
-      assert fetched_user == "not found nonexistant@social.heldscal.la"
+      {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistent@social.heldscal.la")
+      assert fetched_user == "not found nonexistent@social.heldscal.la"
     end
 
-    test "returns nil for nonexistant local user" do
-      {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistant")
-      assert fetched_user == "not found nonexistant"
+    test "returns nil for nonexistent local user" do
+      {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistent")
+      assert fetched_user == "not found nonexistent"
     end
 
     test "updates an existing user, if stale" do
@@ -984,9 +1011,16 @@ defmodule Pleroma.UserTest do
 
       {:ok, user} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
 
-      assert user.inbox
+      # Oban job was generated to refresh the stale user
+      assert_enqueued(worker: "Pleroma.Workers.UserRefreshWorker", args: %{"ap_id" => user.ap_id})
 
-      refute user.last_refreshed_at == orig_user.last_refreshed_at
+      # Run job to refresh the user; just capture its output instead of fetching it again
+      assert {:ok, updated_user} =
+               perform_job(Pleroma.Workers.UserRefreshWorker, %{"ap_id" => user.ap_id})
+
+      assert updated_user.inbox
+
+      refute updated_user.last_refreshed_at == orig_user.last_refreshed_at
     end
 
     test "if nicknames clash, the old user gets a prefix with the old id to the nickname" do
@@ -1014,7 +1048,6 @@ defmodule Pleroma.UserTest do
       assert orig_user.nickname == "#{orig_user.id}.admin@mastodon.example.org"
     end
 
-    @tag capture_log: true
     test "it returns the old user if stale, but unfetchable" do
       a_week_ago = NaiveDateTime.add(NaiveDateTime.utc_now(), -604_800)
 
@@ -1073,7 +1106,7 @@ defmodule Pleroma.UserTest do
       assert cs.valid?
     end
 
-    test "it sets the follower_adress" do
+    test "it sets the follower_address" do
       cs = User.remote_user_changeset(@valid_remote)
       # remote users get a fake local follower address
       assert cs.changes.follower_address ==
@@ -1100,6 +1133,21 @@ defmodule Pleroma.UserTest do
       cs = User.remote_user_changeset(user, %{name: "tom from myspace"})
 
       refute cs.valid?
+    end
+
+    test "it truncates fields" do
+      clear_config([:instance, :max_remote_account_fields], 2)
+
+      fields = [
+        %{"name" => "One", "value" => "Uno"},
+        %{"name" => "Two", "value" => "Dos"},
+        %{"name" => "Three", "value" => "Tres"}
+      ]
+
+      cs = User.remote_user_changeset(@valid_remote |> Map.put(:fields, fields))
+
+      assert [%{"name" => "One", "value" => "Uno"}, %{"name" => "Two", "value" => "Dos"}] ==
+               Ecto.Changeset.get_field(cs, :fields)
     end
   end
 
@@ -1554,7 +1602,7 @@ defmodule Pleroma.UserTest do
 
       assert [activity] == ActivityPub.fetch_public_activities(%{}) |> Repo.preload(:bookmark)
 
-      assert [%{activity | thread_muted?: CommonAPI.thread_muted?(user2, activity)}] ==
+      assert [%{activity | thread_muted?: CommonAPI.thread_muted?(activity, user2)}] ==
                ActivityPub.fetch_activities([user2.ap_id | User.following(user2)], %{
                  user: user2
                })
@@ -1719,8 +1767,8 @@ defmodule Pleroma.UserTest do
       object_two = insert(:note, user: follower)
       activity_two = insert(:note_activity, user: follower, note: object_two)
 
-      {:ok, like} = CommonAPI.favorite(user, activity_two.id)
-      {:ok, like_two} = CommonAPI.favorite(follower, activity.id)
+      {:ok, like} = CommonAPI.favorite(activity_two.id, user)
+      {:ok, like_two} = CommonAPI.favorite(activity.id, follower)
       {:ok, repeat} = CommonAPI.repeat(activity_two.id, user)
 
       {:ok, job} = User.delete(user)
@@ -1894,8 +1942,8 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  test "get_public_key_for_ap_id fetches a user that's not in the db" do
-    assert {:ok, _key} = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
+  test "get_public_key_for_ap_id returns correctly for user that's not in the db" do
+    assert :error = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
   end
 
   describe "per-user rich-text filtering" do
@@ -2369,20 +2417,20 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "is_internal_user?/1" do
+  describe "internal?/1" do
     test "non-internal user returns false" do
       user = insert(:user)
-      refute User.is_internal_user?(user)
+      refute User.internal?(user)
     end
 
     test "user with no nickname returns true" do
       user = insert(:user, %{nickname: nil})
-      assert User.is_internal_user?(user)
+      assert User.internal?(user)
     end
 
     test "user with internal-prefixed nickname returns true" do
       user = insert(:user, %{nickname: "internal.test"})
-      assert User.is_internal_user?(user)
+      assert User.internal?(user)
     end
   end
 
@@ -2420,8 +2468,8 @@ defmodule Pleroma.UserTest do
       other_user =
         insert(:user,
           local: false,
-          follower_address: "http://localhost:4001/users/masto_closed/followers",
-          following_address: "http://localhost:4001/users/masto_closed/following"
+          follower_address: "https://remote.org/users/masto_closed/followers",
+          following_address: "https://remote.org/users/masto_closed/following"
         )
 
       assert other_user.following_count == 0
@@ -2441,8 +2489,8 @@ defmodule Pleroma.UserTest do
       other_user =
         insert(:user,
           local: false,
-          follower_address: "http://localhost:4001/users/masto_closed/followers",
-          following_address: "http://localhost:4001/users/masto_closed/following"
+          follower_address: "https://remote.org/users/masto_closed/followers",
+          following_address: "https://remote.org/users/masto_closed/following"
         )
 
       assert other_user.following_count == 0
@@ -2462,8 +2510,8 @@ defmodule Pleroma.UserTest do
       other_user =
         insert(:user,
           local: false,
-          follower_address: "http://localhost:4001/users/masto_closed/followers",
-          following_address: "http://localhost:4001/users/masto_closed/following"
+          follower_address: "https://remote.org/users/masto_closed/followers",
+          following_address: "https://remote.org/users/masto_closed/following"
         )
 
       assert other_user.following_count == 0
@@ -2911,5 +2959,97 @@ defmodule Pleroma.UserTest do
            ] = user.fields
 
     assert is_binary(verified_at)
+  end
+
+  test "updating fields does not invalidate previously validated links" do
+    user = insert(:user, ap_id: "https://social.example.org/users/lain")
+
+    user
+    |> User.update_and_set_cache(%{
+      raw_fields: [%{"name" => "verified link", "value" => "http://example.com/rel_me/link"}]
+    })
+
+    ObanHelpers.perform_all()
+
+    %User{fields: [%{"verified_at" => verified_at}]} = user = User.get_cached_by_id(user.id)
+
+    user
+    |> User.update_and_set_cache(%{
+      raw_fields: [%{"name" => "Verified link", "value" => "http://example.com/rel_me/link"}]
+    })
+
+    user = User.get_cached_by_id(user.id)
+
+    assert [%{"verified_at" => ^verified_at}] = user.fields
+  end
+
+  describe "follow_hashtag/2" do
+    test "should follow a hashtag" do
+      user = insert(:user)
+      hashtag = insert(:hashtag)
+
+      assert {:ok, _} = user |> User.follow_hashtag(hashtag)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert user.followed_hashtags |> Enum.count() == 1
+      assert hashtag.name in Enum.map(user.followed_hashtags, fn %{name: name} -> name end)
+    end
+
+    test "should not follow a hashtag twice" do
+      user = insert(:user)
+      hashtag = insert(:hashtag)
+
+      assert {:ok, _} = user |> User.follow_hashtag(hashtag)
+
+      assert {:ok, _} = user |> User.follow_hashtag(hashtag)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert user.followed_hashtags |> Enum.count() == 1
+      assert hashtag.name in Enum.map(user.followed_hashtags, fn %{name: name} -> name end)
+    end
+
+    test "can follow multiple hashtags" do
+      user = insert(:user)
+      hashtag = insert(:hashtag)
+      other_hashtag = insert(:hashtag)
+
+      assert {:ok, _} = user |> User.follow_hashtag(hashtag)
+      assert {:ok, _} = user |> User.follow_hashtag(other_hashtag)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert user.followed_hashtags |> Enum.count() == 2
+      assert hashtag.name in Enum.map(user.followed_hashtags, fn %{name: name} -> name end)
+      assert other_hashtag.name in Enum.map(user.followed_hashtags, fn %{name: name} -> name end)
+    end
+  end
+
+  describe "unfollow_hashtag/2" do
+    test "should unfollow a hashtag" do
+      user = insert(:user)
+      hashtag = insert(:hashtag)
+
+      assert {:ok, _} = user |> User.follow_hashtag(hashtag)
+      assert {:ok, _} = user |> User.unfollow_hashtag(hashtag)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert user.followed_hashtags |> Enum.count() == 0
+    end
+
+    test "should not error when trying to unfollow a hashtag twice" do
+      user = insert(:user)
+      hashtag = insert(:hashtag)
+
+      assert {:ok, _} = user |> User.follow_hashtag(hashtag)
+      assert {:ok, _} = user |> User.unfollow_hashtag(hashtag)
+      assert {:ok, _} = user |> User.unfollow_hashtag(hashtag)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert user.followed_hashtags |> Enum.count() == 0
+    end
   end
 end

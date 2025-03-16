@@ -2,6 +2,7 @@
     "@context": [
         "https://www.w3.org/ns/activitystreams",
         "https://w3id.org/security/v1",
+        "https://purl.archive.org/socialweb/webfinger",
         {
             "Emoji": "toot:Emoji",
             "Hashtag": "as:Hashtag",
@@ -40,9 +41,9 @@
                 "@type": "@id"
             },
             "vcard": "http://www.w3.org/2006/vcard/ns#",
+            "formerRepresentations": "litepub:formerRepresentations",
             "sm": "http://smithereen.software/ns#",
             "nonAnonymous": "sm:nonAnonymous",
-            "formerRepresentations": "litepub:formerRepresentations",
             "votersCount": "toot:votersCount",
             "mz": "https://joinmobilizon.org/ns#",
             "joinMode": {
@@ -55,17 +56,18 @@
             },
             "participationMessage": {
                 "@id": "mz:participationMessage",
-                "@type": "sc:Text"
+                "@type": "schema:Text"
             },
-            "streetAddress": "sc:streetAddress",
-            "postalCode": "sc:postalCode",
-            "addressLocality": "sc:addressLocality",
-            "addressRegion": "sc:addressRegion",
-            "addressCountry": "sc:addressCountry",
+            "streetAddress": "schema:streetAddress",
+            "postalCode": "schema:postalCode",
+            "addressLocality": "schema:addressLocality",
+            "addressRegion": "schema:addressRegion",
+            "addressCountry": "schema:addressCountry",
             "location": {
-                "@id": "sc:location",
-                "@type": "sc:Place"
-            }
+                "@id": "schema:location",
+                "@type": "schema:Place"
+            },
+            "Bite": "https://ns.mia.jetzt/as#Bite"
         }
     ]
 }

@@ -99,24 +99,6 @@ defmodule Pleroma.Object do
   def get_by_id(nil), do: nil
   def get_by_id(id), do: Repo.get(Object, id)
 
-  def get_by_id_and_maybe_refetch(id, opts \\ []) do
-    %{updated_at: updated_at} = object = get_by_id(id)
-
-    if opts[:interval] &&
-         NaiveDateTime.diff(NaiveDateTime.utc_now(), updated_at) > opts[:interval] do
-      case Fetcher.refetch_object(object) do
-        {:ok, %Object{} = object} ->
-          object
-
-        e ->
-          Logger.error("Couldn't refresh #{object.data["id"]}:\n#{inspect(e)}")
-          object
-      end
-    else
-      object
-    end
-  end
-
   def get_by_ap_id(nil), do: nil
 
   def get_by_ap_id(ap_id) do
@@ -177,7 +159,10 @@ defmodule Pleroma.Object do
         ap_id
 
       Keyword.get(options, :fetch) ->
-        Fetcher.fetch_object_from_id!(ap_id, options)
+        case Fetcher.fetch_object_from_id(ap_id, options) do
+          {:ok, object} -> object
+          _ -> nil
+        end
 
       true ->
         get_cached_by_ap_id(ap_id)
@@ -239,17 +224,18 @@ defmodule Pleroma.Object do
          {:ok, _} <- invalid_object_cache(object) do
       cleanup_attachments(
         Config.get([:instance, :cleanup_attachments]),
-        %{"object" => object}
+        object
       )
 
       {:ok, object, deleted_activity}
     end
   end
 
-  @spec cleanup_attachments(boolean(), %{required(:object) => map()}) ::
+  @spec cleanup_attachments(boolean(), Object.t()) ::
           {:ok, Oban.Job.t() | nil}
-  def cleanup_attachments(true, %{"object" => _} = params) do
-    AttachmentsCleanupWorker.enqueue("cleanup_attachments", params)
+  def cleanup_attachments(true, %Object{} = object) do
+    AttachmentsCleanupWorker.new(%{"op" => "cleanup_attachments", "object" => object})
+    |> Oban.insert()
   end
 
   def cleanup_attachments(_, _), do: {:ok, nil}
@@ -277,6 +263,10 @@ defmodule Pleroma.Object do
       set_cache(object)
     end
   end
+
+  defp poll_is_multiple?(%Object{data: %{"anyOf" => [_ | _]}}), do: true
+
+  defp poll_is_multiple?(_), do: false
 
   def increase_replies_count(ap_id) do
     Object
@@ -369,10 +359,6 @@ defmodule Pleroma.Object do
       _ -> {:error, "Not found"}
     end
   end
-
-  defp poll_is_multiple?(%Object{data: %{"anyOf" => [_ | _]}}), do: true
-
-  defp poll_is_multiple?(_), do: false
 
   def increase_vote_count(ap_id, name, actor) do
     with %Object{} = object <- Object.normalize(ap_id, fetch: false),

@@ -16,12 +16,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   def follow(follower, followed, params \\ %{}) do
     result =
       if not User.following?(follower, followed) do
-        CommonAPI.follow(follower, followed)
+        CommonAPI.follow(followed, follower)
       else
-        {:ok, follower, followed, nil}
+        {:ok, followed, follower, nil}
       end
 
-    with {:ok, follower, _followed, _} <- result do
+    with {:ok, _followed, follower, _} <- result do
       options = cast_params(params)
       set_reblogs_visibility(options[:reblogs], result)
       set_subscription(options[:notify], result)
@@ -29,19 +29,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
     end
   end
 
-  defp set_reblogs_visibility(false, {:ok, follower, followed, _}) do
-    CommonAPI.hide_reblogs(follower, followed)
+  defp set_reblogs_visibility(false, {:ok, followed, follower, _}) do
+    CommonAPI.hide_reblogs(followed, follower)
   end
 
-  defp set_reblogs_visibility(_, {:ok, follower, followed, _}) do
-    CommonAPI.show_reblogs(follower, followed)
+  defp set_reblogs_visibility(_, {:ok, followed, follower, _}) do
+    CommonAPI.show_reblogs(followed, follower)
   end
 
-  defp set_subscription(true, {:ok, follower, followed, _}) do
+  defp set_subscription(true, {:ok, followed, follower, _}) do
     User.subscribe(follower, followed)
   end
 
-  defp set_subscription(false, {:ok, follower, followed, _}) do
+  defp set_subscription(false, {:ok, followed, follower, _}) do
     User.unsubscribe(follower, followed)
   end
 
@@ -65,14 +65,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
       cast_params(params) |> Map.update(:include_types, [], fn include_types -> include_types end)
 
     options =
-      if ("pleroma:report" not in options.include_types and
+      if ("admin.report" not in options.include_types and
             User.privileged?(user, :reports_manage_reports)) or
            User.privileged?(user, :reports_manage_reports) do
         options
       else
         options
-        |> Map.update(:exclude_types, ["pleroma:report"], fn current_exclude_types ->
-          current_exclude_types ++ ["pleroma:report"]
+        |> Map.update(:exclude_types, ["admin.report"], fn current_exclude_types ->
+          current_exclude_types ++ ["admin.report"]
         end)
       end
 

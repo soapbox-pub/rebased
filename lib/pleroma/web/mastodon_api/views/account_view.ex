@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2023 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AccountView do
@@ -92,14 +92,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         User.get_follow_state(reading_user, target)
       end
 
-    followed_by =
-      if following_relationships do
-        case FollowingRelationship.find(following_relationships, target, reading_user) do
-          %{state: :follow_accept} -> true
-          _ -> false
-        end
-      else
-        User.following?(target, reading_user)
+    followed_by = FollowingRelationship.following?(target, reading_user)
+    following = FollowingRelationship.following?(reading_user, target)
+
+    requested =
+      cond do
+        following -> false
+        true -> match?(:follow_pending, follow_state)
       end
 
     subscribing =
@@ -114,7 +113,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     # NOTE: adjust UserRelationship.view_relationships_option/2 on new relation-related flags
     %{
       id: to_string(target.id),
-      following: follow_state == :follow_accept,
+      following: following,
       followed_by: followed_by,
       blocking:
         UserRelationship.exists?(
@@ -150,7 +149,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         ),
       subscribing: subscribing,
       notifying: subscribing,
-      requested: follow_state == :follow_pending,
+      requested: requested,
       domain_blocking: User.blocks_domain?(reading_user, target),
       showing_reblogs:
         not UserRelationship.exists?(
@@ -213,25 +212,29 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp do_render("show.json", %{user: user} = opts) do
+    self = opts[:for] == user
+
     user = User.sanitize_html(user, User.html_filter_policy(opts[:for]))
     display_name = user.name || user.nickname
 
     avatar = User.avatar_url(user) |> MediaProxy.url()
     avatar_static = User.avatar_url(user) |> MediaProxy.preview_url(static: true)
+    avatar_description = User.image_description(user.avatar)
     header = User.banner_url(user) |> MediaProxy.url()
     header_static = User.banner_url(user) |> MediaProxy.preview_url(static: true)
+    header_description = User.image_description(user.banner)
 
     following_count =
-      if !user.hide_follows_count or !user.hide_follows or opts[:for] == user,
+      if !user.hide_follows_count or !user.hide_follows or self,
         do: user.following_count,
         else: 0
 
     followers_count =
-      if !user.hide_followers_count or !user.hide_followers or opts[:for] == user,
+      if !user.hide_followers_count or !user.hide_followers or self,
         do: user.follower_count,
         else: 0
 
-    bot = user.actor_type == "Service"
+    bot = bot?(user)
 
     emojis =
       Enum.map(user.emoji, fn {shortcode, raw_url} ->
@@ -268,6 +271,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         nil
       end
 
+    last_status_at =
+      user.last_status_at &&
+        user.last_status_at |> NaiveDateTime.to_date() |> Date.to_iso8601()
+
     %{
       id: to_string(user.id),
       username: username_from_nickname(user.nickname),
@@ -296,7 +303,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
           actor_type: user.actor_type
         }
       },
-      last_status_at: Utils.to_masto_date(user.last_status_at, nil),
+      last_status_at: last_status_at,
 
       # Pleroma extensions
       # Note: it's insecure to output :email but fully-qualified nickname may serve as safe stub
@@ -317,7 +324,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         background_image: image_url(user.background) |> MediaProxy.url(),
         accepts_chat_messages: user.accepts_chat_messages,
         favicon: favicon,
-        location: user.location
+        location: user.location,
+        is_local: user.local,
+        avatar_description: avatar_description,
+        header_description: header_description,
+        permit_followback: user.permit_followback
       }
     }
     |> maybe_put_role(user, opts[:for])
@@ -330,7 +341,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_allow_following_move(user, opts[:for])
     |> maybe_put_unread_conversation_count(user, opts[:for])
     |> maybe_put_unread_notification_count(user, opts[:for])
-    |> maybe_put_accepts_email_list(user, opts[:for])
     |> maybe_put_email_address(user, opts[:for])
     |> maybe_put_mute_expires_at(user, opts[:for], opts)
     |> maybe_show_birthday(user, opts[:for])
@@ -348,7 +358,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
          %User{id: user_id}
        ) do
     count =
-      User.get_follow_requests(user)
+      user
+      |> User.get_follow_requests()
       |> length()
 
     data
@@ -449,16 +460,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   defp maybe_put_unread_notification_count(data, _, _), do: data
 
-  defp maybe_put_accepts_email_list(data, %User{id: user_id}, %User{id: user_id} = user) do
-    Kernel.put_in(
-      data,
-      [:pleroma, :accepts_email_list],
-      user.accepts_email_list
-    )
-  end
-
-  defp maybe_put_accepts_email_list(data, _, _), do: data
-
   defp maybe_put_email_address(data, %User{id: user_id}, %User{id: user_id} = user) do
     Kernel.put_in(
       data,
@@ -495,4 +496,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
   defp image_url(_), do: nil
+
+  defp bot?(user) do
+    # Because older and/or Mastodon clients may not recognize a Group actor properly,
+    # and currently the group actor can only boost things, we should let these clients
+    # think groups are bots.
+    # See https://git.pleroma.social/pleroma/pleroma-meta/-/issues/14
+    user.actor_type == "Service" || user.actor_type == "Group"
+  end
 end

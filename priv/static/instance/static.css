@@ -78,7 +78,7 @@ h2 {
 h2:first-child:not(:last-child) {
   margin: 0 -16px 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid rgb(232, 221, 228);
   font-size: 24px;
   font-weight: bold;
 }
@@ -283,7 +283,7 @@ button:hover {
   background-size: cover;
   background-position: center;
   margin: -47px 10px 0;
-  border: 4px solid var(--foreground-color);
+  border: 4px solid rgb(var(--color-primary-900));
   border-radius: 999px;
 }
 
@@ -390,6 +390,10 @@ button:hover {
   input {
     background: #161c1f;
     border-color: #232c31;
+  }
+
+  h2:first-child:not(:last-child) {
+    border-bottom: 1px solid rgb(49, 35, 44);
   }
 
   h2 pre {

@@ -17,7 +17,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.OAuthAppOperation do
   def index_operation do
     %Operation{
       summary: "Retrieve a list of OAuth applications",
-      tags: ["OAuth application managment"],
+      tags: ["OAuth application management"],
       operationId: "AdminAPI.OAuthAppController.index",
       security: [%{"oAuth" => ["admin:write"]}],
       parameters: [
@@ -69,7 +69,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.OAuthAppOperation do
 
   def create_operation do
     %Operation{
-      tags: ["OAuth application managment"],
+      tags: ["OAuth application management"],
       summary: "Create an OAuth application",
       operationId: "AdminAPI.OAuthAppController.create",
       requestBody: request_body("Parameters", create_request()),
@@ -84,7 +84,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.OAuthAppOperation do
 
   def update_operation do
     %Operation{
-      tags: ["OAuth application managment"],
+      tags: ["OAuth application management"],
       summary: "Update OAuth application",
       operationId: "AdminAPI.OAuthAppController.update",
       parameters: [id_param() | admin_api_params()],
@@ -102,7 +102,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.OAuthAppOperation do
 
   def delete_operation do
     %Operation{
-      tags: ["OAuth application managment"],
+      tags: ["OAuth application management"],
       summary: "Delete OAuth application",
       operationId: "AdminAPI.OAuthAppController.delete",
       parameters: [id_param() | admin_api_params()],

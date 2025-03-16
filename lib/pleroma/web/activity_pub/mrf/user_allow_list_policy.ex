@@ -8,18 +8,18 @@ defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy do
   @moduledoc "Accept-list of users from specified instances"
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
-  defp filter_by_list(object, []), do: {:ok, object}
+  defp filter_by_list(activity, []), do: {:ok, activity}
 
-  defp filter_by_list(%{"actor" => actor} = object, allow_list) do
+  defp filter_by_list(%{"actor" => actor} = activity, allow_list) do
     if actor in allow_list do
-      {:ok, object}
+      {:ok, activity}
     else
       {:reject, "[UserAllowListPolicy] #{actor} not in the list"}
     end
   end
 
   @impl true
-  def filter(%{"actor" => actor} = object) do
+  def filter(%{"actor" => actor} = activity) do
     actor_info = URI.parse(actor)
 
     allow_list =
@@ -28,10 +28,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy do
         []
       )
 
-    filter_by_list(object, allow_list)
+    filter_by_list(activity, allow_list)
   end
 
-  def filter(object), do: {:ok, object}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe do

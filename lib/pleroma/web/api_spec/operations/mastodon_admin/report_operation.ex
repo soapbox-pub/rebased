@@ -19,7 +19,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Report methods"],
+      tags: ["Report management (Mastodon API)"],
       summary: "View all reports",
       operationId: "MastodonAdmin.ReportController.index",
       description:
@@ -51,7 +51,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Report methods"],
+      tags: ["Report management (Mastodon API)"],
       summary: "View a single report",
       operationId: "MastodonAdmin.ReportController.show",
       description: "View information about the report with the given ID.",
@@ -69,7 +69,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
 
   def resolve_operation do
     %Operation{
-      tags: ["Report methods"],
+      tags: ["Report management (Mastodon API)"],
       summary: "Mark as resolved",
       operationId: "MastodonAdmin.ReportController.resolve",
       description: "Mark a report as resolved with no further action taken.",
@@ -87,7 +87,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
 
   def reopen_operation do
     %Operation{
-      tags: ["Report methods"],
+      tags: ["Report management (Mastodon API)"],
       summary: "Re-open report",
       operationId: "MastodonAdmin.ReportController.reopen",
       description: "Reopen a currently closed report.",
@@ -105,7 +105,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
 
   def assign_to_self_operation do
     %Operation{
-      tags: ["Report methods"],
+      tags: ["Report management (Mastodon API)"],
       summary: "Assign report to self",
       operationId: "MastodonAdmin.ReportController.assign_to_self",
       description: "Claim the handling of this report to yourself.",
@@ -123,7 +123,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
 
   def unassign_operation do
     %Operation{
-      tags: ["Report methods"],
+      tags: ["Report management (Mastodon API)"],
       summary: "Unassign report",
       operationId: "MastodonAdmin.ReportController.unassign",
       description: "Unassign a report so that someone else can claim it.",

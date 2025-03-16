@@ -4,8 +4,15 @@
 
 Code.put_compiler_option(:warnings_as_errors, true)
 
-os_exclude = if :os.type() == {:unix, :darwin}, do: [skip_on_mac: true], else: []
-ExUnit.start(exclude: [:federated, :erratic] ++ os_exclude)
+ExUnit.configure(capture_log: true, max_cases: System.schedulers_online())
+
+ExUnit.start(exclude: [:federated])
+
+if match?({:unix, :darwin}, :os.type()) do
+  excluded = ExUnit.configuration() |> Keyword.get(:exclude, [])
+  excluded = excluded ++ [:skip_darwin]
+  ExUnit.configure(exclude: excluded)
+end
 
 Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, :manual)
 
@@ -18,3 +25,22 @@ ExUnit.after_suite(fn _results ->
   uploads = Pleroma.Config.get([Pleroma.Uploaders.Local, :uploads], "test/uploads")
   File.rm_rf!(uploads)
 end)
+
+defmodule Pleroma.Test.StaticConfig do
+  @moduledoc """
+  This module provides a Config that is completely static, built at startup time from the environment. It's safe to use in testing as it will not modify any state.
+  """
+
+  @behaviour Pleroma.Config.Getting
+  @config Application.get_all_env(:pleroma)
+
+  @impl true
+  def get(path, default \\ nil) do
+    get_in(@config, path) || default
+  end
+
+  @impl true
+  def get!(path) do
+    get_in(@config, path)
+  end
+end

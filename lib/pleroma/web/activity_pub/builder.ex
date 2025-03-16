@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   This module encodes our addressing policies and general shape of our objects.
   """
 
+  alias Pleroma.Activity
   alias Pleroma.Emoji
   alias Pleroma.Object
   alias Pleroma.User
@@ -143,7 +144,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   def emoji_react(actor, object, emoji) do
     with {:ok, data, meta} <- object_action(actor, object) do
       data =
-        if Emoji.is_unicode_emoji?(emoji) do
+        if Emoji.unicode?(emoji) do
           unicode_emoji_react(object, data, emoji)
         else
           custom_emoji_react(object, data, emoji)
@@ -360,7 +361,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
         actor.ap_id == Relay.ap_id() ->
           [actor.follower_address]
 
-        public? and Visibility.is_local_public?(object) ->
+        public? and Visibility.local_public?(object) ->
           [actor.follower_address, object.data["actor"], Utils.as_local_public()]
 
         public? ->
@@ -388,7 +389,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
     # Address the actor of the object, and our actor's follower collection if the post is public.
     to =
-      if Visibility.is_public?(object) do
+      if Visibility.public?(object) do
         [actor.follower_address, object.data["actor"]]
       else
         [object.data["actor"]]
@@ -476,5 +477,16 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     }
 
     {:ok, data, []}
+  end
+
+  def bite(%User{} = biting, %User{} = bitten) do
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "target" => bitten.ap_id,
+       "actor" => biting.ap_id,
+       "type" => "Bite",
+       "to" => [bitten.ap_id]
+     }, []}
   end
 end

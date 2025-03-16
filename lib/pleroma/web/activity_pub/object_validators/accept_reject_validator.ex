@@ -30,10 +30,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AcceptRejectValidator do
 
   defp validate_data(cng) do
     cng
-    |> validate_required([:id, :type, :actor, :to, :cc, :object])
+    |> validate_required([:id, :type, :actor, :to, :object])
     |> validate_inclusion(:type, ["Accept", "Reject"])
     |> validate_actor_presence()
-    |> validate_object_presence(allowed_types: ["Follow", "Join"])
+    |> validate_object_presence(allowed_types: ["Follow", "Join", "Bite"])
     |> validate_accept_reject_rights()
   end
 
@@ -62,5 +62,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AcceptRejectValidator do
   defp validate_actor(%Activity{data: %{"type" => "Join", "object" => joined_event}}, actor) do
     %Object{data: %{"actor" => event_author}} = Object.get_cached_by_ap_id(joined_event)
     event_author == actor
+  end
+
+  defp validate_actor(%Activity{data: %{"type" => "Bite", "target" => biten_actor}}, actor) do
+    biten_actor == actor
   end
 end

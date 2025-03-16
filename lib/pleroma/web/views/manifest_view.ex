@@ -12,9 +12,14 @@ defmodule Pleroma.Web.ManifestView do
       name: Config.get([:instance, :name]),
       description: Config.get([:instance, :description]),
       icons: Config.get([:manifest, :icons]),
-      theme_color: Config.get([:manifest, :theme_color]),
+      theme_color:
+        Config.get(
+          [:frontend_configurations, :pl_fe, "brandColor"],
+          Config.get([:manifest, :theme_color])
+        ),
       background_color: Config.get([:manifest, :background_color]),
       display: "standalone",
+      display_override: ["window-controls-overlay"],
       scope: Endpoint.url(),
       start_url: "/",
       categories: [

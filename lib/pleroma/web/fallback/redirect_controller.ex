@@ -17,8 +17,28 @@ defmodule Pleroma.Web.Fallback.RedirectController do
     |> json(%{error: "Not implemented"})
   end
 
-  def redirector(conn, params, code \\ 200) do
-    redirector_with_ssr(conn, params, [:title, :favicon], code)
+  def add_generated_metadata(page_content, extra \\ "") do
+    title = "<title>#{Pleroma.Config.get([:instance, :name])}</title>"
+    favicon = "<link rel='icon' href='#{Pleroma.Config.get([:instance, :favicon])}'>"
+    manifest = "<link rel='manifest' href='/manifest.json'>"
+
+    page_content
+    |> String.replace(
+      "<!--server-generated-meta-->",
+      title <> favicon <> manifest <> extra
+    )
+  end
+
+  def redirector(conn, _params, code \\ 200) do
+    {:ok, index_content} = File.read(index_file_path())
+
+    response =
+      index_content
+      |> add_generated_metadata()
+
+    conn
+    |> put_resp_content_type("text/html")
+    |> send_resp(code, response)
   end
 
   def redirector_with_meta(conn, %{"maybe_nickname_or_id" => maybe_nickname_or_id} = params) do
@@ -26,12 +46,22 @@ defmodule Pleroma.Web.Fallback.RedirectController do
       redirector_with_meta(conn, %{user: user})
     else
       nil ->
-        redirector(conn, params)
+        redirector_with_meta(conn, Map.delete(params, "maybe_nickname_or_id"))
     end
   end
 
   def redirector_with_meta(conn, params) do
-    redirector_with_ssr(conn, params, [:tags, :preload, :title, :favicon])
+    {:ok, index_content} = File.read(index_file_path())
+    tags = build_tags(conn, params)
+    preloads = preload_data(conn, params)
+
+    response =
+      index_content
+      |> add_generated_metadata(tags <> preloads)
+
+    conn
+    |> put_resp_content_type("text/html")
+    |> send_resp(200, response)
   end
 
   def redirector_with_preload(conn, %{"path" => ["pleroma", "admin"]}) do
@@ -39,21 +69,16 @@ defmodule Pleroma.Web.Fallback.RedirectController do
   end
 
   def redirector_with_preload(conn, params) do
-    redirector_with_ssr(conn, params, [:preload, :title, :favicon])
-  end
-
-  defp redirector_with_ssr(conn, params, keys, code \\ 200) do
     {:ok, index_content} = File.read(index_file_path())
-
-    meta = compose_meta(conn, params, keys)
+    preloads = preload_data(conn, params)
 
     response =
       index_content
-      |> String.replace("<!--server-generated-meta-->", Enum.join(meta))
+      |> add_generated_metadata(preloads)
 
     conn
     |> put_resp_content_type("text/html")
-    |> send_resp(code, response)
+    |> send_resp(200, response)
   end
 
   def registration_page(conn, params) do
@@ -70,13 +95,7 @@ defmodule Pleroma.Web.Fallback.RedirectController do
     Pleroma.Web.Plugs.InstanceStatic.file_path("index.html")
   end
 
-  defp compose_meta(conn, params, attrs) when is_list(attrs) do
-    Enum.map(attrs, fn attr ->
-      build_meta(attr, {conn, params})
-    end)
-  end
-
-  defp build_meta(:tags, {conn, params}) do
+  defp build_tags(conn, params) do
     try do
       Metadata.build_tags(params)
     rescue
@@ -90,7 +109,7 @@ defmodule Pleroma.Web.Fallback.RedirectController do
     end
   end
 
-  defp build_meta(:preload, {conn, params}) do
+  defp preload_data(conn, params) do
     try do
       Preload.build_tags(conn, params)
     rescue
@@ -102,13 +121,5 @@ defmodule Pleroma.Web.Fallback.RedirectController do
 
         ""
     end
-  end
-
-  defp build_meta(:title, _) do
-    "<title>#{Pleroma.Config.get([:instance, :name])}</title>"
-  end
-
-  defp build_meta(:favicon, _) do
-    "<link rel=\"icon\" href=\"#{Pleroma.Config.get([:instance, :favicon])}\">"
   end
 end

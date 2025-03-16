@@ -34,7 +34,9 @@ defmodule Pleroma.Web.Plugs.OAuthScopesPlug do
         permissions = Enum.join(missing_scopes, " #{op} ")
 
         error_message =
-          dgettext("errors", "Insufficient permissions: %{permissions}.", permissions: permissions)
+          dgettext("errors", "Insufficient permissions: %{permissions}.",
+            permissions: permissions
+          )
 
         conn
         |> put_resp_content_type("application/json")

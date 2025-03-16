@@ -6,16 +6,17 @@ defmodule Pleroma.Workers.NotificationWorker do
   @moduledoc """
   Creates notifications for an Activity.
   """
-  use Pleroma.Workers.WorkerHelper, queue: "notifications"
+  use Oban.Worker, queue: :notifications
 
   alias Pleroma.Activity
   alias Pleroma.Notification
 
-  @impl Oban.Worker
+  @impl true
   @spec perform(Oban.Job.t()) :: {:error, :activity_not_found} | {:ok, [Pleroma.Notification.t()]}
   def perform(%Job{args: %{"op" => "create", "activity_id" => activity_id}}) do
-    with %Activity{} = activity <- find_activity(activity_id) do
-      Notification.create_notifications(activity)
+    with %Activity{} = activity <- find_activity(activity_id),
+         {:ok, notifications} <- Notification.create_notifications(activity) do
+      Notification.stream(notifications)
     end
   end
 

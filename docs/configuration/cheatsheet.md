@@ -36,6 +36,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `allow_relay`: Permits remote instances to subscribe to all public posts of your instance. This may increase the visibility of your instance.
 * `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network. Note that there is a dependent setting restricting or allowing unauthenticated access to specific resources, see `restrict_unauthenticated` for more details.
 * `quarantined_instances`: ActivityPub instances where private (DMs, followers-only) activities will not be send.
+* `rejected_instances`: ActivityPub instances to reject requests from if authorized_fetch_mode is enabled.
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML).
 * `extended_nickname_format`: Set to `true` to use extended local nicknames format (allows underscores/dashes). This will break federation with
     older software for theses nicknames.
@@ -93,7 +94,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `moderator_privileges`: A list of privileges a moderator has (e.g. delete messages, manage reports...)
     * Possible values are the same as for `admin_privileges`
 
-## :database
+## :features
 * `improved_hashtag_timeline`: Setting to force toggle / force disable improved hashtags timeline. `:enabled` forces hashtags to be fetched from `hashtags` table for hashtags timeline. `:disabled` forces object-embedded hashtags to be used (slower). Keep it `:auto` for automatic behaviour (it is auto-set to `:enabled` [unless overridden] when HashtagsTableMigrator completes).
 
 ## Background migrations
@@ -150,14 +151,15 @@ To add configuration to your config file, you can copy it from the base config. 
     * `Pleroma.Web.ActivityPub.MRF.MentionPolicy`: Drops posts mentioning configurable users. (See [`:mrf_mention`](#mrf_mention)).
     * `Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`: Restricts activities to a configured set of vocabulary. (See [`:mrf_vocabulary`](#mrf_vocabulary)).
     * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
-    * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.Workers.PurgeExpiredActivity` to be enabled for processing the scheduled delections.
+    * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.Workers.PurgeExpiredActivity` to be enabled for processing the scheduled deletions.
     * `Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy`: Makes all bot posts to disappear from public timelines.
     * `Pleroma.Web.ActivityPub.MRF.FollowBotPolicy`: Automatically follows newly discovered users from the specified bot account. Local accounts, locked accounts, and users with "#nobot" in their bio are respected and excluded from being followed.
     * `Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicy`: Drops follow requests from followbots. Users can still allow bots to follow them by first following the bot.
     * `Pleroma.Web.ActivityPub.MRF.KeywordPolicy`: Rejects or removes from the federated timeline or replaces keywords. (See [`:mrf_keyword`](#mrf_keyword)).
     * `Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent`: Forces every mentioned user to be reflected in the post content.
     * `Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy`: Forces quote post URLs to be reflected in the message content inline.
-    * `Pleroma.Web.ActivityPub.MRF.QuoteToLinkTagPolicy`: Force a Link tag for posts quoting another post. (may break outgoing federation of quote posts with older Pleroma versions)
+    * `Pleroma.Web.ActivityPub.MRF.QuoteToLinkTagPolicy`: Force a Link tag for posts quoting another post. (may break outgoing federation of quote posts with older Pleroma versions).
+    * `Pleroma.Web.ActivityPub.MRF.ForceMention`: Forces posts to include a mention of the author of parent post or the author of quoted post.
 * `transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
 
@@ -271,6 +273,10 @@ Notes:
 #### :mrf_inline_quote
 * `template`: The template to append to the post. `{url}` will be replaced with the actual link to the quoted post. Default: `<bdi>RT:</bdi> {url}`
 
+#### :mrf_force_mention
+* `mention_parent`: Whether to append mention of parent post author
+* `mention_quoted`: Whether to append mention of parent quoted author
+
 ### :activitypub
 * `unfollow_blocked`: Whether blocks result in people getting unfollowed
 * `outgoing_blocks`: Whether to federate blocks to other instances
@@ -278,6 +284,7 @@ Notes:
 * `deny_follow_blocked`: Whether to disallow following an account that has blocked the user in question
 * `sign_object_fetches`: Sign object fetches with HTTP signatures
 * `authorized_fetch_mode`: Require HTTP signatures for AP fetches
+* `authorized_fetch_mode_exceptions`: List of IPs (CIDR format accepted) to exempt from HTTP Signatures requirement (for example to allow debugging, you shouldn't otherwise need this)
 
 ## Pleroma.User
 
@@ -428,8 +435,7 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
 * `ignore_hosts`: list of hosts which will be ignored by the metadata parser. For example `["accounts.google.com", "xss.website"]`, defaults to `[]`.
 * `ignore_tld`: list TLDs (top-level domains) which will ignore for parse metadata. default is ["local", "localdomain", "lan"].
 * `parsers`: list of Rich Media parsers.
-* `oembed_providers_enabled`: Embed rich media from a list of known providers. This takes precedence over other parsers.
-* `failure_backoff`: Amount of milliseconds after request failure, during which the request will not be retried.
+* `timeout`: Amount of milliseconds after which the HTTP request is forcibly terminated.
 
 ## HTTP server
 
@@ -467,6 +473,7 @@ This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls start
 * ``ct_max_age``: The maximum age for the `Expect-CT` header if sent.
 * ``referrer_policy``: The referrer policy to use, either `"same-origin"` or `"no-referrer"`.
 * ``report_uri``: Adds the specified url to `report-uri` and `report-to` group in CSP header.
+* `allow_unsafe_eval`: Adds `wasm-unsafe-eval` to the CSP header. Needed for some non-essential frontend features like Flash emulation.
 
 ### Pleroma.Web.Plugs.RemoteIp
 
@@ -506,7 +513,7 @@ config :pleroma, :rate_limit,
 Means that:
 
 1. In 60 seconds, 15 authentication attempts can be performed from the same IP address.
-2. In 1 second, 10 search requests can be performed from the same IP adress by unauthenticated users, while authenticated users can perform 30 search requests per second.
+2. In 1 second, 10 search requests can be performed from the same IP address by unauthenticated users, while authenticated users can perform 30 search requests per second.
 
 Supported rate limiters:
 
@@ -657,6 +664,19 @@ config :ex_aws, :s3,
   host: "s3.eu-central-1.amazonaws.com"
 ```
 
+#### Pleroma.Uploaders.IPFS
+
+* `post_gateway_url`: URL with port of POST Gateway (unauthenticated)
+* `get_gateway_url`: URL of public GET Gateway
+
+Example:
+
+```elixir
+config :pleroma, Pleroma.Uploaders.IPFS,
+  post_gateway_url: "http://localhost:5001",
+  get_gateway_url: "http://{CID}.ipfs.mydomain.com"
+```
+
 ### Upload filters
 
 #### Pleroma.Upload.Filter.AnonymizeFilename
@@ -720,6 +740,21 @@ config :pleroma, Pleroma.Emails.Mailer,
   port: 465,
   ssl: true,
   auth: :always
+```
+
+An example for Mua adapter:
+
+```elixir
+config :pleroma, Pleroma.Emails.Mailer,
+  enabled: true,
+  adapter: Swoosh.Adapters.Mua,
+  relay: "mail.example.com",
+  port: 465,
+  auth: [
+    username: "YOUR_USERNAME@domain.tld",
+    password: "YOUR_SMTP_PASSWORD"
+  ],
+  protocol: :ssl
 ```
 
 ### :email_notifications
@@ -833,7 +868,7 @@ config :logger,
   backends: [{ExSyslogger, :ex_syslogger}]
 
 config :logger, :ex_syslogger,
-  level: :warn
+  level: :warning
 ```
 
 Another example, keeping console output and adding the pid to syslog output:
@@ -842,7 +877,7 @@ config :logger,
   backends: [:console, {ExSyslogger, :ex_syslogger}]
 
 config :logger, :ex_syslogger,
-  level: :warn,
+  level: :warning,
   option: [:pid, :ndelay]
 ```
 
@@ -948,12 +983,13 @@ Pleroma account will be created with the same name as the LDAP user name.
 * `enabled`: enables LDAP authentication
 * `host`: LDAP server hostname
 * `port`: LDAP port, e.g. 389 or 636
-* `ssl`: true to use SSL, usually implies the port 636
+* `ssl`: true to use implicit SSL/TLS, usually port 636
 * `sslopts`: additional SSL options
-* `tls`: true to start TLS, usually implies the port 389
+* `tls`: true to use explicit TLS (STARTTLS), usually port 389
 * `tlsopts`: additional TLS options
 * `base`: LDAP base, e.g. "dc=example,dc=com"
 * `uid`: LDAP attribute name to authenticate the user, e.g. when "cn", the filter will be "cn=username,base"
+* `cacertfile`: Path to alternate CA root certificates file
 
 Note, if your LDAP server is an Active Directory server the correct value is commonly `uid: "cn"`, but if you use an
 OpenLDAP server the value may be `uid: "uid"`.
@@ -1082,7 +1118,7 @@ config :pleroma, Pleroma.Formatter,
 
 ## :configurable_from_database
 
-Boolean, enables/disables in-database configuration. Read [Transfering the config to/from the database](../administration/CLI_tasks/config.md) for more information.
+Boolean, enables/disables in-database configuration. Read [Transferring the config to/from the database](../administration/CLI_tasks/config.md) for more information.
 
 ## :database_config_whitelist
 
@@ -1143,7 +1179,7 @@ Control favicons for instances.
 !!! note
     Requires enabled email
 
-* `:purge_after_days` an integer, remove backup achives after N days.
+* `:purge_after_days` an integer, remove backup achieves after N days.
 * `:limit_days` an integer, limit user to export not more often than once per N days.
 * `:dir` a string with a path to backup temporary directory or `nil` to let Pleroma choose temporary directory in the following order:
     1. the directory named by the TMPDIR environment variable
@@ -1151,6 +1187,7 @@ Control favicons for instances.
     3. the directory named by the TMP environment variable
     4. C:\TMP on Windows or /tmp on Unix-like operating systems
     5. as a last resort, the current working directory
+* `:timeout` an integer representing seconds
 
 ## Frontend management
 

@@ -17,12 +17,12 @@ defmodule Pleroma.HTTP.AdapterHelperTest do
     end
 
     test "localhost with port" do
-      assert AdapterHelper.format_proxy("localhost:8123") == {'localhost', 8123}
+      assert AdapterHelper.format_proxy("localhost:8123") == {~c"localhost", 8123}
     end
 
     test "tuple" do
       assert AdapterHelper.format_proxy({:socks4, :localhost, 9050}) ==
-               {:socks4, 'localhost', 9050}
+               {:socks4, ~c"localhost", 9050}
     end
   end
 end

@@ -3,13 +3,18 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Upload.Filter.MogrifyTest do
-  use Pleroma.DataCase
-  import Mock
+  use Pleroma.DataCase, async: true
+  import Mox
 
+  alias Pleroma.MogrifyMock
+  alias Pleroma.StaticStubbedConfigMock, as: ConfigMock
   alias Pleroma.Upload.Filter
 
+  setup :verify_on_exit!
+
   test "apply mogrify filter" do
-    clear_config(Filter.Mogrify, args: [{"tint", "40"}])
+    ConfigMock
+    |> stub(:get!, fn [Filter.Mogrify, :args] -> [{"tint", "40"}] end)
 
     File.cp!(
       "test/fixtures/image.jpg",
@@ -23,19 +28,11 @@ defmodule Pleroma.Upload.Filter.MogrifyTest do
       tempfile: Path.absname("test/fixtures/image_tmp.jpg")
     }
 
-    task =
-      Task.async(fn ->
-        assert_receive {:apply_filter, {_, "tint", "40"}}, 4_000
-      end)
+    MogrifyMock
+    |> expect(:open, fn _file -> %{} end)
+    |> expect(:custom, fn _image, "tint", "40" -> %{} end)
+    |> expect(:save, fn _image, [in_place: true] -> :ok end)
 
-    with_mock Mogrify,
-      open: fn _f -> %Mogrify.Image{} end,
-      custom: fn _m, _a -> :ok end,
-      custom: fn m, a, o -> send(task.pid, {:apply_filter, {m, a, o}}) end,
-      save: fn _f, _o -> :ok end do
-      assert Filter.Mogrify.filter(upload) == {:ok, :filtered}
-    end
-
-    Task.await(task)
+    assert Filter.Mogrify.filter(upload) == {:ok, :filtered}
   end
 end

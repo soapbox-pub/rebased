@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Ecto.UUID
   alias Pleroma.Activity
   alias Pleroma.Config
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators.ObjectID
   alias Pleroma.Maps
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -173,7 +174,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
     with true <- Config.get!([:instance, :federating]),
          true <- type != "Block" || outgoing_blocks,
-         false <- Visibility.is_local_public?(activity) do
+         false <- Visibility.local_public?(activity) do
       Pleroma.Web.Federator.publish(activity)
     end
 
@@ -283,7 +284,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     object_actor = User.get_cached_by_ap_id(object_actor_id)
 
     to =
-      if Visibility.is_public?(object) do
+      if Visibility.public?(object) do
         [actor.follower_address, object.data["actor"]]
       else
         [object.data["actor"]]
@@ -828,10 +829,9 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         build_flag_object(object)
 
       nil ->
-        if %Object{} = object = Object.get_by_ap_id(id) do
-          build_flag_object(object)
-        else
-          %{"id" => id, "deleted" => true}
+        case Object.get_by_ap_id(id) do
+          %Object{} = object -> build_flag_object(object)
+          _ -> %{"id" => id, "deleted" => true}
         end
     end
   end
@@ -933,9 +933,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     [actor | reported_activities] = activity.data["object"]
 
     stripped_activities =
-      Enum.map(reported_activities, fn
-        act when is_map(act) -> act["id"]
-        act when is_binary(act) -> act
+      Enum.reduce(reported_activities, [], fn act, acc ->
+        case ObjectID.cast(act) do
+          {:ok, act} -> [act | acc]
+          _ -> acc
+        end
       end)
 
     new_data = put_in(activity.data, ["object"], [actor | stripped_activities])
@@ -1014,6 +1016,17 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Repo.all()
   end
 
+  @spec maybe_handle_group_posts(Activity.t()) :: :ok
+  @doc "Automatically repeats posts for local group actor recipients"
+  def maybe_handle_group_posts(activity) do
+    poster = User.get_cached_by_ap_id(activity.actor)
+
+    User.get_recipients_from_activity(activity)
+    |> Enum.filter(&match?("Group", &1.actor_type))
+    |> Enum.reject(&User.blocks?(&1, poster))
+    |> Enum.each(&Pleroma.Web.CommonAPI.repeat(activity.id, &1))
+  end
+
   def get_existing_join(actor, id) do
     actor
     |> Activity.Queries.by_actor()
@@ -1034,5 +1047,48 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     with {:ok, activity} <- Repo.update(changeset) do
       {:ok, activity}
     end
+  end
+
+  def make_bite_data(biting, bitten, activity_id) do
+    %{
+      "type" => "Bite",
+      "actor" => biting.ap_id,
+      "to" => [bitten.ap_id],
+      "target" => bitten.ap_id
+    }
+    |> Maps.put_if_present("id", activity_id)
+  end
+
+  def fetch_latest_bite(
+        %User{ap_id: biting_ap_id},
+        %{ap_id: bitten_ap_id},
+        exclude_activity \\ nil
+      ) do
+    "Bite"
+    |> Activity.Queries.by_type()
+    |> where(actor: ^biting_ap_id)
+    |> maybe_exclude_activity_id(exclude_activity)
+    |> Activity.Queries.by_object_id(bitten_ap_id)
+    |> order_by([activity], fragment("? desc nulls last", activity.id))
+    |> exclude_rejected()
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  defp maybe_exclude_activity_id(query, nil), do: query
+
+  defp maybe_exclude_activity_id(query, %Activity{id: activity_id}) do
+    query
+    |> where([a], a.id != ^activity_id)
+  end
+
+  defp exclude_rejected(query) do
+    rejected_activities =
+      "Reject"
+      |> Activity.Queries.by_type()
+      |> select([a], fragment("?->>'object'", a.data))
+
+    query
+    |> where([a], fragment("?->>'id'", a.data) not in subquery(rejected_activities))
   end
 end

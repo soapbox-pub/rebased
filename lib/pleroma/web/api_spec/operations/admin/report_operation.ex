@@ -19,7 +19,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Report managment"],
+      tags: ["Report management"],
       summary: "Retrieve a list of reports",
       operationId: "AdminAPI.ReportController.index",
       security: [%{"oAuth" => ["admin:read:reports"]}],
@@ -29,6 +29,12 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
           :query,
           report_state(),
           "Filter by report state"
+        ),
+        Operation.parameter(
+          :rule_id,
+          :query,
+          %Schema{type: :string},
+          "Filter by selected rule id"
         ),
         Operation.parameter(
           :limit,
@@ -75,7 +81,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Report managment"],
+      tags: ["Report management"],
       summary: "Retrieve a report",
       operationId: "AdminAPI.ReportController.show",
       parameters: [id_param() | admin_api_params()],
@@ -89,7 +95,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def update_operation do
     %Operation{
-      tags: ["Report managment"],
+      tags: ["Report management"],
       summary: "Change state of specified reports",
       operationId: "AdminAPI.ReportController.update",
       security: [%{"oAuth" => ["admin:write:reports"]}],
@@ -105,7 +111,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def assign_account_operation do
     %Operation{
-      tags: ["Report managment"],
+      tags: ["Report management"],
       summary: "Assign account to specified reports",
       operationId: "AdminAPI.ReportController.assign_account",
       security: [%{"oAuth" => ["admin:write:reports"]}],
@@ -121,7 +127,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def notes_create_operation do
     %Operation{
-      tags: ["Report managment"],
+      tags: ["Report management"],
       summary: "Add a note to the report",
       operationId: "AdminAPI.ReportController.notes_create",
       parameters: [id_param() | admin_api_params()],
@@ -142,7 +148,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def notes_delete_operation do
     %Operation{
-      tags: ["Report managment"],
+      tags: ["Report management"],
       summary: "Delete note attached to the report",
       operationId: "AdminAPI.ReportController.notes_delete",
       parameters: [
@@ -163,7 +169,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
   end
 
   def id_param do
-    Operation.parameter(:id, :path, FlakeID, "Report ID",
+    Operation.parameter(:id, :path, FlakeID.schema(), "Report ID",
       example: "9umDrYheeY451cQnEe",
       required: true
     )
@@ -192,19 +198,20 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
             }
           }
         },
-        assigned_account:
-          account_admin()
-          |> Map.put(:nullable, true),
         rules: %Schema{
           type: :array,
           items: %Schema{
             type: :object,
             properties: %{
-              id: %Schema{type: :integer},
-              text: %Schema{type: :string}
+              id: %Schema{type: :string},
+              text: %Schema{type: :string},
+              hint: %Schema{type: :string, nullable: true}
             }
           }
-        }
+        },
+        assigned_account:
+          account_admin()
+          |> Map.put(:nullable, true)
       }
     }
   end

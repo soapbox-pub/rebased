@@ -47,7 +47,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RemoteReportPolicy do
       end
 
     with true <- Config.get([:mrf_remote_report, :reject_third_party]),
-         String.starts_with?(to, Pleroma.Web.Endpoint.url()) do
+         false <- String.starts_with?(to, Pleroma.Web.Endpoint.url()) do
       {:reject, "[RemoteReportPolicy] Third-party: #{to}"}
     else
       _ -> {:ok, object}

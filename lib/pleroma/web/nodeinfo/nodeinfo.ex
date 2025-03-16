@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
   alias Pleroma.Config
   alias Pleroma.Stats
   alias Pleroma.User
-  alias Pleroma.Web.Federator.Publisher
+  alias Pleroma.Web.ActivityPub.Publisher
   alias Pleroma.Web.MastodonAPI.InstanceView
 
   # returns a nodeinfo 2.0 map, since 2.1 just adds a repository field
@@ -24,8 +24,8 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
     %{
       version: "2.0",
       software: %{
-        name: Pleroma.Application.compat_name() |> String.downcase(),
-        version: Pleroma.Application.version()
+        name: "$INSTANCE$softwareName$",
+        version: "$INSTANCE$softwareVersion$"
       },
       protocols: Publisher.gather_nodeinfo_protocol_names(),
       services: %{
@@ -42,8 +42,8 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
         localPosts: Map.get(stats, :status_count, 0)
       },
       metadata: %{
-        nodeName: Config.get([:instance, :name]),
-        nodeDescription: Config.get([:instance, :description]),
+        nodeName: "$INSTANCE$name$",
+        nodeDescription: "$INSTANCE$description$",
         private: !Config.get([:instance, :public], true),
         suggestions: %{
           enabled: false
@@ -73,7 +73,20 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
         mailerEnabled: Config.get([Pleroma.Emails.Mailer, :enabled], false),
         features: features,
         restrictedNicknames: Config.get([Pleroma.User, :restricted_nicknames]),
-        skipThreadContainment: Config.get([:instance, :skip_thread_containment], false)
+        skipThreadContainment: Config.get([:instance, :skip_thread_containment], false),
+        federatedTimelineAvailable: Config.get([:instance, :federated_timeline_available], true),
+        localBubbleInstances: Config.get([:instance, :local_bubble], []),
+        publicTimelineVisibility: %{
+          federated:
+            !Config.restrict_unauthenticated_access?(:timelines, :federated) &&
+              Config.get([:instance, :federated_timeline_available], true),
+          local: !Config.restrict_unauthenticated_access?(:timelines, :local),
+          bubble: !Config.restrict_unauthenticated_access?(:timelines, :bubble)
+        }
+      },
+      operations: %{
+        "com.shinolabs.api.bite": ["1.0.0"],
+        "jetzt.mia.ns.activitypub.accept.bite": ["1.0.0"]
       }
     }
   end

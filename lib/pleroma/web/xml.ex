@@ -9,7 +9,7 @@ defmodule Pleroma.Web.XML do
 
   def string_from_xpath(xpath, doc) do
     try do
-      {:xmlObj, :string, res} = :xmerl_xpath.string('string(#{xpath})', doc)
+      {:xmlObj, :string, res} = :xmerl_xpath.string(~c"string(#{xpath})", doc)
 
       res =
         res

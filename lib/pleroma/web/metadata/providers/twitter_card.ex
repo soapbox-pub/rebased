@@ -44,6 +44,9 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
     end
   end
 
+  @impl Provider
+  def build_tags(_), do: []
+
   defp title_tag(user) do
     {:meta, [name: "twitter:title", content: Utils.user_name_string(user)], []}
   end
@@ -58,13 +61,13 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
         Enum.reduce(attachment["url"], [], fn url, acc ->
           case Utils.fetch_media_type(@media_types, url["mediaType"]) do
             "audio" ->
-              [
-                {:meta, [name: "twitter:card", content: "player"], []},
-                {:meta, [name: "twitter:player:width", content: "480"], []},
-                {:meta, [name: "twitter:player:height", content: "80"], []},
-                {:meta, [name: "twitter:player", content: player_url(id)], []}
-                | acc
-              ]
+              acc ++
+                [
+                  {:meta, [name: "twitter:card", content: "player"], []},
+                  {:meta, [name: "twitter:player:width", content: "480"], []},
+                  {:meta, [name: "twitter:player:height", content: "80"], []},
+                  {:meta, [name: "twitter:player", content: player_url(id)], []}
+                ]
 
             # Not using preview_url for this. It saves bandwidth, but the image dimensions will
             # be wrong. We generate it on the fly and have no way to capture or analyze the
@@ -72,16 +75,16 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
             # in timelines too, but you can get clever with the aspect ratio metadata as a
             # workaround.
             "image" ->
-              [
-                {:meta, [name: "twitter:card", content: "summary_large_image"], []},
-                {:meta,
+              (acc ++
                  [
-                   name: "twitter:image",
-                   content: MediaProxy.url(url["href"])
-                 ], []},
-                {:meta, [name: "twitter:image:alt", content: truncate(attachment["name"])], []}
-                | acc
-              ]
+                   {:meta, [name: "twitter:card", content: "summary_large_image"], []},
+                   {:meta,
+                    [
+                      name: "twitter:image",
+                      content: MediaProxy.url(url["href"])
+                    ], []},
+                   {:meta, [name: "twitter:image:alt", content: truncate(attachment["name"])], []}
+                 ])
               |> maybe_add_dimensions(url)
 
             "video" ->
@@ -89,17 +92,17 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
               height = url["height"] || 480
               width = url["width"] || 480
 
-              [
-                {:meta, [name: "twitter:card", content: "player"], []},
-                {:meta, [name: "twitter:player", content: player_url(id)], []},
-                {:meta, [name: "twitter:player:width", content: "#{width}"], []},
-                {:meta, [name: "twitter:player:height", content: "#{height}"], []},
-                {:meta, [name: "twitter:player:stream", content: MediaProxy.url(url["href"])],
-                 []},
-                {:meta, [name: "twitter:player:stream:content_type", content: url["mediaType"]],
-                 []}
-                | acc
-              ]
+              acc ++
+                [
+                  {:meta, [name: "twitter:card", content: "player"], []},
+                  {:meta, [name: "twitter:player", content: player_url(id)], []},
+                  {:meta, [name: "twitter:player:width", content: "#{width}"], []},
+                  {:meta, [name: "twitter:player:height", content: "#{height}"], []},
+                  {:meta, [name: "twitter:player:stream", content: MediaProxy.url(url["href"])],
+                   []},
+                  {:meta, [name: "twitter:player:stream:content_type", content: url["mediaType"]],
+                   []}
+                ]
 
             _ ->
               acc

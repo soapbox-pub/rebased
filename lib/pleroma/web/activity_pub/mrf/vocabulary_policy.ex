@@ -3,39 +3,38 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicy do
-  @moduledoc "Filter messages which belong to certain activity vocabularies"
+  @moduledoc "Filter activities which belong to certain activity vocabularies"
 
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   @impl true
-  def filter(%{"type" => "Undo", "object" => child_message} = message) do
-    with {:ok, _} <- filter(child_message) do
-      {:ok, message}
+  def filter(%{"type" => "Undo", "object" => object} = activity) do
+    with {:ok, _} <- filter(object) do
+      {:ok, activity}
     else
       {:reject, _} = e -> e
     end
   end
 
-  def filter(%{"type" => message_type} = message) do
+  def filter(%{"type" => activity_type} = activity) do
     with accepted_vocabulary <- Pleroma.Config.get([:mrf_vocabulary, :accept]),
          rejected_vocabulary <- Pleroma.Config.get([:mrf_vocabulary, :reject]),
          {_, true} <-
            {:accepted,
-            Enum.empty?(accepted_vocabulary) || Enum.member?(accepted_vocabulary, message_type)},
+            Enum.empty?(accepted_vocabulary) || Enum.member?(accepted_vocabulary, activity_type)},
          {_, false} <-
            {:rejected,
-            length(rejected_vocabulary) > 0 && Enum.member?(rejected_vocabulary, message_type)},
-         {:ok, _} <- filter(message["object"]) do
-      {:ok, message}
+            length(rejected_vocabulary) > 0 && Enum.member?(rejected_vocabulary, activity_type)},
+         {:ok, _} <- filter(activity["object"]) do
+      {:ok, activity}
     else
       {:reject, _} = e -> e
-      {:accepted, _} -> {:reject, "[VocabularyPolicy] #{message_type} not in accept list"}
-      {:rejected, _} -> {:reject, "[VocabularyPolicy] #{message_type} in reject list"}
-      _ -> {:reject, "[VocabularyPolicy]"}
+      {:accepted, _} -> {:reject, "[VocabularyPolicy] #{activity_type} not in accept list"}
+      {:rejected, _} -> {:reject, "[VocabularyPolicy] #{activity_type} in reject list"}
     end
   end
 
-  def filter(message), do: {:ok, message}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe,
@@ -47,20 +46,20 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicy do
       key: :mrf_vocabulary,
       related_policy: "Pleroma.Web.ActivityPub.MRF.VocabularyPolicy",
       label: "MRF Vocabulary",
-      description: "Filter messages which belong to certain activity vocabularies",
+      description: "Filter activities which belong to certain activity vocabularies",
       children: [
         %{
           key: :accept,
           type: {:list, :string},
           description:
-            "A list of ActivityStreams terms to accept. If empty, all supported messages are accepted.",
+            "A list of ActivityStreams terms to accept. If empty, all supported activities are accepted.",
           suggestions: ["Create", "Follow", "Mention", "Announce", "Like"]
         },
         %{
           key: :reject,
           type: {:list, :string},
           description:
-            "A list of ActivityStreams terms to reject. If empty, no messages are rejected.",
+            "A list of ActivityStreams terms to reject. If empty, no activities are rejected.",
           suggestions: ["Create", "Follow", "Mention", "Announce", "Like"]
         }
       ]

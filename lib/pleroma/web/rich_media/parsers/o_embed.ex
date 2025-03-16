@@ -3,18 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parsers.OEmbed do
-  def parse(html, data) do
+  def parse(html, _data) do
     with elements = [_ | _] <- get_discovery_data(html),
          oembed_url when is_binary(oembed_url) <- get_oembed_url(elements),
          {:ok, oembed_data = %{"html" => html}} <- get_oembed_data(oembed_url) do
-      data
-      |> Map.put(
-        :oembed,
-        oembed_data
-        |> Map.put("html", Pleroma.HTML.filter_tags(html))
-      )
+      %{oembed_data | "html" => Pleroma.HTML.filter_tags(html)}
     else
-      _e -> data
+      _e -> %{}
     end
   end
 
@@ -27,7 +22,7 @@ defmodule Pleroma.Web.RichMedia.Parsers.OEmbed do
   end
 
   defp get_oembed_data(url) do
-    with {:ok, %Tesla.Env{body: json}} <- Pleroma.Web.RichMedia.Helpers.oembed_get(url) do
+    with {:ok, json} <- Pleroma.Web.RichMedia.Helpers.rich_media_get(url) do
       Jason.decode(json)
     end
   end

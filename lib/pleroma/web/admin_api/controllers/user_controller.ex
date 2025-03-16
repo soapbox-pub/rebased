@@ -8,6 +8,7 @@ defmodule Pleroma.Web.AdminAPI.UserController do
   import Pleroma.Web.ControllerHelper,
     only: [fetch_integer_param: 3]
 
+  alias Pleroma.Domain
   alias Pleroma.ModerationLog
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Builder
@@ -18,7 +19,7 @@ defmodule Pleroma.Web.AdminAPI.UserController do
 
   @users_page_size 50
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate, replace_params: false)
 
   plug(
     OAuthScopesPlug,
@@ -51,16 +52,25 @@ defmodule Pleroma.Web.AdminAPI.UserController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.UserOperation
 
-  def delete(conn, %{nickname: nickname}) do
+  def delete(%{private: %{open_api_spex: %{params: %{nickname: nickname}}}} = conn, _) do
     conn
-    |> Map.put(:body_params, %{nicknames: [nickname]})
-    |> delete(%{})
+    |> do_deletes([nickname])
   end
 
-  def delete(%{assigns: %{user: admin}, body_params: %{nicknames: nicknames}} = conn, _) do
+  def delete(
+        %{
+          private: %{open_api_spex: %{body_params: %{nicknames: nicknames}}}
+        } = conn,
+        _
+      ) do
+    conn
+    |> do_deletes(nicknames)
+  end
+
+  defp do_deletes(%{assigns: %{user: admin}} = conn, nicknames) when is_list(nicknames) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
 
-    if Enum.all?(users, &is_higher_role(admin, &1)) do
+    if Enum.all?(users, &higher_role?(admin, &1)) do
       Enum.each(users, fn user ->
         {:ok, delete_data, _} = Builder.delete(admin, user.ap_id)
         Pipeline.common_pipeline(delete_data, local: true)
@@ -81,7 +91,7 @@ defmodule Pleroma.Web.AdminAPI.UserController do
   end
 
   # true if actor is greater OR EQUAL in role to target
-  defp is_higher_role(%User{} = actor, %User{} = target) do
+  defp higher_role?(%User{} = actor, %User{} = target) do
     role_weight(actor) >= role_weight(target)
   end
 
@@ -92,9 +102,13 @@ defmodule Pleroma.Web.AdminAPI.UserController do
   def follow(
         %{
           assigns: %{user: admin},
-          body_params: %{
-            follower: follower_nick,
-            followed: followed_nick
+          private: %{
+            open_api_spex: %{
+              body_params: %{
+                follower: follower_nick,
+                followed: followed_nick
+              }
+            }
           }
         } = conn,
         _
@@ -117,9 +131,13 @@ defmodule Pleroma.Web.AdminAPI.UserController do
   def unfollow(
         %{
           assigns: %{user: admin},
-          body_params: %{
-            follower: follower_nick,
-            followed: followed_nick
+          private: %{
+            open_api_spex: %{
+              body_params: %{
+                follower: follower_nick,
+                followed: followed_nick
+              }
+            }
           }
         } = conn,
         _
@@ -139,20 +157,34 @@ defmodule Pleroma.Web.AdminAPI.UserController do
     json(conn, "ok")
   end
 
-  def create(%{assigns: %{user: admin}, body_params: %{users: users}} = conn, _) do
+  def create(
+        %{
+          assigns: %{user: admin},
+          private: %{open_api_spex: %{body_params: %{users: users}}}
+        } = conn,
+        _
+      ) do
     changesets =
       users
-      |> Enum.map(fn %{nickname: nickname, email: email, password: password} ->
+      |> Enum.map(fn %{nickname: nickname, email: email, password: password} = user ->
+        domain_id = Map.get(user, :domain)
+
+        domain =
+          if domain_id do
+            Domain.get(domain_id)
+          end
+
         user_data = %{
           nickname: nickname,
           name: nickname,
           email: email,
           password: password,
           password_confirmation: password,
-          bio: "."
+          bio: ".",
+          domain: domain
         }
 
-        User.register_changeset(%User{}, user_data, need_confirmation: false)
+        User.register_changeset(%User{}, user_data, need_confirmation: false, from_admin: true)
       end)
       |> Enum.reduce(Ecto.Multi.new(), fn changeset, multi ->
         Ecto.Multi.insert(multi, Ecto.UUID.generate(), changeset)
@@ -193,7 +225,13 @@ defmodule Pleroma.Web.AdminAPI.UserController do
     end
   end
 
-  def show(%{assigns: %{user: admin}} = conn, %{nickname: nickname}) do
+  def show(
+        %{
+          assigns: %{user: admin},
+          private: %{open_api_spex: %{params: %{nickname: nickname}}}
+        } = conn,
+        _
+      ) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(nickname, for: admin) do
       render(conn, "show.json", %{user: user})
     else
@@ -201,7 +239,11 @@ defmodule Pleroma.Web.AdminAPI.UserController do
     end
   end
 
-  def toggle_activation(%{assigns: %{user: admin}} = conn, %{nickname: nickname}) do
+  def toggle_activation(
+        %{assigns: %{user: admin}, private: %{open_api_spex: %{params: %{nickname: nickname}}}} =
+          conn,
+        _
+      ) do
     user = User.get_cached_by_nickname(nickname)
 
     {:ok, updated_user} = User.set_activation(user, !user.is_active)
@@ -217,7 +259,13 @@ defmodule Pleroma.Web.AdminAPI.UserController do
     render(conn, "show.json", user: updated_user)
   end
 
-  def activate(%{assigns: %{user: admin}, body_params: %{nicknames: nicknames}} = conn, _) do
+  def activate(
+        %{
+          assigns: %{user: admin},
+          private: %{open_api_spex: %{body_params: %{nicknames: nicknames}}}
+        } = conn,
+        _
+      ) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
     {:ok, updated_users} = User.set_activation(users, true)
 
@@ -227,10 +275,16 @@ defmodule Pleroma.Web.AdminAPI.UserController do
       action: "activate"
     })
 
-    render(conn, "index.json", users: Keyword.values(updated_users))
+    render(conn, "index.json", users: updated_users)
   end
 
-  def deactivate(%{assigns: %{user: admin}, body_params: %{nicknames: nicknames}} = conn, _) do
+  def deactivate(
+        %{
+          assigns: %{user: admin},
+          private: %{open_api_spex: %{body_params: %{nicknames: nicknames}}}
+        } = conn,
+        _
+      ) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
     {:ok, updated_users} = User.set_activation(users, false)
 
@@ -240,10 +294,16 @@ defmodule Pleroma.Web.AdminAPI.UserController do
       action: "deactivate"
     })
 
-    render(conn, "index.json", users: Keyword.values(updated_users))
+    render(conn, "index.json", users: updated_users)
   end
 
-  def approve(%{assigns: %{user: admin}, body_params: %{nicknames: nicknames}} = conn, _) do
+  def approve(
+        %{
+          assigns: %{user: admin},
+          private: %{open_api_spex: %{body_params: %{nicknames: nicknames}}}
+        } = conn,
+        _
+      ) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
     {:ok, updated_users} = User.approve(users)
 
@@ -256,7 +316,13 @@ defmodule Pleroma.Web.AdminAPI.UserController do
     render(conn, "index.json", users: updated_users)
   end
 
-  def suggest(%{assigns: %{user: admin}, body_params: %{nicknames: nicknames}} = conn, _) do
+  def suggest(
+        %{
+          assigns: %{user: admin},
+          private: %{open_api_spex: %{body_params: %{nicknames: nicknames}}}
+        } = conn,
+        _
+      ) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
     {:ok, updated_users} = User.set_suggestion(users, true)
 
@@ -269,7 +335,13 @@ defmodule Pleroma.Web.AdminAPI.UserController do
     render(conn, "index.json", users: updated_users)
   end
 
-  def unsuggest(%{assigns: %{user: admin}, body_params: %{nicknames: nicknames}} = conn, _) do
+  def unsuggest(
+        %{
+          assigns: %{user: admin},
+          private: %{open_api_spex: %{body_params: %{nicknames: nicknames}}}
+        } = conn,
+        _
+      ) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
     {:ok, updated_users} = User.set_suggestion(users, false)
 
@@ -282,7 +354,7 @@ defmodule Pleroma.Web.AdminAPI.UserController do
     render(conn, "index.json", users: updated_users)
   end
 
-  def index(conn, params) do
+  def index(%{private: %{open_api_spex: %{params: params}}} = conn, _) do
     {page, page_size} = page_params(params)
     filters = maybe_parse_filters(params[:filters])
 

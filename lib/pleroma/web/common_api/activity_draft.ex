@@ -13,8 +13,13 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
 
+  import Pleroma.EctoType.ActivityPub.ObjectValidators.LanguageCode,
+    only: [good_locale_code?: 1]
+
   import Pleroma.Web.Gettext
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
+
+  @type t :: %__MODULE__{}
 
   defstruct valid?: true,
             errors: [],
@@ -92,7 +97,8 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defp listen_object(draft) do
     object =
       draft.params
-      |> Map.take([:album, :artist, :title, :length, :url])
+      |> Map.take([:album, :artist, :title, :length])
+      |> Map.put(:externalLink, Map.get(draft.params, :external_link))
       |> Map.new(fn {key, value} -> {to_string(key), value} end)
       |> Map.put("type", "Audio")
       |> Map.put("to", draft.to)
@@ -173,14 +179,22 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
 
   defp in_reply_to(%{params: %{in_reply_to_status_id: ""}} = draft), do: draft
 
-  defp in_reply_to(%{params: %{in_reply_to_status_id: id}} = draft) when is_binary(id) do
-    case Activity.get_by_id(id) do
-      %Activity{} = activity ->
-        %__MODULE__{draft | in_reply_to: activity}
+  defp in_reply_to(%{params: %{in_reply_to_status_id: :deleted}} = draft) do
+    add_error(draft, dgettext("errors", "Cannot reply to a deleted status"))
+  end
 
-      _ ->
-        add_error(draft, dgettext("errors", "The post being replied to was deleted"))
-    end
+  defp in_reply_to(%{params: %{in_reply_to_status_id: id} = params} = draft) when is_binary(id) do
+    activity = Activity.get_by_id(id)
+
+    params =
+      if is_nil(activity) do
+        # Deleted activities are returned as nil
+        Map.put(params, :in_reply_to_status_id, :deleted)
+      else
+        Map.put(params, :in_reply_to_status_id, activity)
+      end
+
+    in_reply_to(%{draft | params: params})
   end
 
   defp in_reply_to(%{params: %{in_reply_to_status_id: %Activity{} = in_reply_to}} = draft) do
@@ -290,12 +304,16 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
 
   defp language(draft) do
     language =
-      Utils.get_valid_language(draft.params[:language]) ||
+      draft.params[:language] ||
         LanguageDetector.detect(
           draft.content_html <> " " <> (draft.summary || draft.params[:name])
         )
 
-    %__MODULE__{draft | language: language}
+    if good_locale_code?(language) do
+      %__MODULE__{draft | language: language}
+    else
+      draft
+    end
   end
 
   defp object(draft) do

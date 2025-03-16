@@ -5,19 +5,22 @@
 defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
   use Pleroma.Web.ConnCase
 
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User.Backup
   alias Pleroma.Web.PleromaAPI.BackupView
 
   setup do
     clear_config([Pleroma.Upload, :uploader])
     clear_config([Backup, :limit_days])
+
+    ConfigMock
+    |> Mox.stub_with(Pleroma.Config)
+
     oauth_access(["read:backups"])
   end
 
   test "GET /api/v1/pleroma/backups", %{user: user, conn: conn} do
-    assert {:ok, %Oban.Job{args: %{"backup_id" => backup_id}}} = Backup.create(user)
-
-    backup = Backup.get(backup_id)
+    assert {:ok, %Backup{} = backup} = Backup.user(user)
 
     response =
       conn

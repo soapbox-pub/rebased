@@ -252,6 +252,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       remote_message = build_remote_message()
 
       assert SimplePolicy.filter(remote_message) == {:ok, remote_message}
+      assert SimplePolicy.id_filter(remote_message["actor"])
     end
 
     test "activity has a matching host" do
@@ -260,6 +261,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       remote_message = build_remote_message()
 
       assert {:reject, _} = SimplePolicy.filter(remote_message)
+      refute SimplePolicy.id_filter(remote_message["actor"])
     end
 
     test "activity matches with wildcard domain" do
@@ -268,6 +270,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       remote_message = build_remote_message()
 
       assert {:reject, _} = SimplePolicy.filter(remote_message)
+      refute SimplePolicy.id_filter(remote_message["actor"])
     end
 
     test "actor has a matching host" do
@@ -276,6 +279,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       remote_user = build_remote_user()
 
       assert {:reject, _} = SimplePolicy.filter(remote_user)
+      refute SimplePolicy.id_filter(remote_user["id"])
     end
 
     test "reject Announce when object would be rejected" do
@@ -288,6 +292,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       }
 
       assert {:reject, _} = SimplePolicy.filter(announce)
+      # Note: Non-Applicable for id_filter/1
     end
 
     test "reject by URI object" do
@@ -300,6 +305,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       }
 
       assert {:reject, _} = SimplePolicy.filter(announce)
+      # Note: Non-Applicable for id_filter/1
     end
   end
 
@@ -318,7 +324,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       following_user = insert(:user)
       non_following_user = insert(:user)
 
-      {:ok, _, _, _} = CommonAPI.follow(following_user, actor)
+      {:ok, _, _, _} = CommonAPI.follow(actor, following_user)
 
       activity = %{
         "actor" => actor.ap_id,
@@ -370,6 +376,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
       assert SimplePolicy.filter(remote_message) == {:ok, remote_message}
+      assert SimplePolicy.id_filter(local_message["actor"])
+      assert SimplePolicy.id_filter(remote_message["actor"])
     end
 
     test "is not empty but activity doesn't have a matching host" do
@@ -380,6 +388,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
       assert {:reject, _} = SimplePolicy.filter(remote_message)
+      assert SimplePolicy.id_filter(local_message["actor"])
+      refute SimplePolicy.id_filter(remote_message["actor"])
     end
 
     test "activity has a matching host" do
@@ -390,6 +400,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
       assert SimplePolicy.filter(remote_message) == {:ok, remote_message}
+      assert SimplePolicy.id_filter(local_message["actor"])
+      assert SimplePolicy.id_filter(remote_message["actor"])
     end
 
     test "activity matches with wildcard domain" do
@@ -400,6 +412,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
       assert SimplePolicy.filter(remote_message) == {:ok, remote_message}
+      assert SimplePolicy.id_filter(local_message["actor"])
+      assert SimplePolicy.id_filter(remote_message["actor"])
     end
 
     test "actor has a matching host" do
@@ -408,6 +422,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       remote_user = build_remote_user()
 
       assert SimplePolicy.filter(remote_user) == {:ok, remote_user}
+      assert SimplePolicy.id_filter(remote_user["id"])
     end
   end
 

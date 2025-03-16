@@ -52,7 +52,8 @@ defmodule Pleroma.Repo.Migrations.AddPleromaParticipationAcceptedToNotifications
       'favourite',
       'pleroma:report',
       'poll',
-      'status'
+      'status',
+      'update'
     )
     """
     |> execute()

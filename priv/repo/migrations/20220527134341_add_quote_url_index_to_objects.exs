@@ -4,8 +4,15 @@
 
 defmodule Pleroma.Repo.Migrations.AddQuoteUrlIndexToObjects do
   use Ecto.Migration
+  @disable_ddl_transaction true
+  @disable_migration_lock true
 
   def change do
-    create_if_not_exists(index(:objects, ["(data->'quoteUrl')"], name: :objects_quote_url))
+    create_if_not_exists(
+      index(:objects, ["(data->'quoteUrl')"],
+        name: :objects_quote_url,
+        concurrently: true
+      )
+    )
   end
 end

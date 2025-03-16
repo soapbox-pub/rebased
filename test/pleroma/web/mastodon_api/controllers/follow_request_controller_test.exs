@@ -10,6 +10,11 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
 
   import Pleroma.Factory
 
+  defp extract_next_link_header(header) do
+    [_, next_link] = Regex.run(~r{<(?<next_link>.*)>; rel="next"}, header)
+    next_link
+  end
+
   describe "locked accounts" do
     setup do
       user = insert(:user, is_locked: true)
@@ -20,7 +25,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
     test "/api/v1/follow_requests works", %{user: user, conn: conn} do
       other_user = insert(:user)
 
-      {:ok, _, _, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, _, _, _activity} = CommonAPI.follow(user, other_user)
       {:ok, other_user, user} = User.follow(other_user, user, :follow_pending)
 
       assert User.following?(other_user, user) == false
@@ -31,10 +36,27 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
       assert to_string(other_user.id) == relationship["id"]
     end
 
+    test "/api/v1/follow_requests paginates", %{user: user, conn: conn} do
+      for _ <- 1..21 do
+        other_user = insert(:user)
+        {:ok, _, _, _activity} = CommonAPI.follow(other_user, user)
+        {:ok, _, _} = User.follow(other_user, user, :follow_pending)
+      end
+
+      conn = get(conn, "/api/v1/follow_requests")
+      assert length(json_response_and_validate_schema(conn, 200)) == 20
+      assert [link_header] = get_resp_header(conn, "link")
+      assert link_header =~ "rel=\"next\""
+      next_link = extract_next_link_header(link_header)
+      assert next_link =~ "/api/v1/follow_requests"
+      conn = get(conn, next_link)
+      assert length(json_response_and_validate_schema(conn, 200)) == 1
+    end
+
     test "/api/v1/follow_requests/:id/authorize works", %{user: user, conn: conn} do
       other_user = insert(:user)
 
-      {:ok, _, _, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, _, _, _activity} = CommonAPI.follow(user, other_user)
       {:ok, other_user, user} = User.follow(other_user, user, :follow_pending)
 
       user = User.get_cached_by_id(user.id)
@@ -56,7 +78,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
     test "/api/v1/follow_requests/:id/reject works", %{user: user, conn: conn} do
       other_user = insert(:user)
 
-      {:ok, _, _, _activity} = CommonAPI.follow(other_user, user)
+      {:ok, _, _, _activity} = CommonAPI.follow(user, other_user)
 
       user = User.get_cached_by_id(user.id)
 

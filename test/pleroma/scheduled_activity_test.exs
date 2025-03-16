@@ -3,19 +3,23 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ScheduledActivityTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   alias Pleroma.ScheduledActivity
+  alias Pleroma.Test.StaticConfig
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
 
+  import Mox
   import Pleroma.Factory
-
-  setup do: clear_config([ScheduledActivity, :enabled])
-
-  setup [:ensure_local_uploader]
 
   describe "creation" do
     test "scheduled activities with jobs when ScheduledActivity enabled" do
-      clear_config([ScheduledActivity, :enabled], true)
+      ConfigMock
+      |> stub(:get, fn
+        [ScheduledActivity, :enabled] -> true
+        path -> StaticConfig.get(path)
+      end)
+
       user = insert(:user)
 
       today =
@@ -27,14 +31,18 @@ defmodule Pleroma.ScheduledActivityTest do
       {:ok, sa1} = ScheduledActivity.create(user, attrs)
       {:ok, sa2} = ScheduledActivity.create(user, attrs)
 
-      jobs =
-        Repo.all(from(j in Oban.Job, where: j.queue == "scheduled_activities", select: j.args))
+      jobs = Repo.all(from(j in Oban.Job, where: j.queue == "federator_outgoing", select: j.args))
 
       assert jobs == [%{"activity_id" => sa1.id}, %{"activity_id" => sa2.id}]
     end
 
     test "scheduled activities without jobs when ScheduledActivity disabled" do
-      clear_config([ScheduledActivity, :enabled], false)
+      ConfigMock
+      |> stub(:get, fn
+        [ScheduledActivity, :enabled] -> false
+        path -> StaticConfig.get(path)
+      end)
+
       user = insert(:user)
 
       today =
@@ -53,6 +61,9 @@ defmodule Pleroma.ScheduledActivityTest do
     end
 
     test "when daily user limit is exceeded" do
+      ConfigMock
+      |> stub_with(StaticConfig)
+
       user = insert(:user)
 
       today =
@@ -69,6 +80,9 @@ defmodule Pleroma.ScheduledActivityTest do
     end
 
     test "when total user limit is exceeded" do
+      ConfigMock
+      |> stub_with(StaticConfig)
+
       user = insert(:user)
 
       today =
@@ -89,6 +103,9 @@ defmodule Pleroma.ScheduledActivityTest do
     end
 
     test "when scheduled_at is earlier than 5 minute from now" do
+      ConfigMock
+      |> stub_with(StaticConfig)
+
       user = insert(:user)
 
       scheduled_at =

@@ -29,7 +29,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
   # GET /ostatus_subscribe
   #
   def follow(%{assigns: %{user: user}} = conn, %{"acct" => acct}) do
-    case is_status?(acct) do
+    case status?(acct) do
       true -> follow_status(conn, user, acct)
       _ -> follow_account(conn, user, acct)
     end
@@ -57,7 +57,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
   defp follow_template(%User{} = _user), do: "follow.html"
   defp follow_template(_), do: "follow_login.html"
 
-  defp is_status?(acct) do
+  defp status?(acct) do
     case Fetcher.fetch_and_contain_remote_object_from_id(acct) do
       {:ok, %{"type" => type}} when type in @status_types ->
         true
@@ -73,7 +73,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
   #
   def do_follow(%{assigns: %{user: %User{} = user}} = conn, %{"user" => %{"id" => id}}) do
     with {:fetch_user, %User{} = followee} <- {:fetch_user, User.get_cached_by_id(id)},
-         {:ok, _, _, _} <- CommonAPI.follow(user, followee) do
+         {:ok, _, _, _} <- CommonAPI.follow(followee, user) do
       redirect(conn, to: "/users/#{followee.nickname}")
     else
       error ->
@@ -90,7 +90,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
     with {_, %User{} = followee} <- {:fetch_user, User.get_cached_by_id(id)},
          {_, {:ok, user}, _} <- {:auth, WrapperAuthenticator.get_user(conn), followee},
          {_, _, _, false} <- {:mfa_required, followee, user, MFA.require?(user)},
-         {:ok, _, _, _} <- CommonAPI.follow(user, followee) do
+         {:ok, _, _, _} <- CommonAPI.follow(followee, user) do
       redirect(conn, to: "/users/#{followee.nickname}")
     else
       error ->
@@ -108,7 +108,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
          {_, _, {:ok, %{user: user}}} <- {:mfa_token, followee, MFA.Token.validate(token)},
          {_, _, _, {:ok, _}} <-
            {:verify_mfa_code, followee, token, TOTPAuthenticator.verify(code, user)},
-         {:ok, _, _, _} <- CommonAPI.follow(user, followee) do
+         {:ok, _, _, _} <- CommonAPI.follow(followee, user) do
       redirect(conn, to: "/users/#{followee.nickname}")
     else
       error ->

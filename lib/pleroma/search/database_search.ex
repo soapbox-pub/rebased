@@ -23,19 +23,12 @@ defmodule Pleroma.Search.DatabaseSearch do
     offset = Keyword.get(options, :offset, 0)
     author = Keyword.get(options, :author)
 
-    search_function =
-      if :persistent_term.get({Pleroma.Repo, :postgres_version}) >= 11 do
-        :websearch
-      else
-        :plain
-      end
-
     try do
       Activity
       |> Activity.with_preloaded_object()
       |> Activity.restrict_deactivated_users()
       |> restrict_public(user)
-      |> query_with(index_type, search_query, search_function)
+      |> query_with(index_type, search_query)
       |> maybe_restrict_local(user)
       |> maybe_restrict_author(author)
       |> maybe_restrict_blocked(user)
@@ -54,6 +47,15 @@ defmodule Pleroma.Search.DatabaseSearch do
 
   @impl true
   def remove_from_index(_object), do: :ok
+
+  @impl true
+  def create_index, do: :ok
+
+  @impl true
+  def drop_index, do: :ok
+
+  @impl true
+  def healthcheck_endpoints, do: nil
 
   def maybe_restrict_author(query, %User{} = author) do
     Activity.Queries.by_author(query, author)
@@ -86,25 +88,7 @@ defmodule Pleroma.Search.DatabaseSearch do
     )
   end
 
-  defp query_with(q, :gin, search_query, :plain) do
-    %{rows: [[tsc]]} =
-      Ecto.Adapters.SQL.query!(
-        Pleroma.Repo,
-        "select current_setting('default_text_search_config')::regconfig::oid;"
-      )
-
-    from([a, o] in q,
-      where:
-        fragment(
-          "to_tsvector(?::oid::regconfig, ?->>'content') @@ plainto_tsquery(?)",
-          ^tsc,
-          o.data,
-          ^search_query
-        )
-    )
-  end
-
-  defp query_with(q, :gin, search_query, :websearch) do
+  defp query_with(q, :gin, search_query) do
     %{rows: [[tsc]]} =
       Ecto.Adapters.SQL.query!(
         Pleroma.Repo,
@@ -122,19 +106,7 @@ defmodule Pleroma.Search.DatabaseSearch do
     )
   end
 
-  defp query_with(q, :rum, search_query, :plain) do
-    from([a, o] in q,
-      where:
-        fragment(
-          "? @@ plainto_tsquery(?)",
-          o.fts_content,
-          ^search_query
-        ),
-      order_by: [fragment("? <=> now()::date", o.inserted_at)]
-    )
-  end
-
-  defp query_with(q, :rum, search_query, :websearch) do
+  defp query_with(q, :rum, search_query) do
     from([a, o] in q,
       where:
         fragment(

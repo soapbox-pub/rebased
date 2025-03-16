@@ -9,8 +9,6 @@ defmodule Pleroma.Upload.Filter.Exiftool.StripLocation do
   """
   @behaviour Pleroma.Upload.Filter
 
-  @spec filter(Pleroma.Upload.t()) :: {:ok, any()} | {:error, String.t()}
-
   # Formats not compatible with exiftool at this time
   def filter(%Pleroma.Upload{content_type: "image/heic"}), do: {:ok, :noop}
   def filter(%Pleroma.Upload{content_type: "image/webp"}), do: {:ok, :noop}
@@ -18,7 +16,9 @@ defmodule Pleroma.Upload.Filter.Exiftool.StripLocation do
 
   def filter(%Pleroma.Upload{tempfile: file, content_type: "image" <> _}) do
     try do
-      case System.cmd("exiftool", ["-overwrite_original", "-gps:all=", file], parallelism: true) do
+      case System.cmd("exiftool", ["-overwrite_original", "-gps:all=", "-png:all=", file],
+             parallelism: true
+           ) do
         {_response, 0} -> {:ok, :filtered}
         {error, 1} -> {:error, error}
       end

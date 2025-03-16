@@ -19,6 +19,8 @@ defmodule Pleroma.Object.Fetcher do
   require Logger
   require Pleroma.Constants
 
+  @mix_env Mix.env()
+
   @spec reinject_object(struct(), map()) :: {:ok, Object.t()} | {:error, any()}
   defp reinject_object(%Object{data: %{}} = object, new_data) do
     Logger.debug("Reinjecting object #{new_data["id"]}")
@@ -58,7 +60,12 @@ defmodule Pleroma.Object.Fetcher do
     end
   end
 
+  @typep fetcher_errors ::
+           :error | :reject | :allowed_depth | :fetch | :containment | :transmogrifier
+
   # Note: will create a Create activity, which we need internally at the moment.
+  @spec fetch_object_from_id(String.t(), list()) ::
+          {:ok, Object.t()} | {fetcher_errors(), any()} | Pipeline.errors()
   def fetch_object_from_id(id, options \\ []) do
     with {_, nil} <- {:fetch_object, Object.get_cached_by_ap_id(id)},
          {_, true} <- {:allowed_depth, Federator.allowed_thread_distance?(options[:depth])},
@@ -72,34 +79,18 @@ defmodule Pleroma.Object.Fetcher do
            {:object, data, Object.normalize(activity, fetch: false)} do
       {:ok, object}
     else
-      {:allowed_depth, false} ->
-        {:error, "Max thread distance exceeded."}
-
-      {:containment, _} ->
-        {:error, "Object containment failed."}
-
-      {:transmogrifier, {:error, {:reject, e}}} ->
-        {:reject, e}
-
-      {:transmogrifier, {:reject, e}} ->
-        {:reject, e}
-
-      {:transmogrifier, _} = e ->
-        {:error, e}
-
-      {:object, data, nil} ->
-        reinject_object(%Object{}, data)
-
       {:normalize, object = %Object{}} ->
         {:ok, object}
 
       {:fetch_object, %Object{} = object} ->
         {:ok, object}
 
-      {:fetch, {:error, error}} ->
-        {:error, error}
+      {:object, data, nil} ->
+        reinject_object(%Object{}, data)
 
       e ->
+        Logger.metadata(object: id)
+        Logger.error("Object rejected while fetching #{id} #{inspect(e)}")
         e
     end
   end
@@ -115,26 +106,6 @@ defmodule Pleroma.Object.Fetcher do
     |> Maps.put_if_present("cc", data["cc"])
     |> Maps.put_if_present("bto", data["bto"])
     |> Maps.put_if_present("bcc", data["bcc"])
-  end
-
-  def fetch_object_from_id!(id, options \\ []) do
-    with {:ok, object} <- fetch_object_from_id(id, options) do
-      object
-    else
-      {:error, %Tesla.Mock.Error{}} ->
-        nil
-
-      {:error, "Object has been deleted"} ->
-        nil
-
-      {:reject, reason} ->
-        Logger.info("Rejected #{id} while fetching: #{inspect(reason)}")
-        nil
-
-      e ->
-        Logger.error("Error while fetching #{id}: #{inspect(e)}")
-        nil
-    end
   end
 
   defp make_signature(id, date) do
@@ -176,6 +147,8 @@ defmodule Pleroma.Object.Fetcher do
     Logger.debug("Fetching object #{id} via AP")
 
     with {:scheme, true} <- {:scheme, String.starts_with?(id, "http")},
+         {_, true} <- {:mrf, MRF.id_filter(id)},
+         {_, :ok} <- {:local_fetch, Containment.contain_local_fetch(id)},
          {:ok, body} <- get_object(id),
          {:ok, data} <- safe_json_decode(body),
          :ok <- Containment.contain_origin_from_id(id, data) do
@@ -188,8 +161,14 @@ defmodule Pleroma.Object.Fetcher do
       {:scheme, _} ->
         {:error, "Unsupported URI scheme"}
 
+      {:local_fetch, _} ->
+        {:error, "Trying to fetch local resource"}
+
       {:error, e} ->
         {:error, e}
+
+      {:mrf, false} ->
+        {:error, {:reject, "Filtered by id"}}
 
       e ->
         {:error, e}
@@ -198,6 +177,19 @@ defmodule Pleroma.Object.Fetcher do
 
   def fetch_and_contain_remote_object_from_id(_id),
     do: {:error, "id must be a string"}
+
+  defp check_crossdomain_redirect(final_host, original_url)
+
+  # Handle the common case in tests where responses don't include URLs
+  if @mix_env == :test do
+    defp check_crossdomain_redirect(nil, _) do
+      {:cross_domain_redirect, false}
+    end
+  end
+
+  defp check_crossdomain_redirect(final_host, original_url) do
+    {:cross_domain_redirect, final_host != URI.parse(original_url).host}
+  end
 
   defp get_object(id) do
     date = Pleroma.Signature.signed_date()
@@ -208,27 +200,40 @@ defmodule Pleroma.Object.Fetcher do
       |> sign_fetch(id, date)
 
     case HTTP.get(id, headers) do
+      {:ok, %{body: body, status: code, headers: headers, url: final_url}}
+      when code in 200..299 ->
+        remote_host = if final_url, do: URI.parse(final_url).host, else: nil
+
+        with {:cross_domain_redirect, false} <- check_crossdomain_redirect(remote_host, id),
+             {_, content_type} <- List.keyfind(headers, "content-type", 0),
+             {:ok, _media_type} <- verify_content_type(content_type) do
+          {:ok, body}
+        else
+          {:cross_domain_redirect, true} ->
+            {:error, {:cross_domain_redirect, true}}
+
+          error ->
+            error
+        end
+
+      # Handle the case where URL is not in the response (older HTTP library versions)
       {:ok, %{body: body, status: code, headers: headers}} when code in 200..299 ->
         case List.keyfind(headers, "content-type", 0) do
           {_, content_type} ->
-            case Plug.Conn.Utils.media_type(content_type) do
-              {:ok, "application", "activity+json", _} ->
-                {:ok, body}
-
-              {:ok, "application", "ld+json",
-               %{"profile" => "https://www.w3.org/ns/activitystreams"}} ->
-                {:ok, body}
-
-              _ ->
-                {:error, {:content_type, content_type}}
+            case verify_content_type(content_type) do
+              {:ok, _} -> {:ok, body}
+              error -> error
             end
 
           _ ->
             {:error, {:content_type, nil}}
         end
 
+      {:ok, %{status: code}} when code in [401, 403] ->
+        {:error, :forbidden}
+
       {:ok, %{status: code}} when code in [404, 410] ->
-        {:error, "Object has been deleted"}
+        {:error, :not_found}
 
       {:error, e} ->
         {:error, e}
@@ -240,4 +245,17 @@ defmodule Pleroma.Object.Fetcher do
 
   defp safe_json_decode(nil), do: {:ok, nil}
   defp safe_json_decode(json), do: Jason.decode(json)
+
+  defp verify_content_type(content_type) do
+    case Plug.Conn.Utils.media_type(content_type) do
+      {:ok, "application", "activity+json", _} ->
+        {:ok, :activity_json}
+
+      {:ok, "application", "ld+json", %{"profile" => "https://www.w3.org/ns/activitystreams"}} ->
+        {:ok, :ld_json}
+
+      _ ->
+        {:error, {:content_type, content_type}}
+    end
+  end
 end

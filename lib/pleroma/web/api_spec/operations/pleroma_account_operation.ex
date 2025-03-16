@@ -85,9 +85,11 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
 
   def subscribe_operation do
     %Operation{
+      deprecated: true,
       tags: ["Account actions"],
       summary: "Subscribe",
-      description: "Receive notifications for all statuses posted by the account.",
+      description:
+        "Receive notifications for all statuses posted by the account. Deprecated, use `notify: true` in follow operation instead.",
       operationId: "PleromaAPI.AccountController.subscribe",
       parameters: [id_param()],
       security: [%{"oAuth" => ["follow", "write:follows"]}],
@@ -100,9 +102,11 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
 
   def unsubscribe_operation do
     %Operation{
+      deprecated: true,
       tags: ["Account actions"],
       summary: "Unsubscribe",
-      description: "Stop receiving notifications for all statuses posted by the account.",
+      description:
+        "Stop receiving notifications for all statuses posted by the account.  Deprecated, use `notify: false` in follow operation instead.",
       operationId: "PleromaAPI.AccountController.unsubscribe",
       parameters: [id_param()],
       security: [%{"oAuth" => ["follow", "write:follows"]}],
@@ -142,7 +146,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
   end
 
   defp id_param do
-    Operation.parameter(:id, :path, FlakeID, "Account ID",
+    Operation.parameter(:id, :path, FlakeID.schema(), "Account ID",
       example: "9umDrYheeY451cQnEe",
       required: true
     )

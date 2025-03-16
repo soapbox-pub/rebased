@@ -11,7 +11,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Attachment do
     title: "Attachment",
     description: "Represents a file or media attachment that can be added to a status.",
     type: :object,
-    requried: [:id, :url, :preview_url],
+    required: [:id, :url, :preview_url],
     properties: %{
       id: %Schema{type: :string, description: "The ID of the attachment in the database."},
       url: %Schema{
@@ -50,7 +50,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Attachment do
       pleroma: %Schema{
         type: :object,
         properties: %{
-          mime_type: %Schema{type: :string, description: "mime type of the attachment"}
+          mime_type: %Schema{type: :string, description: "mime type of the attachment"},
+          name: %Schema{
+            type: :string,
+            description: "Name of the attachment, typically the filename"
+          }
         }
       }
     },

@@ -58,7 +58,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     assert result["pleroma"]["vapid_public_key"]
     assert result["pleroma"]["stats"]["mau"] == 0
     assert result["pleroma"]["oauth_consumer_strategies"] == []
-    assert result["soapbox"]["version"] =~ "."
 
     assert email == from_config_email
     assert thumbnail == from_config_thumbnail
@@ -104,20 +103,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     assert ["peer1.com", "peer2.com"] == Enum.sort(result)
   end
 
-  test "get instance rules", %{conn: conn} do
-    Rule.create(%{text: "Example rule"})
-    Rule.create(%{text: "Second rule"})
-    Rule.create(%{text: "Third rule"})
-
-    conn = get(conn, "/api/v1/instance")
-
-    assert result = json_response_and_validate_schema(conn, 200)
-
-    rules = result["rules"]
-
-    assert length(rules) == 3
-  end
-
   test "get instance configuration", %{conn: conn} do
     clear_config([:instance, :limit], 476)
 
@@ -138,26 +123,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     assert result["pleroma"]["oauth_consumer_strategies"] == ["keycloak"]
   end
 
-  test "get instance contact information", %{conn: conn} do
-    user = insert(:user, %{local: true})
-
-    clear_config([:instance, :contact_username], user.nickname)
-
-    conn = get(conn, "/api/v1/instance")
-
-    assert result = json_response_and_validate_schema(conn, 200)
-
-    assert result["contact_account"]["id"] == user.id
-  end
-
-  test "get instance information v2", %{conn: conn} do
-    assert get(conn, "/api/v2/instance")
-           |> json_response_and_validate_schema(200)
-  end
-
   describe "instance domain blocks" do
     setup do
-      clear_config([:mrf_simple, :reject], [{"fediverse.pl", "uses Soapbox"}])
+      clear_config([:mrf_simple, :reject], [{"fediverse.pl", "uses pl-fe"}])
     end
 
     test "get instance domain blocks", %{conn: conn} do
@@ -165,7 +133,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
 
       assert [
                %{
-                 "comment" => "uses Soapbox",
+                 "comment" => "uses pl-fe",
                  "digest" => "55e3f44aefe7eb022d3b1daaf7396cabf7f181bf6093c8ea841e30c9fc7d8226",
                  "domain" => "fediverse.pl",
                  "severity" => "suspend"
@@ -196,6 +164,25 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              |> json_response_and_validate_schema(200)
   end
 
+  test "get instance contact information", %{conn: conn} do
+    user = insert(:user, %{local: true})
+
+    clear_config([:instance, :contact_username], user.nickname)
+
+    conn = get(conn, "/api/v1/instance")
+
+    assert result = json_response_and_validate_schema(conn, 200)
+
+    assert result["contact_account"]["id"] == user.id
+  end
+
+  test "get instance information v2", %{conn: conn} do
+    clear_config([:auth, :oauth_consumer_strategies], [])
+
+    assert get(conn, "/api/v2/instance")
+           |> json_response_and_validate_schema(200)
+  end
+
   test "translation languages matrix", %{conn: conn} do
     clear_config([Pleroma.Language.Translation, :provider], TranslationMock)
 
@@ -213,5 +200,79 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
 
     assert result["pleroma"]["metadata"]["restrict_unauthenticated"]["timelines"]["local"] ==
              false
+  end
+
+  test "instance domains", %{conn: conn} do
+    clear_config([:instance, :multitenancy], %{enabled: true})
+
+    {:ok, %{id: domain_id}} =
+      Pleroma.Domain.create(%{
+        domain: "pleroma.example.org"
+      })
+
+    domain_id = to_string(domain_id)
+
+    assert %{
+             "pleroma" => %{
+               "metadata" => %{
+                 "multitenancy" => %{
+                   "enabled" => true,
+                   "domains" => [
+                     %{
+                       "id" => "",
+                       "domain" => _,
+                       "public" => true
+                     },
+                     %{
+                       "id" => ^domain_id,
+                       "domain" => "pleroma.example.org",
+                       "public" => false
+                     }
+                   ]
+                 }
+               }
+             }
+           } =
+             conn
+             |> get("/api/v1/instance")
+             |> json_response_and_validate_schema(200)
+
+    clear_config([:instance, :multitenancy, :enabled], false)
+
+    assert %{
+             "pleroma" => %{
+               "metadata" => %{
+                 "multitenancy" => nil
+               }
+             }
+           } =
+             conn
+             |> get("/api/v1/instance")
+             |> json_response_and_validate_schema(200)
+  end
+
+  test "get instance rules", %{conn: conn} do
+    Rule.create(%{text: "Example rule", hint: "Rule description", priority: 1})
+    Rule.create(%{text: "Third rule", priority: 2})
+    Rule.create(%{text: "Second rule", priority: 1})
+
+    conn = get(conn, "/api/v1/instance")
+
+    assert result = json_response_and_validate_schema(conn, 200)
+
+    assert [
+             %{
+               "text" => "Example rule",
+               "hint" => "Rule description"
+             },
+             %{
+               "text" => "Second rule",
+               "hint" => ""
+             },
+             %{
+               "text" => "Third rule",
+               "hint" => ""
+             }
+           ] = result["rules"]
   end
 end

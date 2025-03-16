@@ -28,25 +28,25 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
          "mrf_tag:media-force-nsfw",
          %{
            "type" => type,
-           "object" => %{"attachment" => child_attachment}
-         } = message
+           "object" => %{"attachment" => object_attachment}
+         } = activity
        )
-       when length(child_attachment) > 0 and type in ["Create", "Update"] do
-    {:ok, Kernel.put_in(message, ["object", "sensitive"], true)}
+       when length(object_attachment) > 0 and type in ["Create", "Update"] do
+    {:ok, Kernel.put_in(activity, ["object", "sensitive"], true)}
   end
 
   defp process_tag(
          "mrf_tag:media-strip",
          %{
            "type" => type,
-           "object" => %{"attachment" => child_attachment} = object
-         } = message
+           "object" => %{"attachment" => object_attachment} = object
+         } = activity
        )
-       when length(child_attachment) > 0 and type in ["Create", "Update"] do
+       when length(object_attachment) > 0 and type in ["Create", "Update"] do
     object = Map.delete(object, "attachment")
-    message = Map.put(message, "object", object)
+    activity = Map.put(activity, "object", object)
 
-    {:ok, message}
+    {:ok, activity}
   end
 
   defp process_tag(
@@ -57,7 +57,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
            "cc" => cc,
            "actor" => actor,
            "object" => object
-         } = message
+         } = activity
        ) do
     user = User.get_cached_by_ap_id(actor)
 
@@ -70,15 +70,15 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
         |> Map.put("to", to)
         |> Map.put("cc", cc)
 
-      message =
-        message
+      activity =
+        activity
         |> Map.put("to", to)
         |> Map.put("cc", cc)
         |> Map.put("object", object)
 
-      {:ok, message}
+      {:ok, activity}
     else
-      {:ok, message}
+      {:ok, activity}
     end
   end
 
@@ -90,7 +90,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
            "cc" => cc,
            "actor" => actor,
            "object" => object
-         } = message
+         } = activity
        ) do
     user = User.get_cached_by_ap_id(actor)
 
@@ -104,26 +104,26 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
         |> Map.put("to", to)
         |> Map.put("cc", cc)
 
-      message =
-        message
+      activity =
+        activity
         |> Map.put("to", to)
         |> Map.put("cc", cc)
         |> Map.put("object", object)
 
-      {:ok, message}
+      {:ok, activity}
     else
-      {:ok, message}
+      {:ok, activity}
     end
   end
 
   defp process_tag(
          "mrf_tag:disable-remote-subscription",
-         %{"type" => "Follow", "actor" => actor} = message
+         %{"type" => "Follow", "actor" => actor} = activity
        ) do
     user = User.get_cached_by_ap_id(actor)
 
     if user.local == true do
-      {:ok, message}
+      {:ok, activity}
     else
       {:reject,
        "[TagPolicy] Follow from #{actor} tagged with mrf_tag:disable-remote-subscription"}
@@ -133,14 +133,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
   defp process_tag("mrf_tag:disable-any-subscription", %{"type" => "Follow", "actor" => actor}),
     do: {:reject, "[TagPolicy] Follow from #{actor} tagged with mrf_tag:disable-any-subscription"}
 
-  defp process_tag(_, message), do: {:ok, message}
+  defp process_tag(_, activity), do: {:ok, activity}
 
-  def filter_message(actor, message) do
+  def filter_activity(actor, activity) do
     User.get_cached_by_ap_id(actor)
     |> get_tags()
-    |> Enum.reduce({:ok, message}, fn
-      tag, {:ok, message} ->
-        process_tag(tag, message)
+    |> Enum.reduce({:ok, activity}, fn
+      tag, {:ok, activity} ->
+        process_tag(tag, activity)
 
       _, error ->
         error
@@ -148,15 +148,15 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
   end
 
   @impl true
-  def filter(%{"object" => target_actor, "type" => "Follow"} = message),
-    do: filter_message(target_actor, message)
+  def filter(%{"object" => target_actor, "type" => "Follow"} = activity),
+    do: filter_activity(target_actor, activity)
 
   @impl true
-  def filter(%{"actor" => actor, "type" => type} = message) when type in ["Create", "Update"],
-    do: filter_message(actor, message)
+  def filter(%{"actor" => actor, "type" => type} = activity) when type in ["Create", "Update"],
+    do: filter_activity(actor, activity)
 
   @impl true
-  def filter(message), do: {:ok, message}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   def describe, do: {:ok, %{}}

@@ -123,12 +123,17 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       parameters:
         [
           %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
-          Operation.parameter(:pinned, :query, BooleanLike, "Include only pinned statuses"),
+          Operation.parameter(
+            :pinned,
+            :query,
+            BooleanLike.schema(),
+            "Include only pinned statuses"
+          ),
           Operation.parameter(:tagged, :query, :string, "With tag"),
           Operation.parameter(
             :only_media,
             :query,
-            BooleanLike,
+            BooleanLike.schema(),
             "Include only statuses with media attached"
           ),
           Operation.parameter(
@@ -140,11 +145,11 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           Operation.parameter(
             :with_muted,
             :query,
-            BooleanLike,
+            BooleanLike.schema(),
             "Include statuses from muted accounts."
           ),
-          Operation.parameter(:exclude_reblogs, :query, BooleanLike, "Exclude reblogs"),
-          Operation.parameter(:exclude_replies, :query, BooleanLike, "Exclude replies"),
+          Operation.parameter(:exclude_reblogs, :query, BooleanLike.schema(), "Exclude reblogs"),
+          Operation.parameter(:exclude_replies, :query, BooleanLike.schema(), "Exclude replies"),
           Operation.parameter(
             :exclude_visibilities,
             :query,
@@ -154,7 +159,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           Operation.parameter(
             :with_muted,
             :query,
-            BooleanLike,
+            BooleanLike.schema(),
             "Include reactions from muted accounts."
           )
         ] ++ pagination_params(),
@@ -354,7 +359,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       summary: "Endorse",
       operationId: "AccountController.endorse",
       security: [%{"oAuth" => ["follow", "write:accounts"]}],
-      description: "Addds the given account to endorsed accounts list.",
+      description: "Adds the given account to endorsed accounts list.",
       parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
       responses: %{
         200 => Operation.response("Relationship", "application/json", AccountRelationship),
@@ -500,28 +505,13 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  def identity_proofs_operation do
-    %Operation{
-      tags: ["Retrieve account information"],
-      summary: "Identity proofs",
-      operationId: "AccountController.identity_proofs",
-      # Validators complains about unused path params otherwise
-      parameters: [
-        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"}
-      ],
-      description: "Not implemented",
-      responses: %{
-        200 => empty_array_response()
-      }
-    }
-  end
-
   def familiar_followers_operation do
     %Operation{
       tags: ["Retrieve account information"],
-      summary: "Followers you know",
-      operationId: "AccountController.relationships",
-      description: "Returns followers of given account you know.",
+      summary: "Followers that you follow",
+      operationId: "AccountController.familiar_followers",
+      description:
+        "Obtain a list of all accounts that follow a given account, filtered for accounts you follow.",
       security: [%{"oAuth" => ["read:follows"]}],
       parameters: [
         Operation.parameter(
@@ -616,11 +606,6 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           nullable: true,
           description: "Invite token required when the registrations aren't public"
         },
-        accepts_email_list: %Schema{
-          allOf: [BooleanLike],
-          description:
-            "Whether the user opts-in to receiving news and marketing updates from site admins."
-        },
         birthday: %Schema{
           nullable: true,
           description: "User's birthday",
@@ -639,7 +624,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           type: :string,
           nullable: true,
           description: "User's preferred language for emails"
-        }
+        },
+        domain: %Schema{type: :string, nullable: true}
       },
       example: %{
         "username" => "cofe",
@@ -817,11 +803,6 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
             "Discovery (listing, indexing) of this account by external services (search bots etc.) is allowed."
         },
         actor_type: ActorType,
-        accepts_email_list: %Schema{
-          allOf: [BooleanLike],
-          description:
-            "Whether the user opts-in to receiving news and marketing updates from site admins."
-        },
         birthday: %Schema{
           nullable: true,
           description: "User's birthday",
@@ -841,10 +822,26 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           nullable: true,
           description: "User's birthday will be visible"
         },
+        permit_followback: %Schema{
+          allOf: [BooleanLike],
+          nullable: true,
+          description:
+            "Whether follow requests from accounts the user is already following are auto-approved (when locked)."
+        },
         location: %Schema{
           type: :string,
           nullable: true,
           description: "User location"
+        },
+        avatar_description: %Schema{
+          type: :string,
+          nullable: true,
+          description: "Avatar image description."
+        },
+        header_description: %Schema{
+          type: :string,
+          nullable: true,
+          description: "Header image description."
         }
       },
       example: %{
@@ -867,7 +864,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         discoverable: false,
         actor_type: "Person",
         show_birthday: false,
-        birthday: "2001-02-12"
+        birthday: "2001-02-12",
+        permit_followback: true
       }
     }
   end

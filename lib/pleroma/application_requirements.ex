@@ -7,7 +7,10 @@ defmodule Pleroma.ApplicationRequirements do
   The module represents the collection of validations to runs before start server.
   """
 
-  defmodule VerifyError, do: defexception([:message])
+  defmodule VerifyError do
+    defexception([:message])
+    @type t :: %__MODULE__{}
+  end
 
   alias Pleroma.Config
   alias Pleroma.Helpers.MediaHelper
@@ -25,6 +28,7 @@ defmodule Pleroma.ApplicationRequirements do
     |> check_welcome_message_config!()
     |> check_rum!()
     |> check_repo_pool_size!()
+    |> check_mrfs()
     |> handle_result()
   end
 
@@ -168,8 +172,6 @@ defmodule Pleroma.ApplicationRequirements do
       check_filter(Pleroma.Upload.Filter.Exiftool.ReadDescription, "exiftool"),
       check_filter(Pleroma.Upload.Filter.Mogrify, "mogrify"),
       check_filter(Pleroma.Upload.Filter.Mogrifun, "mogrify"),
-      check_filter(Pleroma.Upload.Filter.AnalyzeMetadata, "mogrify"),
-      check_filter(Pleroma.Upload.Filter.AnalyzeMetadata, "convert"),
       check_filter(Pleroma.Upload.Filter.AnalyzeMetadata, "ffprobe")
     ]
 
@@ -229,8 +231,6 @@ defmodule Pleroma.ApplicationRequirements do
     end
   end
 
-  defp check_system_commands!(result), do: result
-
   defp check_repo_pool_size!(:ok) do
     if Pleroma.Config.get([Pleroma.Repo, :pool_size], 10) != 10 and
          not Pleroma.Config.get([:dangerzone, :override_repo_pool_size], false) do
@@ -269,4 +269,24 @@ defmodule Pleroma.ApplicationRequirements do
       true
     end
   end
+
+  defp check_mrfs(:ok) do
+    mrfs = Config.get!([:mrf, :policies])
+
+    missing_mrfs =
+      Enum.reduce(mrfs, [], fn x, acc ->
+        case Code.ensure_compiled(x) do
+          {:module, _} -> acc
+          {:error, _} -> acc ++ [x]
+        end
+      end)
+
+    if Enum.empty?(missing_mrfs) do
+      :ok
+    else
+      {:error, "The following MRF modules are configured but missing: #{inspect(missing_mrfs)}"}
+    end
+  end
+
+  defp check_mrfs(result), do: result
 end

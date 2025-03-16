@@ -17,8 +17,26 @@ defmodule Pleroma.Search.SearchBackend do
   Remove the object from the index.
 
   Just the object, as opposed to the whole activity, is passed, since the object
-  is what contains the actual content and there is no need for fitlering when removing
+  is what contains the actual content and there is no need for filtering when removing
   from index.
   """
-  @callback remove_from_index(object :: Pleroma.Object.t()) :: {:ok, any()} | {:error, any()}
+  @callback remove_from_index(object :: Pleroma.Object.t()) :: :ok | {:error, any()}
+
+  @doc """
+  Create the index
+  """
+  @callback create_index() :: :ok | {:error, any()}
+
+  @doc """
+  Drop the index
+  """
+  @callback drop_index() :: :ok | {:error, any()}
+
+  @doc """
+  Healthcheck endpoints of search backend infrastructure to monitor for controlling
+  processing of jobs in the Oban queue.
+
+  It is expected a 200 response is healthy and other responses are unhealthy.
+  """
+  @callback healthcheck_endpoints :: list() | nil
 end

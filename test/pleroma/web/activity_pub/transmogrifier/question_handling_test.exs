@@ -182,7 +182,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
       })
 
     object = Object.normalize(activity, fetch: false)
-    {:ok, _, _} = CommonAPI.vote(other_user, object, [1])
+    {:ok, _, _} = CommonAPI.vote(object, other_user, [1])
 
     {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 

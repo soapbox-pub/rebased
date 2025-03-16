@@ -4,8 +4,19 @@
 
 defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
   use Pleroma.DataCase
+  import Mox
   import Pleroma.Factory
+
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.Metadata.Providers.OpenGraph
+  alias Pleroma.Web.Metadata.Utils
+
+  setup do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
+    :ok
+  end
 
   setup do: clear_config([Pleroma.Web.Metadata, :unfurl_nsfw])
 
@@ -186,5 +197,59 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
               content:
                 "http://localhost:4001/proxy/preview/LzAnlke-l5oZbNzWsrHfprX1rGw/aHR0cHM6Ly9wbGVyb21hLmdvdi9hYm91dC9qdWNoZS53ZWJt/juche.webm"
             ], []} in result
+  end
+
+  test "meta tag ordering matches attachment order" do
+    user = insert(:user, name: "Jimmy Hendriks", bio: "born 19 March 1994")
+
+    note =
+      insert(:note, %{
+        data: %{
+          "actor" => user.ap_id,
+          "tag" => [],
+          "id" => "https://pleroma.gov/objects/whatever",
+          "summary" => "",
+          "content" => "pleroma in a nutshell",
+          "attachment" => [
+            %{
+              "url" => [
+                %{
+                  "mediaType" => "image/png",
+                  "href" => "https://example.com/first.png",
+                  "height" => 1024,
+                  "width" => 1280
+                }
+              ]
+            },
+            %{
+              "url" => [
+                %{
+                  "mediaType" => "image/png",
+                  "href" => "https://example.com/second.png",
+                  "height" => 1024,
+                  "width" => 1280
+                }
+              ]
+            }
+          ]
+        }
+      })
+
+    result = OpenGraph.build_tags(%{object: note, url: note.data["id"], user: user})
+
+    assert [
+             {:meta, [property: "og:title", content: Utils.user_name_string(user)], []},
+             {:meta, [property: "og:url", content: "https://pleroma.gov/objects/whatever"], []},
+             {:meta, [property: "og:description", content: "pleroma in a nutshell"], []},
+             {:meta, [property: "og:type", content: "article"], []},
+             {:meta, [property: "og:image", content: "https://example.com/first.png"], []},
+             {:meta, [property: "og:image:alt", content: nil], []},
+             {:meta, [property: "og:image:width", content: "1280"], []},
+             {:meta, [property: "og:image:height", content: "1024"], []},
+             {:meta, [property: "og:image", content: "https://example.com/second.png"], []},
+             {:meta, [property: "og:image:alt", content: nil], []},
+             {:meta, [property: "og:image:width", content: "1280"], []},
+             {:meta, [property: "og:image:height", content: "1024"], []}
+           ] == result
   end
 end

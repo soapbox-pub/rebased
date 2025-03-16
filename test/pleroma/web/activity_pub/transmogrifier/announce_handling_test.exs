@@ -83,7 +83,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
     assert(Activity.get_create_by_object_ap_id(data["object"]))
   end
 
-  @tag capture_log: true
   test "it works for incoming announces with an existing activity" do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
@@ -136,7 +135,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
     assert object.data["content"] == "this is a private toot"
   end
 
-  @tag capture_log: true
   test "it rejects incoming announces with an inlined activity from another origin" do
     Tesla.Mock.mock(fn
       %{method: :get} -> %Tesla.Env{status: 404, body: ""}

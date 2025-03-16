@@ -30,7 +30,7 @@ defmodule Mix.Tasks.Pleroma.Digest do
       shell_info("Digest email have been sent to #{nickname} (#{user.email})")
     else
       _ ->
-        shell_info("Cound't find any mentions for #{nickname} since #{last_digest_emailed_at}")
+        shell_info("Couldn't find any mentions for #{nickname} since #{last_digest_emailed_at}")
     end
   end
 end

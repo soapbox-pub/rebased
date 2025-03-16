@@ -8,8 +8,7 @@ import Config
 # with brunch.io to recompile .js and .css sources.
 config :pleroma, Pleroma.Web.Endpoint,
   http: [
-    port: 4000,
-    protocol_options: [max_request_line_length: 8192, max_header_value_length: 8192]
+    port: 4000
   ],
   protocol: "http",
   debug_errors: true,
@@ -36,8 +35,8 @@ config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Local
 # configured to run both http and https servers on
 # different ports.
 
-# Do not include metadata nor timestamps in development logs
-config :logger, :console, format: "[$level] $message\n"
+# Do not include timestamps in development logs
+config :logger, Logger.Backends.Console, format: "$metadata[$level] $message\n"
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.
@@ -57,13 +56,6 @@ config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: true
 # Reduce recompilation time
 # https://dashbit.co/blog/speeding-up-re-compilation-of-elixir-projects
 config :phoenix, :plug_init_mode, :runtime
-
-config :pleroma, Pleroma.PromEx,
-  disabled: false,
-  manual_metrics_start_delay: :no_delay,
-  drop_metrics_groups: [],
-  grafana: :disabled,
-  metrics_server: :disabled
 
 if File.exists?("./config/dev.secret.exs") do
   import_config "dev.secret.exs"

@@ -1,0 +1,20 @@
+services:
+  pleroma:
+    image: pleroma:latest
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports: [
+      # Uncomment/Change port mappings below as needed.
+      # The left side is your host machine, the right one is the pleroma container.
+      # You can prefix the left side with an ip.
+
+      # Webserver (for reverse-proxies outside of docker)
+      # If you use a dockerized proxy, you can leave this commented
+      # and use a container link instead.
+      "127.0.0.1:4000:4000",
+    ]
+    volumes:
+      - .:/opt/pleroma
+    network_mode: "host"

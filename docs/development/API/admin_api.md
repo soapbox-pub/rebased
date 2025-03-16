@@ -303,7 +303,7 @@ Removes the user(s) from follower recommendations.
 
 ## `GET /api/v1/pleroma/admin/users/:nickname_or_id`
 
-### Retrive the details of a user
+### Retrieve the details of a user
 
 - Params:
   - `nickname` or `id`
@@ -313,7 +313,7 @@ Removes the user(s) from follower recommendations.
 
 ## `GET /api/v1/pleroma/admin/users/:nickname_or_id/statuses`
 
-### Retrive user's latest statuses
+### Retrieve user's latest statuses
 
 - Params:
   - `nickname` or `id`
@@ -337,7 +337,7 @@ Removes the user(s) from follower recommendations.
 
 ## `GET /api/v1/pleroma/admin/instances/:instance/statuses`
 
-### Retrive instance's latest statuses
+### Retrieve instance's latest statuses
 
 - Params:
   - `instance`: instance name
@@ -377,7 +377,7 @@ It may take some time.
 
 ## `GET /api/v1/pleroma/admin/statuses`
 
-### Retrives all latest statuses
+### Retrieves all latest statuses
 
 - Params:
   - *optional* `page_size`: number of statuses to return (default is `20`)
@@ -433,7 +433,7 @@ Response:
 * On success: URL of the unfollowed relay
 
 ```json
-{"https://example.com/relay"}
+"https://example.com/relay"
 ```
 
 ## `POST /api/v1/pleroma/admin/users/invite_token`
@@ -541,7 +541,7 @@ Response:
 
 ## `PATCH /api/v1/pleroma/admin/users/force_password_reset`
 
-### Force passord reset for a user with a given nickname
+### Force password reset for a user with a given nickname
 
 - Params:
   - `nicknames`
@@ -1193,20 +1193,23 @@ Loads json generated from `config/descriptions.exs`.
 - Response:
 
 ```json
-[
-  {
-    "id": 1234,
-    "data": {
-      "actor": {
-        "id": 1,
-        "nickname": "lain"
+{
+  "items": [
+    {
+      "id": 1234,
+      "data": {
+        "actor": {
+          "id": 1,
+          "nickname": "lain"
+        },
+        "action": "relay_follow"
       },
-      "action": "relay_follow"
-    },
-    "time": 1502812026, // timestamp
-    "message": "[2017-08-15 15:47:06] @nick0 followed relay: https://example.org/relay" // log message
-  }
-]
+      "time": 1502812026, // timestamp
+      "message": "[2017-08-15 15:47:06] @nick0 followed relay: https://example.org/relay" // log message
+    }
+  ],
+  "total": 1
+}
 ```
 
 ## `POST /api/v1/pleroma/admin/reload_emoji`
@@ -1745,6 +1748,211 @@ Note that this differs from the Mastodon API variant: Mastodon API only returns 
 ## `DELETE /api/v1/pleroma/admin/announcements/:id`
 
 ### Delete an announcement
+
+- Response: JSON, empty object
+
+```json
+{}
+```
+
+## `GET /api/v1/pleroma/admin/webhooks`
+
+### List webhooks
+
+- Method: `GET`
+- Response:
+
+```json
+[
+  {
+    "enabled": true,
+    "id": "2",
+    "events": ["account.created"],
+    "url": "https://webhook.example/",
+    "secret": "eb85d4ccd8510e78f912743949dc354e8146987d",
+    "updated_at": "2022-10-29T17:44:16.000Z",
+    "created_at": "2022-10-29T17:44:13.000Z"
+  }
+]
+```
+
+## `GET /api/v1/pleroma/admin/webhooks/:id`
+
+### Get an individual webhook
+
+- Method: `GET`
+- Params:
+  - `id`: **string** Webhook ID
+- Response: A webhook
+
+## `POST /api/v1/pleroma/admin/webhooks`
+
+### Create a webhook
+
+- Method: `POST`
+- Params:
+  - `url`: **string** Webhook URL
+  - *optional* `events`: **[string]** Types of events to trigger on (`account.created`, `report.created`)
+  - *optional* `enabled`: **boolean** Whether webhook is enabled
+- Response: A webhook
+
+## `PATCH /api/v1/pleroma/admin/webhooks/:id`
+
+### Update a webhook
+
+- Method: `PATCH`
+- Params:
+  - `id`: **string** Webhook ID
+  - *optional* `url`: **string** Webhook URL
+  - *optional* `events`: **[string]** Types of events to trigger on (`account.created`, `report.created`)
+  - *optional* `enabled`: **boolean** Whether webhook is enabled
+- Response: A webhook
+
+## `DELETE /api/v1/pleroma/admin/webhooks/:id`
+
+### Delete a webhook
+
+- Method: `DELETE`
+- Params:
+  - `id`: **string** Webhook ID
+- Response: A webhook
+
+## `POST /api/v1/pleroma/admin/webhooks/:id/enable`
+
+### Activate a webhook
+
+- Method: `POST`
+- Params:
+  - `id`: **string** Webhook ID
+- Response: A webhook
+
+## `POST /api/v1/pleroma/admin/webhooks/:id/disable`
+
+### Deactivate a webhook
+
+- Method: `POST`
+- Params:
+  - `id`: **string** Webhook ID
+- Response: A webhook
+
+## `POST /api/v1/pleroma/admin/webhooks/:id/rotate_secret`
+
+### Rotate webhook signing secret
+
+- Method: `POST`
+- Params:
+  - `id`: **string** Webhook ID
+- Response: A webhook
+
+## `GET /api/v1/pleroma/admin/domains`
+
+### List of domains
+
+- Response: JSON, list of domains
+
+```json
+[
+  {
+    "id": "1",
+    "domain": "example.org",
+    "public": false,
+    "resolves": true,
+    "last_checked_at": "2023-11-17T12:13:05"
+  }
+]
+```
+
+## `POST /api/v1/pleroma/admin/domains`
+
+### Create a domain
+
+- Params:
+  - `domain`: string, required, domain name
+  - `public`: boolean, optional, defaults to false, whether it is possible to register an account under the domain by everyone
+
+- Response: JSON, created announcement
+
+```json
+{
+  "id": "1",
+  "domain": "example.org",
+  "public": true,
+  "resolves": false,
+  "last_checked_at": null
+}
+```
+
+## `PATCH /api/v1/pleroma/admin/domains/:id`
+
+### Change domain publicity
+
+- Params:
+  - `public`: boolean, whether it is possible to register an account under the domain by everyone
+
+- Response: JSON, updated domain
+
+```json
+{
+  "id": "1",
+  "domain": "example.org",
+  "public": false,
+  "resolves": true,
+  "last_checked_at": "2023-11-17T12:13:05"
+}
+```
+
+## `DELETE /api/v1/pleroma/admin/domains/:id`
+
+### Delete a domain
+
+- Response: JSON, empty object
+
+```json
+{}
+```
+
+## `GET /api/v1/pleroma/admin/rules`
+
+### List rules
+
+- Response: JSON, list of rules
+
+```json
+[
+  {
+    "id": "1",
+    "priority": 1,
+    "text": "There are no rules",
+    "hint": null
+  }
+]
+```
+
+## `POST /api/v1/pleroma/admin/rules`
+
+### Create a rule
+
+- Params:
+  - `text`: string, required, rule content
+  - `hint`: string, optional, rule description
+  - `priority`: integer, optional, rule ordering priority
+
+- Response: JSON, a single rule
+
+## `PATCH /api/v1/pleroma/admin/rules/:id`
+
+### Update a rule
+
+- Params:
+  - `text`: string, optional, rule content
+  - `hint`: string, optional, rule description
+  - `priority`: integer, optional, rule ordering priority
+
+- Response: JSON, a single rule
+
+## `DELETE /api/v1/pleroma/admin/rules/:id`
+
+### Delete a rule
 
 - Response: JSON, empty object
 

@@ -6,26 +6,26 @@ defmodule Pleroma.EmojiTest do
   use ExUnit.Case, async: true
   alias Pleroma.Emoji
 
-  describe "is_unicode_emoji?/1" do
+  describe "unicode?/1" do
     test "tells if a string is an unicode emoji" do
-      refute Emoji.is_unicode_emoji?("X")
-      refute Emoji.is_unicode_emoji?("ね")
+      refute Emoji.unicode?("X")
+      refute Emoji.unicode?("ね")
 
       # Only accept fully-qualified (RGI) emoji
       # See http://www.unicode.org/reports/tr51/
-      refute Emoji.is_unicode_emoji?("❤")
-      refute Emoji.is_unicode_emoji?("☂")
+      refute Emoji.unicode?("❤")
+      refute Emoji.unicode?("☂")
 
-      assert Emoji.is_unicode_emoji?("🥺")
-      assert Emoji.is_unicode_emoji?("🤰")
-      assert Emoji.is_unicode_emoji?("❤️")
-      assert Emoji.is_unicode_emoji?("🏳️‍⚧️")
-      assert Emoji.is_unicode_emoji?("🫵")
+      assert Emoji.unicode?("🥺")
+      assert Emoji.unicode?("🤰")
+      assert Emoji.unicode?("❤️")
+      assert Emoji.unicode?("🏳️‍⚧️")
+      assert Emoji.unicode?("🫵")
 
       # Additionally, we accept regional indicators.
-      assert Emoji.is_unicode_emoji?("🇵")
-      assert Emoji.is_unicode_emoji?("🇴")
-      assert Emoji.is_unicode_emoji?("🇬")
+      assert Emoji.unicode?("🇵")
+      assert Emoji.unicode?("🇴")
+      assert Emoji.unicode?("🇬")
     end
   end
 

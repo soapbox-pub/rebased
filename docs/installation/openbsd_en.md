@@ -12,7 +12,7 @@ For any additional information regarding commands and configuration files mentio
 To install them, run the following command (with doas or as root):
 
 ```
-pkg_add elixir gmake git postgresql-server postgresql-contrib cmake ffmpeg ImageMagick
+pkg_add elixir gmake git postgresql-server postgresql-contrib cmake ffmpeg ImageMagick libvips
 ```
 
 Pleroma requires a reverse proxy, OpenBSD has relayd in base (and is used in this guide) and packages/ports are available for nginx (www/nginx) and apache (www/apache-httpd). Independently of the reverse proxy, [acme-client(1)](https://man.openbsd.org/acme-client) can be used to get a certificate from Let's Encrypt.
@@ -62,7 +62,7 @@ rcctl start postgresql
 To check that it started properly and didn't fail right after starting, you can run `ps aux | grep postgres`, there should be multiple lines of output.
 
 #### httpd
-httpd will have three fuctions:
+httpd will have three functions:
 
   * redirect requests trying to reach the instance over http to the https URL
   * serve a robots.txt file
@@ -225,7 +225,7 @@ pass in quick on $if inet6 proto icmp6 to ($if) icmp6-type { echoreq unreach par
 pass in quick on $if proto tcp to ($if) port { http https } # relayd/httpd
 pass in quick on $if proto tcp from $authorized_ssh_clients to ($if) port ssh
 ```
-Replace *<network interface\>* by your server's network interface name (which you can get with ifconfig). Consider replacing the content of the authorized\_ssh\_clients macro by, for exemple, your home IP address, to avoid SSH connection attempts from bots.
+Replace *<network interface\>* by your server's network interface name (which you can get with ifconfig). Consider replacing the content of the authorized\_ssh\_clients macro by, for example, your home IP address, to avoid SSH connection attempts from bots.
 
 Check pf's configuration by running `pfctl -nf /etc/pf.conf`, load it with `pfctl -f /etc/pf.conf` and enable pf at boot with `rcctl enable pf`.
 

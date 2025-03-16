@@ -27,10 +27,13 @@ defmodule Pleroma.CachexProxy do
   defdelegate fetch!(cache, key, func), to: Cachex
 
   @impl true
-  defdelegate expire(cache, key, expiration), to: Cachex
+  defdelegate fetch(cache, key, func), to: Cachex
 
   @impl true
   defdelegate expire_at(cache, str, num), to: Cachex
+
+  @impl true
+  defdelegate expire(cache, str, num), to: Cachex
 
   @impl true
   defdelegate exists?(cache, key), to: Cachex

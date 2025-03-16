@@ -29,7 +29,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.FollowValidator do
 
   defp validate_data(cng) do
     cng
-    |> validate_required([:id, :type, :actor, :to, :cc, :object])
+    |> validate_required([:id, :type, :actor, :to, :object])
     |> validate_inclusion(:type, ["Follow"])
     |> validate_inclusion(:state, ~w{pending reject accept})
     |> validate_actor_presence()

@@ -67,6 +67,9 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     end
   end
 
+  @impl Provider
+  def build_tags(_), do: []
+
   defp build_attachments(%{data: %{"attachment" => attachments}}) do
     Enum.reduce(attachments, [], fn attachment, acc ->
       rendered_tags =
@@ -75,10 +78,10 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
           # object when a Video or GIF is attached it will display that in Whatsapp Rich Preview.
           case Utils.fetch_media_type(@media_types, url["mediaType"]) do
             "audio" ->
-              [
-                {:meta, [property: "og:audio", content: MediaProxy.url(url["href"])], []}
-                | acc
-              ]
+              acc ++
+                [
+                  {:meta, [property: "og:audio", content: MediaProxy.url(url["href"])], []}
+                ]
 
             # Not using preview_url for this. It saves bandwidth, but the image dimensions will
             # be wrong. We generate it on the fly and have no way to capture or analyze the
@@ -86,18 +89,18 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
             # in timelines too, but you can get clever with the aspect ratio metadata as a
             # workaround.
             "image" ->
-              [
-                {:meta, [property: "og:image", content: MediaProxy.url(url["href"])], []},
-                {:meta, [property: "og:image:alt", content: attachment["name"]], []}
-                | acc
-              ]
+              (acc ++
+                 [
+                   {:meta, [property: "og:image", content: MediaProxy.url(url["href"])], []},
+                   {:meta, [property: "og:image:alt", content: attachment["name"]], []}
+                 ])
               |> maybe_add_dimensions(url)
 
             "video" ->
-              [
-                {:meta, [property: "og:video", content: MediaProxy.url(url["href"])], []}
-                | acc
-              ]
+              (acc ++
+                 [
+                   {:meta, [property: "og:video", content: MediaProxy.url(url["href"])], []}
+                 ])
               |> maybe_add_dimensions(url)
               |> maybe_add_video_thumbnail(url)
 

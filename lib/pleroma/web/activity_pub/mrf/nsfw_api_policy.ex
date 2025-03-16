@@ -122,53 +122,52 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
     end
   end
 
-  def check_object_nsfw(%{"object" => %{} = child_object} = object) do
-    case check_object_nsfw(child_object) do
-      {:sfw, _} -> {:sfw, object}
-      {:nsfw, _} -> {:nsfw, object}
+  def check_object_nsfw(%{"object" => %{} = object} = activity) do
+    case check_object_nsfw(object) do
+      {:sfw, _} -> {:sfw, activity}
+      {:nsfw, _} -> {:nsfw, activity}
     end
   end
 
   def check_object_nsfw(object), do: {:sfw, object}
 
   @impl true
-  def filter(object) do
-    with {:sfw, object} <- check_object_nsfw(object) do
-      {:ok, object}
+  def filter(activity) do
+    with {:sfw, activity} <- check_object_nsfw(activity) do
+      {:ok, activity}
     else
-      {:nsfw, _data} -> handle_nsfw(object)
-      _ -> {:reject, "NSFW: Attachment rejected"}
+      {:nsfw, _data} -> handle_nsfw(activity)
     end
   end
 
-  defp handle_nsfw(object) do
+  defp handle_nsfw(activity) do
     if Config.get([@policy, :reject]) do
-      {:reject, object}
+      {:reject, activity}
     else
       {:ok,
-       object
+       activity
        |> maybe_unlist()
        |> maybe_mark_sensitive()}
     end
   end
 
-  defp maybe_unlist(object) do
+  defp maybe_unlist(activity) do
     if Config.get([@policy, :unlist]) do
-      unlist(object)
+      unlist(activity)
     else
-      object
+      activity
     end
   end
 
-  defp maybe_mark_sensitive(object) do
+  defp maybe_mark_sensitive(activity) do
     if Config.get([@policy, :mark_sensitive]) do
-      mark_sensitive(object)
+      mark_sensitive(activity)
     else
-      object
+      activity
     end
   end
 
-  def unlist(%{"to" => to, "cc" => cc, "actor" => actor} = object) do
+  def unlist(%{"to" => to, "cc" => cc, "actor" => actor} = activity) do
     with %User{} = user <- User.get_cached_by_ap_id(actor) do
       to =
         [user.follower_address | to]
@@ -180,7 +179,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
         |> List.delete(user.follower_address)
         |> Enum.uniq()
 
-      object
+      activity
       |> Map.put("to", to)
       |> Map.put("cc", cc)
     else
@@ -188,14 +187,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
     end
   end
 
-  def mark_sensitive(%{"object" => child_object} = object) when is_map(child_object) do
-    Map.put(object, "object", mark_sensitive(child_object))
+  def mark_sensitive(%{"object" => object} = activity) when is_map(object) do
+    Map.put(activity, "object", mark_sensitive(object))
   end
 
-  def mark_sensitive(object) when is_map(object) do
-    tags = (object["tag"] || []) ++ ["nsfw"]
+  def mark_sensitive(activity) when is_map(activity) do
+    tags = (activity["tag"] || []) ++ ["nsfw"]
 
-    object
+    activity
     |> Map.put("tag", tags)
     |> Map.put("sensitive", true)
   end

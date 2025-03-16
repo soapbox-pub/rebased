@@ -88,7 +88,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//entry/title/text()"l)
 
-      assert activity_titles == ['Won\'t, didn\'...', '2hu', '2hu & as']
+      assert activity_titles == [~c"Won't, didn'...", ~c"2hu", ~c"2hu & as"]
       assert resp =~ FeedView.escape(object.data["content"])
       assert resp =~ FeedView.escape(object.data["summary"])
       assert resp =~ FeedView.escape(object.data["context"])
@@ -104,7 +104,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//entry/title/text()"l)
 
-      assert activity_titles == ['2hu & as']
+      assert activity_titles == [~c"2hu & as"]
     end
 
     test "gets a rss feed", %{conn: conn, user: user, object: object, max_id: max_id} do
@@ -119,7 +119,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//item/title/text()"l)
 
-      assert activity_titles == ['Won\'t, didn\'...', '2hu', '2hu & as']
+      assert activity_titles == [~c"Won't, didn'...", ~c"2hu", ~c"2hu & as"]
       assert resp =~ FeedView.escape(object.data["content"])
       assert resp =~ FeedView.escape(object.data["summary"])
       assert resp =~ FeedView.escape(object.data["context"])
@@ -135,7 +135,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//item/title/text()"l)
 
-      assert activity_titles == ['2hu & as']
+      assert activity_titles == [~c"2hu & as"]
     end
 
     test "returns 404 for a missing feed", %{conn: conn} do
@@ -145,6 +145,15 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> get(user_feed_path(conn, :feed, "nonexisting"))
 
       assert response(conn, 404)
+    end
+
+    test "returns noindex meta for missing user", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("accept", "text/html")
+        |> get("/users/nonexisting")
+
+      assert html_response(conn, 200) =~ "<meta content=\"noindex, noarchive\" name=\"robots\">"
     end
 
     test "returns feed with public and unlisted activities", %{conn: conn} do
@@ -167,7 +176,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.xpath(~x"//entry/title/text()"l)
         |> Enum.sort()
 
-      assert activity_titles == ['public', 'unlisted']
+      assert activity_titles == [~c"public", ~c"unlisted"]
     end
 
     test "returns 404 when the user is remote", %{conn: conn} do
@@ -208,7 +217,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//entry/title/text()"l)
 
-      assert activity_titles == ['Won\'t, didn\'...', '2hu', '2hu & as']
+      assert activity_titles == [~c"Won't, didn'...", ~c"2hu", ~c"2hu & as"]
       assert resp =~ FeedView.escape(object.data["content"])
       assert resp =~ FeedView.escape(object.data["summary"])
       assert resp =~ FeedView.escape(object.data["context"])

@@ -7,7 +7,7 @@ defmodule Pleroma.Workers.PurgeExpiredFilter do
   Worker which purges expired filters
   """
 
-  use Oban.Worker, queue: :filter_expiration, max_attempts: 1, unique: [period: :infinity]
+  use Oban.Worker, queue: :background, max_attempts: 1, unique: [period: :infinity]
 
   import Ecto.Query
 
@@ -31,14 +31,14 @@ defmodule Pleroma.Workers.PurgeExpiredFilter do
     |> Repo.delete()
   end
 
-  @impl Oban.Worker
+  @impl true
   def timeout(_job), do: :timer.seconds(5)
 
   @spec get_expiration(pos_integer()) :: Job.t() | nil
   def get_expiration(id) do
     from(j in Job,
       where: j.state == "scheduled",
-      where: j.queue == "filter_expiration",
+      where: j.queue == "background",
       where: fragment("?->'filter_id' = ?", j.args, ^id)
     )
     |> Repo.one()

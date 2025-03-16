@@ -27,5 +27,12 @@ Mox.defmock(Pleroma.Web.FederatorMock, for: Pleroma.Web.Federator.Publishing)
 
 Mox.defmock(Pleroma.ConfigMock, for: Pleroma.Config.Getting)
 Mox.defmock(Pleroma.UnstubbedConfigMock, for: Pleroma.Config.Getting)
+Mox.defmock(Pleroma.StaticStubbedConfigMock, for: Pleroma.Config.Getting)
+Mox.defmock(Pleroma.StubbedHTTPSignaturesMock, for: Pleroma.HTTPSignaturesAPI)
 
 Mox.defmock(Pleroma.LoggerMock, for: Pleroma.Logging)
+
+Mox.defmock(Pleroma.Uploaders.S3.ExAwsMock, for: Pleroma.Uploaders.S3.ExAwsAPI)
+
+Mox.defmock(Pleroma.DateTimeMock, for: Pleroma.DateTime)
+Mox.defmock(Pleroma.MogrifyMock, for: Pleroma.MogrifyBehaviour)

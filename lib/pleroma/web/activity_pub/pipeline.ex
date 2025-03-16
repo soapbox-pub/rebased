@@ -22,22 +22,27 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
   defp activity_pub, do: Config.get([:pipeline, :activity_pub], ActivityPub)
   defp config, do: Config.get([:pipeline, :config], Config)
 
-  @spec common_pipeline(map(), keyword()) ::
-          {:ok, Activity.t() | Object.t(), keyword()} | {:error, any()}
+  @type results :: {:ok, Activity.t() | Object.t(), keyword()}
+  @type errors :: {:error | :reject, any()}
+
+  # The Repo.transaction will wrap the result in an {:ok, _}
+  # and only returns an {:error, _} if the error encountered was related
+  # to the SQL transaction
+  @spec common_pipeline(map(), keyword()) :: results() | errors()
   def common_pipeline(object, meta) do
     case Repo.transaction(fn -> do_common_pipeline(object, meta) end, Utils.query_timeout()) do
       {:ok, {:ok, activity, meta}} ->
         side_effects().handle_after_transaction(meta)
         {:ok, activity, meta}
 
-      {:ok, value} ->
-        value
+      {:ok, {:error, _} = error} ->
+        error
+
+      {:ok, {:reject, _} = error} ->
+        error
 
       {:error, e} ->
         {:error, e}
-
-      {:reject, e} ->
-        {:reject, e}
     end
   end
 
@@ -62,7 +67,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
     with {:ok, local} <- Keyword.fetch(meta, :local) do
       do_not_federate = meta[:do_not_federate] || !config().get([:instance, :federating])
 
-      if !do_not_federate and local and not Visibility.is_local_public?(activity) do
+      if !do_not_federate and local and not Visibility.local_public?(activity) do
         activity =
           if object = Keyword.get(meta, :object_data) do
             %{activity | data: Map.put(activity.data, "object", object)}

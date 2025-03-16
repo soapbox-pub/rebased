@@ -1,4 +1,4 @@
-# Transfering the config to/from the database
+# Transferring the config to/from the database
 
 {! backend/administration/CLI_tasks/general_cli_task_info.include !}
 
@@ -34,7 +34,7 @@
 
 Options:
 
-- `<path>` - where to save migrated config. E.g. `--path=/tmp`. If file saved into non standart folder, you must manually copy file into directory where Pleroma can read it. For OTP install path will be `PLEROMA_CONFIG_PATH` or `/etc/pleroma`. For installation from source - `config` directory in the pleroma folder.
+- `<path>` - where to save migrated config. E.g. `--path=/tmp`. If file saved into non-standard folder, you must manually copy file into directory where Pleroma can read it. For OTP install path will be `PLEROMA_CONFIG_PATH` or `/etc/pleroma`. For installation from source - `config` directory in the pleroma folder.
 - `<env>` - environment, for which is migrated config. By default is `prod`.
 - To delete transferred settings from database optional flag `-d` can be used
 
@@ -154,4 +154,19 @@ This forcibly removes all saved values in the database.
 
     ```sh
     mix pleroma.config [--force] reset
+
+    ```
+
+## Remove invalid MRF modules from the database
+
+This forcibly removes any enabled MRF that does not exist and will fix the ability of the instance to start.
+
+=== "OTP"
+    ```sh
+    ./bin/pleroma_ctl config fix_mrf_policies
+    ```
+
+=== "From Source"
+    ```sh
+    mix pleroma.config fix_mrf_policies
     ```

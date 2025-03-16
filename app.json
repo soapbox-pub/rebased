@@ -1,10 +1,10 @@
 {
-  "name": "Rebased",
-  "description": "Rebased, the recommended backend for Soapbox written in Elixir.",
+  "name": "pl",
+  "description": "Federated social media software, a fork of Pleroma/Rebased",
   "keywords": [
     "fediverse"
   ],
-  "website": "https://soapbox.pub",
+  "website": "https://github.com/mkljczk/pl",
   "dokku": {
     "plugins": [
       "postgres"

@@ -18,6 +18,8 @@ defmodule Pleroma.Web.ApiSpec.CastAndValidate do
   alias OpenApiSpex.Plug.PutApiSpec
   alias Plug.Conn
 
+  require Logger
+
   @impl Plug
   def init(opts) do
     opts
@@ -27,9 +29,11 @@ defmodule Pleroma.Web.ApiSpec.CastAndValidate do
 
   @impl Plug
 
-  def call(conn, %{operation_id: operation_id, render_error: render_error}) do
+  def call(conn, %{operation_id: operation_id, render_error: render_error} = opts) do
     {spec, operation_lookup} = PutApiSpec.get_spec_and_operation_lookup(conn)
     operation = operation_lookup[operation_id]
+
+    cast_opts = opts |> Map.take([:replace_params]) |> Map.to_list()
 
     content_type =
       case Conn.get_req_header(conn, "content-type") do
@@ -44,11 +48,15 @@ defmodule Pleroma.Web.ApiSpec.CastAndValidate do
 
     conn = Conn.put_private(conn, :operation_id, operation_id)
 
-    case cast_and_validate(spec, operation, conn, content_type, strict?()) do
+    case cast_and_validate(spec, operation, conn, content_type, strict?(), cast_opts) do
       {:ok, conn} ->
         conn
 
       {:error, reason} ->
+        Logger.error(
+          "Strict ApiSpec: request denied to #{conn.request_path} with params #{inspect(conn.params)}"
+        )
+
         opts = render_error.init(reason)
 
         conn
@@ -94,11 +102,11 @@ defmodule Pleroma.Web.ApiSpec.CastAndValidate do
 
   def call(conn, opts), do: OpenApiSpex.Plug.CastAndValidate.call(conn, opts)
 
-  defp cast_and_validate(spec, operation, conn, content_type, true = _strict) do
-    OpenApiSpex.cast_and_validate(spec, operation, conn, content_type)
+  defp cast_and_validate(spec, operation, conn, content_type, true = _strict, cast_opts) do
+    OpenApiSpex.cast_and_validate(spec, operation, conn, content_type, cast_opts)
   end
 
-  defp cast_and_validate(spec, operation, conn, content_type, false = _strict) do
+  defp cast_and_validate(spec, operation, conn, content_type, false = _strict, cast_opts) do
     case OpenApiSpex.cast_and_validate(spec, operation, conn, content_type) do
       {:ok, conn} ->
         {:ok, conn}
@@ -123,7 +131,7 @@ defmodule Pleroma.Web.ApiSpec.CastAndValidate do
           end)
 
         conn = %Conn{conn | query_params: query_params}
-        OpenApiSpex.cast_and_validate(spec, operation, conn, content_type)
+        OpenApiSpex.cast_and_validate(spec, operation, conn, content_type, cast_opts)
     end
   end
 

@@ -16,7 +16,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
     params =
       params
-      |> Map.take([:email, :token, :password, :accepts_email_list])
+      |> Map.take([:email, :token, :password])
       |> Map.put(:bio, params |> Map.get(:bio, "") |> User.parse_bio())
       |> Map.put(:nickname, params[:username])
       |> Map.put(:name, Map.get(params, :fullname, params[:username]))
@@ -27,6 +27,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         :language,
         Pleroma.Web.Gettext.normalize_locale(params[:language]) || fallback_language
       )
+      |> maybe_put_domain_id(params[:domain])
 
     if Pleroma.Config.get([:instance, :registrations_open]) do
       create_user(params, opts)
@@ -61,6 +62,14 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
           |> Jason.encode!()
 
         {:error, errors}
+    end
+  end
+
+  defp maybe_put_domain_id(params, domain) do
+    if Pleroma.Config.get([:instance, :multitenancy, :enabled]) do
+      Map.put(params, :domain_id, domain)
+    else
+      params
     end
   end
 

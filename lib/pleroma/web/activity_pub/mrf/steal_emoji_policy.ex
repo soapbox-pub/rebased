@@ -20,6 +20,19 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
     String.match?(shortcode, pattern)
   end
 
+  defp reject_emoji?({shortcode, _url}, installed_emoji) do
+    valid_shortcode? = String.match?(shortcode, ~r/^[a-zA-Z0-9_-]+$/)
+
+    rejected_shortcode? =
+      [:mrf_steal_emoji, :rejected_shortcodes]
+      |> Config.get([])
+      |> Enum.any?(fn pattern -> shortcode_matches?(shortcode, pattern) end)
+
+    emoji_installed? = Enum.member?(installed_emoji, shortcode)
+
+    !valid_shortcode? or rejected_shortcode? or emoji_installed?
+  end
+
   defp steal_emoji({shortcode, url}, emoji_dir_path) do
     url = Pleroma.Web.MediaProxy.url(url)
 
@@ -34,8 +47,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
           |> Path.basename()
           |> Path.extname()
 
+        extension = if extension == "", do: ".png", else: extension
+
         shortcode = Path.basename(shortcode)
-        file_path = Path.join(emoji_dir_path, shortcode <> (extension || ".png"))
+        file_path = Path.join(emoji_dir_path, shortcode <> extension)
 
         case File.write(file_path, response.body) do
           :ok ->
@@ -60,7 +75,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
   end
 
   @impl true
-  def filter(%{"object" => %{"emoji" => foreign_emojis, "actor" => actor}} = message) do
+  def filter(%{"object" => %{"emoji" => foreign_emojis, "actor" => actor}} = activity) do
     host = URI.parse(actor).host
 
     if host != Pleroma.Web.Endpoint.host() and accept_host?(host) do
@@ -76,16 +91,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
 
       new_emojis =
         foreign_emojis
-        |> Enum.reject(fn {shortcode, _url} -> shortcode in installed_emoji end)
-        |> Enum.reject(fn {shortcode, _url} -> String.contains?(shortcode, ["/", "\\"]) end)
-        |> Enum.filter(fn {shortcode, _url} ->
-          reject_emoji? =
-            [:mrf_steal_emoji, :rejected_shortcodes]
-            |> Config.get([])
-            |> Enum.find(false, fn pattern -> shortcode_matches?(shortcode, pattern) end)
-
-          !reject_emoji?
-        end)
+        |> Enum.reject(&reject_emoji?(&1, installed_emoji))
         |> Enum.map(&steal_emoji(&1, emoji_dir_path))
         |> Enum.filter(& &1)
 
@@ -95,10 +101,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
       end
     end
 
-    {:ok, message}
+    {:ok, activity}
   end
 
-  def filter(message), do: {:ok, message}
+  def filter(activity), do: {:ok, activity}
 
   @impl true
   @spec config_description :: %{

@@ -11,12 +11,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicy do
   require Logger
 
   @impl true
-  def filter(message) do
+  def filter(activity) do
     with follower_nickname <- Config.get([:mrf_follow_bot, :follower_nickname]),
          %User{actor_type: "Service"} = follower <-
            User.get_cached_by_nickname(follower_nickname),
-         %{"type" => "Create", "object" => %{"type" => "Note"}} <- message do
-      try_follow(follower, message)
+         %{"type" => "Create", "object" => %{"type" => "Note"}} <- activity do
+      try_follow(follower, activity)
     else
       nil ->
         Logger.warning(
@@ -24,17 +24,17 @@ defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicy do
             account does not exist, or the account is not correctly configured as a bot."
         )
 
-        {:ok, message}
+        {:ok, activity}
 
       _ ->
-        {:ok, message}
+        {:ok, activity}
     end
   end
 
-  defp try_follow(follower, message) do
-    to = Map.get(message, "to", [])
-    cc = Map.get(message, "cc", [])
-    actor = [message["actor"]]
+  defp try_follow(follower, activity) do
+    to = Map.get(activity, "to", [])
+    cc = Map.get(activity, "cc", [])
+    actor = [activity["actor"]]
 
     Enum.concat([to, cc, actor])
     |> List.flatten()
@@ -49,11 +49,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicy do
           "#{__MODULE__}: Follow request from #{follower.nickname} to #{user.nickname}"
         )
 
-        CommonAPI.follow(follower, user)
+        CommonAPI.follow(user, follower)
       end
     end)
 
-    {:ok, message}
+    {:ok, activity}
   end
 
   @impl true

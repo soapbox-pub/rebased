@@ -51,7 +51,7 @@ defmodule Pleroma.Web.Utils.Colors do
     shades
   end
 
-  def get_shades(_, overrides), do: get_shades("#0482d8", overrides)
+  def get_shades(_, overrides), do: get_shades("#d80482", overrides)
 
   defp get_override(level, overrides) do
     if Map.has_key?(overrides, "#{level}") do

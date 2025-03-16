@@ -178,7 +178,7 @@ defmodule HttpRequestMock do
   end
 
   def get(
-        "https://social.heldscal.la/.well-known/webfinger?resource=nonexistant@social.heldscal.la",
+        "https://social.heldscal.la/.well-known/webfinger?resource=nonexistent@social.heldscal.la",
         _,
         _,
         [{"accept", "application/xrd+xml,application/jrd+json"}]
@@ -186,7 +186,7 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!("test/fixtures/tesla_mock/nonexistant@social.heldscal.la.xml")
+       body: File.read!("test/fixtures/tesla_mock/nonexistent@social.heldscal.la.xml")
      }}
   end
 
@@ -955,7 +955,7 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}}
   end
 
-  def get("http://localhost:4001/users/masto_closed/followers", _, _, _) do
+  def get("https://remote.org/users/masto_closed/followers", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -964,7 +964,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://localhost:4001/users/masto_closed/followers?page=1", _, _, _) do
+  def get("https://remote.org/users/masto_closed/followers?page=1", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -973,7 +973,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://localhost:4001/users/masto_closed/following", _, _, _) do
+  def get("https://remote.org/users/masto_closed/following", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -982,7 +982,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://localhost:4001/users/masto_closed/following?page=1", _, _, _) do
+  def get("https://remote.org/users/masto_closed/following?page=1", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -991,7 +991,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://localhost:8080/followers/fuser3", _, _, _) do
+  def get("https://remote.org/followers/fuser3", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -1000,7 +1000,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://localhost:8080/following/fuser3", _, _, _) do
+  def get("https://remote.org/following/fuser3", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -1009,7 +1009,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://localhost:4001/users/fuser2/followers", _, _, _) do
+  def get("https://remote.org/users/fuser2/followers", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -1018,7 +1018,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://localhost:4001/users/fuser2/following", _, _, _) do
+  def get("https://remote.org/users/fuser2/following", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -1059,7 +1059,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://example.com/malformed", _, _, _) do
+  def get("https://example.com/malformed", _, _, _) do
     {:ok,
      %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/malformed-data.html")}}
   end
@@ -1371,41 +1371,20 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://misskey.io/users/83ssedkv53", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/aimu@misskey.io.json"),
-       headers: activitypub_object_headers()
-     }}
-  end
-
-  def get("https://misskey.io/notes/8vs6wxufd0", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/misskey.io_8vs6wxufd0.json"),
-       headers: activitypub_object_headers()
-     }}
-  end
-
-  def get("https://mitra.social/objects/01830912-1357-d4c5-e4a2-76eab347e749", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body:
-         File.read!(
-           "test/fixtures/tesla_mock/mitra.social_01830912-1357-d4c5-e4a2-76eab347e749.json"
-         ),
-       headers: activitypub_object_headers()
-     }}
-  end
-
   def get("https://gleasonator.com/objects/102eb097-a18b-4cd5-abfc-f952efcb70bb", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/gleasonator-AG3RzWfwEKKrY63qj2.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://misskey.io/users/83ssedkv53", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/aimu@misskey.io.json"),
        headers: activitypub_object_headers()
      }}
   end
@@ -1476,31 +1455,12 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get(
-        "https://nominatim.openstreetmap.org/search?format=geocodejson&q=Benis&limit=10&accept-language=en&addressdetails=1&namedetails=1",
-        _,
-        _,
-        _
-      ) do
+  def get("https://misskey.io/notes/8vs6wxufd0", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!("test/fixtures/tesla_mock/nominatim_search_results.json"),
-       headers: [{"content-type", "application/json"}]
-     }}
-  end
-
-  def get(
-        "https://nominatim.openstreetmap.org/lookup?format=geocodejson&osm_ids=N3726208425,R3726208425,W3726208425&accept-language=en&addressdetails=1&namedetails=1",
-        _,
-        _,
-        _
-      ) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/nominatim_single_result.json"),
-       headers: [{"content-type", "application/json"}]
+       body: File.read!("test/fixtures/tesla_mock/misskey.io_8vs6wxufd0.json"),
+       headers: activitypub_object_headers()
      }}
   end
 
@@ -1675,6 +1635,80 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://mitra.social/objects/01830912-1357-d4c5-e4a2-76eab347e749", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!(
+           "test/fixtures/tesla_mock/mitra.social_01830912-1357-d4c5-e4a2-76eab347e749.json"
+         )
+     }}
+  end
+
+  def get("https://wp-test.event-federation.eu/event/test-event/", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/wordpress-event.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://wp-test.event-federation.eu/@test", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/wordpress-user.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get(
+        "https://nominatim.openstreetmap.org/search?format=geocodejson&q=Benis&limit=10&accept-language=en&addressdetails=1&namedetails=1",
+        _,
+        _,
+        _
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/nominatim_search_results.json"),
+       headers: [{"content-type", "application/json"}]
+     }}
+  end
+
+  def get(
+        "https://nominatim.openstreetmap.org/lookup?format=geocodejson&osm_ids=N3726208425,R3726208425,W3726208425&accept-language=en&addressdetails=1&namedetails=1",
+        _,
+        _,
+        _
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/nominatim_single_result.json"),
+       headers: [{"content-type", "application/json"}]
+     }}
+  end
+
+  def get(
+        "https://wp-test.event-federation.eu/wp-json/activitypub/1.0/actors/0/collections/featured",
+        _,
+        _,
+        _
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!("test/fixtures/users_mock/masto_featured.json")
+         |> String.replace("{{domain}}", "wp-test.event-federation.eu")
+         |> String.replace("{{nickname}}", "test"),
+       headers: [{"content-type", "application/activity+json"}]
+     }}
+  end
+
   def get(url, query, body, headers) do
     {:error,
      "Mock response not implemented for GET #{inspect(url)}, #{query}, #{inspect(body)}, #{inspect(headers)}"}
@@ -1766,12 +1800,39 @@ defmodule HttpRequestMock do
 
   # Most of the rich media mocks are missing HEAD requests, so we just return 404.
   @rich_media_mocks [
+    "https://example.com/empty",
+    "https://example.com/error",
+    "https://example.com/malformed",
+    "https://example.com/non-ogp",
+    "https://example.com/oembed",
+    "https://example.com/oembed.json",
     "https://example.com/ogp",
     "https://example.com/ogp-missing-data",
-    "https://example.com/twitter-card"
+    "https://example.com/ogp-missing-title",
+    "https://example.com/twitter-card",
+    "https://google.com/",
+    "https://pleroma.local/notice/9kCP7V",
+    "https://yahoo.com/"
   ]
+
   def head(url, _query, _body, _headers) when url in @rich_media_mocks do
-    {:ok, %Tesla.Env{status: 404, body: ""}}
+    {:ok, %Tesla.Env{status: 200, body: ""}}
+  end
+
+  def head("https://example.com/pdf-file", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       headers: [{"content-length", "1000000"}, {"content-type", "application/pdf"}]
+     }}
+  end
+
+  def head("https://example.com/huge-page", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       headers: [{"content-length", "2000001"}, {"content-type", "text/html"}]
+     }}
   end
 
   def head(url, query, body, headers) do

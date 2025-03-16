@@ -15,7 +15,6 @@ defmodule Pleroma.Application do
   @compat_name Mix.Project.config()[:compat_name]
   @version Mix.Project.config()[:version]
   @repository Mix.Project.config()[:source_url]
-  @mix_env Mix.env()
 
   def name, do: @name
   def compat_name, do: @compat_name
@@ -55,9 +54,12 @@ defmodule Pleroma.Application do
     Pleroma.HTML.compile_scrubbers()
     Pleroma.Config.Oban.warn()
     Config.DeprecationWarnings.warn()
-    Pleroma.Web.Plugs.HTTPSecurityPlug.warn_if_disabled()
+
+    if Config.get([Pleroma.Web.Plugs.HTTPSecurityPlug, :enable], true) do
+      Pleroma.Web.Plugs.HTTPSecurityPlug.warn_if_disabled()
+    end
+
     Pleroma.ApplicationRequirements.verify!()
-    setup_instrumenters()
     load_custom_modules()
     Pleroma.Docs.JSON.compile()
     limiters_setup()
@@ -95,6 +97,7 @@ defmodule Pleroma.Application do
     children =
       [
         Pleroma.PromEx,
+        Pleroma.LDAP,
         Pleroma.Repo,
         Config.TransferTask,
         Pleroma.Emoji,
@@ -102,7 +105,7 @@ defmodule Pleroma.Application do
         {Task.Supervisor, name: Pleroma.TaskSupervisor}
       ] ++
         cachex_children() ++
-        http_children(adapter, @mix_env) ++
+        http_children(adapter) ++
         [
           Pleroma.Stats,
           Pleroma.JobQueueMonitor,
@@ -111,45 +114,21 @@ defmodule Pleroma.Application do
           Pleroma.Web.Endpoint,
           TzWorld.Backend.DetsWithIndexCache
         ] ++
-        task_children(@mix_env) ++
-        dont_run_in_test(@mix_env) ++
-        [Pleroma.Gopher.Server]
+        task_children() ++
+        streamer_registry() ++
+        background_migrators() ++
+        [Pleroma.Gopher.Server] ++
+        [Pleroma.Search.Healthcheck]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
     # If we have a lot of caches, default max_restarts can cause test
     # resets to fail.
     # Go for the default 3 unless we're in test
-    max_restarts =
-      if @mix_env == :test do
-        100
-      else
-        3
-      end
+    max_restarts = Application.get_env(:pleroma, __MODULE__)[:max_restarts]
 
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor, max_restarts: max_restarts]
-    result = Supervisor.start_link(children, opts)
-
-    set_postgres_server_version()
-
-    result
-  end
-
-  defp set_postgres_server_version do
-    version =
-      with %{rows: [[version]]} <- Ecto.Adapters.SQL.query!(Pleroma.Repo, "show server_version"),
-           {num, _} <- Float.parse(version) do
-        num
-      else
-        e ->
-          Logger.warning(
-            "Could not get the postgres version: #{inspect(e)}.\nSetting the default value of 9.6"
-          )
-
-          9.6
-      end
-
-    :persistent_term.put({Pleroma.Repo, :postgres_version}, version)
+    Supervisor.start_link(children, opts)
   end
 
   def load_custom_modules do
@@ -163,7 +142,7 @@ defmodule Pleroma.Application do
           raise "Invalid custom modules"
 
         {:ok, modules, _warnings} ->
-          if @mix_env != :test do
+          if Application.get_env(:pleroma, __MODULE__)[:load_custom_modules] do
             Enum.each(modules, fn mod ->
               Logger.info("Custom module loaded: #{inspect(mod)}")
             end)
@@ -172,29 +151,6 @@ defmodule Pleroma.Application do
           :ok
       end
     end
-  end
-
-  defp setup_instrumenters do
-    require Prometheus.Registry
-
-    if Application.get_env(:prometheus, Pleroma.Repo.Instrumenter) do
-      :ok =
-        :telemetry.attach(
-          "prometheus-ecto",
-          [:pleroma, :repo, :query],
-          &Pleroma.Repo.Instrumenter.handle_event/4,
-          %{}
-        )
-
-      Pleroma.Repo.Instrumenter.setup()
-    end
-
-    Pleroma.Web.Endpoint.MetricsExporter.setup()
-    Pleroma.Web.Endpoint.PipelineInstrumenter.setup()
-
-    # Note: disabled until prometheus-phx is integrated into prometheus-phoenix:
-    # Pleroma.Web.Endpoint.Instrumenter.setup()
-    PrometheusPhx.setup()
   end
 
   defp cachex_children do
@@ -209,15 +165,17 @@ defmodule Pleroma.Application do
       build_cachex("web_resp", limit: 2500),
       build_cachex("emoji_packs", expiration: emoji_packs_expiration(), limit: 10),
       build_cachex("failed_proxy_url", limit: 2500),
+      build_cachex("failed_media_helper_url", default_ttl: :timer.minutes(15), limit: 2_500),
       build_cachex("banned_urls", default_ttl: :timer.hours(24 * 30), limit: 5_000),
       build_cachex("chat_message_id_idempotency_key",
         expiration: chat_message_id_idempotency_key_expiration(),
         limit: 500_000
       ),
+      build_cachex("rel_me", default_ttl: :timer.minutes(30), limit: 2_500),
+      build_cachex("host_meta", default_ttl: :timer.minutes(120), limit: 5000),
       build_cachex("anti_duplication_mrf", limit: 5_000),
       build_cachex("translations", default_ttl: :timer.hours(24), limit: 5_000),
-      build_cachex("rel_me", limit: 2500),
-      build_cachex("host_meta", default_ttl: :timer.minutes(120), limit: 5000)
+      build_cachex("domain", limit: 2500)
     ]
   end
 
@@ -241,57 +199,69 @@ defmodule Pleroma.Application do
       type: :worker
     }
 
-  defp dont_run_in_test(env) when env in [:test, :benchmark], do: []
-
-  defp dont_run_in_test(_) do
-    [
-      {Registry,
-       [
-         name: Pleroma.Web.Streamer.registry(),
-         keys: :duplicate,
-         partitions: System.schedulers_online()
-       ]}
-    ] ++ background_migrators()
+  defp streamer_registry do
+    if Application.get_env(:pleroma, __MODULE__)[:streamer_registry] do
+      [
+        {Registry,
+         [
+           name: Pleroma.Web.Streamer.registry(),
+           keys: :duplicate,
+           partitions: System.schedulers_online()
+         ]}
+      ]
+    else
+      []
+    end
   end
 
   defp background_migrators do
-    [
-      Pleroma.Migrators.HashtagsTableMigrator,
-      Pleroma.Migrators.ContextObjectsDeletionMigrator
-    ]
+    if Application.get_env(:pleroma, __MODULE__)[:background_migrators] do
+      [
+        Pleroma.Migrators.HashtagsTableMigrator,
+        Pleroma.Migrators.ContextObjectsDeletionMigrator
+      ]
+    else
+      []
+    end
   end
 
-  defp task_children(:test) do
-    [
+  defp task_children do
+    children = [
       %{
         id: :web_push_init,
         start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
         restart: :temporary
       }
     ]
-  end
 
-  defp task_children(_) do
-    [
-      %{
-        id: :web_push_init,
-        start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
-        restart: :temporary
-      },
-      %{
-        id: :internal_fetch_init,
-        start: {Task, :start_link, [&Pleroma.Web.ActivityPub.InternalFetchActor.init/0]},
-        restart: :temporary
-      }
-    ]
+    if Application.get_env(:pleroma, __MODULE__)[:internal_fetch] do
+      children ++
+        [
+          %{
+            id: :internal_fetch_init,
+            start: {Task, :start_link, [&Pleroma.Web.ActivityPub.InternalFetchActor.init/0]},
+            restart: :temporary
+          }
+        ]
+    else
+      children
+    end
   end
 
   # start hackney and gun pools in tests
-  defp http_children(_, :test) do
-    http_children(Tesla.Adapter.Hackney, nil) ++ http_children(Tesla.Adapter.Gun, nil)
+  defp http_children(adapter) do
+    if Application.get_env(:pleroma, __MODULE__)[:test_http_pools] do
+      http_children_hackney() ++ http_children_gun()
+    else
+      cond do
+        match?(Tesla.Adapter.Hackney, adapter) -> http_children_hackney()
+        match?(Tesla.Adapter.Gun, adapter) -> http_children_gun()
+        true -> []
+      end
+    end
   end
 
-  defp http_children(Tesla.Adapter.Hackney, _) do
+  defp http_children_hackney do
     pools = [:federation, :media]
 
     pools =
@@ -307,12 +277,10 @@ defmodule Pleroma.Application do
     end
   end
 
-  defp http_children(Tesla.Adapter.Gun, _) do
+  defp http_children_gun do
     Pleroma.Gun.ConnectionPool.children() ++
       [{Task, &Pleroma.HTTP.AdapterHelper.Gun.limiter_setup/0}]
   end
-
-  defp http_children(_, _), do: []
 
   @spec limiters_setup() :: :ok
   def limiters_setup do
