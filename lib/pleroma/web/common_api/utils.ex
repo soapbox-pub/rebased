@@ -198,8 +198,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   defp validate_poll_options_amount(options, %{max_options: max_options}) do
     cond do
-      Enum.count(options) < 2 ->
-        {:error, "Poll must contain at least 2 options"}
+      Enum.count(options) < 1 ->
+        {:error, "Poll must contain at least 1 option"}
 
       Enum.count(options) > max_options ->
         {:error, "Poll can't contain more than #{max_options} options"}
